@@ -1,5 +1,6 @@
 #include "fusion.hpp"
 
+#include "divergence_guard.hpp"
 #include "math_utils.hpp"
 
 #include <math.h>
@@ -489,7 +490,7 @@ bool dead_reckoning_update_imu(
 bool dead_reckoning_update_gps(
     DeadReckoningFilter *filter,
     const GpsSample *gps,
-    const SystemHealthMonitor *health_monitor)
+    SystemHealthMonitor *health_monitor)
 {
     if (filter == NULL || gps == NULL) {
         return false;
@@ -502,6 +503,7 @@ bool dead_reckoning_update_gps(
 
     if (!dead_reckoning_gps_passes_innovation_gate(filter, gps)) {
         dead_reckoning_enter_gps_contingency(filter, gps);
+        (void)divergence_guard_check(filter, gps->speed_mps, health_monitor);
         return true;
     }
 
@@ -530,6 +532,7 @@ bool dead_reckoning_update_gps(
 
     const float quality = clampf(0.55f + ((float)gps->satellites * 0.03f), 0.55f, 0.95f);
     filter->state.confidence = nav_confidence_make(true, gps->satellites, 0U, quality);
+    (void)divergence_guard_check(filter, gps->speed_mps, health_monitor);
     return true;
 }
 

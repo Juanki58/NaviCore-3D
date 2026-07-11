@@ -45,6 +45,12 @@ typedef enum {
 
 #define GEOMETRY_GUARD_HEALTH_PENALTY 15U
 
+/** Codigos de error de divergencia IMU/GPS (divergence_guard). */
+#define DIVERGENCE_ERROR_NONE      0U
+#define DIVERGENCE_ERROR_IMU_GPS   1U
+
+#define DIVERGENCE_GUARD_HEALTH_PENALTY 30U
+
 typedef struct {
     NavHealthMode mode;
     uint8_t health_score;
@@ -53,10 +59,12 @@ typedef struct {
     uint8_t last_time_guard_error;
     uint8_t last_slip_comp_error;
     uint8_t last_geometry_error;
+    uint8_t last_divergence_error;
     uint32_t last_execution_ticks;
     uint32_t last_max_allowed_ticks;
     float last_slip_ratio;
     float last_geometry_step_m;
+    float last_divergence_innovation_sq;
     uint32_t update_count;
 } SystemHealthMonitor;
 

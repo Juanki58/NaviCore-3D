@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "diagnostic.hpp"
 #include "waypoint.hpp"
 
 #define RADIO_CMD_PACKET_SIZE_BYTES 16U
@@ -52,10 +53,12 @@ uint8_t command_ingest_compute_checksum(const RadioCommandPacket *packet);
  * @param packet       Trama de radio recibida (16 B).
  * @param wpm_buffer   Buffer estatico de waypoints; puede ser NULL si no aplica.
  * @param cruise_speed Puntero a velocidad de crucero; actualizado en CMD_SET_CRUISE_SPEED.
+ * @param monitor      Monitor de salud para geometry_guard; puede ser NULL.
  * @return true si la trama es valida y la accion se aplico; false en error, checksum
- *         invalido o buffer lleno (sin modificar memoria en overflow).
+ *         invalido, buffer lleno o discontinuidad geometrica (sin modificar memoria).
  */
 bool command_ingest_parse(
     const RadioCommandPacket *packet,
     StaticWaypointBuffer *wpm_buffer,
-    float *cruise_speed);
+    float *cruise_speed,
+    SystemHealthMonitor *monitor);

@@ -584,7 +584,11 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             radio_cmd.param = nav.state.position.z;
             radio_cmd.checksum = command_ingest_compute_checksum(&radio_cmd);
 
-            const bool ingest_ok = command_ingest_parse(&radio_cmd, &route, &cruise_speed_mps);
+            const bool ingest_ok = command_ingest_parse(
+                &radio_cmd,
+                &route,
+                &cruise_speed_mps,
+                &health);
             radio_cmd_injected = true;
 
             std::printf(

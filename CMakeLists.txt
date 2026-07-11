@@ -25,6 +25,7 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/command_ingest.cpp
     ${NAVICORE_CORE_DIR}/time_guard.cpp
     ${NAVICORE_CORE_DIR}/slip_compensation.cpp
+    ${NAVICORE_CORE_DIR}/geometry_guard.cpp
 )
 
 add_executable(NaviCore3D_VehicleDemo

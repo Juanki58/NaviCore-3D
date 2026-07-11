@@ -1,5 +1,8 @@
 #include "command_ingest.hpp"
 
+#include "diagnostic.hpp"
+#include "geometry_guard.hpp"
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,7 +52,8 @@ static bool waypoint_buffer_push_strict(StaticWaypointBuffer *buffer, const Wayp
 
 static bool command_ingest_handle_add_waypoint(
     const RadioCommandPacket *packet,
-    StaticWaypointBuffer *wpm_buffer)
+    StaticWaypointBuffer *wpm_buffer,
+    SystemHealthMonitor *monitor)
 {
     if (wpm_buffer == NULL) {
         return false;
@@ -62,6 +66,14 @@ static bool command_ingest_handle_add_waypoint(
     }
 
     if (waypoint_buffer_is_full(wpm_buffer)) {
+        return false;
+    }
+
+    if (!geometry_guard_validate_next(
+            wpm_buffer,
+            packet->pos_x,
+            packet->pos_y,
+            monitor)) {
         return false;
     }
 
@@ -134,7 +146,8 @@ uint8_t command_ingest_compute_checksum(const RadioCommandPacket *packet)
 bool command_ingest_parse(
     const RadioCommandPacket *packet,
     StaticWaypointBuffer *wpm_buffer,
-    float *cruise_speed)
+    float *cruise_speed,
+    SystemHealthMonitor *monitor)
 {
     if (!command_ingest_validate_header(packet)) {
         return false;
@@ -145,7 +158,7 @@ bool command_ingest_parse(
         return true;
 
     case CMD_ADD_WAYPOINT:
-        return command_ingest_handle_add_waypoint(packet, wpm_buffer);
+        return command_ingest_handle_add_waypoint(packet, wpm_buffer, monitor);
 
     case CMD_SET_CRUISE_SPEED:
         return command_ingest_handle_set_cruise_speed(packet, cruise_speed);

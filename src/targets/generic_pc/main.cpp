@@ -5,8 +5,10 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #else
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #include "vector3d.h"
@@ -16,8 +18,9 @@
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
 #include "diagnostic.hpp"
-#include "command_ingest.hpp"
+#include "command_ingestor.hpp"
 #include "power_state_machine.hpp"
+#include "time_guard.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -39,7 +42,17 @@ constexpr uint32_t kFaultInjectGpsLossMs = 5000U;
 constexpr uint32_t kFaultInjectRadioCmdMs = 10000U;
 constexpr uint32_t kFaultInjectSpiTimeoutMs = 15000U;
 constexpr uint32_t kFaultInjectDurationMs = 30000U;
+
+constexpr uint32_t kHighDemandRadioBurstMs = 5000U;
+constexpr uint32_t kHighDemandWcetStressMs = 10000U;
+constexpr uint32_t kHighDemandDurationMs = 20000U;
+constexpr size_t kHighDemandRadioBurstCount = 100U;
+constexpr uint32_t kHighDemandWcetArtificialDelayMs = 150U;
+constexpr float kHighDemandRadioStepDeg = 0.000120f;
+constexpr float kHighDemandGeomViolationStepDeg = 0.0020f;
+
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
+constexpr const char *kHighDemandScenarioName = "HIGH_DEMAND_STRESS_TEST";
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
@@ -493,6 +506,350 @@ void print_scenario_banner(SensorScenario scenario)
         "----------------------------------------------------------------\n");
 }
 
+void high_demand_apply_artificial_wcet_delay(void)
+{
+#ifdef _WIN32
+    Sleep(kHighDemandWcetArtificialDelayMs);
+#else
+    usleep(kHighDemandWcetArtificialDelayMs * 1000U);
+#endif
+}
+
+void high_demand_build_radio_packet(
+    size_t seq_index,
+    const DeadReckoningFilter *nav,
+    const StaticWaypointBuffer *route,
+    RadioCommandPacket *packet_out)
+{
+    if (nav == NULL || route == NULL || packet_out == NULL) {
+        return;
+    }
+
+    packet_out->magic = RADIO_CMD_MAGIC;
+    packet_out->command_type = static_cast<uint8_t>(CMD_ADD_WAYPOINT);
+    packet_out->sequence = static_cast<uint8_t>(seq_index & 0xFFU);
+
+    const bool geom_violation_probe = ((seq_index % 25U) == 24U);
+    const float lon_step_deg =
+        geom_violation_probe ? kHighDemandGeomViolationStepDeg : kHighDemandRadioStepDeg;
+
+    float base_lon_deg = nav->state.position.y;
+    if (route->count > 0U) {
+        const size_t last_index =
+            (route->head + route->count - 1U) % NAVICORE_MAX_WAYPOINTS;
+        base_lon_deg = route->items[last_index].position.y;
+    }
+
+    packet_out->pos_x = nav->state.position.x;
+    packet_out->pos_y = base_lon_deg + lon_step_deg;
+    packet_out->param = nav->state.position.z;
+    packet_out->checksum = command_ingestor_compute_checksum(packet_out);
+}
+
+void high_demand_enqueue_radio_burst(
+    uint32_t t_ms,
+    const DeadReckoningFilter *nav,
+    StaticWaypointBuffer *route)
+{
+    if (nav == NULL || route == NULL) {
+        return;
+    }
+
+    StaticWaypointBuffer sim_route = *route;
+    float sim_cruise_mps = kCruiseSpeedMps;
+    size_t enqueued = 0U;
+
+    std::printf(
+        ">>> t=%.1fs: encolando rafaga x%zu RadioCommandPacket | max %u/tick\n",
+        static_cast<float>(t_ms) * 0.001f,
+        kHighDemandRadioBurstCount,
+        NAVICORE_RADIO_MAX_PACKETS_PER_TICK);
+
+    for (size_t i = 0U; i < kHighDemandRadioBurstCount; ++i) {
+        RadioCommandPacket packet{};
+        high_demand_build_radio_packet(i, nav, &sim_route, &packet);
+
+        if (!command_ingestor_hw_enqueue(&packet)) {
+            std::printf(
+                ">>> ADVERTENCIA: buffer HW lleno tras %zu paquetes (cap=%u)\n",
+                enqueued,
+                COMMAND_INGESTOR_HW_RX_CAPACITY);
+            break;
+        }
+
+        enqueued++;
+        (void)command_ingestor_parse(&packet, &sim_route, &sim_cruise_mps, NULL);
+    }
+
+    std::printf(
+        ">>> t=%.1fs: %zu paquetes en buffer HW (pendientes=%u)\n",
+        static_cast<float>(t_ms) * 0.001f,
+        enqueued,
+        command_ingestor_hw_pending_count());
+}
+
+bool high_demand_apply_wcet_stress(SystemHealthMonitor *health, uint32_t t_ms)
+{
+    if (health == NULL) {
+        return false;
+    }
+
+    const uint8_t health_before = health->health_score;
+    const NavHealthMode mode_before = health->mode;
+
+    time_guard_start();
+    high_demand_apply_artificial_wcet_delay();
+    uint32_t execution_ticks = time_guard_stop();
+    if (execution_ticks <= TIME_GUARD_DEFAULT_MAX_TICKS) {
+        execution_ticks = TIME_GUARD_DEFAULT_MAX_TICKS + 1U;
+    }
+    const bool within_budget = time_guard_validate(
+        execution_ticks,
+        TIME_GUARD_DEFAULT_MAX_TICKS,
+        health);
+
+    if (!within_budget) {
+        std::printf(
+            ">>> t=%.1fs: WCET violado | ticks=%u max=%u | penalizacion -%u | "
+            "health %u -> %u | mode %s -> %s\n",
+            static_cast<float>(t_ms) * 0.001f,
+            execution_ticks,
+            TIME_GUARD_DEFAULT_MAX_TICKS,
+            TIME_GUARD_WCET_PENALTY,
+            static_cast<unsigned>(health_before),
+            static_cast<unsigned>(health->health_score),
+            health_mode_name(mode_before),
+            health_mode_name(health->mode));
+    }
+
+    return within_budget;
+}
+
+void run_high_demand_stress_test_scenario(FILE *telemetry_file)
+{
+    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+
+    SensorsSimulation sensors;
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
+
+    DeadReckoningFilter nav;
+    dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
+
+    SystemHealthMonitor health{};
+    power_manager_init();
+    time_guard_init();
+    command_ingestor_init();
+
+    bool safe_stop_active = false;
+    float safe_stop_heading_deg = kCruiseCourseDeg;
+    NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    bool radio_burst_enqueued = false;
+    bool radio_burst_complete_logged = false;
+    size_t radio_ingest_ok = 0U;
+    size_t radio_ingest_fail = 0U;
+    size_t radio_geometry_reject = 0U;
+
+    StaticWaypointBuffer route{};
+    Waypoint leg_origin{};
+    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+
+    float cruise_speed_mps = kCruiseSpeedMps;
+    float prev_cross_track_m = 0.0f;
+    float synthetic_course_deg = kCruiseCourseDeg;
+    const float dt_s = static_cast<float>(kStepMs) * 0.001f;
+
+    std::printf("\n");
+    std::printf("================================================================\n");
+    std::printf(" ESCENARIO: HIGH_DEMAND_STRESS_TEST\n");
+    std::printf("  t=5s  rafaga x100 RadioCommandPacket (max %u/tick, parser + geometry guard)\n",
+                NAVICORE_RADIO_MAX_PACKETS_PER_TICK);
+    std::printf("  t=10s retraso WCET sostenido (-%u pts/tick) -> DEGRADED 8 m/s\n",
+                TIME_GUARD_WCET_PENALTY);
+    std::printf("  CRITICAL -> SAFE STOP -> POWER_SAFE_SHUTDOWN latched\n");
+    std::printf("================================================================\n");
+
+    for (uint32_t t_ms = 0U; t_ms <= kHighDemandDurationMs; t_ms += kStepMs) {
+        apply_health_contingency_air(
+            &sensors,
+            &route,
+            health.mode,
+            safe_stop_active,
+            &prev_health_mode);
+
+        if (safe_stop_active) {
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        } else {
+            apply_closed_loop_heading_control(
+                &sensors,
+                prev_cross_track_m,
+                &synthetic_course_deg,
+                dt_s);
+        }
+
+        ImuSample imu{};
+        GpsSample gps{};
+
+        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps)) {
+            continue;
+        }
+
+        const uint32_t tick_index = t_ms / kStepMs;
+        const uint8_t scenario_satellites = gps.fix_valid ? gps.satellites : 0U;
+
+        dead_reckoning_update_imu(&nav, &imu, &health);
+        if (gps.fix_valid) {
+            dead_reckoning_update_gps(&nav, &gps, &health);
+        }
+
+        const bool odom_fault_active = dead_reckoning_has_odom_fault(&nav);
+        const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(
+            nav.state.confidence.estimate_quality);
+        const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(
+            odom_fault_active,
+            nav.state.confidence.estimate_quality);
+
+        /*
+         * Durante el estres WCET (t >= 10 s) no se llama a diagnostic_update para
+         * que las penalizaciones de time_guard (-40) se acumulen de forma determinista.
+         */
+        if (t_ms < kHighDemandWcetStressMs) {
+            diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        }
+
+        if (t_ms == kHighDemandRadioBurstMs && !radio_burst_enqueued) {
+            high_demand_enqueue_radio_burst(t_ms, &nav, &route);
+            radio_burst_enqueued = true;
+        }
+
+        CommandIngestContext ingest_ctx{
+            &route,
+            &cruise_speed_mps,
+            &health,
+        };
+        CommandIngestTickStats ingest_stats{};
+        (void)command_ingestor_process_queue(&ingest_ctx, &ingest_stats);
+
+        radio_ingest_ok += ingest_stats.ingest_ok;
+        radio_ingest_fail += ingest_stats.ingest_fail;
+        radio_geometry_reject += ingest_stats.geometry_reject;
+
+        if (radio_burst_enqueued &&
+            !radio_burst_complete_logged &&
+            !command_ingestor_hw_has_data()) {
+            std::printf(
+                ">>> t=%.1fs: rafaga drenada | ingest OK=%zu FAIL=%zu | "
+                "geometry_reject=%zu | health=%u | WP=%zu\n",
+                static_cast<float>(t_ms) * 0.001f,
+                radio_ingest_ok,
+                radio_ingest_fail,
+                radio_geometry_reject,
+                static_cast<unsigned>(health.health_score),
+                route.count);
+            radio_burst_complete_logged = true;
+        }
+
+        if (t_ms >= kHighDemandWcetStressMs) {
+            if (t_ms == kHighDemandWcetStressMs) {
+                std::printf(
+                    ">>> t=10.0s (tick %u): inicio estres WCET sostenido (Time Guard)\n",
+                    tick_index);
+            }
+            (void)high_demand_apply_wcet_stress(&health, t_ms);
+            apply_health_contingency_air_state(
+                &sensors,
+                &route,
+                health.mode,
+                safe_stop_active);
+        }
+
+        log_health_contingency_transition(health.mode, &prev_health_mode, false);
+
+        if (diagnostic_requires_safe_stop(&health)) {
+            if (!safe_stop_active) {
+                safe_stop_active = true;
+                safe_stop_heading_deg = nav.state.heading_deg;
+                std::printf(
+                    ">>> SAFE STOP en tick %u (t=%.1fs) | HEALTH_CRITICAL score=%u\n",
+                    tick_index,
+                    static_cast<float>(t_ms) * 0.001f,
+                    static_cast<unsigned>(health.health_score));
+            }
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        }
+
+        const float speed_mps = navstate_speed_mps(&nav.state);
+        const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
+        power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
+
+        if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
+            power_manager_is_shutdown_latched() &&
+            vehicle_stopped) {
+            if ((t_ms % 1000U) == 0U ||
+                (t_ms >= kHighDemandWcetStressMs && t_ms <= kHighDemandWcetStressMs + 3000U)) {
+                std::printf(
+                    ">>> t=%.1fs: POWER_SAFE_SHUTDOWN latched | speed=%.3f m/s | periph_mask=0x%08X\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    speed_mps,
+                    power_manager_get_disabled_periph_mask());
+            }
+        }
+
+        const GuidanceErrors guidance = guidance_tick_update_route(
+            &route,
+            &leg_origin,
+            nav.state.position);
+
+        prev_cross_track_m = guidance.cross_track_m;
+
+        telemetry_write_row(
+            telemetry_file,
+            t_ms,
+            kHighDemandScenarioName,
+            &nav.state,
+            scenario_satellites,
+            &guidance,
+            odom_fault_active ? 1U : 0U,
+            health.health_score,
+            health.mode,
+            power_manager_get_state(),
+            power_manager_is_shutdown_latched(),
+            route.count,
+            worst_bsp_bus);
+
+        if ((t_ms % 1000U) == 0U) {
+            std::printf(
+                "[t=%5.1fs] mode=%-14s quality=%.3f health=%s(%u) power=%s shutdown=%u "
+                "speed=%.2f wp=%zu bsp=%u wcet_err=%u geom_err=%u\n",
+                static_cast<float>(t_ms) * 0.001f,
+                nav_mode_name(nav.state.mode),
+                nav.state.confidence.estimate_quality,
+                health_mode_name(health.mode),
+                static_cast<unsigned>(health.health_score),
+                power_state_name(power_manager_get_state()),
+                power_manager_is_shutdown_latched() ? 1U : 0U,
+                speed_mps,
+                route.count,
+                static_cast<unsigned>(worst_bsp_bus),
+                static_cast<unsigned>(health.last_time_guard_error),
+                static_cast<unsigned>(health.last_geometry_error));
+        }
+    }
+
+    std::printf("----------------------------------------------------------------\n");
+    std::printf(
+        "Resultado [%s]: health=%s(%u) power=%s shutdown=%u wp=%zu | "
+        "radio OK=%zu FAIL=%zu geom_reject=%zu\n",
+        kHighDemandScenarioName,
+        health_mode_name(health.mode),
+        static_cast<unsigned>(health.health_score),
+        power_state_name(power_manager_get_state()),
+        power_manager_is_shutdown_latched() ? 1U : 0U,
+        route.count,
+        radio_ingest_ok,
+        radio_ingest_fail,
+        radio_geometry_reject);
+}
+
 void run_fault_injection_scenario(FILE *telemetry_file)
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
@@ -582,9 +939,9 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             radio_cmd.pos_x = nav.state.position.x;
             radio_cmd.pos_y = nav.state.position.y + kWaypointLonStepDeg;
             radio_cmd.param = nav.state.position.z;
-            radio_cmd.checksum = command_ingest_compute_checksum(&radio_cmd);
+            radio_cmd.checksum = command_ingestor_compute_checksum(&radio_cmd);
 
-            const bool ingest_ok = command_ingest_parse(
+            const bool ingest_ok = command_ingestor_parse(
                 &radio_cmd,
                 &route,
                 &cruise_speed_mps,
@@ -1045,7 +1402,7 @@ void run_scenario_submarine(FILE *telemetry_file)
 int main()
 {
     std::printf("NaviCore-3D — Simulador de estres PC\n");
-    std::printf("Escenario principal: inyeccion automatizada de fallos (FAULT_INJECTION)\n");
+    std::printf("Escenario principal: HIGH_DEMAND_STRESS_TEST\n");
 
     FILE *telemetry_file = telemetry_open(kTelemetryCsvPath);
     if (telemetry_file == NULL) {
@@ -1056,7 +1413,7 @@ int main()
     telemetry_write_header(telemetry_file);
     std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
 
-    run_fault_injection_scenario(telemetry_file);
+    run_high_demand_stress_test_scenario(telemetry_file);
 
     std::fclose(telemetry_file);
 

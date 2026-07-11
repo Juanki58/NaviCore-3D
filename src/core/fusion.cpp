@@ -239,3 +239,37 @@ bool dead_reckoning_update_pressure(DeadReckoningFilter *filter, const PressureS
 
     return true;
 }
+
+bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float speed_mps, bool reverse, uint32_t timestamp_ms)
+{
+    if (filter == NULL) {
+        return false;
+    }
+
+    const float ground_speed_mps = fabsf(speed_mps);
+    const float heading_deg = reverse
+        ? navstate_normalize_heading(filter->state.heading_deg + 180.0f)
+        : filter->state.heading_deg;
+
+    filter->state.velocity = velocity_from_speed_heading(
+        ground_speed_mps,
+        heading_deg,
+        filter->state.velocity.z);
+
+    if (timestamp_ms >= filter->state.timestamp_ms) {
+        filter->state.timestamp_ms = timestamp_ms;
+    }
+
+    if (filter->state.mode == NAV_MODE_GPS || filter->state.mode == NAV_MODE_HYBRID) {
+        filter->state.mode = NAV_MODE_HYBRID;
+    } else {
+        filter->state.mode = NAV_MODE_DEAD_RECKONING;
+        dead_reckoning_set_dead_reckoning_confidence(filter);
+        filter->state.confidence.estimate_quality = clampf(
+            filter->state.confidence.estimate_quality + 0.12f,
+            0.15f,
+            0.85f);
+    }
+
+    return true;
+}

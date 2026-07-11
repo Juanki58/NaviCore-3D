@@ -461,7 +461,7 @@ bool bsp_sensors_orchestrate_tick(DeadReckoningFilter *nav_filter)
         return false;
     }
 
-    dead_reckoning_update_imu(nav_filter, &imu);
+    dead_reckoning_update_imu(nav_filter, &imu, NULL);
 
     if (gps.fix_valid) {
         dead_reckoning_update_gps(nav_filter, &gps, NULL);

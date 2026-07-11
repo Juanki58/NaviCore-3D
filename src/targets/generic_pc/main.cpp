@@ -520,7 +520,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
         prev_gps_valid = gps.fix_valid;
 
-        dead_reckoning_update_imu(&nav, &imu);
+        dead_reckoning_update_imu(&nav, &imu, &health);
         if (gps.fix_valid) {
             dead_reckoning_update_gps(&nav, &gps, &health);
         }
@@ -703,7 +703,7 @@ void run_scenario_submarine(FILE *telemetry_file)
         pressure.timestamp_ms = t_ms;
         pressure.valid = true;
 
-        dead_reckoning_update_imu(&nav, &imu);
+        dead_reckoning_update_imu(&nav, &imu, &health);
         dead_reckoning_update_pressure(&nav, &pressure, kSurfacePressurePa);
 
         const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(

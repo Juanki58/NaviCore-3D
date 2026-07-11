@@ -67,7 +67,10 @@ typedef struct {
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);
-bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu);
+bool dead_reckoning_update_imu(
+    DeadReckoningFilter *filter,
+    const ImuSample *imu,
+    const SystemHealthMonitor *health_monitor);
 bool dead_reckoning_update_gps(
     DeadReckoningFilter *filter,
     const GpsSample *gps,

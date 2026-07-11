@@ -27,7 +27,7 @@ void Initialize(NavDomain domain, Vector3D initial_position)
 void Ingest_IMU(const ImuSample &imu_data)
 {
     ensure_initialized();
-    dead_reckoning_update_imu(&g_filter, &imu_data);
+    dead_reckoning_update_imu(&g_filter, &imu_data, NULL);
 }
 
 void Ingest_GNSS(const GpsSample &gnss_data)

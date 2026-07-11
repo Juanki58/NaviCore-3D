@@ -295,18 +295,46 @@ static void dead_reckoning_apply_imu_bias_correction(
     }
 }
 
+static float dead_reckoning_attitude_health_blend(const SystemHealthMonitor *health_monitor)
+{
+    if (health_monitor == NULL || health_monitor->update_count == 0U) {
+        return 1.0f;
+    }
+
+    if (health_monitor->mode == HEALTH_CRITICAL) {
+        return 0.0f;
+    }
+
+    if (health_monitor->health_score >= NAVICORE_EKF_HEALTH_TRUST_THRESHOLD) {
+        return 1.0f;
+    }
+
+    return (float)health_monitor->health_score /
+        (float)NAVICORE_EKF_HEALTH_TRUST_THRESHOLD;
+}
+
 static void dead_reckoning_update_attitude_from_accel(
     DeadReckoningFilter *filter,
-    const ImuSample *imu)
+    const ImuSample *imu,
+    const SystemHealthMonitor *health_monitor)
 {
+    const float pitch_prev_rad = filter->pitch_rad;
+    const float roll_prev_rad = filter->roll_rad;
     const float accel_x_mps2 = imu->accel_mps2[0];
     const float accel_y_mps2 = imu->accel_mps2[1];
     const float accel_z_mps2 = imu->accel_mps2[2];
     const float lateral_vertical_mps2_sq =
         (accel_y_mps2 * accel_y_mps2) + (accel_z_mps2 * accel_z_mps2);
 
-    filter->pitch_rad = atan2f(-accel_x_mps2, sqrtf(lateral_vertical_mps2_sq));
-    filter->roll_rad = atan2f(accel_y_mps2, accel_z_mps2);
+    const float pitch_meas_rad =
+        atan2f(-accel_x_mps2, sqrtf(lateral_vertical_mps2_sq));
+    const float roll_meas_rad = atan2f(accel_y_mps2, accel_z_mps2);
+    const float attitude_blend = dead_reckoning_attitude_health_blend(health_monitor);
+
+    filter->pitch_rad = pitch_prev_rad +
+        (attitude_blend * (pitch_meas_rad - pitch_prev_rad));
+    filter->roll_rad = roll_prev_rad +
+        (attitude_blend * (roll_meas_rad - roll_prev_rad));
 }
 
 static float dead_reckoning_compensate_longitudinal_accel(
@@ -353,14 +381,17 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->roll_rad = 0.0f;
 }
 
-bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu)
+bool dead_reckoning_update_imu(
+    DeadReckoningFilter *filter,
+    const ImuSample *imu,
+    const SystemHealthMonitor *health_monitor)
 {
     if (filter == NULL || imu == NULL || !imu->valid) {
         return false;
     }
 
     dead_reckoning_bias_calibration_step(filter, imu);
-    dead_reckoning_update_attitude_from_accel(filter, imu);
+    dead_reckoning_update_attitude_from_accel(filter, imu, health_monitor);
 
     const uint32_t prev_ms = filter->state.timestamp_ms;
     if (prev_ms == 0U) {

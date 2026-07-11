@@ -11,10 +11,8 @@
 
 #include "vector3d.h"
 #include "NavState.h"
-#include "dead_reckoning.h"
-#include "gps.h"
-#include "imu.h"
-#include "pressure.h"
+#include "fusion.hpp"
+#include "sensors_sim.hpp"
 
 namespace {
 
@@ -23,7 +21,7 @@ constexpr float kCruiseSpeedMps = 15.0f;
 constexpr float kCruiseCourseDeg = 90.0f;
 constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
-constexpr const char *kTelemetryCsvPath = "../docs/telemetria_navicore.csv";
+constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
 const char *nav_mode_name(NavMode mode)
 {
@@ -44,9 +42,9 @@ const char *nav_mode_name(NavMode mode)
 bool telemetry_ensure_docs_dir()
 {
 #ifdef _WIN32
-    return _mkdir("../docs") == 0 || errno == EEXIST;
+    return _mkdir("docs") == 0 || errno == EEXIST;
 #else
-    return mkdir("../docs", 0755) == 0 || errno == EEXIST;
+    return mkdir("docs", 0755) == 0 || errno == EEXIST;
 #endif
 }
 

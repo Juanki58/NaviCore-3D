@@ -23,11 +23,18 @@ using NavState = ::NavState;
 #define BSP_SENSORS_CTIMER_HZ        10U
 #define BSP_SENSORS_CTIMER_PERIOD_MS (1000U / BSP_SENSORS_CTIMER_HZ)
 
+/** Umbral de espera maxima para una transaccion SPI/DMA (microsegundos). */
+#define BSP_SPI_TIMEOUT_US           5000U
+
 typedef enum {
     BSP_SPI_BUS_IDLE = 0,
     BSP_SPI_BUS_DMA_ACTIVE,
-    BSP_SPI_BUS_ERROR
+    BSP_SPI_BUS_ERROR,
+    BSP_SPI_BUS_TIMEOUT
 } BspSpiBusState;
+
+/** Alias de diagnostico equivalente a BSP_SPI_BUS_TIMEOUT. */
+#define BSP_BUS_TIMEOUT BSP_SPI_BUS_TIMEOUT
 
 typedef struct {
     BspSpiBusState imu;

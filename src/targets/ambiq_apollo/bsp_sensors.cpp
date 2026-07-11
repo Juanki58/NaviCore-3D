@@ -14,11 +14,20 @@
 
 #include "vector3d.h"
 
+#include <math.h>
 #include <string.h>
 
 #define BSP_BARO_SPI_BURST_LENGTH 6U
 #define BSP_BARO_REG_PRESS_OUT    0x20U
 #define BSP_BARO_SPI_READ_BIT     0x80U
+
+#define BSP_IMU_SPI_BURST_LENGTH  AMBIQ_IMU_BURST_LENGTH
+#define BSP_IMU_REG_ACCEL_X_OUT_H AMBIQ_IMU_REG_ACCEL_X_OUT_H
+#define BSP_IMU_SPI_READ_BIT      AMBIQ_IMU_SPI_READ_BIT
+
+/** Latencia simulada de transferencia SPI/DMA (stub host, < BSP_SPI_TIMEOUT_US). */
+#define BSP_IMU_MOCK_TRANSFER_US  350U
+#define BSP_BARO_MOCK_TRANSFER_US 280U
 
 typedef struct {
     int32_t pressure_raw;
@@ -26,6 +35,11 @@ typedef struct {
 } BaroBurstRaw;
 
 static BspSensorsBusStatus g_bus_status{};
+static volatile uint32_t g_bsp_spi_time_us = 0U;
+static uint8_t g_imu_spi_tx[BSP_IMU_SPI_BURST_LENGTH + 1U];
+static uint8_t g_imu_spi_rx[BSP_IMU_SPI_BURST_LENGTH + 1U];
+static AmbiqDmaTransaction g_imu_dma{};
+static float g_imu_mock_phase_rad = 0.0f;
 static uint8_t g_baro_spi_tx[BSP_BARO_SPI_BURST_LENGTH + 1U];
 static uint8_t g_baro_spi_rx[BSP_BARO_SPI_BURST_LENGTH + 1U];
 static AmbiqDmaTransaction g_baro_dma{};
@@ -80,13 +94,176 @@ static bool bsp_spi_bus_claim(BspSpiBusState *bus_state)
     return true;
 }
 
-static void bsp_spi_bus_release(BspSpiBusState *bus_state, bool success)
+static void bsp_spi_bus_release(BspSpiBusState *bus_state, BspSpiBusState terminal_state)
 {
     if (bus_state == NULL) {
         return;
     }
 
-    *bus_state = success ? BSP_SPI_BUS_IDLE : BSP_SPI_BUS_ERROR;
+    *bus_state = terminal_state;
+}
+
+static uint32_t bsp_spi_time_us(void)
+{
+    /*
+     * TODO(Ambiq): return am_hal_stimer_counter_get() / (AM_HAL_CLKGEN_FREQ_MAX_HZ / 1000000U);
+     * Stub host: contador monotono avanzado por el guard de timeout.
+     */
+    return g_bsp_spi_time_us;
+}
+
+static void bsp_spi_time_advance_us(uint32_t delta_us)
+{
+    g_bsp_spi_time_us += delta_us;
+}
+
+static uint32_t bsp_spi_mock_transfer_latency_us(BspSpiBusState *bus_state, uint32_t nominal_us)
+{
+    (void)bus_state;
+
+    /*
+     * Stub: cada 50 ticks fuerza una latencia > BSP_SPI_TIMEOUT_US en barometro
+     * para ejercitar la ruta BSP_SPI_BUS_TIMEOUT sin bloquear el resto de ticks.
+     */
+    const uint32_t tick_index = Ambiq_System_GetTickIndex();
+    if (bus_state == &g_bus_status.baro && ((tick_index % 50U) == 49U)) {
+        return BSP_SPI_TIMEOUT_US + 500U;
+    }
+
+    return nominal_us;
+}
+
+static bool bsp_spi_transaction_wait_guard(
+    AmbiqDmaTransaction *transaction,
+    BspSpiBusState *bus_state,
+    uint32_t transfer_latency_us)
+{
+    if (transaction == NULL || bus_state == NULL) {
+        return false;
+    }
+
+    const uint32_t deadline_us = bsp_spi_time_us() + BSP_SPI_TIMEOUT_US;
+    uint32_t simulated_us = 0U;
+
+    while (simulated_us < transfer_latency_us) {
+        if (bsp_spi_time_us() >= deadline_us) {
+            ambiq_dma_abort(transaction->channel);
+            bsp_spi_bus_release(bus_state, BSP_SPI_BUS_TIMEOUT);
+            return false;
+        }
+
+        bsp_spi_time_advance_us(1U);
+        simulated_us++;
+    }
+
+    while (transaction->status == AMBIQ_DMA_STATUS_BUSY) {
+        if (bsp_spi_time_us() >= deadline_us) {
+            ambiq_dma_abort(transaction->channel);
+            bsp_spi_bus_release(bus_state, BSP_SPI_BUS_TIMEOUT);
+            return false;
+        }
+    }
+
+    if (transaction->status == AMBIQ_DMA_STATUS_ERROR) {
+        bsp_spi_bus_release(bus_state, BSP_SPI_BUS_ERROR);
+        return false;
+    }
+
+    if (transaction->status != AMBIQ_DMA_STATUS_COMPLETE) {
+        bsp_spi_bus_release(bus_state, BSP_SPI_BUS_ERROR);
+        return false;
+    }
+
+    return true;
+}
+
+static void bsp_spi_imu_init(void)
+{
+    memset(g_imu_spi_tx, 0, sizeof(g_imu_spi_tx));
+    memset(g_imu_spi_rx, 0, sizeof(g_imu_spi_rx));
+
+    g_imu_spi_tx[0] = (uint8_t)(BSP_IMU_REG_ACCEL_X_OUT_H | BSP_IMU_SPI_READ_BIT);
+
+    g_imu_dma.channel = AMBIQ_DMA_CHANNEL_SPI_IMU;
+    g_imu_dma.tx_buffer = g_imu_spi_tx;
+    g_imu_dma.rx_buffer = g_imu_spi_rx;
+    g_imu_dma.length = (uint16_t)(BSP_IMU_SPI_BURST_LENGTH + 1U);
+    g_imu_dma.status = AMBIQ_DMA_STATUS_IDLE;
+
+    g_bus_status.imu = BSP_SPI_BUS_IDLE;
+    g_imu_mock_phase_rad = 0.0f;
+}
+
+static void bsp_spi_imu_fill_mock_burst(void)
+{
+    g_imu_mock_phase_rad += 0.1f;
+
+    const int16_t ax = (int16_t)(100.0f * sinf(g_imu_mock_phase_rad));
+    const int16_t ay = (int16_t)(200.0f * cosf(g_imu_mock_phase_rad));
+    const int16_t az = (int16_t)(16384.0f * (9.81f / 9.80665f));
+    const int16_t gx = 10;
+    const int16_t gy = -20;
+    const int16_t gz = 0;
+
+    g_imu_spi_rx[1] = (uint8_t)(ax >> 8);
+    g_imu_spi_rx[2] = (uint8_t)(ax & 0xFF);
+    g_imu_spi_rx[3] = (uint8_t)(ay >> 8);
+    g_imu_spi_rx[4] = (uint8_t)(ay & 0xFF);
+    g_imu_spi_rx[5] = (uint8_t)(az >> 8);
+    g_imu_spi_rx[6] = (uint8_t)(az & 0xFF);
+    g_imu_spi_rx[7] = (uint8_t)(gx >> 8);
+    g_imu_spi_rx[8] = (uint8_t)(gx & 0xFF);
+    g_imu_spi_rx[9] = (uint8_t)(gy >> 8);
+    g_imu_spi_rx[10] = (uint8_t)(gy & 0xFF);
+    g_imu_spi_rx[11] = (uint8_t)(gz >> 8);
+    g_imu_spi_rx[12] = (uint8_t)(gz & 0xFF);
+}
+
+static bool bsp_spi_imu_burst_read(ImuBurstRaw *raw_out, uint32_t *cycles_out)
+{
+    if (raw_out == NULL) {
+        return false;
+    }
+
+    if (!bsp_spi_bus_claim(&g_bus_status.imu)) {
+        return false;
+    }
+
+    bool success = false;
+
+    /*
+     * TODO(Ambiq): am_hal_iom_spi_read(g_IOMHandle, ...);
+     */
+    bsp_spi_imu_fill_mock_burst();
+
+    if (!ambiq_dma_submit(&g_imu_dma)) {
+        bsp_spi_bus_release(&g_bus_status.imu, BSP_SPI_BUS_ERROR);
+        return false;
+    }
+
+    const uint32_t transfer_us = bsp_spi_mock_transfer_latency_us(
+        &g_bus_status.imu, BSP_IMU_MOCK_TRANSFER_US);
+
+    if (bsp_spi_transaction_wait_guard(&g_imu_dma, &g_bus_status.imu, transfer_us)) {
+        raw_out->accel_raw[0] = (int16_t)((g_imu_spi_rx[1] << 8) | g_imu_spi_rx[2]);
+        raw_out->accel_raw[1] = (int16_t)((g_imu_spi_rx[3] << 8) | g_imu_spi_rx[4]);
+        raw_out->accel_raw[2] = (int16_t)((g_imu_spi_rx[5] << 8) | g_imu_spi_rx[6]);
+        raw_out->gyro_raw[0] = (int16_t)((g_imu_spi_rx[7] << 8) | g_imu_spi_rx[8]);
+        raw_out->gyro_raw[1] = (int16_t)((g_imu_spi_rx[9] << 8) | g_imu_spi_rx[10]);
+        raw_out->gyro_raw[2] = (int16_t)((g_imu_spi_rx[11] << 8) | g_imu_spi_rx[12]);
+
+        if (cycles_out != NULL) {
+            *cycles_out = g_imu_dma.cycles_elapsed;
+        }
+
+        success = true;
+    }
+
+    if (success) {
+        bsp_spi_bus_release(&g_bus_status.imu, BSP_SPI_BUS_IDLE);
+    }
+
+    return success;
 }
 
 static void bsp_spi_baro_init(void)
@@ -137,8 +314,15 @@ static bool bsp_spi_baro_burst_read(BaroBurstRaw *raw_out, uint32_t *cycles_out)
      */
     bsp_spi_baro_fill_mock_burst();
 
-    if (ambiq_dma_submit(&g_baro_dma) &&
-        ambiq_dma_wait_complete(&g_baro_dma, AMBIQ_DMA_TIMEOUT_CYCLES)) {
+    if (!ambiq_dma_submit(&g_baro_dma)) {
+        bsp_spi_bus_release(&g_bus_status.baro, BSP_SPI_BUS_ERROR);
+        return false;
+    }
+
+    const uint32_t transfer_us = bsp_spi_mock_transfer_latency_us(
+        &g_bus_status.baro, BSP_BARO_MOCK_TRANSFER_US);
+
+    if (bsp_spi_transaction_wait_guard(&g_baro_dma, &g_bus_status.baro, transfer_us)) {
         raw_out->pressure_raw =
             (int32_t)((g_baro_spi_rx[1] << 16) | (g_baro_spi_rx[2] << 8) | g_baro_spi_rx[3]);
         raw_out->temperature_raw = (int16_t)((g_baro_spi_rx[4] << 8) | g_baro_spi_rx[5]);
@@ -149,7 +333,10 @@ static bool bsp_spi_baro_burst_read(BaroBurstRaw *raw_out, uint32_t *cycles_out)
         }
     }
 
-    bsp_spi_bus_release(&g_bus_status.baro, success);
+    if (success) {
+        bsp_spi_bus_release(&g_bus_status.baro, BSP_SPI_BUS_IDLE);
+    }
+
     return success;
 }
 
@@ -217,7 +404,9 @@ bool bsp_sensors_init(void)
 
     ambiq_dma_init();
     ambiq_spi_imu_init();
+    bsp_spi_imu_init();
     bsp_spi_baro_init();
+    g_bsp_spi_time_us = 0U;
     ambiq_gpio_gnss_init();
     ambiq_uart_telemetry_init();
     ambiq_power_monitor_init();
@@ -301,24 +490,15 @@ void Ambiq_BSP_ReadIMU(NaviCore::IMUMeasurement *imu_out)
         return;
     }
 
-    if (!bsp_spi_bus_claim(&g_bus_status.imu)) {
-        imu_out->valid = false;
-        return;
-    }
-
     ImuBurstRaw raw{};
     uint32_t spi_cycles = 0U;
-    bool success = false;
 
-    if (ambiq_spi_imu_burst_read(&raw, &spi_cycles) &&
+    if (bsp_spi_imu_burst_read(&raw, &spi_cycles) &&
         ambiq_spi_imu_raw_to_sample(&raw, imu_out, 0.0f)) {
         ambiq_power_add_cycles(spi_cycles + 330U);
-        success = true;
     } else {
         imu_out->valid = false;
     }
-
-    bsp_spi_bus_release(&g_bus_status.imu, success);
 }
 
 void Ambiq_BSP_ReadGNSS(NaviCore::GNSSMeasurement *gnss_out)

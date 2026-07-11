@@ -19,6 +19,11 @@
 #define AMBIQ_TICK_INTERVAL_MS       100U
 #define AMBIQ_GNSS_FIX_INTERVAL_TICKS 10U
 
+/** STIMER @ cristal 32.768 kHz — periodo de 100 ms en ciclos. */
+#define AMBIQ_STIMER_CLK_HZ            32768U
+#define AMBIQ_STIMER_TICK_CYCLES       3277U
+#define AMBIQ_STIMER_COMPARE_INSTANCE  0U
+
 #define AMBIQ_DMA_TIMEOUT_CYCLES     500000U
 
 #define AMBIQ_TELEM_FRAME_MAX        96U

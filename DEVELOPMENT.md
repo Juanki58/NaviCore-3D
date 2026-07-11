@@ -33,6 +33,7 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 - [x] **Lógica de marcha atrás (`reverse = true`)**: Modificar `fusion.cpp` para invertir la proyección geométrica del avance del coche cuando se activa la marcha atrás en la trama CAN.
 - [x] **Ajuste dinámico de covarianza**: Incrementar los valores de la matriz de ruido del filtro inercial durante frenazos bruscos detectados por variaciones extremas en `accel_mps2[0]`.
+- [x] **Inyección de fallos en simulador PC**: Implementada en `src/targets/generic_pc/sensors_sim.*` la estructura `SensorFaultInjection` con enumeración `SensorScenario` y bucle unificado `sensors_simulation_tick`. Soporta tres modos configurables desde `main.cpp`: escenario limpio (`SCENARIO_CLEAN`, sin anomalías), pérdida de GPS a partir del tick 3 (`SCENARIO_GPS_LOSS`, `fix_valid = false` y `satellites = 0`) y deriva acumulativa en la IMU (`SCENARIO_IMU_DRIFT`, bias creciente por tick en acelerómetro y giroscopio).
 
 ### FASE B: Hardware Real (Medio Plazo)
 

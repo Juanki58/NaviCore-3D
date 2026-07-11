@@ -32,6 +32,51 @@ static float deg_to_rad(float deg)
     return deg * (M_PI / 180.0f);
 }
 
+static void sensor_fault_apply_defaults(SensorFaultInjection *inj, SensorScenario scenario)
+{
+    inj->scenario = scenario;
+    inj->tick_index = 0U;
+    inj->gps_loss_start_tick = SENSOR_FAULT_GPS_LOSS_START_TICK_DEFAULT;
+
+    memset(inj->imu_accel_drift_per_tick, 0, sizeof(inj->imu_accel_drift_per_tick));
+    memset(inj->imu_gyro_drift_per_tick, 0, sizeof(inj->imu_gyro_drift_per_tick));
+    memset(inj->imu_accel_drift_accum, 0, sizeof(inj->imu_accel_drift_accum));
+    memset(inj->imu_gyro_drift_accum, 0, sizeof(inj->imu_gyro_drift_accum));
+
+    if (scenario == SCENARIO_IMU_DRIFT) {
+        inj->imu_accel_drift_per_tick[0] = 0.05f;
+        inj->imu_accel_drift_per_tick[1] = 0.02f;
+        inj->imu_gyro_drift_per_tick[2] = 0.002f;
+    }
+}
+
+static void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
+{
+    if (inj == NULL || sample == NULL || inj->scenario != SCENARIO_IMU_DRIFT) {
+        return;
+    }
+
+    for (int axis = 0; axis < 3; ++axis) {
+        inj->imu_accel_drift_accum[axis] += inj->imu_accel_drift_per_tick[axis];
+        inj->imu_gyro_drift_accum[axis] += inj->imu_gyro_drift_per_tick[axis];
+
+        sample->accel_mps2[axis] += inj->imu_accel_drift_accum[axis];
+        sample->gyro_radps[axis] += inj->imu_gyro_drift_accum[axis];
+    }
+}
+
+static void sensor_fault_apply_gps(SensorFaultInjection *inj, GpsSample *sample)
+{
+    if (inj == NULL || sample == NULL || inj->scenario != SCENARIO_GPS_LOSS) {
+        return;
+    }
+
+    if (inj->tick_index >= inj->gps_loss_start_tick) {
+        sample->satellites = 0U;
+        sample->fix_valid = false;
+    }
+}
+
 void imu_simulator_init(ImuSimulator *sim, uint32_t seed)
 {
     if (sim == NULL) {
@@ -140,4 +185,80 @@ float pressure_depth_from_hydrostatic_pa(float surface_pressure_pa, float pressu
         return 0.0f;
     }
     return delta_pa / (SEAWATER_DENSITY_KG_M3 * GRAVITY_MPS2);
+}
+
+void sensor_fault_injection_init(SensorFaultInjection *inj, SensorScenario scenario)
+{
+    if (inj == NULL) {
+        return;
+    }
+
+    memset(inj, 0, sizeof(*inj));
+    sensor_fault_apply_defaults(inj, scenario);
+}
+
+void sensor_fault_injection_reset(SensorFaultInjection *inj)
+{
+    if (inj == NULL) {
+        return;
+    }
+
+    const SensorScenario scenario = inj->scenario;
+    sensor_fault_apply_defaults(inj, scenario);
+}
+
+const char *sensor_scenario_name(SensorScenario scenario)
+{
+    switch (scenario) {
+    case SCENARIO_CLEAN:
+        return "CLEAN";
+    case SCENARIO_GPS_LOSS:
+        return "GPS_LOSS";
+    case SCENARIO_IMU_DRIFT:
+        return "IMU_DRIFT";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void sensors_simulation_init(
+    SensorsSimulation *ctx,
+    SensorScenario scenario,
+    Vector3D origin,
+    float speed_mps,
+    float course_deg,
+    uint32_t seed)
+{
+    if (ctx == NULL) {
+        return;
+    }
+
+    memset(ctx, 0, sizeof(*ctx));
+    imu_simulator_init(&ctx->imu, seed);
+    gps_simulator_init(&ctx->gps, origin, speed_mps, course_deg, seed + 1U);
+    sensor_fault_injection_init(&ctx->faults, scenario);
+}
+
+bool sensors_simulation_tick(
+    SensorsSimulation *ctx,
+    uint32_t timestamp_ms,
+    ImuSample *imu_out,
+    GpsSample *gps_out)
+{
+    if (ctx == NULL || imu_out == NULL || gps_out == NULL) {
+        return false;
+    }
+
+    if (!imu_simulator_read(&ctx->imu, timestamp_ms, imu_out)) {
+        return false;
+    }
+    if (!gps_simulator_read(&ctx->gps, timestamp_ms, gps_out)) {
+        return false;
+    }
+
+    sensor_fault_apply_imu(&ctx->faults, imu_out);
+    sensor_fault_apply_gps(&ctx->faults, gps_out);
+
+    ctx->faults.tick_index++;
+    return true;
 }

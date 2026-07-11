@@ -42,6 +42,7 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_hardware_timer.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_iom_master.cpp
+    ${NAVICORE_AMBIQ_DIR}/ambiq_imu_driver.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 
@@ -61,6 +62,7 @@ add_executable(NaviCore3D_Ambiq
     ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_hardware_timer.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_iom_master.cpp
+    ${NAVICORE_AMBIQ_DIR}/ambiq_imu_driver.cpp
     ${NAVICORE_AMBIQ_DRIVER_SOURCES}
     ${NAVICORE_CORE_SOURCES}
 )

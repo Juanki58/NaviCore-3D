@@ -295,6 +295,31 @@ static void dead_reckoning_apply_imu_bias_correction(
     }
 }
 
+static void dead_reckoning_update_attitude_from_accel(
+    DeadReckoningFilter *filter,
+    const ImuSample *imu)
+{
+    const float accel_x_mps2 = imu->accel_mps2[0];
+    const float accel_y_mps2 = imu->accel_mps2[1];
+    const float accel_z_mps2 = imu->accel_mps2[2];
+    const float lateral_vertical_mps2_sq =
+        (accel_y_mps2 * accel_y_mps2) + (accel_z_mps2 * accel_z_mps2);
+
+    filter->pitch_rad = atan2f(-accel_x_mps2, sqrtf(lateral_vertical_mps2_sq));
+    filter->roll_rad = atan2f(accel_y_mps2, accel_z_mps2);
+}
+
+static float dead_reckoning_compensate_longitudinal_accel(
+    float forward_accel_mps2,
+    float pitch_rad,
+    float roll_rad)
+{
+    const float gravity_longitudinal_mps2 =
+        -NAVICORE_GRAVITY_MPS2 * sinf(pitch_rad) * cosf(roll_rad);
+
+    return forward_accel_mps2 - gravity_longitudinal_mps2;
+}
+
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain)
 {
     if (filter == NULL) {
@@ -324,6 +349,8 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->gps_noise_covariance_scale = 1.0f;
     filter->gps_measurement_variance_m2 = NAVICORE_GPS_MEASUREMENT_VARIANCE_M2;
     filter->position_prior_variance_m2 = NAVICORE_GPS_MEASUREMENT_VARIANCE_M2 * 1.5f;
+    filter->pitch_rad = 0.0f;
+    filter->roll_rad = 0.0f;
 }
 
 bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu)
@@ -333,6 +360,7 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
     }
 
     dead_reckoning_bias_calibration_step(filter, imu);
+    dead_reckoning_update_attitude_from_accel(filter, imu);
 
     const uint32_t prev_ms = filter->state.timestamp_ms;
     if (prev_ms == 0U) {
@@ -350,6 +378,10 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
     float forward_accel = 0.0f;
     float yaw_rate_radps = 0.0f;
     dead_reckoning_apply_imu_bias_correction(imu, filter, &forward_accel, &yaw_rate_radps);
+    forward_accel = dead_reckoning_compensate_longitudinal_accel(
+        forward_accel,
+        filter->pitch_rad,
+        filter->roll_rad);
 
     if (fabsf(yaw_rate_radps) > NAVICORE_EPS_GYRO_RADPS) {
         filter->state.heading_deg = navstate_normalize_heading(

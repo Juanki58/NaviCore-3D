@@ -37,6 +37,10 @@ typedef uint8_t NavQuality;
 #define NAVICORE_POSITION_PRIOR_VARIANCE_MAX_M2 400.0f
 #endif
 
+#ifndef NAVICORE_GRAVITY_MPS2
+#define NAVICORE_GRAVITY_MPS2 9.81f
+#endif
+
 typedef struct {
     NavState state;
     float imu_weight;
@@ -58,6 +62,8 @@ typedef struct {
     float gps_noise_covariance_scale;
     float gps_measurement_variance_m2;
     float position_prior_variance_m2;
+    float pitch_rad;
+    float roll_rad;
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);

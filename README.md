@@ -1,10 +1,48 @@
 # NaviCore-3D: Multi-Domain Ultra-Low Power Navigation Core
 
+```cpp
+// Haiku del Programador Defensivo en C++
+//
+//   Sin heap en el tick —
+//   static_assert al amanecer:
+//   parada segura.
+```
+
 **ES** · Núcleo de navegación unificado multimodal (tierra, aire, mar) diseñado para **edge computing** en microcontroladores de ultra-bajo consumo.  
 **EN** · Unified multi-domain navigation core (land, air, sea) built for **edge computing** on ultra-low-power microcontrollers.
 
 ---
 
+## Live System Telemetry Mockup
+
+Representación estática del frame UART / consola del simulador (`NaviCore3D_Sim`) a **100 ms** — valores ilustrativos del escenario de crucero nominal.
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  NAVICORE-3D · LIVE INERTIAL DASHBOARD          tick=050  t=5.00s  Δt=100ms ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  MODE ████░░░░  HYBRID          HEALTH ███████░░  NOMINAL (85)               ║
+║  POWER PERFORMANCE              SHUTDOWN ░ latched=0                         ║
+╠══════════════════════════════╦═══════════════════════════════════════════════╣
+║  ATTITUDE (deg)              ║  VELOCITY (m/s)                                ║
+║  ┌─ heading ─────────────┐   ║  N (Vel_X)  +15.000    E (Vel_Y)   +0.000     ║
+║  │         N             │   ║  Z (Vel_Z)   +0.000    |V|         15.00      ║
+║  │    W ───●─── E  90.0° │   ╠═══════════════════════════════════════════════╣
+║  │         S             │   ║  POSITION                                     ║
+║  └───────────────────────┘   ║  Lat (X)  41.387402°   Lon (Y)    2.168611°   ║
+╠══════════════════════════════╣  Alt (Z)  12.00 m      Quality     0.850      ║
+║  IMU (body frame)            ║  GNSS sats  17         fix_age     120 ms     ║
+║  ax  +0.02   ay  +0.00       ╠═══════════════════════════════════════════════╣
+║  az  +9.81   gx  +0.00       ║  GUARDS (last tick)                           ║
+║  gy  +0.00   gz  +0.00       ║  WCET ok   GEOM ok   DIV ok   SLIP ok         ║
+╠══════════════════════════════╩═══════════════════════════════════════════════╣
+║  CROSS_TRACK   +0.4 m    ALONG_TRACK  14.1 m    WP queue  3/64    BSP IDLE    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+> **Black-box export:** cada fila del mockup se vuelca a `docs/telemetria_navicore.csv` para replay offline y Gemelo Digital 3D.
+
+---
 ## Executive Summary / Resumen ejecutivo
 
 | | **English** | **Español** |

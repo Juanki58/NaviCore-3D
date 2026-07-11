@@ -91,7 +91,7 @@ bool dead_reckoning_update_imu(
 bool dead_reckoning_update_gps(
     DeadReckoningFilter *filter,
     const GpsSample *gps,
-    const SystemHealthMonitor *health_monitor);
+    SystemHealthMonitor *health_monitor);
 bool dead_reckoning_update_pressure(DeadReckoningFilter *filter, const PressureSample *pressure, float surface_pressure_pa);
 bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float speed_mps, bool reverse, uint32_t timestamp_ms);
 

@@ -1,28 +1,15 @@
 /**
  * @file ambiq_uart_telemetry_stub.cpp
- * @brief Stub UART + DMA TX para telemetria civil
+ * @brief Formateo NavState ASCII — delega TX a ambiq_uart_write_string
  */
+#include "../ambiq_uart_telemetry.hpp"
 #include "ambiq_uart_telemetry.hpp"
 
-#include "ambiq_dma.hpp"
 #include "ambiq_driver_config.hpp"
 
 #include <stdio.h>
-#include <string.h>
 
 static char g_uart_tx_frame[AMBIQ_TELEM_FRAME_MAX];
-static AmbiqDmaTransaction g_uart_dma{};
-
-void ambiq_uart_telemetry_init(void)
-{
-    g_uart_dma.channel = AMBIQ_DMA_CHANNEL_UART_TX;
-    g_uart_dma.tx_buffer = (const uint8_t *)g_uart_tx_frame;
-    g_uart_dma.rx_buffer = NULL;
-    g_uart_dma.length = 0U;
-    g_uart_dma.status = AMBIQ_DMA_STATUS_IDLE;
-
-    /* TODO(Ambiq): am_hal_uart_initialize(AMBIQ_UART_TELEM_INSTANCE, ...); */
-}
 
 bool ambiq_uart_transmit_navstate(const NavState *state)
 {
@@ -49,12 +36,6 @@ bool ambiq_uart_transmit_navstate(const NavState *state)
         return false;
     }
 
-    g_uart_dma.length = (uint16_t)written;
-
-    if (!ambiq_dma_submit(&g_uart_dma)) {
-        return false;
-    }
-
-    /* TODO(Ambiq): am_hal_uart_transfer(...); esperar ISR TX complete */
-    return ambiq_dma_wait_complete(&g_uart_dma, AMBIQ_DMA_TIMEOUT_CYCLES);
+    ambiq_uart_write_string(g_uart_tx_frame);
+    return true;
 }

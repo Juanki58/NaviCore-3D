@@ -11,6 +11,7 @@
 #include "drivers/ambiq_power_monitor.hpp"
 #include "drivers/ambiq_spi_imu.hpp"
 #include "drivers/ambiq_uart_telemetry.hpp"
+#include "ambiq_uart_telemetry.hpp"
 
 #include "vector3d.h"
 
@@ -408,7 +409,9 @@ bool bsp_sensors_init(void)
     bsp_spi_baro_init();
     g_bsp_spi_time_us = 0U;
     ambiq_gpio_gnss_init();
-    ambiq_uart_telemetry_init();
+    if (!ambiq_uart_telemetry_init()) {
+        return false;
+    }
     ambiq_power_monitor_init();
 
     g_bus_status.imu = BSP_SPI_BUS_IDLE;

@@ -4,6 +4,7 @@
  */
 #include "telemetry_uart.hpp"
 
+#include "ambiq_uart_telemetry.hpp"
 #include "drivers/ambiq_driver_config.hpp"
 
 #include <stdio.h>
@@ -11,40 +12,7 @@
 
 #define TELEMETRY_UART_BUFFER_BYTES 256U
 
-#define TELEMETRY_UART_HAL_STATUS_SUCCESS 0U
-#define TELEMETRY_UART_HAL_STATUS_FAIL    1U
-
-/*
- * Shim minimo de am_hal_uart_transfer para builds host/stub.
- * En silicio: enlazar contra am_hal_uart.h del SDK Ambiq y eliminar este bloque.
- */
-typedef struct {
-    uint8_t *pui8Data;
-    uint32_t ui32NumBytes;
-    uint32_t ui32TimeoutMs;
-    uint32_t ui32ErrorStatus;
-} am_hal_uart_transfer_t;
-
-extern "C" uint32_t am_hal_uart_transfer(void *pHandle, am_hal_uart_transfer_t *psTransfer)
-{
-    if (pHandle == NULL || psTransfer == NULL || psTransfer->pui8Data == NULL) {
-        return TELEMETRY_UART_HAL_STATUS_FAIL;
-    }
-
-    if (psTransfer->ui32NumBytes == 0U) {
-        return TELEMETRY_UART_HAL_STATUS_FAIL;
-    }
-
-    /*
-     * Simulacion: los bytes del buffer se copian al registro/FIFO de TX del UART BSP.
-     * TODO(Ambiq): sustituir por am_hal_uart_transfer real y esperar ISR TX complete.
-     */
-    psTransfer->ui32ErrorStatus = 0U;
-    return TELEMETRY_UART_HAL_STATUS_SUCCESS;
-}
-
 static char g_telemetry_uart_buffer[TELEMETRY_UART_BUFFER_BYTES];
-static void *g_telemetry_uart_handle = NULL;
 
 static bool telemetry_uart_format_csv_line(
     const DeadReckoningFilter *filter,
@@ -108,21 +76,9 @@ static bool telemetry_uart_submit_transfer(int byte_count)
         return false;
     }
 
-    /*
-     * TODO(Ambiq): g_telemetry_uart_handle = resultado de
-     *              am_hal_uart_initialize(AMBIQ_UART_TELEM_INSTANCE, ...);
-     */
-    (void)AMBIQ_UART_TELEM_INSTANCE;
-    (void)AMBIQ_UART_TELEM_BAUD;
-
-    am_hal_uart_transfer_t transfer{};
-    transfer.pui8Data = (uint8_t *)g_telemetry_uart_buffer;
-    transfer.ui32NumBytes = (uint32_t)byte_count;
-    transfer.ui32TimeoutMs = 0U;
-    transfer.ui32ErrorStatus = 0U;
-
-    const uint32_t status = am_hal_uart_transfer(g_telemetry_uart_handle, &transfer);
-    return (status == TELEMETRY_UART_HAL_STATUS_SUCCESS);
+    (void)byte_count;
+    ambiq_uart_write_string(g_telemetry_uart_buffer);
+    return true;
 }
 
 bool telemetry_uart_stream(

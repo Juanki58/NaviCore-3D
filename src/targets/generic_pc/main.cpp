@@ -569,23 +569,17 @@ void high_demand_enqueue_radio_burst(
         RadioCommandPacket packet{};
         high_demand_build_radio_packet(i, nav, &sim_route, &packet);
 
-        if (!command_ingestor_hw_enqueue(&packet)) {
-            std::printf(
-                ">>> ADVERTENCIA: buffer HW lleno tras %zu paquetes (cap=%u)\n",
-                enqueued,
-                COMMAND_INGESTOR_HW_RX_CAPACITY);
-            break;
-        }
-
+        (void)command_ingestor_hw_enqueue(&packet);
         enqueued++;
         (void)command_ingestor_parse(&packet, &sim_route, &sim_cruise_mps, NULL);
     }
 
     std::printf(
-        ">>> t=%.1fs: %zu paquetes en buffer HW (pendientes=%u)\n",
+        ">>> t=%.1fs: %zu paquetes en buffer HW (pendientes=%u dropped=%u)\n",
         static_cast<float>(t_ms) * 0.001f,
         enqueued,
-        command_ingestor_hw_pending_count());
+        command_ingestor_hw_pending_count(),
+        command_ingestor_hw_dropped_packets());
 }
 
 bool high_demand_apply_wcet_stress(SystemHealthMonitor *health, uint32_t t_ms)
@@ -780,6 +774,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
         const float speed_mps = navstate_speed_mps(&nav.state);
         const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
         power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
+        health.shutdown_latched = power_manager_is_shutdown_latched();
 
         if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
             power_manager_is_shutdown_latched() &&
@@ -989,6 +984,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
         const float speed_mps = navstate_speed_mps(&nav.state);
         const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
         power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
+        health.shutdown_latched = power_manager_is_shutdown_latched();
 
         if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
             power_manager_is_shutdown_latched() &&

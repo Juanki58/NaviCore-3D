@@ -5,6 +5,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "diagnostic.hpp"
@@ -47,6 +48,13 @@ typedef struct NAVICORE_ALIGNAS(4) {
 NAVICORE_STATIC_ASSERT(sizeof(RadioCommandPacket) == RADIO_CMD_PACKET_SIZE_BYTES,
                        "RadioCommandPacket must be exactly 16 bytes");
 NAVICORE_STATIC_ASSERT(sizeof(RadioCommandPacket) % 4U == 0U, "Error de alineación");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, magic) == 0U, "wire layout magic");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, command_type) == 1U, "wire layout command_type");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, sequence) == 2U, "wire layout sequence");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, checksum) == 3U, "wire layout checksum");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, pos_x) == 4U, "wire layout pos_x");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, pos_y) == 8U, "wire layout pos_y");
+NAVICORE_STATIC_ASSERT(offsetof(RadioCommandPacket, param) == 12U, "wire layout param");
 
 void command_ingestor_init(void);
 
@@ -55,6 +63,8 @@ bool command_ingestor_hw_has_data(void);
 bool command_ingestor_hw_enqueue(const RadioCommandPacket *packet);
 
 uint32_t command_ingestor_hw_pending_count(void);
+
+uint32_t command_ingestor_hw_dropped_packets(void);
 
 uint8_t command_ingestor_compute_checksum(const RadioCommandPacket *packet);
 

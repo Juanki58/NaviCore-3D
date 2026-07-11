@@ -408,6 +408,30 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->odom_measurement_variance_m2 = NAVICORE_ODOM_MEASUREMENT_VARIANCE_M2;
 }
 
+void dead_reckoning_reset_imu_bias_state(DeadReckoningFilter *filter)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    filter->bias_accel_x = 0.0f;
+    filter->bias_gyro_z = 0.0f;
+    filter->accel_x_sum = 0.0f;
+    filter->gyro_z_sum = 0.0f;
+    filter->calibration_samples = 0U;
+    filter->calibration_ticks = 0U;
+    filter->is_calibrated = false;
+    filter->filtered_accel[0] = 0.0f;
+    filter->filtered_accel[1] = 0.0f;
+    filter->filtered_accel[2] = 0.0f;
+    filter->pitch_rad = 0.0f;
+    filter->roll_rad = 0.0f;
+    filter->imu_predicted_speed_mps = 0.0f;
+    filter->imu_speed_prediction_valid = false;
+    filter->slip_fault_active = false;
+    filter->slip_ratio = 0.0f;
+}
+
 bool dead_reckoning_update_imu(
     DeadReckoningFilter *filter,
     const ImuSample *imu,

@@ -66,6 +66,7 @@ typedef struct {
     float last_geometry_step_m;
     float last_divergence_innovation_sq;
     uint32_t update_count;
+    bool shutdown_latched;
 } SystemHealthMonitor;
 
 void diagnostic_update(

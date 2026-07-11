@@ -12,6 +12,10 @@
 #define NAVICORE_METERS_PER_DEG_LAT 111132.954f
 #endif
 
+#ifndef NAVICORE_GPS_INNOVATION_GATE_M
+#define NAVICORE_GPS_INNOVATION_GATE_M 15.0f
+#endif
+
 static float deg_to_rad(float deg)
 {
     return deg * (M_PI / 180.0f);
@@ -89,6 +93,49 @@ static void dead_reckoning_set_dead_reckoning_confidence(DeadReckoningFilter *fi
         filter->state.confidence.satellites,
         fix_age_ms,
         dead_reckoning_confidence_from_fix_age(fix_age_ms));
+}
+
+static float dead_reckoning_horizontal_distance_m(
+    float lat_a_deg,
+    float lon_a_deg,
+    float lat_b_deg,
+    float lon_b_deg)
+{
+    const float dlat_m = (lat_b_deg - lat_a_deg) * NAVICORE_METERS_PER_DEG_LAT;
+    const float lat_rad = deg_to_rad((lat_a_deg + lat_b_deg) * 0.5f);
+    const float cos_lat = cosf(lat_rad);
+    const float dlon_m = (fabsf(cos_lat) > 1.0e-6f)
+        ? ((lon_b_deg - lon_a_deg) * NAVICORE_METERS_PER_DEG_LAT * cos_lat)
+        : 0.0f;
+
+    return sqrtf((dlat_m * dlat_m) + (dlon_m * dlon_m));
+}
+
+static void dead_reckoning_enter_gps_contingency(DeadReckoningFilter *filter, const GpsSample *gps)
+{
+    filter->state.confidence.satellites = gps->fix_valid ? gps->satellites : 0U;
+    filter->state.confidence.gps_trusted = false;
+    dead_reckoning_set_dead_reckoning_confidence(filter);
+    filter->state.mode = NAV_MODE_DEAD_RECKONING;
+
+    if (gps->timestamp_ms >= filter->state.timestamp_ms) {
+        filter->state.timestamp_ms = gps->timestamp_ms;
+    }
+}
+
+static bool dead_reckoning_gps_passes_innovation_gate(const DeadReckoningFilter *filter, const GpsSample *gps)
+{
+    if (filter->state.mode == NAV_MODE_INITIALIZING || filter->last_gps_timestamp_ms == 0U) {
+        return true;
+    }
+
+    const float innovation_m = dead_reckoning_horizontal_distance_m(
+        filter->state.position.x,
+        filter->state.position.y,
+        gps->position.x,
+        gps->position.y);
+
+    return innovation_m <= NAVICORE_GPS_INNOVATION_GATE_M;
 }
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain)
@@ -173,8 +220,18 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
 
 bool dead_reckoning_update_gps(DeadReckoningFilter *filter, const GpsSample *gps)
 {
-    if (filter == NULL || gps == NULL || !gps->fix_valid) {
+    if (filter == NULL || gps == NULL) {
         return false;
+    }
+
+    if (!gps->fix_valid) {
+        dead_reckoning_enter_gps_contingency(filter, gps);
+        return true;
+    }
+
+    if (!dead_reckoning_gps_passes_innovation_gate(filter, gps)) {
+        dead_reckoning_enter_gps_contingency(filter, gps);
+        return true;
     }
 
     const bool blending = filter->state.confidence.gps_trusted;

@@ -23,6 +23,8 @@ constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
+constexpr SensorScenario kSelectedScenario = SCENARIO_GPS_LOSS;
+
 const char *nav_mode_name(NavMode mode)
 {
     switch (mode) {
@@ -93,57 +95,32 @@ void telemetry_write_row(
         state->heading_deg);
 }
 
-void fill_cruise_imu(ImuSample *imu, uint32_t timestamp_ms)
+void print_scenario_banner(SensorScenario scenario)
 {
-    imu->accel_mps2[0] = 0.0f;
-    imu->accel_mps2[1] = 0.0f;
-    imu->accel_mps2[2] = 0.0f;
-    imu->gyro_radps[0] = 0.0f;
-    imu->gyro_radps[1] = 0.0f;
-    imu->gyro_radps[2] = 0.0f;
-    imu->mag_ut[0] = 22.0f;
-    imu->mag_ut[1] = 5.0f;
-    imu->mag_ut[2] = 42.0f;
-    imu->timestamp_ms = timestamp_ms;
-    imu->valid = true;
-}
-
-void apply_gps_scenario(GpsSample *gps, uint32_t t_ms, bool gps_available)
-{
-    if (!gps_available) {
-        gps->satellites = 0U;
-        gps->fix_valid = false;
-        return;
-    }
-
-    gps->satellites = 8U;
-    gps->fix_valid = true;
-    gps->speed_mps = kCruiseSpeedMps;
-    gps->course_deg = kCruiseCourseDeg;
-    gps->timestamp_ms = t_ms;
-}
-
-bool gps_available_at(uint32_t t_ms)
-{
-    constexpr uint32_t kOutageStartMs = 5000U;
-    constexpr uint32_t kOutageEndMs = 15000U;
-    return t_ms < kOutageStartMs || t_ms >= kOutageEndMs;
-}
-
-void run_scenario_gps_loss(FILE *telemetry_file)
-{
-    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
-
-    GpsSimulator gps_sim;
-    gps_simulator_init(&gps_sim, origin, kCruiseSpeedMps, kCruiseCourseDeg, 11U);
-
-    DeadReckoningFilter nav;
-    dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
-
     std::printf("\n");
     std::printf("================================================================\n");
-    std::printf(" ESCENARIO 1: Perdida de GPS (Aire/Tierra)\n");
-    std::printf("  Velocidad: %.0f m/s | Satelites: 8 (normal) -> 0 (s 5..15)\n", kCruiseSpeedMps);
+
+    switch (scenario) {
+    case SCENARIO_CLEAN:
+        std::printf(" ESCENARIO: Limpio (sin anomalias)\n");
+        std::printf("  Velocidad: %.0f m/s | GPS e IMU sin inyeccion de fallos\n", kCruiseSpeedMps);
+        break;
+    case SCENARIO_GPS_LOSS:
+        std::printf(" ESCENARIO: Perdida de GPS (Aire/Tierra)\n");
+        std::printf(
+            "  Velocidad: %.0f m/s | GPS invalido desde tick %u\n",
+            kCruiseSpeedMps,
+            SENSOR_FAULT_GPS_LOSS_START_TICK_DEFAULT);
+        break;
+    case SCENARIO_IMU_DRIFT:
+        std::printf(" ESCENARIO: Deriva IMU acumulativa\n");
+        std::printf("  Velocidad: %.0f m/s | Bias creciente en accel/gyro\n", kCruiseSpeedMps);
+        break;
+    default:
+        std::printf(" ESCENARIO: Desconocido\n");
+        break;
+    }
+
     std::printf("================================================================\n");
     std::printf(
         "%-8s %-16s %-8s %-6s %-10s %s\n",
@@ -155,52 +132,86 @@ void run_scenario_gps_loss(FILE *telemetry_file)
         "notas");
     std::printf(
         "----------------------------------------------------------------\n");
+}
+
+void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
+{
+    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+
+    SensorsSimulation sensors;
+    sensors_simulation_init(&sensors, scenario, origin, kCruiseSpeedMps, kCruiseCourseDeg, 11U);
+
+    DeadReckoningFilter nav;
+    dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
+
+    print_scenario_banner(scenario);
 
     constexpr uint32_t kDurationMs = 20000U;
-    bool prev_gps_available = true;
+    bool prev_gps_valid = true;
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
         ImuSample imu;
         GpsSample gps;
 
-        fill_cruise_imu(&imu, t_ms);
-        gps_simulator_read(&gps_sim, t_ms, &gps);
-
-        const bool gps_available = gps_available_at(t_ms);
-        apply_gps_scenario(&gps, t_ms, gps_available);
-        const uint8_t scenario_satellites = gps_available ? 8U : 0U;
-
-        if (gps_available && !prev_gps_available) {
-            std::printf(">>> t=%.1fs: GPS RECUPERADO (8 satelites)\n", static_cast<float>(t_ms) * 0.001f);
-        } else if (!gps_available && prev_gps_available) {
-            std::printf(">>> t=%.1fs: PERDIDA DE GPS (0 satelites, 10 s sin fix)\n", static_cast<float>(t_ms) * 0.001f);
+        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps)) {
+            continue;
         }
-        prev_gps_available = gps_available;
+
+        const uint32_t tick_index = sensors.faults.tick_index - 1U;
+        const uint8_t scenario_satellites = gps.fix_valid ? gps.satellites : 0U;
+
+        if (scenario == SCENARIO_GPS_LOSS) {
+            if (gps.fix_valid && !prev_gps_valid) {
+                std::printf(
+                    ">>> t=%.1fs (tick %u): GPS RECUPERADO (%u satelites)\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    tick_index,
+                    scenario_satellites);
+            } else if (!gps.fix_valid && prev_gps_valid) {
+                std::printf(
+                    ">>> t=%.1fs (tick %u): PERDIDA DE GPS (0 satelites)\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    tick_index);
+            }
+        } else if (scenario == SCENARIO_IMU_DRIFT && tick_index == 0U) {
+            std::printf(">>> t=%.1fs (tick %u): inicio deriva IMU acumulativa\n",
+                        static_cast<float>(t_ms) * 0.001f,
+                        tick_index);
+        }
+
+        prev_gps_valid = gps.fix_valid;
 
         dead_reckoning_update_imu(&nav, &imu);
         if (gps.fix_valid) {
             dead_reckoning_update_gps(&nav, &gps);
         }
 
-        telemetry_write_row(telemetry_file, t_ms, "GPS_LOSS", &nav.state, scenario_satellites);
+        telemetry_write_row(
+            telemetry_file,
+            t_ms,
+            sensor_scenario_name(scenario),
+            &nav.state,
+            scenario_satellites);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
-            if (t_ms == 5000U) {
-                note = "<-- inicio outage";
-            } else if (t_ms == 15000U) {
-                note = "<-- fin outage";
+            if (scenario == SCENARIO_GPS_LOSS
+                && tick_index == SENSOR_FAULT_GPS_LOSS_START_TICK_DEFAULT) {
+                note = "<-- inicio outage (tick 3)";
+            } else if (scenario == SCENARIO_IMU_DRIFT && t_ms == 5000U) {
+                note = "<-- deriva visible en IMU";
             }
 
             const float t_s = static_cast<float>(t_ms) * 0.001f;
             std::printf(
-                "[t=%5.1fs] mode=%-14s quality=%.3f scenario_sats=%u fix_valid=%s fix_age=%u ms | "
+                "[t=%5.1fs] tick=%-4u mode=%-14s quality=%.3f scenario_sats=%u fix_valid=%s fix_age=%u ms | "
                 "heading=%.1f speed=%.2f m/s\n",
                 t_s,
+                tick_index,
                 nav_mode_name(nav.state.mode),
                 nav.state.confidence.estimate_quality,
                 scenario_satellites,
-                gps_available ? "yes" : "no",
+                gps.fix_valid ? "yes" : "no",
                 nav.state.confidence.fix_age_ms,
                 nav.state.heading_deg,
                 navstate_speed_mps(&nav.state));
@@ -212,9 +223,11 @@ void run_scenario_gps_loss(FILE *telemetry_file)
     }
 
     std::printf("----------------------------------------------------------------\n");
-    std::printf("Resultado: tras 10 s sin GPS, mode=%s quality=%.3f (degradacion visible)\n",
-                nav_mode_name(nav.state.mode),
-                nav.state.confidence.estimate_quality);
+    std::printf(
+        "Resultado [%s]: mode=%s quality=%.3f\n",
+        sensor_scenario_name(scenario),
+        nav_mode_name(nav.state.mode),
+        nav.state.confidence.estimate_quality);
 }
 
 void run_scenario_submarine(FILE *telemetry_file)
@@ -247,7 +260,9 @@ void run_scenario_submarine(FILE *telemetry_file)
         ImuSample imu;
         PressureSample pressure{};
 
-        fill_cruise_imu(&imu, t_ms);
+        ImuSimulator imu_sim;
+        imu_simulator_init(&imu_sim, 21U);
+        imu_simulator_read(&imu_sim, t_ms, &imu);
 
         const float t_s = static_cast<float>(t_ms) * 0.001f;
         pressure.pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -298,7 +313,7 @@ void run_scenario_submarine(FILE *telemetry_file)
 int main()
 {
     std::printf("NaviCore-3D — Simulador de estres PC\n");
-    std::printf("Ejecutando escenarios secuenciales...\n");
+    std::printf("Escenario seleccionado: %s\n", sensor_scenario_name(kSelectedScenario));
 
     FILE *telemetry_file = telemetry_open(kTelemetryCsvPath);
     if (telemetry_file == NULL) {
@@ -309,7 +324,7 @@ int main()
     telemetry_write_header(telemetry_file);
     std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
 
-    run_scenario_gps_loss(telemetry_file);
+    run_sensor_scenario(telemetry_file, kSelectedScenario);
     run_scenario_submarine(telemetry_file);
 
     std::fclose(telemetry_file);

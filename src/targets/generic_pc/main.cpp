@@ -16,11 +16,16 @@
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 namespace {
 
 constexpr uint32_t kStepMs = 100U;
 constexpr float kCruiseSpeedMps = 15.0f;
 constexpr float kCruiseCourseDeg = 90.0f;
+constexpr float kKpHeading = 0.5f;
 constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
@@ -160,6 +165,40 @@ GuidanceErrors guidance_tick_update_route(
     return errors;
 }
 
+float heading_delta_deg(float from_deg, float to_deg)
+{
+    float delta = to_deg - from_deg;
+    while (delta > 180.0f) {
+        delta -= 360.0f;
+    }
+    while (delta < -180.0f) {
+        delta += 360.0f;
+    }
+    return delta;
+}
+
+void apply_closed_loop_heading_control(
+    SensorsSimulation *sensors,
+    float prev_cross_track_m,
+    float *synthetic_course_deg,
+    float dt_s)
+{
+    if (sensors == NULL || synthetic_course_deg == NULL) {
+        return;
+    }
+
+    const float prev_course_deg = *synthetic_course_deg;
+    const float heading_correction_deg = -kKpHeading * prev_cross_track_m;
+    const float corrected_course_deg = navstate_normalize_heading(
+        kCruiseCourseDeg + heading_correction_deg);
+
+    const float delta_heading_deg = heading_delta_deg(prev_course_deg, corrected_course_deg);
+    const float yaw_rate_radps = (dt_s > 0.0f) ? ((delta_heading_deg * (M_PI / 180.0f)) / dt_s) : 0.0f;
+
+    sensors_simulation_apply_heading_control(sensors, corrected_course_deg, yaw_rate_radps);
+    *synthetic_course_deg = corrected_course_deg;
+}
+
 void print_scenario_banner(SensorScenario scenario)
 {
     std::printf("\n");
@@ -217,8 +256,17 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
     constexpr uint32_t kDurationMs = 20000U;
     bool prev_gps_valid = true;
+    float prev_cross_track_m = 0.0f;
+    float synthetic_course_deg = kCruiseCourseDeg;
+    const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
+        apply_closed_loop_heading_control(
+            &sensors,
+            prev_cross_track_m,
+            &synthetic_course_deg,
+            dt_s);
+
         ImuSample imu;
         GpsSample gps;
 
@@ -259,6 +307,8 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             &route,
             &leg_origin,
             nav.state.position);
+
+        prev_cross_track_m = guidance.cross_track_m;
 
         telemetry_write_row(
             telemetry_file,

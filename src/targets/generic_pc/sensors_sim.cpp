@@ -85,6 +85,8 @@ void imu_simulator_init(ImuSimulator *sim, uint32_t seed)
 
     memset(sim, 0, sizeof(*sim));
     sim->seed = (seed == 0U) ? 1U : seed;
+    sim->commanded_yaw_rate_radps = 0.0f;
+    sim->commanded_forward_accel_mps2 = 0.0f;
 }
 
 bool imu_simulator_read(ImuSimulator *sim, uint32_t timestamp_ms, ImuSample *out)
@@ -95,13 +97,15 @@ bool imu_simulator_read(ImuSimulator *sim, uint32_t timestamp_ms, ImuSample *out
 
     const float t = (float)timestamp_ms * 0.001f;
 
-    out->accel_mps2[0] = 0.05f * sinf(t * 0.7f) + lcg_float(&sim->seed, -0.01f, 0.01f);
+    out->accel_mps2[0] = sim->commanded_forward_accel_mps2
+        + (0.05f * sinf(t * 0.7f))
+        + lcg_float(&sim->seed, -0.01f, 0.01f);
     out->accel_mps2[1] = 0.03f * cosf(t * 0.5f) + lcg_float(&sim->seed, -0.01f, 0.01f);
     out->accel_mps2[2] = 9.80665f + lcg_float(&sim->seed, -0.02f, 0.02f);
 
     out->gyro_radps[0] = 0.002f * sinf(t * 1.1f);
     out->gyro_radps[1] = 0.0015f * cosf(t * 0.9f);
-    out->gyro_radps[2] = 0.001f * sinf(t * 0.3f);
+    out->gyro_radps[2] = sim->commanded_yaw_rate_radps + (0.001f * sinf(t * 0.3f));
 
     out->mag_ut[0] = 22.0f + lcg_float(&sim->seed, -0.5f, 0.5f);
     out->mag_ut[1] = 5.0f + lcg_float(&sim->seed, -0.3f, 0.3f);
@@ -119,9 +123,11 @@ void gps_simulator_init(GpsSimulator *sim, Vector3D origin, float speed_mps, flo
     }
 
     sim->origin = origin;
+    sim->position = origin;
     sim->speed_mps = speed_mps;
     sim->course_deg = course_deg;
     sim->seed = (seed == 0U) ? 1U : seed;
+    sim->last_timestamp_ms = 0U;
 }
 
 bool gps_simulator_read(GpsSimulator *sim, uint32_t timestamp_ms, GpsSample *out)
@@ -130,19 +136,28 @@ bool gps_simulator_read(GpsSimulator *sim, uint32_t timestamp_ms, GpsSample *out
         return false;
     }
 
-    const float dt_s = (float)timestamp_ms * 0.001f;
+    uint32_t dt_ms = 0U;
+    if (sim->last_timestamp_ms < timestamp_ms) {
+        dt_ms = timestamp_ms - sim->last_timestamp_ms;
+    }
+
+    const float dt_s = (float)dt_ms * 0.001f;
     const float course_rad = deg_to_rad(sim->course_deg);
     const float north_m = sim->speed_mps * dt_s * cosf(course_rad);
     const float east_m = sim->speed_mps * dt_s * sinf(course_rad);
 
-    const float lat_rad = deg_to_rad(sim->origin.x);
+    const float lat_rad = deg_to_rad(sim->position.x);
     const float dlat = north_m / 111132.954f;
     const float dlon = east_m / (111132.954f * cosf(lat_rad));
 
+    sim->position.x += dlat;
+    sim->position.y += dlon;
+    sim->last_timestamp_ms = timestamp_ms;
+
     out->position = vector3d_make(
-        sim->origin.x + dlat + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
-        sim->origin.y + dlon + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
-        sim->origin.z + lcg_float(&sim->seed, -0.05f, 0.05f));
+        sim->position.x + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
+        sim->position.y + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
+        sim->position.z + lcg_float(&sim->seed, -0.05f, 0.05f));
     out->speed_mps = sim->speed_mps;
     out->course_deg = sim->course_deg;
     out->satellites = 10U;
@@ -261,4 +276,18 @@ bool sensors_simulation_tick(
 
     ctx->faults.tick_index++;
     return true;
+}
+
+void sensors_simulation_apply_heading_control(
+    SensorsSimulation *ctx,
+    float course_deg,
+    float yaw_rate_radps)
+{
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->gps.course_deg = course_deg;
+    ctx->imu.commanded_yaw_rate_radps = yaw_rate_radps;
+    ctx->imu.commanded_forward_accel_mps2 = 0.0f;
 }

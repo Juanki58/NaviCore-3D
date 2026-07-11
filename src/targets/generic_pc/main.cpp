@@ -25,6 +25,7 @@ namespace {
 
 constexpr uint32_t kStepMs = 100U;
 constexpr float kCruiseSpeedMps = 15.0f;
+constexpr float kDegradedCruiseSpeedMps = 8.0f;
 constexpr float kCruiseCourseDeg = 90.0f;
 constexpr float kKpHeading = 0.5f;
 constexpr float kSurfacePressurePa = 101325.0f;
@@ -35,7 +36,21 @@ constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
 constexpr float kWaypointLonStepDeg = 0.00018f;
-constexpr uint32_t kWaypointArrivalRadiusM = 15U;
+constexpr float kWaypointArrivalRadiusNominalM = 5.0f;
+constexpr float kWaypointArrivalRadiusDegradedM = 15.0f;
+
+uint32_t contingency_arrival_radius_m(NavHealthMode health_mode)
+{
+    return static_cast<uint32_t>(
+        (health_mode == HEALTH_DEGRADED)
+            ? kWaypointArrivalRadiusDegradedM
+            : kWaypointArrivalRadiusNominalM);
+}
+
+float contingency_cruise_speed_mps(NavHealthMode health_mode)
+{
+    return (health_mode == HEALTH_DEGRADED) ? kDegradedCruiseSpeedMps : kCruiseSpeedMps;
+}
 
 const char *nav_mode_name(NavMode mode)
 {
@@ -122,6 +137,110 @@ void apply_safe_stop_submarine(DeadReckoningFilter *nav)
     nav->state.velocity.z = 0.0f;
 }
 
+void waypoint_route_set_arrival_radius(StaticWaypointBuffer *route, uint32_t arrival_radius_m)
+{
+    if (route == NULL) {
+        return;
+    }
+
+    for (size_t i = 0U; i < route->count; ++i) {
+        const size_t idx = (route->head + i) % NAVICORE_MAX_WAYPOINTS;
+        route->items[idx].arrival_radius_m = arrival_radius_m;
+    }
+}
+
+void apply_health_contingency_air_state(
+    SensorsSimulation *sensors,
+    StaticWaypointBuffer *route,
+    NavHealthMode health_mode,
+    bool safe_stop_active)
+{
+    if (route == NULL) {
+        return;
+    }
+
+    const uint32_t arrival_radius_m = contingency_arrival_radius_m(health_mode);
+
+    waypoint_route_set_arrival_radius(route, arrival_radius_m);
+
+    if (sensors != NULL && !safe_stop_active) {
+        sensors->gps.speed_mps = contingency_cruise_speed_mps(health_mode);
+    }
+}
+
+float submarine_contingency_pressure_rate(NavHealthMode health_mode)
+{
+    if (health_mode == HEALTH_DEGRADED) {
+        return kSubmersionPressureRatePaS * (kDegradedCruiseSpeedMps / kCruiseSpeedMps);
+    }
+
+    return kSubmersionPressureRatePaS;
+}
+
+void log_health_contingency_transition(NavHealthMode health_mode, NavHealthMode *prev_health_mode, bool is_marine)
+{
+    if (prev_health_mode == NULL || health_mode == *prev_health_mode) {
+        return;
+    }
+
+    if (health_mode == HEALTH_DEGRADED) {
+        if (is_marine) {
+            std::printf(
+                ">>> CONTINGENCIA DEGRADADA (MAR): tasa presion %.1f Pa/s | radio WP %.1f m\n",
+                submarine_contingency_pressure_rate(health_mode),
+                kWaypointArrivalRadiusDegradedM);
+        } else {
+            std::printf(
+                ">>> CONTINGENCIA DEGRADADA: velocidad objetivo %.1f m/s | radio WP %.1f m\n",
+                kDegradedCruiseSpeedMps,
+                kWaypointArrivalRadiusDegradedM);
+        }
+    } else if (health_mode == HEALTH_NOMINAL && *prev_health_mode == HEALTH_DEGRADED) {
+        if (is_marine) {
+            std::printf(
+                ">>> CONTINGENCIA RESTAURADA (MAR): tasa presion %.1f Pa/s | radio WP %.1f m\n",
+                submarine_contingency_pressure_rate(health_mode),
+                kWaypointArrivalRadiusNominalM);
+        } else {
+            std::printf(
+                ">>> CONTINGENCIA RESTAURADA: velocidad crucero %.1f m/s | radio WP %.1f m\n",
+                kCruiseSpeedMps,
+                kWaypointArrivalRadiusNominalM);
+        }
+    }
+
+    *prev_health_mode = health_mode;
+}
+
+void apply_health_contingency_air(
+    SensorsSimulation *sensors,
+    StaticWaypointBuffer *route,
+    NavHealthMode health_mode,
+    bool safe_stop_active,
+    NavHealthMode *prev_health_mode)
+{
+    (void)prev_health_mode;
+    apply_health_contingency_air_state(sensors, route, health_mode, safe_stop_active);
+}
+
+void apply_health_contingency_submarine(
+    StaticWaypointBuffer *route,
+    NavHealthMode health_mode,
+    bool safe_stop_active,
+    NavHealthMode *prev_health_mode)
+{
+    (void)prev_health_mode;
+    (void)safe_stop_active;
+
+    if (route == NULL) {
+        return;
+    }
+
+    const uint32_t arrival_radius_m = contingency_arrival_radius_m(health_mode);
+
+    waypoint_route_set_arrival_radius(route, arrival_radius_m);
+}
+
 bool telemetry_ensure_docs_dir()
 {
 #ifdef _WIN32
@@ -200,17 +319,19 @@ void init_test_waypoint_route(
 
     waypoint_buffer_init(route);
 
-    const Waypoint wp0 = waypoint_make("WP0", start, domain, kWaypointArrivalRadiusM);
+    const uint32_t nominal_radius_m = contingency_arrival_radius_m(HEALTH_NOMINAL);
+
+    const Waypoint wp0 = waypoint_make("WP0", start, domain, nominal_radius_m);
     const Waypoint wp1 = waypoint_make(
         "WP1",
         vector3d_make(start.x, start.y + kWaypointLonStepDeg, start.z),
         domain,
-        kWaypointArrivalRadiusM);
+        nominal_radius_m);
     const Waypoint wp2 = waypoint_make(
         "WP2",
         vector3d_make(start.x, start.y + (2.0f * kWaypointLonStepDeg), start.z),
         domain,
-        kWaypointArrivalRadiusM);
+        nominal_radius_m);
 
     waypoint_buffer_push(route, wp0);
     waypoint_buffer_push(route, wp1);
@@ -335,6 +456,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     SystemHealthMonitor health{};
     bool safe_stop_active = false;
     float safe_stop_heading_deg = kCruiseCourseDeg;
+    NavHealthMode prev_health_mode = HEALTH_NOMINAL;
 
     StaticWaypointBuffer route{};
     Waypoint leg_origin{};
@@ -350,6 +472,13 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
+        apply_health_contingency_air(
+            &sensors,
+            &route,
+            health.mode,
+            safe_stop_active,
+            &prev_health_mode);
+
         if (safe_stop_active) {
             apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
         } else {
@@ -425,6 +554,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             odom_fault_active,
             nav.state.confidence.estimate_quality);
         diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
         if (diagnostic_requires_safe_stop(&health)) {
             if (!safe_stop_active) {
@@ -438,6 +568,14 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
                     safe_stop_heading_deg);
             }
             apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        } else if (safe_stop_active && navstate_speed_mps(&nav.state) <= 0.01f) {
+            safe_stop_active = false;
+            std::printf(
+                ">>> SAFE STOP liberado en tick %u (t=%.1fs) | reanudacion modo %s\n",
+                tick_index,
+                static_cast<float>(t_ms) * 0.001f,
+                health_mode_name(health.mode));
+            apply_health_contingency_air_state(&sensors, &route, health.mode, safe_stop_active);
         }
 
         const GuidanceErrors guidance = guidance_tick_update_route(
@@ -514,6 +652,8 @@ void run_scenario_submarine(FILE *telemetry_file)
     SystemHealthMonitor health{};
     bool safe_stop_active = false;
     float frozen_pressure_pa = kSurfacePressurePa;
+    NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    float active_pressure_rate_pa_s = kSubmersionPressureRatePaS;
 
     StaticWaypointBuffer route{};
     Waypoint leg_origin{};
@@ -539,6 +679,13 @@ void run_scenario_submarine(FILE *telemetry_file)
     constexpr uint32_t kDurationMs = 10000U;
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
+        apply_health_contingency_submarine(
+            &route,
+            health.mode,
+            safe_stop_active,
+            &prev_health_mode);
+        active_pressure_rate_pa_s = submarine_contingency_pressure_rate(health.mode);
+
         ImuSample imu;
         PressureSample pressure{};
 
@@ -550,7 +697,7 @@ void run_scenario_submarine(FILE *telemetry_file)
         if (safe_stop_active) {
             pressure.pressure_pa = frozen_pressure_pa;
         } else {
-            pressure.pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
+            pressure.pressure_pa = kSurfacePressurePa + (active_pressure_rate_pa_s * t_s);
         }
         pressure.temperature_c = 10.0f;
         pressure.timestamp_ms = t_ms;
@@ -563,6 +710,7 @@ void run_scenario_submarine(FILE *telemetry_file)
             nav.state.confidence.estimate_quality);
         const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(false, nav.state.confidence.estimate_quality);
         diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        log_health_contingency_transition(health.mode, &prev_health_mode, true);
 
         if (diagnostic_requires_safe_stop(&health)) {
             if (!safe_stop_active) {

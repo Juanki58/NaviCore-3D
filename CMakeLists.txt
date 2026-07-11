@@ -18,7 +18,15 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/vector3d.cpp
     ${NAVICORE_CORE_DIR}/waypoint.cpp
     ${NAVICORE_CORE_DIR}/fusion.cpp
+    ${NAVICORE_CORE_DIR}/api_ingest.cpp
+    ${NAVICORE_CORE_DIR}/vehicle_bus_adapter.cpp
 )
+
+add_executable(NaviCore3D_VehicleDemo
+    ${NAVICORE_PC_DIR}/vehicle_bus_can_stub.cpp
+    ${NAVICORE_CORE_SOURCES}
+)
+target_compile_definitions(NaviCore3D_VehicleDemo PRIVATE NAVICORE_VEHICLE_BUS_DEMO)
 
 add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/main.cpp

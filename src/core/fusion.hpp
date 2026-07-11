@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "NavState.h"
+#include "diagnostic.hpp"
 #include "sensor_types.hpp"
 
 typedef uint8_t NavQuality;
@@ -18,6 +19,22 @@ typedef uint8_t NavQuality;
 
 #ifndef NAVICORE_BIAS_CALIBRATION_TICKS
 #define NAVICORE_BIAS_CALIBRATION_TICKS 20U
+#endif
+
+#ifndef NAVICORE_EKF_HEALTH_TRUST_THRESHOLD
+#define NAVICORE_EKF_HEALTH_TRUST_THRESHOLD 80U
+#endif
+
+#ifndef NAVICORE_GPS_MEASUREMENT_VARIANCE_M2
+#define NAVICORE_GPS_MEASUREMENT_VARIANCE_M2 25.0f
+#endif
+
+#ifndef NAVICORE_POSITION_PROCESS_NOISE_M2_PER_S
+#define NAVICORE_POSITION_PROCESS_NOISE_M2_PER_S 2.0f
+#endif
+
+#ifndef NAVICORE_POSITION_PRIOR_VARIANCE_MAX_M2
+#define NAVICORE_POSITION_PRIOR_VARIANCE_MAX_M2 400.0f
 #endif
 
 typedef struct {
@@ -38,11 +55,17 @@ typedef struct {
     float accel_x_sum;
     float gyro_z_sum;
     uint32_t calibration_samples;
+    float gps_noise_covariance_scale;
+    float gps_measurement_variance_m2;
+    float position_prior_variance_m2;
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);
 bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu);
-bool dead_reckoning_update_gps(DeadReckoningFilter *filter, const GpsSample *gps);
+bool dead_reckoning_update_gps(
+    DeadReckoningFilter *filter,
+    const GpsSample *gps,
+    const SystemHealthMonitor *health_monitor);
 bool dead_reckoning_update_pressure(DeadReckoningFilter *filter, const PressureSample *pressure, float surface_pressure_pa);
 bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float speed_mps, bool reverse, uint32_t timestamp_ms);
 

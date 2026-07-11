@@ -464,12 +464,12 @@ bool bsp_sensors_orchestrate_tick(DeadReckoningFilter *nav_filter)
     dead_reckoning_update_imu(nav_filter, &imu);
 
     if (gps.fix_valid) {
-        dead_reckoning_update_gps(nav_filter, &gps);
+        dead_reckoning_update_gps(nav_filter, &gps, NULL);
     } else if (baro.valid) {
         GpsSample baro_gps{};
         bsp_baro_pressure_to_gps_sample(&baro, &baro_gps);
         baro_gps.timestamp_ms = timestamp_ms;
-        dead_reckoning_update_gps(nav_filter, &baro_gps);
+        dead_reckoning_update_gps(nav_filter, &baro_gps, NULL);
     }
 
     if (baro.valid && nav_filter->state.domain == NAVICORE_DOMAIN_SEA) {

@@ -522,7 +522,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
         dead_reckoning_update_imu(&nav, &imu);
         if (gps.fix_valid) {
-            dead_reckoning_update_gps(&nav, &gps);
+            dead_reckoning_update_gps(&nav, &gps, &health);
         }
 
         if (scenario == SCENARIO_ODOM_LOSS) {

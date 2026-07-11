@@ -52,13 +52,13 @@ void On_Vehicle_Bus_Data_Received(void)
     imu_frame.gyro_y = 0.0f;
     imu_frame.gyro_z = Leer_Giroscopio_Bus_CAN();
     imu_frame.timestamp_ms = g_vehicle_bus_tick_ms;
-    Ingest_IMU(imu_from_can(imu_frame));
 
     OdoCanFrame odo_frame{};
     odo_frame.speed_mps = Leer_Velocidad_Ruedas_Actual();
     odo_frame.reverse = Check_Marcha_Atras();
     odo_frame.timestamp_ms = g_vehicle_bus_tick_ms;
     Ingest_WheelOdometry(odo_from_can(odo_frame));
+    Ingest_IMU(imu_from_can(imu_frame));
 
     VehicleNavOutput hmi{};
     Get_VehicleNavOutput(&hmi);

@@ -1,6 +1,6 @@
 #include "vector3d.h"
 
-#include "nav_math.h"
+#include "math_utils.hpp"
 
 #include <math.h>
 

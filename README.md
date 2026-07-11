@@ -21,14 +21,27 @@
 
 ```
 NaviCore-3D/
-├── src_pc/                 # PC stress simulator (proves logic before Ambiq port)
-│   ├── core/               # NavState, Vector3D, Waypoint — fixed-size types
-│   ├── sensors/            # IMU, GPS, pressure simulators
-│   ├── fusion/             # Dead reckoning + sensor fusion
-│   └── main.cpp            # Stress scenarios + CSV black-box export
+├── src/
+│   ├── core/                   # Universal math engine (target-agnostic)
+│   │   ├── NavState.*          # Unified navigation state
+│   │   ├── vector3d.*          # Permanent 3D coordinate model
+│   │   ├── waypoint.*          # Fixed-buffer route types
+│   │   ├── fusion.*            # Dead reckoning + sensor fusion
+│   │   ├── math_utils.hpp      # FPU thresholds (sqrtf/sinf/cosf)
+│   │   └── sensor_types.hpp    # Portable IMU/GPS/pressure samples
+│   └── targets/
+│       ├── generic_pc/         # Open PC stress simulator
+│       │   ├── main.cpp
+│       │   └── sensors_sim.*   # Synthetic sensor feeds
+│       └── ambiq_apollo/       # Ambiq Apollo bare-metal target (host stubs)
+│           ├── main_ambiq.cpp
+│           ├── bsp_sensors.*     # HAL orchestrator
+│           ├── ambiq_system.*
+│           └── drivers/          # Structural driver layer (SPI/DMA/GPIO/UART)
 ├── docs/
-│   └── telemetria_navicore.csv   # Digital Twin feed (generated)
-└── build/                  # CMake output (local)
+│   └── telemetria_navicore.csv # Digital Twin black-box export
+├── CMakeLists.txt
+└── build/                      # Local CMake output
 ```
 
 ```mermaid
@@ -91,18 +104,58 @@ Export uses **`fprintf`** — no dynamic allocations inside the simulation loop.
 
 ---
 
+## Low-Power Architecture & Driver Topologies (NaviCore-Ambiq)
+
+**EN** · The `NaviCore-Ambiq` target implements a granular hardware abstraction layer designed to squeeze the efficiency of subthreshold silicon (Ambiq SPOT®) without breaking host-PC compilation.  
+**ES** · El target `NaviCore-Ambiq` implementa una capa de abstracción de hardware granular, optimizada para silicio subumbral (Ambiq SPOT®) y compilable en host-PC con stubs.
+
+### Driver Subsystems Matrix / Matriz de subsistemas
+
+| Subsystem | Role | Constraint |
+|-----------|------|------------|
+| **DMA (`ambiq_dma`)** | Monopolizes transactional memory moves. Eliminates CPU busy-waiting during high-throughput SPI and UART actions. | Non-blocking channels: SPI IMU + UART TX |
+| **SPI IMU (`ambiq_spi_imu`)** | 12-byte hardware burst read mapped directly to `ImuSample`. Captures accelerometer and gyroscope raw channels in a single DMA transaction. | IOM0 @ 24 MHz, ICM-42688 register map |
+| **GPIO GNSS (`ambiq_gpio_gnss`)** | Edge-triggered ISR on GPIO Pin 42 — updates fields only when the hardware pulse indicates valid data (no wasteful polling). | Fix cadence: 1 s (10 × 100 ms ticks) |
+| **UART Telemetry (`ambiq_uart_telemetry`)** | Streams deterministic ASCII state frames (`NAV,t=...,m=...,q=...,px=...`) via non-blocking ring buffers managed by DMA TX. | UART0 @ 115200 baud |
+| **Power Monitor (`ambiq_power_monitor`)** | Transactional current model (4.2 µA baseline ↔ 15.6 µA peak) and core execution clock cycles per tick. | 1800 mV nominal core (SPOT subthreshold) |
+
+```
+main_ambiq.cpp  (100 ms tick loop)
+    └── bsp_sensors (HAL)
+            ├── ambiq_spi_imu      → burst 12 B → ImuSample
+            ├── ambiq_gpio_gnss    → INT pin 42 → GpsSample
+            ├── ambiq_uart_telemetry → NAV ASCII frame → DMA TX
+            ├── ambiq_power_monitor  → µA + active_cycles
+            └── ambiq_dma            → channel arbitration
+```
+
+### Hardware Configuration Matrix (`ambiq_driver_config.hpp`)
+
+| Parameter | Operational Specification | System Constraint |
+| :--- | :--- | :--- |
+| **IOM0 (SPI Master)** | 24 MHz clock speed | Synchronous burst |
+| **UART0 (Telemetry)** | 115200 baud | Non-blocking ring buffer |
+| **Core Voltage** | 1800 mV nominal | SPOT subthreshold mode |
+| **Control Loop Tick** | 100 ms symmetrical | Hardware timer driven |
+| **GNSS INT Pin** | GPIO 42, edge-triggered | ISR-driven, no polling |
+| **DMA Timeout** | 500 000 cycles | Abort on channel stall |
+
+Stubs in `drivers/*_stub.cpp` emulate DMA completion, SPI register bursts, GPIO interrupts, and UART TX so the same sources compile and link on the PC host. Replace stubs with Ambiq SDK HAL calls on silicon — interfaces stay unchanged.
+
+---
+
 ## Build & Run / Compilar y ejecutar
 
 **Requirements:** CMake ≥ 3.15, C++17 compiler (MinGW, MSVC, or Clang)
 
 ```powershell
-cd src_pc
-cmake -S . -B ../build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake --build ../build
-../build/NaviCore3D_Sim.exe
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target NaviCore3D_Sim    # PC stress simulator + CSV export
+cmake --build build --target NaviCore3D_Ambiq  # Ambiq bare-metal loop (host stubs)
+./build/NaviCore3D_Sim.exe
 ```
 
-Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is written automatically (~302 data rows per run).
+Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is written automatically (~302 data rows per run). `NaviCore3D_Ambiq` runs an infinite 100 ms control loop (no console output — expected for bare-metal stub).
 
 ---
 
@@ -111,7 +164,8 @@ Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is writ
 | Phase | Target |
 |-------|--------|
 | **Now** | PC simulator + CSV black box + fusion core hardened |
-| **Next** | `src_ambiq/` — Ambiq Apollo4 port, HAL sensors, MRAM-conscious build |
+| **Now** | `NaviCore-Ambiq` — structural driver layer with host stubs (DMA/SPI/GPIO/UART/power) |
+| **Next** | Ambiq SDK HAL swap-in on Apollo4 silicon; MRAM-conscious build |
 | **Twin** | Live telemetry → Digital Twin 3D dashboard |
 
 ---

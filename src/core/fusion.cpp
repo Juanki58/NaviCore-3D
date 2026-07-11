@@ -1,6 +1,6 @@
-#include "dead_reckoning.h"
+#include "fusion.hpp"
 
-#include "nav_math.h"
+#include "math_utils.hpp"
 
 #include <math.h>
 

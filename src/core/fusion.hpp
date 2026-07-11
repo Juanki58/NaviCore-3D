@@ -1,13 +1,11 @@
-#ifndef NAVICORE_DEAD_RECKONING_H
-#define NAVICORE_DEAD_RECKONING_H
+#ifndef NAVICORE_FUSION_HPP
+#define NAVICORE_FUSION_HPP
 
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "NavState.h"
-#include "gps.h"
-#include "imu.h"
-#include "pressure.h"
+#include "sensor_types.hpp"
 
 typedef struct {
     NavState state;
@@ -24,4 +22,4 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
 bool dead_reckoning_update_gps(DeadReckoningFilter *filter, const GpsSample *gps);
 bool dead_reckoning_update_pressure(DeadReckoningFilter *filter, const PressureSample *pressure, float surface_pressure_pa);
 
-#endif /* NAVICORE_DEAD_RECKONING_H */
+#endif /* NAVICORE_FUSION_HPP */

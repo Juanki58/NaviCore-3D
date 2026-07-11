@@ -1,4 +1,4 @@
-#include "waypoint.h"
+#include "waypoint.hpp"
 
 #include <string.h>
 
@@ -24,38 +24,57 @@ bool waypoint_matches_name(const Waypoint *wp, const char *name)
     return strncmp(wp->name, name, NAVICORE_WAYPOINT_NAME_MAX) == 0;
 }
 
-bool waypoint_route_init(WaypointRoute *route)
+bool waypoint_buffer_init(StaticWaypointBuffer *buffer)
 {
-    if (route == NULL) {
+    if (buffer == NULL) {
         return false;
     }
 
-    route->count = 0U;
+    buffer->head = 0U;
+    buffer->count = 0U;
     return true;
 }
 
-bool waypoint_route_push(WaypointRoute *route, Waypoint wp)
+bool waypoint_buffer_push(StaticWaypointBuffer *buffer, Waypoint wp)
 {
-    if (route == NULL || route->count >= NAVICORE_WAYPOINT_ROUTE_MAX) {
+    if (buffer == NULL) {
         return false;
     }
 
-    route->items[route->count++] = wp;
+    if (buffer->count < NAVICORE_MAX_WAYPOINTS) {
+        const size_t tail = (buffer->head + buffer->count) % NAVICORE_MAX_WAYPOINTS;
+        buffer->items[tail] = wp;
+        buffer->count++;
+        return true;
+    }
+
+    /* Buffer lleno: sobrescribe el mas antiguo y avanza head (O(1)). */
+    buffer->items[buffer->head] = wp;
+    buffer->head = (buffer->head + 1U) % NAVICORE_MAX_WAYPOINTS;
     return true;
 }
 
-const Waypoint *waypoint_route_get(const WaypointRoute *route, size_t index)
+bool waypoint_buffer_pop(StaticWaypointBuffer *buffer, Waypoint *out)
 {
-    if (route == NULL || index >= route->count) {
-        return NULL;
+    if (buffer == NULL || buffer->count == 0U) {
+        return false;
     }
-    return &route->items[index];
+
+    if (out != NULL) {
+        *out = buffer->items[buffer->head];
+    }
+
+    buffer->head = (buffer->head + 1U) % NAVICORE_MAX_WAYPOINTS;
+    buffer->count--;
+    return true;
 }
 
-size_t waypoint_route_count(const WaypointRoute *route)
+bool waypoint_buffer_is_empty(const StaticWaypointBuffer *buffer)
 {
-    if (route == NULL) {
-        return 0U;
-    }
-    return route->count;
+    return buffer == NULL || buffer->count == 0U;
+}
+
+bool waypoint_buffer_is_full(const StaticWaypointBuffer *buffer)
+{
+    return buffer != NULL && buffer->count >= NAVICORE_MAX_WAYPOINTS;
 }

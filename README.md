@@ -172,5 +172,8 @@ Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is writ
 
 ## License & Author
 
+**Author:** Juan Carlos Pulido Mellado  
+**License:** [MIT License](LICENSE) — Copyright (c) 2026 Juan Carlos Pulido Mellado
+
 Private / showcase repository.  
 **NaviCore-3D** — *Navigate every domain. Trust every fix. Zero waste on the edge.*

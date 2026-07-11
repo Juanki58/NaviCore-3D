@@ -9,5 +9,4 @@
 
 #include "NavState.h"
 
-void ambiq_uart_telemetry_init(void);
 bool ambiq_uart_transmit_navstate(const NavState *state);

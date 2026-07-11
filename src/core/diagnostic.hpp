@@ -27,11 +27,20 @@ typedef enum {
 #define DIAG_BSP_PENALTY_TIMEOUT    50U
 #define DIAG_BSP_PENALTY_UNKNOWN    20U
 
+/** Codigos de error de tiempo de ejecucion (time_guard). */
+#define TIME_GUARD_ERROR_NONE       0U
+#define TIME_GUARD_ERROR_WCET       1U
+
+#define TIME_GUARD_WCET_PENALTY     40U
+
 typedef struct {
     NavHealthMode mode;
     uint8_t health_score;
     uint8_t last_filter_quality;
     uint8_t last_bsp_bus_status;
+    uint8_t last_time_guard_error;
+    uint32_t last_execution_ticks;
+    uint32_t last_max_allowed_ticks;
     uint32_t update_count;
 } SystemHealthMonitor;
 

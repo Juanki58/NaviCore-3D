@@ -41,6 +41,10 @@ typedef uint8_t NavQuality;
 #define NAVICORE_GRAVITY_MPS2 9.81f
 #endif
 
+#ifndef NAVICORE_IMU_LPF_ALPHA
+#define NAVICORE_IMU_LPF_ALPHA 0.20f
+#endif
+
 typedef struct {
     NavState state;
     float imu_weight;
@@ -64,6 +68,7 @@ typedef struct {
     float position_prior_variance_m2;
     float pitch_rad;
     float roll_rad;
+    float filtered_accel[3];
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);

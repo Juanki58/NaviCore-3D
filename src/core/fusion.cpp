@@ -313,16 +313,35 @@ static float dead_reckoning_attitude_health_blend(const SystemHealthMonitor *hea
         (float)NAVICORE_EKF_HEALTH_TRUST_THRESHOLD;
 }
 
+static void dead_reckoning_filter_accel_ema(
+    DeadReckoningFilter *filter,
+    const ImuSample *imu)
+{
+    const float one_minus_alpha = 1.0f - NAVICORE_IMU_LPF_ALPHA;
+    const bool first_sample = (filter->state.timestamp_ms == 0U);
+
+    for (size_t axis = 0U; axis < 3U; ++axis) {
+        const float raw_accel_mps2 = imu->accel_mps2[axis];
+
+        if (first_sample) {
+            filter->filtered_accel[axis] = raw_accel_mps2;
+        } else {
+            filter->filtered_accel[axis] =
+                (NAVICORE_IMU_LPF_ALPHA * raw_accel_mps2) +
+                (one_minus_alpha * filter->filtered_accel[axis]);
+        }
+    }
+}
+
 static void dead_reckoning_update_attitude_from_accel(
     DeadReckoningFilter *filter,
-    const ImuSample *imu,
     const SystemHealthMonitor *health_monitor)
 {
     const float pitch_prev_rad = filter->pitch_rad;
     const float roll_prev_rad = filter->roll_rad;
-    const float accel_x_mps2 = imu->accel_mps2[0];
-    const float accel_y_mps2 = imu->accel_mps2[1];
-    const float accel_z_mps2 = imu->accel_mps2[2];
+    const float accel_x_mps2 = filter->filtered_accel[0];
+    const float accel_y_mps2 = filter->filtered_accel[1];
+    const float accel_z_mps2 = filter->filtered_accel[2];
     const float lateral_vertical_mps2_sq =
         (accel_y_mps2 * accel_y_mps2) + (accel_z_mps2 * accel_z_mps2);
 
@@ -379,6 +398,9 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->position_prior_variance_m2 = NAVICORE_GPS_MEASUREMENT_VARIANCE_M2 * 1.5f;
     filter->pitch_rad = 0.0f;
     filter->roll_rad = 0.0f;
+    filter->filtered_accel[0] = 0.0f;
+    filter->filtered_accel[1] = 0.0f;
+    filter->filtered_accel[2] = 0.0f;
 }
 
 bool dead_reckoning_update_imu(
@@ -391,7 +413,8 @@ bool dead_reckoning_update_imu(
     }
 
     dead_reckoning_bias_calibration_step(filter, imu);
-    dead_reckoning_update_attitude_from_accel(filter, imu, health_monitor);
+    dead_reckoning_filter_accel_ema(filter, imu);
+    dead_reckoning_update_attitude_from_accel(filter, health_monitor);
 
     const uint32_t prev_ms = filter->state.timestamp_ms;
     if (prev_ms == 0U) {

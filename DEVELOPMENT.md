@@ -31,8 +31,8 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 ### FASE A: Robustez y Física Real (Corto Plazo)
 
-- [ ] **Lógica de marcha atrás (`reverse = true`)**: Modificar `fusion.cpp` para invertir la proyección geométrica del avance del coche cuando se activa la marcha atrás en la trama CAN.
-- [ ] **Ajuste dinámico de covarianza**: Incrementar los valores de la matriz de ruido del filtro inercial durante frenazos bruscos detectados por variaciones extremas en `accel_mps2[0]`.
+- [x] **Lógica de marcha atrás (`reverse = true`)**: Modificar `fusion.cpp` para invertir la proyección geométrica del avance del coche cuando se activa la marcha atrás en la trama CAN.
+- [x] **Ajuste dinámico de covarianza**: Incrementar los valores de la matriz de ruido del filtro inercial durante frenazos bruscos detectados por variaciones extremas en `accel_mps2[0]`.
 
 ### FASE B: Hardware Real (Medio Plazo)
 
@@ -87,3 +87,9 @@ HMI nav: lat=41.387417 lon=2.168600
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
+
+---
+
+## 🚧 6. Notas de Infraestructura y Bloqueos
+
+El Core matemático en `src/core/` está restaurado y verificado en C++17. Sin embargo, las pruebas locales de los ejecutables (`NaviCore3D_VehicleDemo.exe`) quedan pausadas debido a un bloqueo estricto de directivas de Control de Aplicaciones de Windows (WDAC), requiriendo autorización de IT para la ruta `C:\NaviCore-3D\build\` o para el toolchain de MinGW antes de poder realizar pruebas dinámicas en local.

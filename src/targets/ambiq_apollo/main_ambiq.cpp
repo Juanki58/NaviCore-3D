@@ -5,6 +5,7 @@
 #include "../../core/diagnostic.hpp"
 #include "../../core/fusion.hpp"
 #include "../../core/NavState.h"
+#include "../../core/recovery_guard.hpp"
 #include "ambiq_system.hpp"
 #include "bsp_sensors.hpp"
 #include "power_state_machine.hpp"
@@ -64,6 +65,12 @@ int main(void)
             &health_monitor,
             filter_quality_u8,
             ambiq_worst_bsp_bus_status(&bus_status));
+
+        health_monitor.shutdown_latched = power_manager_is_shutdown_latched();
+        (void)recovery_guard_step(
+            &nav_filter,
+            &health_monitor,
+            health_monitor.last_divergence_innovation_sq);
 
         const float speed_mps = navstate_speed_mps(&nav_filter.state);
         const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;

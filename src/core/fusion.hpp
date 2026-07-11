@@ -98,4 +98,9 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
 NavQuality dead_reckoning_get_quality(const DeadReckoningFilter *filter);
 bool dead_reckoning_has_odom_fault(const DeadReckoningFilter *filter);
 
+/**
+ * @brief Reinicia sesgo IMU, calibracion y estados de prediccion sin alterar posicion/velocidad.
+ */
+void dead_reckoning_reset_imu_bias_state(DeadReckoningFilter *filter);
+
 #endif /* NAVICORE_FUSION_HPP */

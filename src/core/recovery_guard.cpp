@@ -28,6 +28,10 @@ static bool recovery_guard_conditions_met(
         return false;
     }
 
+    if (monitor->shutdown_latched) {
+        return false;
+    }
+
     if (monitor->mode != HEALTH_CRITICAL) {
         return false;
     }
@@ -55,16 +59,33 @@ static void recovery_guard_reset_filter_covariance_p(DeadReckoningFilter *filter
     filter->odom_noise_covariance_scale = 1.0f;
 }
 
+static void recovery_guard_clear_monitor_error_flags(SystemHealthMonitor *monitor)
+{
+    if (monitor == NULL) {
+        return;
+    }
+
+    monitor->last_time_guard_error = TIME_GUARD_ERROR_NONE;
+    monitor->last_slip_comp_error = SLIP_COMP_ERROR_NONE;
+    monitor->last_geometry_error = GEOMETRY_ERROR_NONE;
+    monitor->last_divergence_error = DIVERGENCE_ERROR_NONE;
+    monitor->last_execution_ticks = 0U;
+    monitor->last_max_allowed_ticks = 0U;
+    monitor->last_slip_ratio = 0.0f;
+    monitor->last_geometry_step_m = 0.0f;
+    monitor->last_divergence_innovation_sq = 0.0f;
+}
+
 static void recovery_guard_apply_hot_restart(
     DeadReckoningFilter *filter,
     SystemHealthMonitor *monitor)
 {
+    dead_reckoning_reset_imu_bias_state(filter);
     recovery_guard_reset_filter_covariance_p(filter);
 
     monitor->health_score = RECOVERY_GUARD_RECOVERED_HEALTH_SCORE;
     monitor->mode = HEALTH_NOMINAL;
-    monitor->last_divergence_error = DIVERGENCE_ERROR_NONE;
-    monitor->last_divergence_innovation_sq = 0.0f;
+    recovery_guard_clear_monitor_error_flags(monitor);
     divergence_guard_reset();
     monitor->update_count++;
 }
@@ -79,6 +100,11 @@ bool recovery_guard_step(
     SystemHealthMonitor *monitor,
     float current_innovation_sq)
 {
+    if (monitor != NULL && monitor->shutdown_latched) {
+        recovery_guard_reset();
+        return false;
+    }
+
     if (!recovery_guard_conditions_met(filter, monitor, current_innovation_sq)) {
         recovery_guard_reset();
         return false;

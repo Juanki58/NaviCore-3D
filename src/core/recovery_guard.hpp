@@ -26,14 +26,15 @@
  * @brief Evalua condiciones de recuperacion y ejecuta hot-restart si procede.
  *
  * Requisitos acumulados durante @p RECOVERY_GUARD_CLEAN_TICKS_REQUIRED ticks seguidos:
+ *   - @p monitor->shutdown_latched == false
  *   - @p monitor en HEALTH_CRITICAL
  *   - Velocidad horizontal del filtro == 0.0f m/s
  *   - @p current_innovation_sq < RECOVERY_GUARD_INNOVATION_SQ_THRESHOLD
  *
  * Al recuperar (Hot-Restart):
- *   - Reinicia P: position_prior_variance_m2 = GPS_VAR x 1.5
+ *   - Reinicia sesgo IMU y covarianza P (GPS_VAR x 1.5)
  *   - health_score = 75, mode = HEALTH_NOMINAL
- *   - Limpia flags y contador estatico de divergence_guard
+ *   - Limpia flags de error del monitor y divergence_guard
  *
  * @return true si se ejecuto la re-inicializacion en caliente; false en caso contrario.
  */

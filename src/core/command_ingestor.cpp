@@ -16,6 +16,7 @@ static struct {
     RadioCommandPacket items[COMMAND_INGESTOR_HW_RX_CAPACITY];
     uint32_t head;
     uint32_t count;
+    uint32_t dropped_packets;
 } g_radio_hw_rx{};
 
 static bool command_ingestor_hw_try_dequeue(RadioCommandPacket *packet_out)
@@ -35,6 +36,7 @@ void command_ingestor_init(void)
 {
     g_radio_hw_rx.head = 0U;
     g_radio_hw_rx.count = 0U;
+    g_radio_hw_rx.dropped_packets = 0U;
 }
 
 bool command_ingestor_hw_has_data(void)
@@ -44,8 +46,15 @@ bool command_ingestor_hw_has_data(void)
 
 bool command_ingestor_hw_enqueue(const RadioCommandPacket *packet)
 {
-    if (packet == NULL || g_radio_hw_rx.count >= COMMAND_INGESTOR_HW_RX_CAPACITY) {
+    if (packet == NULL) {
         return false;
+    }
+
+    if (g_radio_hw_rx.count >= COMMAND_INGESTOR_HW_RX_CAPACITY) {
+        g_radio_hw_rx.head =
+            (g_radio_hw_rx.head + 1U) % COMMAND_INGESTOR_HW_RX_CAPACITY;
+        g_radio_hw_rx.count--;
+        g_radio_hw_rx.dropped_packets++;
     }
 
     const uint32_t tail =
@@ -58,6 +67,11 @@ bool command_ingestor_hw_enqueue(const RadioCommandPacket *packet)
 uint32_t command_ingestor_hw_pending_count(void)
 {
     return g_radio_hw_rx.count;
+}
+
+uint32_t command_ingestor_hw_dropped_packets(void)
+{
+    return g_radio_hw_rx.dropped_packets;
 }
 
 static bool command_ingestor_is_finite_float(float value)

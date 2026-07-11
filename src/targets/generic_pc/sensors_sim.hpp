@@ -17,14 +17,18 @@ typedef enum {
 typedef struct {
     float accel_bias[3];
     float gyro_bias[3];
+    float commanded_yaw_rate_radps;
+    float commanded_forward_accel_mps2;
     uint32_t seed;
 } ImuSimulator;
 
 typedef struct {
     Vector3D origin;
+    Vector3D position;
     float speed_mps;
     float course_deg;
     uint32_t seed;
+    uint32_t last_timestamp_ms;
 } GpsSimulator;
 
 typedef struct {
@@ -75,5 +79,10 @@ bool sensors_simulation_tick(
     uint32_t timestamp_ms,
     ImuSample *imu_out,
     GpsSample *gps_out);
+
+void sensors_simulation_apply_heading_control(
+    SensorsSimulation *ctx,
+    float course_deg,
+    float yaw_rate_radps);
 
 #endif /* NAVICORE_SENSORS_SIM_HPP */

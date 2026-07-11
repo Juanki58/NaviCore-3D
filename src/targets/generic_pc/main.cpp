@@ -12,6 +12,8 @@
 #include "vector3d.h"
 #include "NavState.h"
 #include "fusion.hpp"
+#include "guidance.hpp"
+#include "waypoint.hpp"
 #include "sensors_sim.hpp"
 
 namespace {
@@ -24,6 +26,9 @@ constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_GPS_LOSS;
+
+constexpr float kWaypointLonStepDeg = 0.00018f;
+constexpr uint32_t kWaypointArrivalRadiusM = 15U;
 
 const char *nav_mode_name(NavMode mode)
 {
@@ -64,7 +69,7 @@ void telemetry_write_header(FILE *file)
 
     std::fprintf(
         file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo\n");
+        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m\n");
 }
 
 void telemetry_write_row(
@@ -72,15 +77,19 @@ void telemetry_write_row(
     uint32_t timestamp_ms,
     const char *scenario,
     const NavState *state,
-    uint8_t scenario_satellites)
+    uint8_t scenario_satellites,
+    const GuidanceErrors *guidance)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
     }
 
+    const float cross_track_m = (guidance != NULL) ? guidance->cross_track_m : 0.0f;
+    const float along_track_m = (guidance != NULL) ? guidance->along_track_m : 0.0f;
+
     std::fprintf(
         file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f\n",
+        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f\n",
         timestamp_ms,
         scenario,
         nav_mode_name(state->mode),
@@ -92,7 +101,63 @@ void telemetry_write_row(
         state->velocity.x,
         state->velocity.y,
         state->velocity.z,
-        state->heading_deg);
+        state->heading_deg,
+        cross_track_m,
+        along_track_m);
+}
+
+void init_test_waypoint_route(
+    StaticWaypointBuffer *route,
+    Waypoint *leg_origin,
+    Vector3D start,
+    NavDomain domain)
+{
+    if (route == NULL || leg_origin == NULL) {
+        return;
+    }
+
+    waypoint_buffer_init(route);
+
+    const Waypoint wp0 = waypoint_make("WP0", start, domain, kWaypointArrivalRadiusM);
+    const Waypoint wp1 = waypoint_make(
+        "WP1",
+        vector3d_make(start.x, start.y + kWaypointLonStepDeg, start.z),
+        domain,
+        kWaypointArrivalRadiusM);
+    const Waypoint wp2 = waypoint_make(
+        "WP2",
+        vector3d_make(start.x, start.y + (2.0f * kWaypointLonStepDeg), start.z),
+        domain,
+        kWaypointArrivalRadiusM);
+
+    waypoint_buffer_push(route, wp0);
+    waypoint_buffer_push(route, wp1);
+    waypoint_buffer_push(route, wp2);
+    *leg_origin = wp0;
+}
+
+GuidanceErrors guidance_tick_update_route(
+    StaticWaypointBuffer *route,
+    Waypoint *leg_origin,
+    Vector3D position)
+{
+    GuidanceErrors errors{};
+
+    if (route == NULL || leg_origin == NULL || route->count < 2U) {
+        return errors;
+    }
+
+    const Waypoint leg_dest = route->items[(route->head + 1U) % NAVICORE_MAX_WAYPOINTS];
+    errors = guidance_compute_errors(position, *leg_origin, leg_dest);
+
+    if (errors.along_track_m <= static_cast<float>(leg_dest.arrival_radius_m)) {
+        Waypoint passed{};
+        if (waypoint_buffer_pop(route, &passed)) {
+            *leg_origin = passed;
+        }
+    }
+
+    return errors;
 }
 
 void print_scenario_banner(SensorScenario scenario)
@@ -144,6 +209,10 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
 
+    StaticWaypointBuffer route{};
+    Waypoint leg_origin{};
+    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+
     print_scenario_banner(scenario);
 
     constexpr uint32_t kDurationMs = 20000U;
@@ -186,12 +255,18 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             dead_reckoning_update_gps(&nav, &gps);
         }
 
+        const GuidanceErrors guidance = guidance_tick_update_route(
+            &route,
+            &leg_origin,
+            nav.state.position);
+
         telemetry_write_row(
             telemetry_file,
             t_ms,
             sensor_scenario_name(scenario),
             &nav.state,
-            scenario_satellites);
+            scenario_satellites,
+            &guidance);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -237,6 +312,10 @@ void run_scenario_submarine(FILE *telemetry_file)
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, surface, NAVICORE_DOMAIN_SEA);
 
+    StaticWaypointBuffer route{};
+    Waypoint leg_origin{};
+    init_test_waypoint_route(&route, &leg_origin, surface, NAVICORE_DOMAIN_SEA);
+
     std::printf("\n");
     std::printf("================================================================\n");
     std::printf(" ESCENARIO 2: Inmersion Submarina\n");
@@ -273,7 +352,12 @@ void run_scenario_submarine(FILE *telemetry_file)
         dead_reckoning_update_imu(&nav, &imu);
         dead_reckoning_update_pressure(&nav, &pressure, kSurfacePressurePa);
 
-        telemetry_write_row(telemetry_file, t_ms, "SUBMARINE", &nav.state, 0U);
+        const GuidanceErrors guidance = guidance_tick_update_route(
+            &route,
+            &leg_origin,
+            nav.state.position);
+
+        telemetry_write_row(telemetry_file, t_ms, "SUBMARINE", &nav.state, 0U, &guidance);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);

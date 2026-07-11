@@ -19,6 +19,7 @@
 #include "sensors_sim.hpp"
 #include "diagnostic.hpp"
 #include "command_ingestor.hpp"
+#include "recovery_guard.hpp"
 #include "power_state_machine.hpp"
 #include "time_guard.hpp"
 
@@ -319,7 +320,7 @@ void telemetry_write_header(FILE *file)
 
     std::fprintf(
         file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode,PowerState,ShutdownLatched,WaypointCount,BspBus\n");
+        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode,PowerState,ShutdownLatched,WaypointCount,BspBus,RadioDroppedPackets\n");
 }
 
 void telemetry_write_row(
@@ -335,7 +336,8 @@ void telemetry_write_row(
     PowerState power_state,
     bool shutdown_latched,
     size_t waypoint_count,
-    uint8_t bsp_bus_status)
+    uint8_t bsp_bus_status,
+    uint32_t radio_dropped_packets)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
@@ -346,7 +348,7 @@ void telemetry_write_row(
 
     std::fprintf(
         file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s,%s,%u,%zu,%u\n",
+        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s,%s,%u,%zu,%u,%u\n",
         timestamp_ms,
         scenario,
         nav_mode_name(state->mode),
@@ -367,7 +369,23 @@ void telemetry_write_row(
         power_state_name(power_state),
         shutdown_latched ? 1U : 0U,
         waypoint_count,
-        static_cast<unsigned>(bsp_bus_status));
+        static_cast<unsigned>(bsp_bus_status),
+        static_cast<unsigned>(radio_dropped_packets));
+}
+
+void post_diagnostic_recovery_step(
+    DeadReckoningFilter *filter,
+    SystemHealthMonitor *monitor)
+{
+    if (filter == NULL || monitor == NULL) {
+        return;
+    }
+
+    monitor->shutdown_latched = power_manager_is_shutdown_latched();
+    (void)recovery_guard_step(
+        filter,
+        monitor,
+        monitor->last_divergence_innovation_sq);
 }
 
 void init_test_waypoint_route(
@@ -710,6 +728,8 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
         }
 
+        post_diagnostic_recovery_step(&nav, &health);
+
         if (t_ms == kHighDemandRadioBurstMs && !radio_burst_enqueued) {
             high_demand_enqueue_radio_burst(t_ms, &nav, &route);
             radio_burst_enqueued = true;
@@ -809,7 +829,8 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             power_manager_get_state(),
             power_manager_is_shutdown_latched(),
             route.count,
-            worst_bsp_bus);
+            worst_bsp_bus,
+            command_ingestor_hw_dropped_packets());
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -966,6 +987,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             nav.state.confidence.estimate_quality);
 
         diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        post_diagnostic_recovery_step(&nav, &health);
         log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
         if (diagnostic_requires_safe_stop(&health) && t_ms >= kFaultInjectSpiTimeoutMs) {
@@ -1019,7 +1041,8 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             power_manager_get_state(),
             power_manager_is_shutdown_latched(),
             route.count,
-            worst_bsp_bus);
+            worst_bsp_bus,
+            command_ingestor_hw_dropped_packets());
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1159,6 +1182,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             odom_fault_active,
             nav.state.confidence.estimate_quality);
         diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        post_diagnostic_recovery_step(&nav, &health);
         log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
         if (diagnostic_requires_safe_stop(&health)) {
@@ -1203,7 +1227,8 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             POWER_PERFORMANCE,
             false,
             route.count,
-            worst_bsp_bus);
+            worst_bsp_bus,
+            command_ingestor_hw_dropped_packets());
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -1319,6 +1344,7 @@ void run_scenario_submarine(FILE *telemetry_file)
             nav.state.confidence.estimate_quality);
         const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(false, nav.state.confidence.estimate_quality);
         diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        post_diagnostic_recovery_step(&nav, &health);
         log_health_contingency_transition(health.mode, &prev_health_mode, true);
 
         if (diagnostic_requires_safe_stop(&health)) {
@@ -1355,7 +1381,8 @@ void run_scenario_submarine(FILE *telemetry_file)
             POWER_PERFORMANCE,
             false,
             route.count,
-            worst_bsp_bus);
+            worst_bsp_bus,
+            command_ingestor_hw_dropped_packets());
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);

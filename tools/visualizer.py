@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-NaviCore-3D Digital Twin — visualizador 3D de telemetría.
+NaviCore-3D Digital Twin — visualizador de telemetría.
 
-Lee docs/telemetria_navicore.csv (pandas) y renderiza trayectorias 3D
-por escenario con matplotlib, coloreadas según el modo de navegación.
+Lee docs/telemetria_navicore.csv (pandas) y renderiza por escenario:
+  - Trayectoria 3D coloreada según el modo de navegación.
+  - Evolución temporal de Cross-Track y Along-Track Error (m).
 """
 
 from __future__ import annotations
@@ -68,6 +69,8 @@ def load_telemetry(csv_path: Path) -> pd.DataFrame:
         "Vel_Y",
         "Vel_Z",
         "Rumbo",
+        "CrossTrack_m",
+        "AlongTrack_m",
     }
     missing = required - set(df.columns)
     if missing:
@@ -165,15 +168,52 @@ def plot_scenario_3d(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.legend(handles=mode_handles, loc="upper left", fontsize=8, title="Modo")
 
 
+def plot_track_errors(ax: plt.Axes, df: pd.DataFrame) -> None:
+    scenario = df["Escenario"].iloc[0]
+    time_s = df["Timestamp_ms"].to_numpy(dtype=float) * 1e-3
+    cross_track = df["CrossTrack_m"].to_numpy(dtype=float)
+    along_track = df["AlongTrack_m"].to_numpy(dtype=float)
+
+    ax.plot(
+        time_s,
+        cross_track,
+        color="#e67e22",
+        linewidth=1.5,
+        label="Cross-Track Error",
+    )
+    ax.plot(
+        time_s,
+        along_track,
+        color="#9b59b6",
+        linewidth=1.5,
+        label="Along-Track Error",
+    )
+
+    ax.set_title(f"{scenario} — Errores de trayectoria")
+    ax.set_xlabel("Tiempo (s)")
+    ax.set_ylabel("Error (m)")
+    ax.axhline(0, color="gray", linewidth=0.6, linestyle="--", alpha=0.5)
+    ax.legend(loc="upper right", fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+
 def build_figure(df: pd.DataFrame) -> plt.Figure:
     scenarios = list(df["Escenario"].unique())
-    fig = plt.figure(figsize=(14, 6))
-    fig.suptitle("NaviCore-3D · Gemelo Digital — Telemetría 3D", fontsize=14, fontweight="bold")
+    n = len(scenarios)
+    fig = plt.figure(figsize=(7 * n, 10))
+    fig.suptitle(
+        "NaviCore-3D · Gemelo Digital — Telemetría 3D y errores de trayectoria",
+        fontsize=14,
+        fontweight="bold",
+    )
 
     for index, scenario in enumerate(scenarios, start=1):
         subset = df[df["Escenario"] == scenario].sort_values("Timestamp_ms")
-        ax = fig.add_subplot(1, len(scenarios), index, projection="3d")
-        plot_scenario_3d(ax, subset)
+        ax_3d = fig.add_subplot(2, n, index, projection="3d")
+        plot_scenario_3d(ax_3d, subset)
+
+        ax_err = fig.add_subplot(2, n, n + index)
+        plot_track_errors(ax_err, subset)
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig

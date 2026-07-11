@@ -39,6 +39,12 @@ typedef enum {
 
 #define SLIP_COMP_HEALTH_PENALTY    25U
 
+/** Codigos de error geometrico (geometry_guard). */
+#define GEOMETRY_ERROR_NONE           0U
+#define GEOMETRY_ERROR_DISCONTINUITY  1U
+
+#define GEOMETRY_GUARD_HEALTH_PENALTY 15U
+
 typedef struct {
     NavHealthMode mode;
     uint8_t health_score;
@@ -46,9 +52,11 @@ typedef struct {
     uint8_t last_bsp_bus_status;
     uint8_t last_time_guard_error;
     uint8_t last_slip_comp_error;
+    uint8_t last_geometry_error;
     uint32_t last_execution_ticks;
     uint32_t last_max_allowed_ticks;
     float last_slip_ratio;
+    float last_geometry_step_m;
     uint32_t update_count;
 } SystemHealthMonitor;
 

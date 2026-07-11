@@ -16,6 +16,8 @@
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
 #include "diagnostic.hpp"
+#include "command_ingest.hpp"
+#include "power_state_machine.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -31,6 +33,12 @@ constexpr float kKpHeading = 0.5f;
 constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr float kSafeStopDecelMps2 = 3.0f;
+constexpr float kVehicleStoppedSpeedMps = 0.05f;
+
+constexpr uint32_t kFaultInjectGpsLossMs = 5000U;
+constexpr uint32_t kFaultInjectRadioCmdMs = 10000U;
+constexpr uint32_t kFaultInjectSpiTimeoutMs = 15000U;
+constexpr uint32_t kFaultInjectDurationMs = 30000U;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
@@ -82,6 +90,20 @@ const char *health_mode_name(NavHealthMode mode)
     }
 }
 
+const char *power_state_name(PowerState state)
+{
+    switch (state) {
+    case POWER_PERFORMANCE:
+        return "PERFORMANCE";
+    case POWER_CONSERVATION:
+        return "CONSERVATION";
+    case POWER_SAFE_SHUTDOWN:
+        return "SAFE_SHUTDOWN";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 uint8_t pc_simulate_worst_bsp_bus_status(bool odom_fault_active, float filter_quality)
 {
     uint8_t imu_bus = DIAG_BSP_BUS_IDLE;
@@ -98,6 +120,26 @@ uint8_t pc_simulate_worst_bsp_bus_status(bool odom_fault_active, float filter_qu
     }
 
     return (imu_bus > baro_bus) ? imu_bus : baro_bus;
+}
+
+uint8_t fault_injection_worst_bsp_bus(
+    uint32_t timestamp_ms,
+    bool odom_fault_active,
+    float filter_quality)
+{
+    if (timestamp_ms >= kFaultInjectSpiTimeoutMs) {
+        return DIAG_BSP_BUS_TIMEOUT;
+    }
+
+    if (odom_fault_active) {
+        return DIAG_BSP_BUS_ERROR;
+    }
+
+    if (timestamp_ms >= kFaultInjectGpsLossMs && timestamp_ms < kFaultInjectSpiTimeoutMs) {
+        return DIAG_BSP_BUS_DMA_ACTIVE;
+    }
+
+    return pc_simulate_worst_bsp_bus_status(odom_fault_active, filter_quality);
 }
 
 void apply_safe_stop_air(
@@ -264,7 +306,7 @@ void telemetry_write_header(FILE *file)
 
     std::fprintf(
         file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode\n");
+        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode,PowerState,ShutdownLatched,WaypointCount,BspBus\n");
 }
 
 void telemetry_write_row(
@@ -276,7 +318,11 @@ void telemetry_write_row(
     const GuidanceErrors *guidance,
     uint8_t odom_fault,
     uint8_t health_score,
-    NavHealthMode health_mode)
+    NavHealthMode health_mode,
+    PowerState power_state,
+    bool shutdown_latched,
+    size_t waypoint_count,
+    uint8_t bsp_bus_status)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
@@ -287,7 +333,7 @@ void telemetry_write_row(
 
     std::fprintf(
         file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s\n",
+        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s,%s,%u,%zu,%u\n",
         timestamp_ms,
         scenario,
         nav_mode_name(state->mode),
@@ -304,7 +350,11 @@ void telemetry_write_row(
         along_track_m,
         static_cast<unsigned>(odom_fault),
         static_cast<unsigned>(health_score),
-        health_mode_name(health_mode));
+        health_mode_name(health_mode),
+        power_state_name(power_state),
+        shutdown_latched ? 1U : 0U,
+        waypoint_count,
+        static_cast<unsigned>(bsp_bus_status));
 }
 
 void init_test_waypoint_route(
@@ -441,6 +491,204 @@ void print_scenario_banner(SensorScenario scenario)
         "notas");
     std::printf(
         "----------------------------------------------------------------\n");
+}
+
+void run_fault_injection_scenario(FILE *telemetry_file)
+{
+    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+
+    SensorsSimulation sensors;
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
+
+    DeadReckoningFilter nav;
+    dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
+
+    SystemHealthMonitor health{};
+    power_manager_init();
+
+    bool safe_stop_active = false;
+    float safe_stop_heading_deg = kCruiseCourseDeg;
+    NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    bool radio_cmd_injected = false;
+    size_t waypoint_count_before_radio = 0U;
+
+    StaticWaypointBuffer route{};
+    Waypoint leg_origin{};
+    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+
+    float cruise_speed_mps = kCruiseSpeedMps;
+    float prev_cross_track_m = 0.0f;
+    float synthetic_course_deg = kCruiseCourseDeg;
+    const float dt_s = static_cast<float>(kStepMs) * 0.001f;
+
+    std::printf("\n");
+    std::printf("================================================================\n");
+    std::printf(" ESCENARIO: Inyeccion automatizada de fallos (timeline)\n");
+    std::printf("  t=5s  GPS -> DEGRADED | t=10s CMD_ADD_WAYPOINT | t=15s SPI -> CRITICAL\n");
+    std::printf("  Parada segura -> POWER_SAFE_SHUTDOWN al detenerse\n");
+    std::printf("================================================================\n");
+
+    for (uint32_t t_ms = 0U; t_ms <= kFaultInjectDurationMs; t_ms += kStepMs) {
+        apply_health_contingency_air(
+            &sensors,
+            &route,
+            health.mode,
+            safe_stop_active,
+            &prev_health_mode);
+
+        if (safe_stop_active) {
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        } else {
+            apply_closed_loop_heading_control(
+                &sensors,
+                prev_cross_track_m,
+                &synthetic_course_deg,
+                dt_s);
+        }
+
+        ImuSample imu{};
+        GpsSample gps{};
+
+        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps)) {
+            continue;
+        }
+
+        if (t_ms >= kFaultInjectGpsLossMs) {
+            gps.fix_valid = false;
+            gps.satellites = 0U;
+        }
+
+        const uint32_t tick_index = t_ms / kStepMs;
+        const uint8_t scenario_satellites = gps.fix_valid ? gps.satellites : 0U;
+
+        if (t_ms == kFaultInjectGpsLossMs) {
+            std::printf(
+                ">>> t=5.0s (tick %u): FALLO GPS forzado -> objetivo salud DEGRADED\n",
+                tick_index);
+        }
+
+        dead_reckoning_update_imu(&nav, &imu, &health);
+        if (gps.fix_valid) {
+            dead_reckoning_update_gps(&nav, &gps, &health);
+        }
+
+        if (t_ms == kFaultInjectRadioCmdMs && !radio_cmd_injected) {
+            waypoint_count_before_radio = route.count;
+
+            RadioCommandPacket radio_cmd{};
+            radio_cmd.magic = RADIO_CMD_MAGIC;
+            radio_cmd.command_type = static_cast<uint8_t>(CMD_ADD_WAYPOINT);
+            radio_cmd.sequence = 10U;
+            radio_cmd.pos_x = nav.state.position.x;
+            radio_cmd.pos_y = nav.state.position.y + kWaypointLonStepDeg;
+            radio_cmd.param = nav.state.position.z;
+            radio_cmd.checksum = command_ingest_compute_checksum(&radio_cmd);
+
+            const bool ingest_ok = command_ingest_parse(&radio_cmd, &route, &cruise_speed_mps);
+            radio_cmd_injected = true;
+
+            std::printf(
+                ">>> t=10.0s (tick %u): RadioCommandPacket CMD_ADD_WAYPOINT | ingest=%s | WP count %zu -> %zu\n",
+                tick_index,
+                ingest_ok ? "OK" : "FAIL",
+                waypoint_count_before_radio,
+                route.count);
+        }
+
+        if (t_ms == kFaultInjectSpiTimeoutMs) {
+            std::printf(
+                ">>> t=15.0s (tick %u): Violacion SPI (TIMEOUT) -> objetivo salud CRITICAL\n",
+                tick_index);
+        }
+
+        const bool odom_fault_active = dead_reckoning_has_odom_fault(&nav);
+        const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(
+            nav.state.confidence.estimate_quality);
+        const uint8_t worst_bsp_bus = fault_injection_worst_bsp_bus(
+            t_ms,
+            odom_fault_active,
+            nav.state.confidence.estimate_quality);
+
+        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+        log_health_contingency_transition(health.mode, &prev_health_mode, false);
+
+        if (diagnostic_requires_safe_stop(&health) && t_ms >= kFaultInjectSpiTimeoutMs) {
+            if (!safe_stop_active) {
+                safe_stop_active = true;
+                safe_stop_heading_deg = nav.state.heading_deg;
+                std::printf(
+                    ">>> SAFE STOP en tick %u (t=%.1fs) | HEALTH_CRITICAL score=%u\n",
+                    tick_index,
+                    static_cast<float>(t_ms) * 0.001f,
+                    static_cast<unsigned>(health.health_score));
+            }
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        }
+
+        const float speed_mps = navstate_speed_mps(&nav.state);
+        const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
+        power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
+
+        if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
+            power_manager_is_shutdown_latched() &&
+            t_ms >= kFaultInjectSpiTimeoutMs &&
+            vehicle_stopped) {
+            if ((t_ms % 1000U) == 0U || t_ms == kFaultInjectSpiTimeoutMs + 5000U) {
+                std::printf(
+                    ">>> t=%.1fs: POWER_SAFE_SHUTDOWN latched | speed=%.3f m/s | periph_mask=0x%08X\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    speed_mps,
+                    power_manager_get_disabled_periph_mask());
+            }
+        }
+
+        const GuidanceErrors guidance = guidance_tick_update_route(
+            &route,
+            &leg_origin,
+            nav.state.position);
+
+        prev_cross_track_m = guidance.cross_track_m;
+
+        telemetry_write_row(
+            telemetry_file,
+            t_ms,
+            "FAULT_INJECTION",
+            &nav.state,
+            scenario_satellites,
+            &guidance,
+            odom_fault_active ? 1U : 0U,
+            health.health_score,
+            health.mode,
+            power_manager_get_state(),
+            power_manager_is_shutdown_latched(),
+            route.count,
+            worst_bsp_bus);
+
+        if ((t_ms % 1000U) == 0U) {
+            std::printf(
+                "[t=%5.1fs] mode=%-14s quality=%.3f health=%s(%u) power=%s shutdown=%u speed=%.2f wp=%zu bsp=%u\n",
+                static_cast<float>(t_ms) * 0.001f,
+                nav_mode_name(nav.state.mode),
+                nav.state.confidence.estimate_quality,
+                health_mode_name(health.mode),
+                static_cast<unsigned>(health.health_score),
+                power_state_name(power_manager_get_state()),
+                power_manager_is_shutdown_latched() ? 1U : 0U,
+                speed_mps,
+                route.count,
+                static_cast<unsigned>(worst_bsp_bus));
+        }
+    }
+
+    std::printf("----------------------------------------------------------------\n");
+    std::printf(
+        "Resultado [FAULT_INJECTION]: health=%s(%u) power=%s shutdown=%u wp=%zu radio=%s\n",
+        health_mode_name(health.mode),
+        static_cast<unsigned>(health.health_score),
+        power_state_name(power_manager_get_state()),
+        power_manager_is_shutdown_latched() ? 1U : 0U,
+        route.count,
+        radio_cmd_injected ? "injected" : "pending");
 }
 
 void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
@@ -594,7 +842,11 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             &guidance,
             odom_fault_active ? 1U : 0U,
             health.health_score,
-            health.mode);
+            health.mode,
+            POWER_PERFORMANCE,
+            false,
+            route.count,
+            worst_bsp_bus);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -742,7 +994,11 @@ void run_scenario_submarine(FILE *telemetry_file)
             &guidance,
             0U,
             health.health_score,
-            health.mode);
+            health.mode,
+            POWER_PERFORMANCE,
+            false,
+            route.count,
+            worst_bsp_bus);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -785,7 +1041,7 @@ void run_scenario_submarine(FILE *telemetry_file)
 int main()
 {
     std::printf("NaviCore-3D — Simulador de estres PC\n");
-    std::printf("Escenario seleccionado: %s\n", sensor_scenario_name(kSelectedScenario));
+    std::printf("Escenario principal: inyeccion automatizada de fallos (FAULT_INJECTION)\n");
 
     FILE *telemetry_file = telemetry_open(kTelemetryCsvPath);
     if (telemetry_file == NULL) {
@@ -796,11 +1052,11 @@ int main()
     telemetry_write_header(telemetry_file);
     std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
 
-    run_sensor_scenario(telemetry_file, kSelectedScenario);
-    run_scenario_submarine(telemetry_file);
+    run_fault_injection_scenario(telemetry_file);
 
     std::fclose(telemetry_file);
 
     std::printf("\nSimulacion completada. Gemelo Digital: %s\n", kTelemetryCsvPath);
+    std::printf("Visualizar: python tools/visualizer.py\n");
     return 0;
 }

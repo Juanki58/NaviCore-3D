@@ -120,9 +120,11 @@ uint8_t command_ingest_compute_checksum(const RadioCommandPacket *packet)
 
     const uint8_t *bytes = (const uint8_t *)packet;
     uint8_t sum = 0U;
-    size_t i = 0U;
 
-    for (i = 0U; i < (sizeof(RadioCommandPacket) - 1U); ++i) {
+    for (size_t i = 0U; i < sizeof(RadioCommandPacket); ++i) {
+        if (i == 3U) {
+            continue;
+        }
         sum = (uint8_t)(sum + bytes[i]);
     }
 

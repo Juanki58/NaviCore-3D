@@ -34,6 +34,8 @@ target_compile_definitions(NaviCore3D_VehicleDemo PRIVATE NAVICORE_VEHICLE_BUS_D
 add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/main.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
+    ${NAVICORE_AMBIQ_DIR}/power_state_machine.cpp
+    ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 

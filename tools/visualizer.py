@@ -5,6 +5,7 @@ NaviCore-3D Digital Twin — visualizador de telemetría.
 Lee docs/telemetria_navicore.csv (pandas) y renderiza por escenario:
   - Trayectoria 3D coloreada según el modo de navegación.
   - Evolución temporal de Cross-Track y Along-Track Error (m).
+  - Regiones de OdomFault (contingencia inercial por fallo de ruedas).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 MODE_COLORS: dict[str, str] = {
     "GPS": "#2ecc71",
@@ -71,6 +73,7 @@ def load_telemetry(csv_path: Path) -> pd.DataFrame:
         "Rumbo",
         "CrossTrack_m",
         "AlongTrack_m",
+        "OdomFault",
     }
     missing = required - set(df.columns)
     if missing:
@@ -168,11 +171,81 @@ def plot_scenario_3d(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.legend(handles=mode_handles, loc="upper left", fontsize=8, title="Modo")
 
 
+def iter_odom_fault_intervals(
+    time_s: np.ndarray, odom_fault: np.ndarray
+) -> list[tuple[float, float]]:
+    """Devuelve intervalos [t_start, t_end] donde OdomFault == 1."""
+    fault = odom_fault == 1
+    if not fault.any():
+        return []
+
+    dt = float(np.median(np.diff(time_s))) if len(time_s) > 1 else 0.0
+    intervals: list[tuple[float, float]] = []
+    start_idx: int | None = None
+
+    for idx, active in enumerate(fault):
+        if active and start_idx is None:
+            start_idx = idx
+        elif not active and start_idx is not None:
+            t_start = time_s[start_idx] - (dt * 0.5 if start_idx > 0 else 0.0)
+            t_end = time_s[idx - 1] + dt * 0.5
+            intervals.append((t_start, t_end))
+            start_idx = None
+
+    if start_idx is not None:
+        t_start = time_s[start_idx] - (dt * 0.5 if start_idx > 0 else 0.0)
+        t_end = time_s[-1] + dt * 0.5
+        intervals.append((t_start, t_end))
+
+    return intervals
+
+
+def plot_odom_fault_regions(ax: plt.Axes, time_s: np.ndarray, odom_fault: np.ndarray) -> bool:
+    """Pinta regiones rojas semi-transparentes en tramos con OdomFault == 1."""
+    intervals = iter_odom_fault_intervals(time_s, odom_fault)
+    if not intervals:
+        return False
+
+    for t_start, t_end in intervals:
+        ax.axvspan(
+            t_start,
+            t_end,
+            color="#e74c3c",
+            alpha=0.25,
+            zorder=0,
+        )
+        ax.axvline(
+            t_start,
+            color="#e74c3c",
+            linewidth=0.8,
+            linestyle="--",
+            alpha=0.6,
+            zorder=1,
+        )
+        ax.axvline(
+            t_end,
+            color="#e74c3c",
+            linewidth=0.8,
+            linestyle="--",
+            alpha=0.6,
+            zorder=1,
+        )
+
+    return True
+
+
 def plot_track_errors(ax: plt.Axes, df: pd.DataFrame) -> None:
     scenario = df["Escenario"].iloc[0]
     time_s = df["Timestamp_ms"].to_numpy(dtype=float) * 1e-3
     cross_track = df["CrossTrack_m"].to_numpy(dtype=float)
     along_track = df["AlongTrack_m"].to_numpy(dtype=float)
+    odom_fault = df["OdomFault"].to_numpy(dtype=int)
+
+    ax2 = ax.twinx()
+    ax2.set_ylim(0.0, 1.0)
+    ax2.set_yticks([])
+    ax2.set_ylabel("")
+    has_fault = plot_odom_fault_regions(ax2, time_s, odom_fault)
 
     ax.plot(
         time_s,
@@ -180,6 +253,7 @@ def plot_track_errors(ax: plt.Axes, df: pd.DataFrame) -> None:
         color="#e67e22",
         linewidth=1.5,
         label="Cross-Track Error",
+        zorder=3,
     )
     ax.plot(
         time_s,
@@ -187,14 +261,23 @@ def plot_track_errors(ax: plt.Axes, df: pd.DataFrame) -> None:
         color="#9b59b6",
         linewidth=1.5,
         label="Along-Track Error",
+        zorder=3,
     )
 
     ax.set_title(f"{scenario} — Errores de trayectoria")
     ax.set_xlabel("Tiempo (s)")
     ax.set_ylabel("Error (m)")
-    ax.axhline(0, color="gray", linewidth=0.6, linestyle="--", alpha=0.5)
-    ax.legend(loc="upper right", fontsize=8)
-    ax.grid(True, alpha=0.3)
+    ax.axhline(0, color="gray", linewidth=0.6, linestyle="--", alpha=0.5, zorder=2)
+    ax.grid(True, alpha=0.3, zorder=1)
+
+    legend_handles, legend_labels = ax.get_legend_handles_labels()
+    if has_fault:
+        legend_handles = list(legend_handles) + [
+            Patch(facecolor="#e74c3c", alpha=0.25, edgecolor="#e74c3c", label="OdomFault (inercial puro)")
+        ]
+        legend_labels = list(legend_labels) + ["OdomFault (inercial puro)"]
+
+    ax.legend(handles=legend_handles, labels=legend_labels, loc="upper right", fontsize=8)
 
 
 def build_figure(df: pd.DataFrame) -> plt.Figure:

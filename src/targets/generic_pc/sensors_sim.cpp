@@ -48,6 +48,11 @@ static void sensor_fault_apply_defaults(SensorFaultInjection *inj, SensorScenari
         inj->imu_accel_drift_per_tick[1] = 0.02f;
         inj->imu_gyro_drift_per_tick[2] = 0.002f;
     }
+
+    if (scenario == SCENARIO_ODOM_LOSS) {
+        inj->gps_loss_start_tick = SENSOR_FAULT_ODOM_LOSS_START_TICK_DEFAULT;
+        inj->odom_fault_start_tick = SENSOR_FAULT_ODOM_LOSS_START_TICK_DEFAULT;
+    }
 }
 
 static void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
@@ -67,7 +72,11 @@ static void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
 
 static void sensor_fault_apply_gps(SensorFaultInjection *inj, GpsSample *sample)
 {
-    if (inj == NULL || sample == NULL || inj->scenario != SCENARIO_GPS_LOSS) {
+    if (inj == NULL || sample == NULL) {
+        return;
+    }
+
+    if (inj->scenario != SCENARIO_GPS_LOSS && inj->scenario != SCENARIO_ODOM_LOSS) {
         return;
     }
 
@@ -231,6 +240,8 @@ const char *sensor_scenario_name(SensorScenario scenario)
         return "GPS_LOSS";
     case SCENARIO_IMU_DRIFT:
         return "IMU_DRIFT";
+    case SCENARIO_ODOM_LOSS:
+        return "ODOM_LOSS";
     default:
         return "UNKNOWN";
     }
@@ -275,6 +286,22 @@ bool sensors_simulation_tick(
     sensor_fault_apply_gps(&ctx->faults, gps_out);
 
     ctx->faults.tick_index++;
+    return true;
+}
+
+bool sensors_simulation_read_wheel_odometry(const SensorsSimulation *ctx, float *speed_mps)
+{
+    if (ctx == NULL || speed_mps == NULL) {
+        return false;
+    }
+
+    if (ctx->faults.scenario == SCENARIO_ODOM_LOSS
+        && ctx->faults.tick_index > ctx->faults.odom_fault_start_tick) {
+        *speed_mps = 0.0f;
+        return true;
+    }
+
+    *speed_mps = ctx->gps.speed_mps;
     return true;
 }
 

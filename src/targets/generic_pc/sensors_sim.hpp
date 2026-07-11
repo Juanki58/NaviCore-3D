@@ -10,9 +10,11 @@ typedef enum {
     SCENARIO_CLEAN = 0,
     SCENARIO_GPS_LOSS,
     SCENARIO_IMU_DRIFT,
+    SCENARIO_ODOM_LOSS,
 } SensorScenario;
 
 #define SENSOR_FAULT_GPS_LOSS_START_TICK_DEFAULT 3U
+#define SENSOR_FAULT_ODOM_LOSS_START_TICK_DEFAULT 100U
 
 typedef struct {
     float accel_bias[3];
@@ -41,6 +43,7 @@ typedef struct {
     SensorScenario scenario;
     uint32_t tick_index;
     uint32_t gps_loss_start_tick;
+    uint32_t odom_fault_start_tick;
     float imu_accel_drift_per_tick[3];
     float imu_gyro_drift_per_tick[3];
     float imu_accel_drift_accum[3];
@@ -79,6 +82,7 @@ bool sensors_simulation_tick(
     uint32_t timestamp_ms,
     ImuSample *imu_out,
     GpsSample *gps_out);
+bool sensors_simulation_read_wheel_odometry(const SensorsSimulation *ctx, float *speed_mps);
 
 void sensors_simulation_apply_heading_control(
     SensorsSimulation *ctx,

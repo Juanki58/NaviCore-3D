@@ -30,7 +30,7 @@ constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
-constexpr SensorScenario kSelectedScenario = SCENARIO_GPS_LOSS;
+constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
 constexpr float kWaypointLonStepDeg = 0.00018f;
 constexpr uint32_t kWaypointArrivalRadiusM = 15U;
@@ -74,7 +74,7 @@ void telemetry_write_header(FILE *file)
 
     std::fprintf(
         file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m\n");
+        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault\n");
 }
 
 void telemetry_write_row(
@@ -83,7 +83,8 @@ void telemetry_write_row(
     const char *scenario,
     const NavState *state,
     uint8_t scenario_satellites,
-    const GuidanceErrors *guidance)
+    const GuidanceErrors *guidance,
+    uint8_t odom_fault)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
@@ -94,7 +95,7 @@ void telemetry_write_row(
 
     std::fprintf(
         file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f\n",
+        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u\n",
         timestamp_ms,
         scenario,
         nav_mode_name(state->mode),
@@ -108,7 +109,8 @@ void telemetry_write_row(
         state->velocity.z,
         state->heading_deg,
         cross_track_m,
-        along_track_m);
+        along_track_m,
+        static_cast<unsigned>(odom_fault));
 }
 
 void init_test_waypoint_route(
@@ -220,6 +222,13 @@ void print_scenario_banner(SensorScenario scenario)
         std::printf(" ESCENARIO: Deriva IMU acumulativa\n");
         std::printf("  Velocidad: %.0f m/s | Bias creciente en accel/gyro\n", kCruiseSpeedMps);
         break;
+    case SCENARIO_ODOM_LOSS:
+        std::printf(" ESCENARIO: Perdida de odometria (Aire/Tierra)\n");
+        std::printf(
+            "  Velocidad: %.0f m/s | GPS invalido y odometria=0 desde t=%.0f s\n",
+            kCruiseSpeedMps,
+            static_cast<float>(SENSOR_FAULT_ODOM_LOSS_START_TICK_DEFAULT * kStepMs) * 0.001f);
+        break;
     default:
         std::printf(" ESCENARIO: Desconocido\n");
         break;
@@ -256,6 +265,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
     constexpr uint32_t kDurationMs = 20000U;
     bool prev_gps_valid = true;
+    bool prev_odom_fault = false;
     float prev_cross_track_m = 0.0f;
     float synthetic_course_deg = kCruiseCourseDeg;
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
@@ -277,7 +287,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
         const uint32_t tick_index = sensors.faults.tick_index - 1U;
         const uint8_t scenario_satellites = gps.fix_valid ? gps.satellites : 0U;
 
-        if (scenario == SCENARIO_GPS_LOSS) {
+        if (scenario == SCENARIO_GPS_LOSS || scenario == SCENARIO_ODOM_LOSS) {
             if (gps.fix_valid && !prev_gps_valid) {
                 std::printf(
                     ">>> t=%.1fs (tick %u): GPS RECUPERADO (%u satelites)\n",
@@ -303,6 +313,29 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             dead_reckoning_update_gps(&nav, &gps);
         }
 
+        if (scenario == SCENARIO_ODOM_LOSS) {
+            float wheel_speed_mps = 0.0f;
+            if (sensors_simulation_read_wheel_odometry(&sensors, &wheel_speed_mps)) {
+                dead_reckoning_update_wheel_odometry(&nav, wheel_speed_mps, false, t_ms);
+            }
+        }
+
+        const bool odom_fault_active = dead_reckoning_has_odom_fault(&nav);
+        if (scenario == SCENARIO_ODOM_LOSS) {
+            if (odom_fault_active && !prev_odom_fault) {
+                std::printf(
+                    ">>> t=%.1fs (tick %u): FALLO ODOMETRIA detectado (consistencia cinematica)\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    tick_index);
+            } else if (!odom_fault_active && prev_odom_fault) {
+                std::printf(
+                    ">>> t=%.1fs (tick %u): ODOMETRIA recuperada\n",
+                    static_cast<float>(t_ms) * 0.001f,
+                    tick_index);
+            }
+        }
+        prev_odom_fault = odom_fault_active;
+
         const GuidanceErrors guidance = guidance_tick_update_route(
             &route,
             &leg_origin,
@@ -316,13 +349,17 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             sensor_scenario_name(scenario),
             &nav.state,
             scenario_satellites,
-            &guidance);
+            &guidance,
+            odom_fault_active ? 1U : 0U);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
             if (scenario == SCENARIO_GPS_LOSS
                 && tick_index == SENSOR_FAULT_GPS_LOSS_START_TICK_DEFAULT) {
                 note = "<-- inicio outage (tick 3)";
+            } else if (scenario == SCENARIO_ODOM_LOSS
+                && tick_index == SENSOR_FAULT_ODOM_LOSS_START_TICK_DEFAULT) {
+                note = "<-- inicio outage GPS + odometria=0";
             } else if (scenario == SCENARIO_IMU_DRIFT && t_ms == 5000U) {
                 note = "<-- deriva visible en IMU";
             }
@@ -349,10 +386,11 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
     std::printf("----------------------------------------------------------------\n");
     std::printf(
-        "Resultado [%s]: mode=%s quality=%.3f\n",
+        "Resultado [%s]: mode=%s quality=%.3f odom_fault=%u\n",
         sensor_scenario_name(scenario),
         nav_mode_name(nav.state.mode),
-        nav.state.confidence.estimate_quality);
+        nav.state.confidence.estimate_quality,
+        dead_reckoning_has_odom_fault(&nav) ? 1U : 0U);
 }
 
 void run_scenario_submarine(FILE *telemetry_file)
@@ -407,7 +445,7 @@ void run_scenario_submarine(FILE *telemetry_file)
             &leg_origin,
             nav.state.position);
 
-        telemetry_write_row(telemetry_file, t_ms, "SUBMARINE", &nav.state, 0U, &guidance);
+        telemetry_write_row(telemetry_file, t_ms, "SUBMARINE", &nav.state, 0U, &guidance, 0U);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);

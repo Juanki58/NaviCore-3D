@@ -154,6 +154,9 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->last_pressure_pa = 0.0f;
     filter->last_pressure_timestamp_ms = 0U;
     filter->pressure_sample_valid = false;
+    filter->quality = NAVICORE_QUALITY_NONE;
+    filter->imu_predicted_speed_mps = 0.0f;
+    filter->imu_speed_prediction_valid = false;
 }
 
 bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu)
@@ -191,6 +194,9 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
             0.0f,
             40.0f);
     }
+
+    filter->imu_predicted_speed_mps = horizontal_speed_mps;
+    filter->imu_speed_prediction_valid = true;
 
     float vertical_rate_mps = filter->state.velocity.z;
     if (filter->state.domain == NAVICORE_DOMAIN_AIR &&
@@ -252,6 +258,8 @@ bool dead_reckoning_update_gps(DeadReckoningFilter *filter, const GpsSample *gps
         gps->speed_mps,
         filter->state.heading_deg,
         filter->state.velocity.z);
+    filter->imu_predicted_speed_mps = gps->speed_mps;
+    filter->imu_speed_prediction_valid = true;
 
     filter->state.timestamp_ms = gps->timestamp_ms;
     filter->last_gps_timestamp_ms = gps->timestamp_ms;
@@ -304,6 +312,31 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
     }
 
     const float ground_speed_mps = fabsf(speed_mps);
+
+    if (filter->imu_speed_prediction_valid) {
+        const float speed_delta = fabsf(ground_speed_mps - filter->imu_predicted_speed_mps);
+        if (speed_delta > NAVICORE_ODOM_FAULT_THRESHOLD) {
+            filter->quality |= NAVICORE_QUALITY_ODOM_FAULT;
+
+            if (timestamp_ms >= filter->state.timestamp_ms) {
+                filter->state.timestamp_ms = timestamp_ms;
+            }
+
+            if (filter->state.mode != NAV_MODE_GPS && filter->state.mode != NAV_MODE_HYBRID) {
+                filter->state.mode = NAV_MODE_DEAD_RECKONING;
+                dead_reckoning_set_dead_reckoning_confidence(filter);
+            }
+
+            filter->state.confidence.estimate_quality = clampf(
+                filter->state.confidence.estimate_quality - 0.10f,
+                0.15f,
+                0.85f);
+            return true;
+        }
+    }
+
+    filter->quality &= (NavQuality)(~NAVICORE_QUALITY_ODOM_FAULT);
+
     const float heading_deg = reverse
         ? navstate_normalize_heading(filter->state.heading_deg + 180.0f)
         : filter->state.heading_deg;
@@ -329,4 +362,22 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
     }
 
     return true;
+}
+
+NavQuality dead_reckoning_get_quality(const DeadReckoningFilter *filter)
+{
+    if (filter == NULL) {
+        return NAVICORE_QUALITY_NONE;
+    }
+
+    return filter->quality;
+}
+
+bool dead_reckoning_has_odom_fault(const DeadReckoningFilter *filter)
+{
+    if (filter == NULL) {
+        return false;
+    }
+
+    return (filter->quality & NAVICORE_QUALITY_ODOM_FAULT) != 0U;
 }

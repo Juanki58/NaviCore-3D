@@ -185,14 +185,3 @@ uint32_t time_guard_pc_refresh_hz(void)
 {
     return TIME_GUARD_PC_REFRESH_HZ;
 }
-
-#if defined(NAVICORE_TARGET_AMBIQ) && !defined(NAVICORE_AMBIQ_SDK)
-
-extern "C" uint32_t am_hal_stimer_counter_get(void)
-{
-    static uint32_t g_stimer_stub = 0U;
-    g_stimer_stub += 1U;
-    return g_stimer_stub;
-}
-
-#endif

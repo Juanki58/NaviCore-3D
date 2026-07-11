@@ -48,6 +48,7 @@ add_executable(NaviCore3D_Ambiq
     ${NAVICORE_AMBIQ_DIR}/main_ambiq.cpp
     ${NAVICORE_AMBIQ_DIR}/bsp_sensors.cpp
     ${NAVICORE_AMBIQ_DIR}/telemetry_uart.cpp
+    ${NAVICORE_AMBIQ_DIR}/power_state_machine.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
     ${NAVICORE_AMBIQ_DRIVER_SOURCES}
     ${NAVICORE_CORE_SOURCES}

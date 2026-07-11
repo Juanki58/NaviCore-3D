@@ -31,17 +31,13 @@ typedef struct {
     NavQuality quality;
     float imu_predicted_speed_mps;
     bool imu_speed_prediction_valid;
+    uint32_t calibration_ticks;
+    bool is_calibrated;
     float bias_accel_x;
     float bias_gyro_z;
-    float bias_accel_x_sum;
-    float bias_gyro_z_sum;
-    uint32_t bias_sample_count;
-    uint32_t calibration_tick_count;
-    bool bias_calibration_complete;
-    float last_odom_speed_mps;
-    float pending_bias_accel_x;
-    float pending_bias_gyro_z;
-    bool pending_imu_sample_valid;
+    float accel_x_sum;
+    float gyro_z_sum;
+    uint32_t calibration_samples;
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);

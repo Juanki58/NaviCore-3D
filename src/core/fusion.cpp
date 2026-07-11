@@ -140,55 +140,35 @@ static bool dead_reckoning_gps_passes_innovation_gate(const DeadReckoningFilter 
 
 static void dead_reckoning_finalize_bias_calibration(DeadReckoningFilter *filter)
 {
-    if (filter->bias_sample_count > 0U) {
-        const float inv_count = 1.0f / (float)filter->bias_sample_count;
+    if (filter->calibration_samples > 0U) {
+        const float inv_count = 1.0f / (float)filter->calibration_samples;
 
-        filter->bias_accel_x = filter->bias_accel_x_sum * inv_count;
-        filter->bias_gyro_z = filter->bias_gyro_z_sum * inv_count;
+        filter->bias_accel_x = filter->accel_x_sum * inv_count;
+        filter->bias_gyro_z = filter->gyro_z_sum * inv_count;
     }
 
-    filter->bias_calibration_complete = true;
+    filter->is_calibrated = true;
 }
 
-static void dead_reckoning_bias_calibration_accumulate(
-    DeadReckoningFilter *filter,
-    float odom_speed_mps)
+static void dead_reckoning_bias_calibration_step(DeadReckoningFilter *filter, const ImuSample *imu)
 {
-    filter->last_odom_speed_mps = fabsf(odom_speed_mps);
+    filter->calibration_ticks++;
 
-    if (!filter->pending_imu_sample_valid) {
-        return;
+    if (filter->calibration_ticks <= NAVICORE_BIAS_CALIBRATION_TICKS) {
+        const float speed_mps = horizontal_speed_from_velocity(
+            filter->state.velocity.x,
+            filter->state.velocity.y);
+
+        if (speed_mps <= NAVICORE_EPS_SPEED_MPS) {
+            filter->accel_x_sum += imu->accel_mps2[0];
+            filter->gyro_z_sum += imu->gyro_radps[2];
+            filter->calibration_samples++;
+        }
+
+        if (filter->calibration_ticks == NAVICORE_BIAS_CALIBRATION_TICKS) {
+            dead_reckoning_finalize_bias_calibration(filter);
+        }
     }
-
-    if (filter->calibration_tick_count <= NAVICORE_BIAS_CALIBRATION_TICKS &&
-        filter->last_odom_speed_mps <= NAVICORE_EPS_SPEED_MPS) {
-        filter->bias_accel_x_sum += filter->pending_bias_accel_x;
-        filter->bias_gyro_z_sum += filter->pending_bias_gyro_z;
-        filter->bias_sample_count++;
-    }
-
-    if (filter->calibration_tick_count == NAVICORE_BIAS_CALIBRATION_TICKS) {
-        dead_reckoning_finalize_bias_calibration(filter);
-    }
-
-    filter->pending_imu_sample_valid = false;
-}
-
-static void dead_reckoning_bias_calibration_commit_pending(DeadReckoningFilter *filter)
-{
-    if (!filter->pending_imu_sample_valid) {
-        return;
-    }
-
-    dead_reckoning_bias_calibration_accumulate(filter, filter->last_odom_speed_mps);
-}
-
-static void dead_reckoning_bias_calibration_capture_imu(DeadReckoningFilter *filter, const ImuSample *imu)
-{
-    filter->calibration_tick_count++;
-    filter->pending_bias_accel_x = imu->accel_mps2[0];
-    filter->pending_bias_gyro_z = imu->gyro_radps[2];
-    filter->pending_imu_sample_valid = true;
 }
 
 static void dead_reckoning_apply_imu_bias_correction(
@@ -200,7 +180,7 @@ static void dead_reckoning_apply_imu_bias_correction(
     *forward_accel_out = imu->accel_mps2[0];
     *yaw_rate_radps_out = imu->gyro_radps[2];
 
-    if (filter->calibration_tick_count > NAVICORE_BIAS_CALIBRATION_TICKS) {
+    if (filter->calibration_ticks > NAVICORE_BIAS_CALIBRATION_TICKS) {
         *forward_accel_out -= filter->bias_accel_x;
         *yaw_rate_radps_out -= filter->bias_gyro_z;
     }
@@ -225,17 +205,13 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->quality = NAVICORE_QUALITY_NONE;
     filter->imu_predicted_speed_mps = 0.0f;
     filter->imu_speed_prediction_valid = false;
+    filter->calibration_ticks = 0U;
+    filter->is_calibrated = false;
     filter->bias_accel_x = 0.0f;
     filter->bias_gyro_z = 0.0f;
-    filter->bias_accel_x_sum = 0.0f;
-    filter->bias_gyro_z_sum = 0.0f;
-    filter->bias_sample_count = 0U;
-    filter->calibration_tick_count = 0U;
-    filter->bias_calibration_complete = false;
-    filter->last_odom_speed_mps = 0.0f;
-    filter->pending_bias_accel_x = 0.0f;
-    filter->pending_bias_gyro_z = 0.0f;
-    filter->pending_imu_sample_valid = false;
+    filter->accel_x_sum = 0.0f;
+    filter->gyro_z_sum = 0.0f;
+    filter->calibration_samples = 0U;
 }
 
 bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu)
@@ -244,13 +220,10 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
         return false;
     }
 
-    dead_reckoning_bias_calibration_capture_imu(filter, imu);
+    dead_reckoning_bias_calibration_step(filter, imu);
 
     const uint32_t prev_ms = filter->state.timestamp_ms;
     if (prev_ms == 0U) {
-        if (filter->last_odom_speed_mps <= NAVICORE_EPS_SPEED_MPS) {
-            dead_reckoning_bias_calibration_commit_pending(filter);
-        }
         filter->state.timestamp_ms = imu->timestamp_ms;
         return true;
     }
@@ -306,11 +279,6 @@ bool dead_reckoning_update_imu(DeadReckoningFilter *filter, const ImuSample *imu
     filter->state.timestamp_ms = imu->timestamp_ms;
     filter->state.mode = NAV_MODE_DEAD_RECKONING;
     dead_reckoning_set_dead_reckoning_confidence(filter);
-
-    if (filter->last_odom_speed_mps <= NAVICORE_EPS_SPEED_MPS) {
-        dead_reckoning_bias_calibration_commit_pending(filter);
-    }
-
     return true;
 }
 
@@ -402,8 +370,6 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
     }
 
     const float ground_speed_mps = fabsf(speed_mps);
-
-    dead_reckoning_bias_calibration_accumulate(filter, ground_speed_mps);
 
     if (filter->imu_speed_prediction_valid) {
         const float speed_delta = fabsf(ground_speed_mps - filter->imu_predicted_speed_mps);

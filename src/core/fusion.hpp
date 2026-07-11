@@ -45,6 +45,14 @@ typedef uint8_t NavQuality;
 #define NAVICORE_IMU_LPF_ALPHA 0.20f
 #endif
 
+#ifndef NAVICORE_ODOM_MEASUREMENT_VARIANCE_M2
+#define NAVICORE_ODOM_MEASUREMENT_VARIANCE_M2 4.0f
+#endif
+
+#ifndef NAVICORE_SLIP_RATIO_THRESHOLD
+#define NAVICORE_SLIP_RATIO_THRESHOLD 0.15f
+#endif
+
 typedef struct {
     NavState state;
     float imu_weight;
@@ -69,6 +77,10 @@ typedef struct {
     float pitch_rad;
     float roll_rad;
     float filtered_accel[3];
+    bool slip_fault_active;
+    float slip_ratio;
+    float odom_noise_covariance_scale;
+    float odom_measurement_variance_m2;
 } DeadReckoningFilter;
 
 void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position, NavDomain domain);

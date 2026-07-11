@@ -33,14 +33,22 @@ typedef enum {
 
 #define TIME_GUARD_WCET_PENALTY     40U
 
+/** Codigos de error de compensacion de patinaje (slip_compensation). */
+#define SLIP_COMP_ERROR_NONE        0U
+#define SLIP_COMP_ERROR_SLIP        1U
+
+#define SLIP_COMP_HEALTH_PENALTY    25U
+
 typedef struct {
     NavHealthMode mode;
     uint8_t health_score;
     uint8_t last_filter_quality;
     uint8_t last_bsp_bus_status;
     uint8_t last_time_guard_error;
+    uint8_t last_slip_comp_error;
     uint32_t last_execution_ticks;
     uint32_t last_max_allowed_ticks;
+    float last_slip_ratio;
     uint32_t update_count;
 } SystemHealthMonitor;
 

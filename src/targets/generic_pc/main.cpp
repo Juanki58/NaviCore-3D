@@ -15,6 +15,7 @@
 #include "guidance.hpp"
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
+#include "diagnostic.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -28,6 +29,7 @@ constexpr float kCruiseCourseDeg = 90.0f;
 constexpr float kKpHeading = 0.5f;
 constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
+constexpr float kSafeStopDecelMps2 = 3.0f;
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
@@ -49,6 +51,75 @@ const char *nav_mode_name(NavMode mode)
     default:
         return "UNKNOWN";
     }
+}
+
+const char *health_mode_name(NavHealthMode mode)
+{
+    switch (mode) {
+    case HEALTH_NOMINAL:
+        return "NOMINAL";
+    case HEALTH_DEGRADED:
+        return "DEGRADED";
+    case HEALTH_CRITICAL:
+        return "CRITICAL";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+uint8_t pc_simulate_worst_bsp_bus_status(bool odom_fault_active, float filter_quality)
+{
+    uint8_t imu_bus = DIAG_BSP_BUS_IDLE;
+    uint8_t baro_bus = DIAG_BSP_BUS_IDLE;
+
+    if (odom_fault_active) {
+        imu_bus = DIAG_BSP_BUS_ERROR;
+    }
+
+    if (filter_quality < 0.20f) {
+        baro_bus = DIAG_BSP_BUS_TIMEOUT;
+    } else if (filter_quality < 0.40f) {
+        baro_bus = DIAG_BSP_BUS_ERROR;
+    }
+
+    return (imu_bus > baro_bus) ? imu_bus : baro_bus;
+}
+
+void apply_safe_stop_air(
+    SensorsSimulation *sensors,
+    DeadReckoningFilter *nav,
+    float hold_heading_deg,
+    float dt_s)
+{
+    if (sensors == NULL || nav == NULL) {
+        return;
+    }
+
+    float speed_mps = sensors->gps.speed_mps;
+    speed_mps -= kSafeStopDecelMps2 * dt_s;
+    if (speed_mps < 0.0f) {
+        speed_mps = 0.0f;
+    }
+
+    sensors->gps.speed_mps = speed_mps;
+    sensors->gps.course_deg = hold_heading_deg;
+    sensors->imu.commanded_yaw_rate_radps = 0.0f;
+    sensors->imu.commanded_forward_accel_mps2 =
+        (speed_mps > 0.0f) ? -kSafeStopDecelMps2 : 0.0f;
+
+    const float heading_rad = static_cast<float>(hold_heading_deg * (M_PI / 180.0));
+    nav->state.heading_deg = hold_heading_deg;
+    nav->state.velocity.x = speed_mps * std::cos(heading_rad);
+    nav->state.velocity.y = speed_mps * std::sin(heading_rad);
+}
+
+void apply_safe_stop_submarine(DeadReckoningFilter *nav)
+{
+    if (nav == NULL) {
+        return;
+    }
+
+    nav->state.velocity.z = 0.0f;
 }
 
 bool telemetry_ensure_docs_dir()
@@ -74,7 +145,7 @@ void telemetry_write_header(FILE *file)
 
     std::fprintf(
         file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault\n");
+        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode\n");
 }
 
 void telemetry_write_row(
@@ -84,7 +155,9 @@ void telemetry_write_row(
     const NavState *state,
     uint8_t scenario_satellites,
     const GuidanceErrors *guidance,
-    uint8_t odom_fault)
+    uint8_t odom_fault,
+    uint8_t health_score,
+    NavHealthMode health_mode)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
@@ -95,7 +168,7 @@ void telemetry_write_row(
 
     std::fprintf(
         file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u\n",
+        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s\n",
         timestamp_ms,
         scenario,
         nav_mode_name(state->mode),
@@ -110,7 +183,9 @@ void telemetry_write_row(
         state->heading_deg,
         cross_track_m,
         along_track_m,
-        static_cast<unsigned>(odom_fault));
+        static_cast<unsigned>(odom_fault),
+        static_cast<unsigned>(health_score),
+        health_mode_name(health_mode));
 }
 
 void init_test_waypoint_route(
@@ -257,6 +332,10 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
 
+    SystemHealthMonitor health{};
+    bool safe_stop_active = false;
+    float safe_stop_heading_deg = kCruiseCourseDeg;
+
     StaticWaypointBuffer route{};
     Waypoint leg_origin{};
     init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
@@ -271,11 +350,15 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
-        apply_closed_loop_heading_control(
-            &sensors,
-            prev_cross_track_m,
-            &synthetic_course_deg,
-            dt_s);
+        if (safe_stop_active) {
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        } else {
+            apply_closed_loop_heading_control(
+                &sensors,
+                prev_cross_track_m,
+                &synthetic_course_deg,
+                dt_s);
+        }
 
         ImuSample imu;
         GpsSample gps;
@@ -336,6 +419,27 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
         }
         prev_odom_fault = odom_fault_active;
 
+        const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(
+            nav.state.confidence.estimate_quality);
+        const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(
+            odom_fault_active,
+            nav.state.confidence.estimate_quality);
+        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+
+        if (diagnostic_requires_safe_stop(&health)) {
+            if (!safe_stop_active) {
+                safe_stop_active = true;
+                safe_stop_heading_deg = nav.state.heading_deg;
+                std::printf(
+                    ">>> SAFE STOP activado en tick %u (t=%.1fs) | HEALTH_CRITICAL score=%u | rumbo=%.1f deg\n",
+                    tick_index,
+                    static_cast<float>(t_ms) * 0.001f,
+                    static_cast<unsigned>(health.health_score),
+                    safe_stop_heading_deg);
+            }
+            apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
+        }
+
         const GuidanceErrors guidance = guidance_tick_update_route(
             &route,
             &leg_origin,
@@ -350,7 +454,9 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             &nav.state,
             scenario_satellites,
             &guidance,
-            odom_fault_active ? 1U : 0U);
+            odom_fault_active ? 1U : 0U,
+            health.health_score,
+            health.mode);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -366,12 +472,14 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
             const float t_s = static_cast<float>(t_ms) * 0.001f;
             std::printf(
-                "[t=%5.1fs] tick=%-4u mode=%-14s quality=%.3f scenario_sats=%u fix_valid=%s fix_age=%u ms | "
+                "[t=%5.1fs] tick=%-4u mode=%-14s quality=%.3f health=%s(%u) scenario_sats=%u fix_valid=%s fix_age=%u ms | "
                 "heading=%.1f speed=%.2f m/s\n",
                 t_s,
                 tick_index,
                 nav_mode_name(nav.state.mode),
                 nav.state.confidence.estimate_quality,
+                health_mode_name(health.mode),
+                static_cast<unsigned>(health.health_score),
                 scenario_satellites,
                 gps.fix_valid ? "yes" : "no",
                 nav.state.confidence.fix_age_ms,
@@ -386,11 +494,14 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
     std::printf("----------------------------------------------------------------\n");
     std::printf(
-        "Resultado [%s]: mode=%s quality=%.3f odom_fault=%u\n",
+        "Resultado [%s]: mode=%s quality=%.3f health=%s(%u) odom_fault=%u safe_stop=%s\n",
         sensor_scenario_name(scenario),
         nav_mode_name(nav.state.mode),
         nav.state.confidence.estimate_quality,
-        dead_reckoning_has_odom_fault(&nav) ? 1U : 0U);
+        health_mode_name(health.mode),
+        static_cast<unsigned>(health.health_score),
+        dead_reckoning_has_odom_fault(&nav) ? 1U : 0U,
+        safe_stop_active ? "yes" : "no");
 }
 
 void run_scenario_submarine(FILE *telemetry_file)
@@ -399,6 +510,10 @@ void run_scenario_submarine(FILE *telemetry_file)
 
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, surface, NAVICORE_DOMAIN_SEA);
+
+    SystemHealthMonitor health{};
+    bool safe_stop_active = false;
+    float frozen_pressure_pa = kSurfacePressurePa;
 
     StaticWaypointBuffer route{};
     Waypoint leg_origin{};
@@ -432,7 +547,11 @@ void run_scenario_submarine(FILE *telemetry_file)
         imu_simulator_read(&imu_sim, t_ms, &imu);
 
         const float t_s = static_cast<float>(t_ms) * 0.001f;
-        pressure.pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
+        if (safe_stop_active) {
+            pressure.pressure_pa = frozen_pressure_pa;
+        } else {
+            pressure.pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
+        }
         pressure.temperature_c = 10.0f;
         pressure.timestamp_ms = t_ms;
         pressure.valid = true;
@@ -440,12 +559,42 @@ void run_scenario_submarine(FILE *telemetry_file)
         dead_reckoning_update_imu(&nav, &imu);
         dead_reckoning_update_pressure(&nav, &pressure, kSurfacePressurePa);
 
+        const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(
+            nav.state.confidence.estimate_quality);
+        const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(false, nav.state.confidence.estimate_quality);
+        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
+
+        if (diagnostic_requires_safe_stop(&health)) {
+            if (!safe_stop_active) {
+                safe_stop_active = true;
+                frozen_pressure_pa = pressure.pressure_pa;
+                const uint32_t tick_index = t_ms / kStepMs;
+                std::printf(
+                    ">>> SAFE STOP activado en tick %u (t=%.1fs) | HEALTH_CRITICAL score=%u | inmersion detenida\n",
+                    tick_index,
+                    t_s,
+                    static_cast<unsigned>(health.health_score));
+            }
+            apply_safe_stop_submarine(&nav);
+            pressure.pressure_pa = frozen_pressure_pa;
+            nav.state.position.z = frozen_pressure_pa;
+        }
+
         const GuidanceErrors guidance = guidance_tick_update_route(
             &route,
             &leg_origin,
             nav.state.position);
 
-        telemetry_write_row(telemetry_file, t_ms, "SUBMARINE", &nav.state, 0U, &guidance, 0U);
+        telemetry_write_row(
+            telemetry_file,
+            t_ms,
+            "SUBMARINE",
+            &nav.state,
+            0U,
+            &guidance,
+            0U,
+            health.health_score,
+            health.mode);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -473,11 +622,14 @@ void run_scenario_submarine(FILE *telemetry_file)
 
     std::printf("----------------------------------------------------------------\n");
     std::printf(
-        "Resultado: pos.z=%.1f Pa (esperado %.1f) | vel.z=%.1f Pa/s (esperado %.1f)\n",
+        "Resultado: pos.z=%.1f Pa (esperado %.1f) | vel.z=%.1f Pa/s (esperado %.1f) | health=%s(%u) safe_stop=%s\n",
         nav.state.position.z,
         kSurfacePressurePa + (kSubmersionPressureRatePaS * 10.0f),
         nav.state.velocity.z,
-        kSubmersionPressureRatePaS);
+        kSubmersionPressureRatePaS,
+        health_mode_name(health.mode),
+        static_cast<unsigned>(health.health_score),
+        safe_stop_active ? "yes" : "no");
 }
 
 } // namespace

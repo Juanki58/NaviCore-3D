@@ -33,7 +33,7 @@ void Ingest_IMU(const ImuSample &imu_data)
 void Ingest_GNSS(const GpsSample &gnss_data)
 {
     ensure_initialized();
-    dead_reckoning_update_gps(&g_filter, &gnss_data);
+    dead_reckoning_update_gps(&g_filter, &gnss_data, NULL);
 }
 
 void Ingest_WheelOdometry(const WheelOdometry &odo_data)

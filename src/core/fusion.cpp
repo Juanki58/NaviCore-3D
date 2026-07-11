@@ -401,6 +401,10 @@ void dead_reckoning_init(DeadReckoningFilter *filter, Vector3D initial_position,
     filter->filtered_accel[0] = 0.0f;
     filter->filtered_accel[1] = 0.0f;
     filter->filtered_accel[2] = 0.0f;
+    filter->slip_fault_active = false;
+    filter->slip_ratio = 0.0f;
+    filter->odom_noise_covariance_scale = 1.0f;
+    filter->odom_measurement_variance_m2 = NAVICORE_ODOM_MEASUREMENT_VARIANCE_M2;
 }
 
 bool dead_reckoning_update_imu(
@@ -575,7 +579,7 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
 
     if (filter->imu_speed_prediction_valid) {
         const float speed_delta = fabsf(ground_speed_mps - filter->imu_predicted_speed_mps);
-        if (speed_delta > NAVICORE_ODOM_FAULT_THRESHOLD) {
+        if (speed_delta > NAVICORE_ODOM_FAULT_THRESHOLD && !filter->slip_fault_active) {
             filter->quality |= NAVICORE_QUALITY_ODOM_FAULT;
 
             if (timestamp_ms >= filter->state.timestamp_ms) {
@@ -597,12 +601,23 @@ bool dead_reckoning_update_wheel_odometry(DeadReckoningFilter *filter, float spe
 
     filter->quality &= (NavQuality)(~NAVICORE_QUALITY_ODOM_FAULT);
 
+    float trusted_wheel_speed_mps = ground_speed_mps;
+
+    if (filter->odom_noise_covariance_scale > 1.0f && filter->imu_speed_prediction_valid) {
+        const float wheel_trust = 1.0f / filter->odom_noise_covariance_scale;
+        trusted_wheel_speed_mps =
+            (wheel_trust * ground_speed_mps) +
+            ((1.0f - wheel_trust) * filter->imu_predicted_speed_mps);
+    }
+
+    (void)filter->odom_measurement_variance_m2;
+
     const float heading_deg = reverse
         ? navstate_normalize_heading(filter->state.heading_deg + 180.0f)
         : filter->state.heading_deg;
 
     filter->state.velocity = velocity_from_speed_heading(
-        ground_speed_mps,
+        trusted_wheel_speed_mps,
         heading_deg,
         filter->state.velocity.z);
 
@@ -639,5 +654,6 @@ bool dead_reckoning_has_odom_fault(const DeadReckoningFilter *filter)
         return false;
     }
 
-    return (filter->quality & NAVICORE_QUALITY_ODOM_FAULT) != 0U;
+    return (filter->quality & NAVICORE_QUALITY_ODOM_FAULT) != 0U ||
+        filter->slip_fault_active;
 }

@@ -37,8 +37,21 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 ### FASE B: Hardware Real (Medio Plazo)
 
-- [ ] **Remoción de stubs Ambiq**: Sustituir el entorno en `src/targets/ambiq_apollo/drivers/` por las llamadas reales a las librerías `am_hal_*` del SDK de Ambiq Apollo4 sobre silicio.
-- [ ] **Filtro de deriva inercial (bias térmico)**: Diseñar la calibración estática inicial para compensar el drift térmico de los giroscopios en laboratorio.
+> **Guía oficial (LOCKED):** [`docs/navicore_v1_hardware_blueprint_locked.md`](docs/navicore_v1_hardware_blueprint_locked.md) — tag `navicore_v1_hardware_blueprint_locked`
+
+**Fase 1 — Banco de pruebas (mesa de laboratorio):**
+
+- [ ] Apollo4 Plus / Blue Lite EVB + J-Link SWD
+- [ ] IMU MPU-9250 o BMX160 (SPI) + GNSS u-blox NEO-M8N/M9N (UART 9600)
+- [ ] Breadboard, Dupont, analizador lógico 8ch @ 24 MHz
+
+**Fase 2 — Drivers bare-metal (sustituir stubs):**
+
+- [ ] **IOM SPI @ 1 MHz + DMA**: lectura atómica 6 ejes IMU (`ambiq_iom_master`, `ambiq_spi_imu_stub`)
+- [ ] **UART0 GNSS RX @ 9600**: ISR → buffer circular 128 slots, drop-oldest (`command_ingestor` como patrón)
+- [ ] **Parser NMEA estático**: `$GNGGA`, checksum, lat/lon → metros, zero-heap → `fusion`
+- [ ] **Remoción de stubs Ambiq**: llamadas reales `am_hal_*` del SDK Apollo4 sobre silicio
+- [ ] **Filtro de deriva inercial (bias térmico)**: calibración estática inicial en laboratorio
 
 ### FASE C: Certificación e Industrialización (Largo Plazo)
 

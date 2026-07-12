@@ -1,0 +1,82 @@
+{
+  "simulation_name": "NaviCore-3D SIL — flota 7 UAVs (banco de validación)",
+  "tick_rate_hz": 100,
+  "origin": {
+    "lat_deg": 41.3874,
+    "lon_deg": 2.1686,
+    "alt_m": 0.0
+  },
+  "simulation_fleet": [
+    {
+      "uav_id": 1,
+      "truth_port": 5301,
+      "sensor_port": 5401,
+      "actuator_port": 5501,
+      "navicore_telemetry_port": 5201,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3874, "lon_deg": 2.1686, "alt_m": 10.0 },
+      "sensors": ["visible_camera_01", "rangefinder_down"]
+    },
+    {
+      "uav_id": 2,
+      "truth_port": 5302,
+      "sensor_port": 5402,
+      "actuator_port": 5502,
+      "navicore_telemetry_port": 5202,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3875, "lon_deg": 2.1687, "alt_m": 12.0 },
+      "sensors": ["visible_camera_01"]
+    },
+    {
+      "uav_id": 3,
+      "truth_port": 5303,
+      "sensor_port": 5403,
+      "actuator_port": 5503,
+      "navicore_telemetry_port": 5203,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3876, "lon_deg": 2.1688, "alt_m": 15.0 },
+      "sensors": ["visible_camera_01", "lwir_camera_01", "rangefinder_down"],
+      "control_step": { "surface": "throttle", "value": 1.0, "start_ms": 5000 }
+    },
+    {
+      "uav_id": 4,
+      "truth_port": 5304,
+      "sensor_port": 5404,
+      "actuator_port": 5504,
+      "navicore_telemetry_port": 5204,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3877, "lon_deg": 2.1689, "alt_m": 11.0 },
+      "sensors": ["rangefinder_down"]
+    },
+    {
+      "uav_id": 5,
+      "truth_port": 5305,
+      "sensor_port": 5405,
+      "actuator_port": 5505,
+      "navicore_telemetry_port": 5205,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3878, "lon_deg": 2.1690, "alt_m": 13.0 },
+      "sensors": ["visible_camera_01"]
+    },
+    {
+      "uav_id": 6,
+      "truth_port": 5306,
+      "sensor_port": 5406,
+      "actuator_port": 5506,
+      "navicore_telemetry_port": 5206,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3879, "lon_deg": 2.1691, "alt_m": 14.0 },
+      "sensors": ["visible_camera_01"]
+    },
+    {
+      "uav_id": 7,
+      "truth_port": 5307,
+      "sensor_port": 5407,
+      "actuator_port": 5507,
+      "navicore_telemetry_port": 5207,
+      "model_asset_path": "Prefabs/UAV_Quad_Carbon",
+      "initial_position": { "lat_deg": 41.3880, "lon_deg": 2.1692, "alt_m": 16.0 },
+      "sensors": ["visible_camera_01", "rangefinder_forward"]
+    }
+  ]
+}

@@ -24,6 +24,7 @@
 #include "power_state_machine.hpp"
 #include "time_guard.hpp"
 #include "telemetry_udp_sender.hpp"
+#include "telemetry_udp.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -58,6 +59,8 @@ constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
 constexpr const char *kTelemetryUdpHost = "127.0.0.1";
 constexpr int kTelemetryUdpPort = 5005;
 constexpr const char *kHighDemandScenarioName = "HIGH_DEMAND_STRESS_TEST";
+constexpr float kAmbientTemperatureC = 25.0f;
+constexpr float kSubmarineTemperatureC = 10.0f;
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
@@ -120,6 +123,53 @@ const char *power_state_name(PowerState state)
     default:
         return "UNKNOWN";
     }
+}
+
+uint8_t telemetry_scenario_id_from_sensor(SensorScenario scenario)
+{
+    switch (scenario) {
+    case SCENARIO_CLEAN:
+        return TELEM_SCENARIO_CLEAN;
+    case SCENARIO_GPS_LOSS:
+        return TELEM_SCENARIO_GPS_LOSS;
+    case SCENARIO_IMU_DRIFT:
+        return TELEM_SCENARIO_IMU_DRIFT;
+    case SCENARIO_ODOM_LOSS:
+        return TELEM_SCENARIO_ODOM_LOSS;
+    default:
+        return TELEM_SCENARIO_UNKNOWN;
+    }
+}
+
+uint8_t telemetry_scenario_id_from_name(const char *scenario)
+{
+    if (scenario == NULL) {
+        return TELEM_SCENARIO_UNKNOWN;
+    }
+
+    if (std::strcmp(scenario, kHighDemandScenarioName) == 0) {
+        return TELEM_SCENARIO_HIGH_DEMAND;
+    }
+    if (std::strcmp(scenario, "FAULT_INJECTION") == 0) {
+        return TELEM_SCENARIO_FAULT_INJECTION;
+    }
+    if (std::strcmp(scenario, "SUBMARINE") == 0) {
+        return TELEM_SCENARIO_SUBMARINE;
+    }
+    if (std::strcmp(scenario, sensor_scenario_name(SCENARIO_CLEAN)) == 0) {
+        return TELEM_SCENARIO_CLEAN;
+    }
+    if (std::strcmp(scenario, sensor_scenario_name(SCENARIO_GPS_LOSS)) == 0) {
+        return TELEM_SCENARIO_GPS_LOSS;
+    }
+    if (std::strcmp(scenario, sensor_scenario_name(SCENARIO_IMU_DRIFT)) == 0) {
+        return TELEM_SCENARIO_IMU_DRIFT;
+    }
+    if (std::strcmp(scenario, sensor_scenario_name(SCENARIO_ODOM_LOSS)) == 0) {
+        return TELEM_SCENARIO_ODOM_LOSS;
+    }
+
+    return TELEM_SCENARIO_UNKNOWN;
 }
 
 uint8_t pc_simulate_worst_bsp_bus_status(bool odom_fault_active, float filter_quality)
@@ -341,7 +391,9 @@ void telemetry_write_row(
     bool shutdown_latched,
     size_t waypoint_count,
     uint8_t bsp_bus_status,
-    uint32_t radio_dropped_packets)
+    uint32_t radio_dropped_packets,
+    uint8_t scenario_id,
+    float temperature_c)
 {
     if (file == NULL || state == NULL || scenario == NULL) {
         return;
@@ -383,9 +435,14 @@ void telemetry_write_row(
         state->position.x,
         state->position.y,
         state->position.z,
+        cross_track_m,
+        along_track_m,
         health_score,
         static_cast<uint8_t>(health_mode),
-        dropped_packets_udp);
+        dropped_packets_udp,
+        scenario_id,
+        static_cast<uint8_t>(state->mode),
+        temperature_c);
 }
 
 void post_diagnostic_recovery_step(
@@ -845,7 +902,9 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             power_manager_is_shutdown_latched(),
             route.count,
             worst_bsp_bus,
-            command_ingestor_hw_dropped_packets());
+            command_ingestor_hw_dropped_packets(),
+            TELEM_SCENARIO_HIGH_DEMAND,
+            kAmbientTemperatureC);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1057,7 +1116,9 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             power_manager_is_shutdown_latched(),
             route.count,
             worst_bsp_bus,
-            command_ingestor_hw_dropped_packets());
+            command_ingestor_hw_dropped_packets(),
+            TELEM_SCENARIO_FAULT_INJECTION,
+            kAmbientTemperatureC);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1243,7 +1304,9 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             false,
             route.count,
             worst_bsp_bus,
-            command_ingestor_hw_dropped_packets());
+            command_ingestor_hw_dropped_packets(),
+            telemetry_scenario_id_from_sensor(scenario),
+            kAmbientTemperatureC);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -1397,7 +1460,9 @@ void run_scenario_submarine(FILE *telemetry_file)
             false,
             route.count,
             worst_bsp_bus,
-            command_ingestor_hw_dropped_packets());
+            command_ingestor_hw_dropped_packets(),
+            TELEM_SCENARIO_SUBMARINE,
+            kSubmarineTemperatureC);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);

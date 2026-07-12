@@ -83,7 +83,7 @@ python tools/remote_visualizer.py
 ./build/NaviCore3D_Sim.exe
 ./build/NaviCore3D_Sim.exe --no-udp   # sin red (CI / headless)
 
-# Pruebas del protocolo UDP (24 bytes: magic, seq, timestamp, pos, score, flags)
+# Pruebas del protocolo UDP (32 bytes v3: escenario, nav_mode, cross/along, temperatura)
 python tools/test_udp_telemetry.py
 python tools/test_udp_faults.py
 python tools/test_udp_integration.py

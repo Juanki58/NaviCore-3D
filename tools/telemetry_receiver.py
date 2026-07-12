@@ -11,7 +11,8 @@ from typing import Deque
 from telemetry_protocol import (
     COLOR_MAP,
     PACKET_SIZE,
-    TELEMETRY_UDP_MAGIC,
+    SCENARIO_NAMES,
+    TELEMETRY_SCENARIO_UNKNOWN,
     unpack_packet,
 )
 
@@ -22,11 +23,18 @@ class TelemetrySample:
     x: float
     y: float
     z: float
+    cross_track_m: float
+    along_track_m: float
     score: int
     mode: str
     color: str
     dropped_packets: int
     seq: int
+    scenario_id: int
+    scenario_name: str
+    nav_mode: int
+    nav_mode_name: str
+    temperature_c: float
 
 
 class TelemetryReceiver:
@@ -87,11 +95,18 @@ class TelemetryReceiver:
                 x=decoded["x"],
                 y=decoded["y"],
                 z=decoded["z"],
+                cross_track_m=decoded["cross_track_m"],
+                along_track_m=decoded["along_track_m"],
                 score=decoded["score"],
                 mode=decoded["mode_str"],
                 color=decoded["color"],
                 dropped_packets=decoded["dropped_packets"],
                 seq=decoded["seq"],
+                scenario_id=decoded["scenario_id"],
+                scenario_name=decoded["scenario_name"],
+                nav_mode=decoded["nav_mode"],
+                nav_mode_name=decoded["nav_mode_name"],
+                temperature_c=decoded["temperature_c"],
             )
             self.samples.append(sample)
             self._dirty = True
@@ -120,3 +135,8 @@ class TelemetryReceiver:
         if self.seq_gaps > 0:
             return f"degradado ({self.seq_gaps} huecos)"
         return "nominal"
+
+    def latest_scenario_name(self) -> str:
+        if not self.samples:
+            return SCENARIO_NAMES[TELEMETRY_SCENARIO_UNKNOWN]
+        return self.samples[-1].scenario_name

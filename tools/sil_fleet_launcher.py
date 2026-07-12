@@ -18,7 +18,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="NaviCore-3D SIL fleet launcher")
     parser.add_argument(
         "--manifest",
+        "--config",
         type=Path,
+        dest="manifest",
         default=ROOT / "docs" / "sil_fleet_manifest.example.json",
     )
     parser.add_argument("--host", default="127.0.0.1")

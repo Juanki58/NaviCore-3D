@@ -1,4 +1,8 @@
 build/
+src/targets/pico_w/build/
+src/targets/pico_w/wifi_config.h
+src/targets/pico2_hardware/wifi_config.h
+build-pico2/
 __pycache__/
 *.pyc
 *.obj

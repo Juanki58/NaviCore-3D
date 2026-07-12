@@ -22,6 +22,7 @@
 #include "recovery_guard.hpp"
 #include "power_state_machine.hpp"
 #include "time_guard.hpp"
+#include "telemetry_udp_sender.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -53,6 +54,8 @@ constexpr float kHighDemandRadioStepDeg = 0.000120f;
 constexpr float kHighDemandGeomViolationStepDeg = 0.0020f;
 
 constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
+constexpr const char *kTelemetryUdpHost = "127.0.0.1";
+constexpr int kTelemetryUdpPort = 5005;
 constexpr const char *kHighDemandScenarioName = "HIGH_DEMAND_STRESS_TEST";
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
@@ -371,6 +374,16 @@ void telemetry_write_row(
         waypoint_count,
         static_cast<unsigned>(bsp_bus_status),
         static_cast<unsigned>(radio_dropped_packets));
+
+    const uint16_t dropped_packets_udp =
+        static_cast<uint16_t>(radio_dropped_packets > 16383U ? 16383U : radio_dropped_packets);
+    telemetry_udp_send(
+        state->position.x,
+        state->position.y,
+        state->position.z,
+        health_score,
+        static_cast<uint8_t>(health_mode),
+        dropped_packets_udp);
 }
 
 void post_diagnostic_recovery_step(
@@ -1436,11 +1449,13 @@ int main()
     telemetry_write_header(telemetry_file);
     std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
 
+    telemetry_udp_init(kTelemetryUdpHost, kTelemetryUdpPort);
+
     run_high_demand_stress_test_scenario(telemetry_file);
 
     std::fclose(telemetry_file);
 
     std::printf("\nSimulacion completada. Gemelo Digital: %s\n", kTelemetryCsvPath);
-    std::printf("Visualizar: python tools/visualizer.py\n");
+    std::printf("Visualizar remoto: python tools/remote_visualizer.py\n");
     return 0;
 }

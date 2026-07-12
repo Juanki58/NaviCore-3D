@@ -38,6 +38,7 @@ target_compile_definitions(NaviCore3D_VehicleDemo PRIVATE NAVICORE_VEHICLE_BUS_D
 
 add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/main.cpp
+    ${NAVICORE_PC_DIR}/telemetry_udp_sender.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_AMBIQ_DIR}/power_state_machine.cpp
     ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
@@ -47,6 +48,9 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_AMBIQ_DIR}/ambiq_uart_telemetry.cpp
     ${NAVICORE_CORE_SOURCES}
 )
+if(WIN32)
+    target_link_libraries(NaviCore3D_Sim PRIVATE ws2_32)
+endif()
 
 set(NAVICORE_AMBIQ_DRIVER_SOURCES
     ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_dma_stub.cpp

@@ -203,7 +203,7 @@ Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is writ
 |-------|--------|
 | **Now** | PC simulator + CSV black box + fusion core hardened |
 | **Now** | `NaviCore-Ambiq` — structural driver layer with host stubs (DMA/SPI/GPIO/UART/power) |
-| **Next** | Ambiq SDK HAL swap-in on Apollo4 silicon; MRAM-conscious build |
+| **Next** | Physical test bench + bare-metal drivers — see [`docs/navicore_v1_hardware_blueprint_locked.md`](docs/navicore_v1_hardware_blueprint_locked.md) |
 | **Twin** | Live telemetry → Digital Twin 3D dashboard |
 
 ---

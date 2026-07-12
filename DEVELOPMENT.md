@@ -85,6 +85,7 @@ python tools/remote_visualizer.py
 
 # Pruebas del protocolo UDP (24 bytes: magic, seq, timestamp, pos, score, flags)
 python tools/test_udp_telemetry.py
+python tools/test_udp_faults.py
 python tools/test_udp_integration.py
 ```
 

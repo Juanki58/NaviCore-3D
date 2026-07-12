@@ -15,6 +15,7 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 - **`src/targets/ambiq_apollo/`**: Capa estructural de drivers bare-metal (DMA, SPI, GPIO, UART, Power Monitor) con stubs para compilación cruzada en host.
 - **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
 - **`tools/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
+- **`tools/telemetry_protocol.py`** / **`tools/telemetry_receiver.py`**: Codec y capa de transporte UDP compartida.
 
 ---
 
@@ -77,11 +78,12 @@ cmake --build build --target NaviCore3D_VehicleDemo
 # Lanzar el Gemelo Digital (requiere: pip install matplotlib pandas)
 python tools/visualizer.py
 
-# Telemetría UDP en vivo (requiere: pip install matplotlib)
+# Telemetría UDP en vivo (requiere: pip install matplotlib numpy)
 python tools/remote_visualizer.py
 ./build/NaviCore3D_Sim.exe
+./build/NaviCore3D_Sim.exe --no-udp   # sin red (CI / headless)
 
-# Pruebas del protocolo UDP
+# Pruebas del protocolo UDP (24 bytes: magic, seq, timestamp, pos, score, flags)
 python tools/test_udp_telemetry.py
 python tools/test_udp_integration.py
 ```

@@ -1,4 +1,5 @@
 #include "telemetry_udp_sender.hpp"
+#include "telemetry_udp.hpp"
 
 #include <cstring>
 #include <iostream>
@@ -18,19 +19,11 @@ typedef int SOCKET;
 
 namespace {
 
-struct alignas(4) RemoteTelemetryPacket {
-    float pos_x;
-    float pos_y;
-    float pos_z;
-    uint16_t health_score;
-    uint16_t status_flags;
-};
-
-static_assert(sizeof(RemoteTelemetryPacket) == 16U, "RemoteTelemetryPacket debe ocupar 16 bytes");
+uint32_t g_send_failures = 0U;
 
 class TelemetrySender {
 public:
-    TelemetrySender(const char *ip, int port) : m_socket(INVALID_SOCKET), m_initialized(false)
+    TelemetrySender(const char *ip, int port) : m_socket(INVALID_SOCKET), m_initialized(false), m_seq(0U)
     {
 #ifdef _WIN32
         WSADATA wsa_data{};
@@ -82,13 +75,23 @@ public:
 
     bool is_ready() const { return m_initialized; }
 
-    void send_packet(float x, float y, float z, uint16_t score, uint8_t health_mode, uint16_t dropped)
+    void send_packet(
+        uint32_t timestamp_ms,
+        float x,
+        float y,
+        float z,
+        uint16_t score,
+        uint8_t health_mode,
+        uint16_t dropped)
     {
         if (!m_initialized) {
             return;
         }
 
         RemoteTelemetryPacket packet{};
+        packet.magic = TELEMETRY_UDP_MAGIC;
+        packet.seq = m_seq++;
+        packet.timestamp_ms = timestamp_ms;
         packet.pos_x = x;
         packet.pos_y = y;
         packet.pos_z = z;
@@ -104,7 +107,7 @@ public:
             reinterpret_cast<sockaddr *>(&m_dest_addr),
             sizeof(m_dest_addr));
         if (sent != static_cast<int>(sizeof(packet))) {
-            std::cerr << "[-] Fallo al enviar paquete UDP de telemetria" << std::endl;
+            ++g_send_failures;
         }
     }
 
@@ -112,6 +115,7 @@ private:
     SOCKET m_socket;
     sockaddr_in m_dest_addr;
     bool m_initialized;
+    uint16_t m_seq;
 };
 
 TelemetrySender *g_udp_sender = nullptr;
@@ -125,6 +129,7 @@ void telemetry_udp_init(const char *ip, int port)
 }
 
 void telemetry_udp_send(
+    uint32_t timestamp_ms,
     float x,
     float y,
     float z,
@@ -133,6 +138,23 @@ void telemetry_udp_send(
     uint16_t dropped)
 {
     if (g_udp_sender != nullptr) {
-        g_udp_sender->send_packet(x, y, z, score, health_mode, dropped);
+        g_udp_sender->send_packet(timestamp_ms, x, y, z, score, health_mode, dropped);
+    }
+}
+
+uint32_t telemetry_udp_send_failures()
+{
+    return g_send_failures;
+}
+
+void telemetry_udp_log_stats()
+{
+    if (g_udp_sender == nullptr) {
+        return;
+    }
+
+    const uint32_t failures = telemetry_udp_send_failures();
+    if (failures > 0U) {
+        std::printf("Telemetria UDP: %u envios fallidos\n", failures);
     }
 }

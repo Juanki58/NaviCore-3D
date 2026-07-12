@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cmath>
 #include <cerrno>
+#include <cstring>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -378,6 +379,7 @@ void telemetry_write_row(
     const uint16_t dropped_packets_udp =
         static_cast<uint16_t>(radio_dropped_packets > 16383U ? 16383U : radio_dropped_packets);
     telemetry_udp_send(
+        timestamp_ms,
         state->position.x,
         state->position.y,
         state->position.z,
@@ -1435,8 +1437,15 @@ void run_scenario_submarine(FILE *telemetry_file)
 
 } // namespace
 
-int main()
+int main(int argc, char *argv[])
 {
+    bool enable_udp = true;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--no-udp") == 0) {
+            enable_udp = false;
+        }
+    }
+
     std::printf("NaviCore-3D — Simulador de estres PC\n");
     std::printf("Escenario principal: HIGH_DEMAND_STRESS_TEST\n");
 
@@ -1449,13 +1458,19 @@ int main()
     telemetry_write_header(telemetry_file);
     std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
 
-    telemetry_udp_init(kTelemetryUdpHost, kTelemetryUdpPort);
+    if (enable_udp) {
+        telemetry_udp_init(kTelemetryUdpHost, kTelemetryUdpPort);
+    } else {
+        std::printf("Telemetria UDP: deshabilitada (--no-udp)\n");
+    }
 
     run_high_demand_stress_test_scenario(telemetry_file);
 
     std::fclose(telemetry_file);
+    telemetry_udp_log_stats();
 
     std::printf("\nSimulacion completada. Gemelo Digital: %s\n", kTelemetryCsvPath);
-    std::printf("Visualizar remoto: python tools/remote_visualizer.py\n");
+    std::printf("Visualizar CSV:     python tools/visualizer.py\n");
+    std::printf("Visualizar remoto:  python tools/remote_visualizer.py\n");
     return 0;
 }

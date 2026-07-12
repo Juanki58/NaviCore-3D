@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pruebas del protocolo UDP de telemetría NaviCore-3D (16 bytes, little-endian)."""
+"""Pruebas del protocolo UDP de telemetría NaviCore-3D (24 bytes, little-endian)."""
 
 from __future__ import annotations
 
@@ -7,55 +7,31 @@ import socket
 import struct
 import sys
 import unittest
+from pathlib import Path
 
-PACKET_FMT = "<fffHH"
-PACKET_SIZE = struct.calcsize(PACKET_FMT)
+TOOLS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOLS_DIR))
 
-HEALTH_MODES = {0: "NOMINAL", 1: "DEGRADED", 2: "CRITICAL"}
-COLOR_MAP = {"NOMINAL": "green", "DEGRADED": "orange", "CRITICAL": "red"}
-
-
-def pack_packet(
-    x: float,
-    y: float,
-    z: float,
-    score: int,
-    health_mode: int,
-    dropped: int,
-) -> bytes:
-    flags = (health_mode & 0x03) | ((dropped & 0x3FFF) << 2)
-    return struct.pack(PACKET_FMT, x, y, z, score, flags)
-
-
-def unpack_packet(data: bytes) -> dict:
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"Paquete invalido: {len(data)} bytes (esperado {PACKET_SIZE})")
-
-    x, y, z, score, flags = struct.unpack(PACKET_FMT, data)
-    mode_bits = flags & 0x03
-    dropped_packets = flags >> 2
-    mode_str = HEALTH_MODES.get(mode_bits, "CRITICAL")
-
-    return {
-        "x": x,
-        "y": y,
-        "z": z,
-        "score": score,
-        "flags": flags,
-        "mode_bits": mode_bits,
-        "mode_str": mode_str,
-        "color": COLOR_MAP[mode_str],
-        "dropped_packets": dropped_packets,
-    }
+from telemetry_protocol import (  # noqa: E402
+    COLOR_MAP,
+    PACKET_SIZE,
+    TELEMETRY_UDP_MAGIC,
+    pack_packet,
+    unpack_packet,
+)
+from telemetry_receiver import TelemetryReceiver  # noqa: E402
 
 
 class TestPacketCodec(unittest.TestCase):
     def test_packet_size(self) -> None:
-        self.assertEqual(PACKET_SIZE, 16)
+        self.assertEqual(PACKET_SIZE, 24)
 
     def test_nominal_roundtrip(self) -> None:
-        payload = pack_packet(10.0, 20.0, 0.0, 95, 0, 0)
+        payload = pack_packet(1000, 10.0, 20.0, 0.0, 95, 0, 0, seq=7)
         decoded = unpack_packet(payload)
+        self.assertEqual(decoded["magic"], TELEMETRY_UDP_MAGIC)
+        self.assertEqual(decoded["seq"], 7)
+        self.assertEqual(decoded["timestamp_ms"], 1000)
         self.assertAlmostEqual(decoded["x"], 10.0)
         self.assertAlmostEqual(decoded["y"], 20.0)
         self.assertEqual(decoded["score"], 95)
@@ -70,28 +46,33 @@ class TestPacketCodec(unittest.TestCase):
             2: ("CRITICAL", "red"),
         }
         for mode, (name, color) in expected.items():
-            decoded = unpack_packet(pack_packet(1.0, 2.0, 3.0, 50, mode, 0))
+            decoded = unpack_packet(pack_packet(0, 1.0, 2.0, 3.0, 50, mode, 0))
             self.assertEqual(decoded["mode_str"], name)
             self.assertEqual(decoded["color"], color)
 
     def test_unknown_mode_defaults_to_critical(self) -> None:
-        decoded = unpack_packet(pack_packet(0.0, 0.0, 0.0, 10, 3, 0))
+        decoded = unpack_packet(pack_packet(0, 0.0, 0.0, 0.0, 10, 3, 0))
         self.assertEqual(decoded["mode_str"], "CRITICAL")
         self.assertEqual(decoded["color"], "red")
 
     def test_dropped_packets_encoding(self) -> None:
-        decoded = unpack_packet(pack_packet(0.0, 0.0, 0.0, 80, 1, 42))
+        decoded = unpack_packet(pack_packet(0, 0.0, 0.0, 0.0, 80, 1, 42))
         self.assertEqual(decoded["mode_str"], "DEGRADED")
         self.assertEqual(decoded["dropped_packets"], 42)
 
     def test_max_dropped_packets(self) -> None:
         dropped = 16383
-        decoded = unpack_packet(pack_packet(0.0, 0.0, 0.0, 100, 0, dropped))
+        decoded = unpack_packet(pack_packet(0, 0.0, 0.0, 0.0, 100, 0, dropped))
         self.assertEqual(decoded["dropped_packets"], dropped)
 
     def test_invalid_packet_length_raises(self) -> None:
         with self.assertRaises(ValueError):
             unpack_packet(b"\x00" * 8)
+
+    def test_invalid_magic_raises(self) -> None:
+        bad = pack_packet(0, 0.0, 0.0, 0.0, 50, 0, 0, magic=0x0000)
+        with self.assertRaises(ValueError):
+            unpack_packet(bad)
 
 
 class TestUdpLoopback(unittest.TestCase):
@@ -102,7 +83,7 @@ class TestUdpLoopback(unittest.TestCase):
         port = receiver.getsockname()[1]
 
         sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        payload = pack_packet(10.0, 20.0, 0.0, 95, 0, 0)
+        payload = pack_packet(500, 10.0, 20.0, 0.0, 95, 0, 0)
         sender.sendto(payload, ("127.0.0.1", port))
 
         data, _ = receiver.recvfrom(1024)
@@ -112,6 +93,27 @@ class TestUdpLoopback(unittest.TestCase):
 
         sender.close()
         receiver.close()
+
+
+class TestTelemetryReceiver(unittest.TestCase):
+    def test_receiver_validates_magic_and_seq_gaps(self) -> None:
+        rx = TelemetryReceiver(host="127.0.0.1", port=0)
+        port = rx.sock.getsockname()[1]
+        tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        tx.sendto(pack_packet(100, 1.0, 2.0, 0.0, 90, 0, 0, seq=1), ("127.0.0.1", port))
+        tx.sendto(pack_packet(200, 2.0, 3.0, 0.0, 80, 1, 0, seq=5), ("127.0.0.1", port))
+        tx.sendto(b"\x00" * 8, ("127.0.0.1", port))
+
+        self.assertEqual(rx.drain(), 2)
+        self.assertEqual(rx.packets_ok, 2)
+        self.assertEqual(rx.packets_invalid, 1)
+        self.assertEqual(rx.seq_gaps, 1)
+        self.assertEqual(len(rx.samples), 2)
+        self.assertAlmostEqual(rx.samples[-1].timestamp_s, 0.2)
+
+        tx.close()
+        rx.close()
 
 
 def main() -> int:

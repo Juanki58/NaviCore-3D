@@ -1,6 +1,7 @@
 #include "telemetry_udp_sender.hpp"
 #include "telemetry_udp.hpp"
 
+#include <cmath>
 #include <cstring>
 #include <iostream>
 
@@ -20,6 +21,24 @@ typedef int SOCKET;
 namespace {
 
 uint32_t g_send_failures = 0U;
+
+int16_t encode_temperature_deci_c(float temperature_c)
+{
+    const float clamped = (temperature_c < -327.0f) ? -327.0f : (temperature_c > 327.0f ? 327.0f : temperature_c);
+    return static_cast<int16_t>(std::lround(clamped * 10.0f));
+}
+
+int16_t encode_deci(float value_m)
+{
+    const float clamped = (value_m < -3276.7f) ? -3276.7f : (value_m > 3276.7f ? 3276.7f : value_m);
+    return static_cast<int16_t>(std::lround(clamped * 10.0f));
+}
+
+uint16_t encode_along_deci(float value_m)
+{
+    const float clamped = (value_m < 0.0f) ? 0.0f : (value_m > 6553.5f ? 6553.5f : value_m);
+    return static_cast<uint16_t>(std::lround(clamped * 10.0f));
+}
 
 class TelemetrySender {
 public:
@@ -58,7 +77,7 @@ public:
         }
 
         m_initialized = true;
-        std::cout << "[*] Emisor UDP configurado hacia " << ip << ":" << port << std::endl;
+        std::cout << "[*] Emisor UDP v3 (32B) configurado hacia " << ip << ":" << port << std::endl;
     }
 
     ~TelemetrySender()
@@ -80,9 +99,14 @@ public:
         float x,
         float y,
         float z,
+        float cross_track_m,
+        float along_track_m,
         uint16_t score,
         uint8_t health_mode,
-        uint16_t dropped)
+        uint16_t dropped,
+        uint8_t scenario_id,
+        uint8_t nav_mode,
+        float temperature_c)
     {
         if (!m_initialized) {
             return;
@@ -98,6 +122,11 @@ public:
         packet.health_score = score;
         packet.status_flags =
             static_cast<uint16_t>((health_mode & 0x03U) | (static_cast<uint16_t>(dropped) << 2));
+        packet.scenario_id = scenario_id;
+        packet.nav_mode = nav_mode;
+        packet.temperature_deci_c = encode_temperature_deci_c(temperature_c);
+        packet.cross_track_deci_m = encode_deci(cross_track_m);
+        packet.along_track_deci_m = encode_along_deci(along_track_m);
 
         const int sent = sendto(
             m_socket,
@@ -133,12 +162,29 @@ void telemetry_udp_send(
     float x,
     float y,
     float z,
+    float cross_track_m,
+    float along_track_m,
     uint16_t score,
     uint8_t health_mode,
-    uint16_t dropped)
+    uint16_t dropped,
+    uint8_t scenario_id,
+    uint8_t nav_mode,
+    float temperature_c)
 {
     if (g_udp_sender != nullptr) {
-        g_udp_sender->send_packet(timestamp_ms, x, y, z, score, health_mode, dropped);
+        g_udp_sender->send_packet(
+            timestamp_ms,
+            x,
+            y,
+            z,
+            cross_track_m,
+            along_track_m,
+            score,
+            health_mode,
+            dropped,
+            scenario_id,
+            nav_mode,
+            temperature_c);
     }
 }
 

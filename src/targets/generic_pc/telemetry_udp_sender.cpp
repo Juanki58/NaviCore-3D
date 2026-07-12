@@ -140,6 +140,29 @@ public:
         }
     }
 
+    void send_event(uint32_t timestamp_ms, uint8_t event_id, uint8_t param)
+    {
+        if (!m_initialized) {
+            return;
+        }
+
+        RemoteTelemetryEvent event{};
+        event.magic = TELEMETRY_UDP_EVENT_MAGIC;
+        event.packed = static_cast<uint16_t>((static_cast<uint16_t>(event_id) << 8) | param);
+        event.timestamp_ms = timestamp_ms;
+
+        const int sent = sendto(
+            m_socket,
+            reinterpret_cast<const char *>(&event),
+            sizeof(event),
+            0,
+            reinterpret_cast<sockaddr *>(&m_dest_addr),
+            sizeof(m_dest_addr));
+        if (sent != static_cast<int>(sizeof(event))) {
+            ++g_send_failures;
+        }
+    }
+
 private:
     SOCKET m_socket;
     sockaddr_in m_dest_addr;
@@ -185,6 +208,13 @@ void telemetry_udp_send(
             scenario_id,
             nav_mode,
             temperature_c);
+    }
+}
+
+void telemetry_udp_send_event(uint32_t timestamp_ms, uint8_t event_id, uint8_t param)
+{
+    if (g_udp_sender != nullptr) {
+        g_udp_sender->send_event(timestamp_ms, event_id, param);
     }
 }
 

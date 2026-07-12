@@ -28,6 +28,7 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/geometry_guard.cpp
     ${NAVICORE_CORE_DIR}/divergence_guard.cpp
     ${NAVICORE_CORE_DIR}/recovery_guard.cpp
+    ${NAVICORE_CORE_DIR}/navigation_cortex.cpp
 )
 
 add_executable(NaviCore3D_VehicleDemo

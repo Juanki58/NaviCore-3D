@@ -7,11 +7,15 @@ import struct
 from typing import TypedDict
 
 TELEMETRY_UDP_MAGIC = 0x4E43
+TELEMETRY_UDP_EVENT_MAGIC = 0x4E45
 TELEMETRY_UDP_DEFAULT_PORT = 5005
 TELEMETRY_UDP_DEFAULT_HOST = "127.0.0.1"
 
 PACKET_FMT = "<HHIfffHHBBhhH"
 PACKET_SIZE = struct.calcsize(PACKET_FMT)
+
+EVENT_FMT = "<HHI"
+EVENT_SIZE = struct.calcsize(EVENT_FMT)
 
 TELEMETRY_SCENARIO_HIGH_DEMAND = 0
 TELEMETRY_SCENARIO_FAULT_INJECTION = 1
@@ -43,6 +47,30 @@ NAV_MODE_NAMES = {
 HEALTH_MODES = {0: "NOMINAL", 1: "DEGRADED", 2: "CRITICAL"}
 COLOR_MAP = {"NOMINAL": "green", "DEGRADED": "orange", "CRITICAL": "red"}
 
+TELEM_EVENT_SAFE_STOP = 1
+TELEM_EVENT_HOT_RESTART = 2
+TELEM_EVENT_HEALTH_DEGRADED = 3
+TELEM_EVENT_HEALTH_CRITICAL = 4
+TELEM_EVENT_HEALTH_NOMINAL = 5
+TELEM_EVENT_GPS_LOST = 6
+TELEM_EVENT_GPS_RESTORED = 7
+TELEM_EVENT_WCET_VIOLATION = 8
+TELEM_EVENT_POWER_CONSERVATION = 9
+TELEM_EVENT_PREDICTIVE_DEGRADE = 10
+
+EVENT_NAMES = {
+    TELEM_EVENT_SAFE_STOP: "SAFE_STOP",
+    TELEM_EVENT_HOT_RESTART: "HOT_RESTART",
+    TELEM_EVENT_HEALTH_DEGRADED: "HEALTH_DEGRADED",
+    TELEM_EVENT_HEALTH_CRITICAL: "HEALTH_CRITICAL",
+    TELEM_EVENT_HEALTH_NOMINAL: "HEALTH_NOMINAL",
+    TELEM_EVENT_GPS_LOST: "GPS_LOST",
+    TELEM_EVENT_GPS_RESTORED: "GPS_RESTORED",
+    TELEM_EVENT_WCET_VIOLATION: "WCET_VIOLATION",
+    TELEM_EVENT_POWER_CONSERVATION: "POWER_CONSERVATION",
+    TELEM_EVENT_PREDICTIVE_DEGRADE: "PREDICTIVE_DEGRADE",
+}
+
 
 class DecodedPacket(TypedDict):
     magic: int
@@ -64,6 +92,14 @@ class DecodedPacket(TypedDict):
     dropped_packets: int
     scenario_name: str
     nav_mode_name: str
+
+
+class DecodedEvent(TypedDict):
+    magic: int
+    event_id: int
+    param: int
+    timestamp_ms: int
+    event_name: str
 
 
 def encode_flags(health_mode: int, dropped: int) -> int:
@@ -167,4 +203,35 @@ def unpack_packet(data: bytes) -> DecodedPacket:
         "dropped_packets": dropped_packets,
         "scenario_name": SCENARIO_NAMES.get(scenario_id, SCENARIO_NAMES[TELEMETRY_SCENARIO_UNKNOWN]),
         "nav_mode_name": NAV_MODE_NAMES.get(nav_mode, "UNKNOWN"),
+    }
+
+
+def pack_event(
+    timestamp_ms: int,
+    event_id: int,
+    param: int = 0,
+    magic: int = TELEMETRY_UDP_EVENT_MAGIC,
+) -> bytes:
+    packed = ((event_id & 0xFF) << 8) | (param & 0xFF)
+    return struct.pack(EVENT_FMT, magic, packed, timestamp_ms & 0xFFFFFFFF)
+
+
+def unpack_event(data: bytes) -> DecodedEvent:
+    if len(data) != EVENT_SIZE:
+        raise ValueError(f"Evento invalido: {len(data)} bytes (esperado {EVENT_SIZE})")
+
+    magic, packed, timestamp_ms = struct.unpack(EVENT_FMT, data)
+    if magic != TELEMETRY_UDP_EVENT_MAGIC:
+        raise ValueError(
+            f"Magic de evento invalido: 0x{magic:04X} (esperado 0x{TELEMETRY_UDP_EVENT_MAGIC:04X})"
+        )
+
+    event_id = (packed >> 8) & 0xFF
+    param = packed & 0xFF
+    return {
+        "magic": magic,
+        "event_id": event_id,
+        "param": param,
+        "timestamp_ms": timestamp_ms,
+        "event_name": EVENT_NAMES.get(event_id, f"EVENT_{event_id}"),
     }

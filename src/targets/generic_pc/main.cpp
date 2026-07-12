@@ -20,7 +20,7 @@
 #include "sensors_sim.hpp"
 #include "diagnostic.hpp"
 #include "command_ingestor.hpp"
-#include "recovery_guard.hpp"
+#include "navigation_cortex.hpp"
 #include "power_state_machine.hpp"
 #include "time_guard.hpp"
 #include "telemetry_udp_sender.hpp"
@@ -445,19 +445,45 @@ void telemetry_write_row(
         temperature_c);
 }
 
-void post_diagnostic_recovery_step(
-    DeadReckoningFilter *filter,
-    SystemHealthMonitor *monitor)
+void telemetry_udp_emit_events(uint32_t timestamp_ms, const NavigationDecision *decision)
 {
-    if (filter == NULL || monitor == NULL) {
+    if (decision == NULL) {
         return;
     }
 
-    monitor->shutdown_latched = power_manager_is_shutdown_latched();
-    (void)recovery_guard_step(
-        filter,
-        monitor,
-        monitor->last_divergence_innovation_sq);
+    for (uint8_t i = 0; i < decision->event_count; ++i) {
+        telemetry_udp_send_event(timestamp_ms, decision->events[i].id, decision->events[i].param);
+    }
+}
+
+void navigation_cortex_tick(
+    NavigationCortexState *cortex_state,
+    DeadReckoningFilter *nav,
+    SystemHealthMonitor *health,
+    bool gps_fix_valid,
+    bool skip_diagnostic_update,
+    uint8_t filter_quality_u8,
+    uint8_t worst_bsp_bus,
+    uint32_t timestamp_ms,
+    NavigationDecision *decision)
+{
+    if (cortex_state == NULL || nav == NULL || health == NULL || decision == NULL) {
+        return;
+    }
+
+    health->shutdown_latched = power_manager_is_shutdown_latched();
+
+    NavigationCortexInput input{};
+    input.filter = nav;
+    input.monitor = health;
+    input.nav_state = &nav->state;
+    input.gps_fix_valid = gps_fix_valid;
+    input.skip_diagnostic_update = skip_diagnostic_update;
+    input.filter_quality = filter_quality_u8;
+    input.bsp_bus_status = worst_bsp_bus;
+
+    navigation_cortex_step(cortex_state, &input, decision);
+    telemetry_udp_emit_events(timestamp_ms, decision);
 }
 
 void init_test_waypoint_route(
@@ -727,6 +753,9 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
     bool safe_stop_active = false;
     float safe_stop_heading_deg = kCruiseCourseDeg;
     NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    NavigationCortexState cortex_state{};
+    PowerState prev_power_state = POWER_PERFORMANCE;
+    navigation_cortex_init(&cortex_state);
     bool radio_burst_enqueued = false;
     bool radio_burst_complete_logged = false;
     size_t radio_ingest_ok = 0U;
@@ -796,11 +825,17 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
          * Durante el estres WCET (t >= 10 s) no se llama a diagnostic_update para
          * que las penalizaciones de time_guard (-40) se acumulen de forma determinista.
          */
-        if (t_ms < kHighDemandWcetStressMs) {
-            diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
-        }
-
-        post_diagnostic_recovery_step(&nav, &health);
+        NavigationDecision cortex_decision{};
+        navigation_cortex_tick(
+            &cortex_state,
+            &nav,
+            &health,
+            gps.fix_valid,
+            t_ms >= kHighDemandWcetStressMs,
+            filter_quality_u8,
+            worst_bsp_bus,
+            t_ms,
+            &cortex_decision);
 
         if (t_ms == kHighDemandRadioBurstMs && !radio_burst_enqueued) {
             high_demand_enqueue_radio_burst(t_ms, &nav, &route);
@@ -850,7 +885,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
 
         log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
-        if (diagnostic_requires_safe_stop(&health)) {
+        if (cortex_decision.requires_safe_stop) {
             if (!safe_stop_active) {
                 safe_stop_active = true;
                 safe_stop_heading_deg = nav.state.heading_deg;
@@ -867,6 +902,12 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
         const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
         power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
         health.shutdown_latched = power_manager_is_shutdown_latched();
+
+        const PowerState current_power = power_manager_get_state();
+        if (current_power == POWER_CONSERVATION && prev_power_state != POWER_CONSERVATION) {
+            telemetry_udp_send_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+        }
+        prev_power_state = current_power;
 
         if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
             power_manager_is_shutdown_latched() &&
@@ -956,6 +997,9 @@ void run_fault_injection_scenario(FILE *telemetry_file)
     bool safe_stop_active = false;
     float safe_stop_heading_deg = kCruiseCourseDeg;
     NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    NavigationCortexState cortex_state{};
+    PowerState prev_power_state = POWER_PERFORMANCE;
+    navigation_cortex_init(&cortex_state);
     bool radio_cmd_injected = false;
     size_t waypoint_count_before_radio = 0U;
 
@@ -1060,11 +1104,20 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             odom_fault_active,
             nav.state.confidence.estimate_quality);
 
-        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
-        post_diagnostic_recovery_step(&nav, &health);
+        NavigationDecision cortex_decision{};
+        navigation_cortex_tick(
+            &cortex_state,
+            &nav,
+            &health,
+            gps.fix_valid,
+            false,
+            filter_quality_u8,
+            worst_bsp_bus,
+            t_ms,
+            &cortex_decision);
         log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
-        if (diagnostic_requires_safe_stop(&health) && t_ms >= kFaultInjectSpiTimeoutMs) {
+        if (cortex_decision.requires_safe_stop && t_ms >= kFaultInjectSpiTimeoutMs) {
             if (!safe_stop_active) {
                 safe_stop_active = true;
                 safe_stop_heading_deg = nav.state.heading_deg;
@@ -1081,6 +1134,12 @@ void run_fault_injection_scenario(FILE *telemetry_file)
         const bool vehicle_stopped = speed_mps < kVehicleStoppedSpeedMps;
         power_manager_update(static_cast<SystemHealthMode>(health.mode), vehicle_stopped);
         health.shutdown_latched = power_manager_is_shutdown_latched();
+
+        const PowerState current_power = power_manager_get_state();
+        if (current_power == POWER_CONSERVATION && prev_power_state != POWER_CONSERVATION) {
+            telemetry_udp_send_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+        }
+        prev_power_state = current_power;
 
         if (power_manager_get_state() == POWER_SAFE_SHUTDOWN &&
             power_manager_is_shutdown_latched() &&
@@ -1161,6 +1220,8 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     bool safe_stop_active = false;
     float safe_stop_heading_deg = kCruiseCourseDeg;
     NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    NavigationCortexState cortex_state{};
+    navigation_cortex_init(&cortex_state);
 
     StaticWaypointBuffer route{};
     Waypoint leg_origin{};
@@ -1257,11 +1318,20 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
         const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(
             odom_fault_active,
             nav.state.confidence.estimate_quality);
-        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
-        post_diagnostic_recovery_step(&nav, &health);
+        NavigationDecision cortex_decision{};
+        navigation_cortex_tick(
+            &cortex_state,
+            &nav,
+            &health,
+            gps.fix_valid,
+            false,
+            filter_quality_u8,
+            worst_bsp_bus,
+            t_ms,
+            &cortex_decision);
         log_health_contingency_transition(health.mode, &prev_health_mode, false);
 
-        if (diagnostic_requires_safe_stop(&health)) {
+        if (cortex_decision.requires_safe_stop) {
             if (!safe_stop_active) {
                 safe_stop_active = true;
                 safe_stop_heading_deg = nav.state.heading_deg;
@@ -1365,6 +1435,8 @@ void run_scenario_submarine(FILE *telemetry_file)
     bool safe_stop_active = false;
     float frozen_pressure_pa = kSurfacePressurePa;
     NavHealthMode prev_health_mode = HEALTH_NOMINAL;
+    NavigationCortexState cortex_state{};
+    navigation_cortex_init(&cortex_state);
     float active_pressure_rate_pa_s = kSubmersionPressureRatePaS;
 
     StaticWaypointBuffer route{};
@@ -1421,11 +1493,20 @@ void run_scenario_submarine(FILE *telemetry_file)
         const uint8_t filter_quality_u8 = diagnostic_filter_quality_from_float(
             nav.state.confidence.estimate_quality);
         const uint8_t worst_bsp_bus = pc_simulate_worst_bsp_bus_status(false, nav.state.confidence.estimate_quality);
-        diagnostic_update(&health, filter_quality_u8, worst_bsp_bus);
-        post_diagnostic_recovery_step(&nav, &health);
+        NavigationDecision cortex_decision{};
+        navigation_cortex_tick(
+            &cortex_state,
+            &nav,
+            &health,
+            false,
+            false,
+            filter_quality_u8,
+            worst_bsp_bus,
+            t_ms,
+            &cortex_decision);
         log_health_contingency_transition(health.mode, &prev_health_mode, true);
 
-        if (diagnostic_requires_safe_stop(&health)) {
+        if (cortex_decision.requires_safe_stop) {
             if (!safe_stop_active) {
                 safe_stop_active = true;
                 frozen_pressure_pa = pressure.pressure_pa;

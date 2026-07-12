@@ -14,10 +14,16 @@ sys.path.insert(0, str(TOOLS_DIR))
 
 from telemetry_protocol import (  # noqa: E402
     COLOR_MAP,
+    EVENT_SIZE,
     PACKET_SIZE,
     TELEMETRY_SCENARIO_HIGH_DEMAND,
+    TELEMETRY_UDP_EVENT_MAGIC,
     TELEMETRY_UDP_MAGIC,
+    TELEM_EVENT_GPS_LOST,
+    TELEM_EVENT_HOT_RESTART,
+    pack_event,
     pack_packet,
+    unpack_event,
     unpack_packet,
 )
 from telemetry_receiver import TelemetryReceiver  # noqa: E402
@@ -69,7 +75,22 @@ class TestPacketCodec(unittest.TestCase):
 
     def test_invalid_packet_length_raises(self) -> None:
         with self.assertRaises(ValueError):
-            unpack_packet(b"\x00" * 8)
+            unpack_packet(b"\x00" * 16)
+
+    def test_event_roundtrip(self) -> None:
+        payload = pack_event(2500, TELEM_EVENT_GPS_LOST, 7)
+        decoded = unpack_event(payload)
+        self.assertEqual(len(payload), EVENT_SIZE)
+        self.assertEqual(decoded["magic"], TELEMETRY_UDP_EVENT_MAGIC)
+        self.assertEqual(decoded["event_id"], TELEM_EVENT_GPS_LOST)
+        self.assertEqual(decoded["param"], 7)
+        self.assertEqual(decoded["timestamp_ms"], 2500)
+        self.assertEqual(decoded["event_name"], "GPS_LOST")
+
+    def test_hot_restart_event(self) -> None:
+        decoded = unpack_event(pack_event(100, TELEM_EVENT_HOT_RESTART, 85))
+        self.assertEqual(decoded["event_name"], "HOT_RESTART")
+        self.assertEqual(decoded["param"], 85)
 
     def test_invalid_magic_raises(self) -> None:
         bad = pack_packet(0, 0.0, 0.0, 0.0, 0.0, 0.0, 50, 0, 0, 0, 0, 20.0, magic=0x0000)
@@ -105,13 +126,16 @@ class TestTelemetryReceiver(unittest.TestCase):
 
         tx.sendto(pack_packet(100, 1.0, 2.0, 0.0, 0.0, 0.0, 90, 0, 0, 0, 1, 25.0, seq=1), ("127.0.0.1", port))
         tx.sendto(pack_packet(200, 2.0, 3.0, 0.0, 0.0, 0.0, 80, 1, 0, 0, 1, 25.0, seq=5), ("127.0.0.1", port))
-        tx.sendto(b"\x00" * 8, ("127.0.0.1", port))
+        tx.sendto(pack_event(300, TELEM_EVENT_HOT_RESTART, 90), ("127.0.0.1", port))
+        tx.sendto(b"\x00" * 4, ("127.0.0.1", port))
 
         self.assertEqual(rx.drain(), 2)
         self.assertEqual(rx.packets_ok, 2)
+        self.assertEqual(rx.events_ok, 1)
         self.assertEqual(rx.packets_invalid, 1)
         self.assertEqual(rx.seq_gaps, 1)
         self.assertAlmostEqual(rx.samples[-1].temperature_c, 25.0)
+        self.assertEqual(rx.events[-1].event_name, "HOT_RESTART")
 
         tx.close()
         rx.close()

@@ -10,9 +10,12 @@ from typing import Deque
 
 from telemetry_protocol import (
     COLOR_MAP,
+    EVENT_SIZE,
     PACKET_SIZE,
     SCENARIO_NAMES,
     TELEMETRY_SCENARIO_UNKNOWN,
+    TELEM_EVENT_HOT_RESTART,
+    unpack_event,
     unpack_packet,
 )
 
@@ -37,10 +40,19 @@ class TelemetrySample:
     temperature_c: float
 
 
+@dataclass(frozen=True, slots=True)
+class TelemetryEvent:
+    timestamp_s: float
+    event_id: int
+    event_name: str
+    param: int
+
+
 class TelemetryReceiver:
     def __init__(self, host: str = "0.0.0.0", port: int = 5005, max_samples: int = 200):
         self.max_samples = max_samples
         self.samples: Deque[TelemetrySample] = deque(maxlen=max_samples)
+        self.events: Deque[TelemetryEvent] = deque(maxlen=50)
         self.recovery_points: Deque[tuple[float, float]] = deque(maxlen=50)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,6 +66,7 @@ class TelemetryReceiver:
 
         self.packets_ok = 0
         self.packets_invalid = 0
+        self.events_ok = 0
         self.seq_gaps = 0
 
     @property
@@ -73,6 +86,28 @@ class TelemetryReceiver:
                 break
             except InterruptedError:
                 break
+
+            if len(data) == EVENT_SIZE:
+                try:
+                    decoded_event = unpack_event(data)
+                except ValueError:
+                    self.packets_invalid += 1
+                    continue
+
+                event = TelemetryEvent(
+                    timestamp_s=decoded_event["timestamp_ms"] * 1e-3,
+                    event_id=decoded_event["event_id"],
+                    event_name=decoded_event["event_name"],
+                    param=decoded_event["param"],
+                )
+                self.events.append(event)
+                self._dirty = True
+                self.events_ok += 1
+
+                if event.event_id == TELEM_EVENT_HOT_RESTART and self.samples:
+                    last = self.samples[-1]
+                    self.recovery_points.append((last.x, last.y))
+                continue
 
             if len(data) != PACKET_SIZE:
                 self.packets_invalid += 1
@@ -128,13 +163,19 @@ class TelemetryReceiver:
         self.sock.close()
 
     def link_status(self) -> str:
-        if self.packets_ok == 0 and self.packets_invalid == 0:
+        if self.packets_ok == 0 and self.events_ok == 0 and self.packets_invalid == 0:
             return "esperando"
-        if self.packets_ok == 0 and self.packets_invalid > 0:
+        if self.packets_ok == 0 and self.events_ok == 0 and self.packets_invalid > 0:
             return "sin tramas validas"
         if self.seq_gaps > 0:
             return f"degradado ({self.seq_gaps} huecos)"
         return "nominal"
+
+    def latest_event_summary(self) -> str:
+        if not self.events:
+            return "sin eventos"
+        last = self.events[-1]
+        return f"{last.event_name}({last.param}) @{last.timestamp_s:.1f}s"
 
     def latest_scenario_name(self) -> str:
         if not self.samples:

@@ -141,6 +141,7 @@ class RemoteVisualizer:
             f"link={self.receiver.link_status()} | seq={last.seq} | "
             f"salud={last.mode}({last.score}) | temp={last.temperature_c:.1f}°C | "
             f"cross={last.cross_track_m:.2f}m along={last.along_track_m:.1f}m | "
+            f"evento={self.receiver.latest_event_summary()} | "
             f"invalidos={self.receiver.packets_invalid}"
         )
 

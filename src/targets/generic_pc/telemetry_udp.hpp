@@ -39,4 +39,30 @@ struct RemoteTelemetryPacket {
 
 static_assert(sizeof(RemoteTelemetryPacket) == 32U, "RemoteTelemetryPacket debe ocupar 32 bytes");
 
+/** Magic "NE" (NavEvent) en little-endian → 0x4E45 en wire. */
+constexpr uint16_t TELEMETRY_UDP_EVENT_MAGIC = 0x4E45U;
+
+#pragma pack(push, 1)
+struct RemoteTelemetryEvent {
+    uint16_t magic;
+    uint16_t packed; /**< (event_id << 8) | param */
+    uint32_t timestamp_ms;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(RemoteTelemetryEvent) == 8U, "RemoteTelemetryEvent debe ocupar 8 bytes");
+
+enum TelemetryEventId : uint8_t {
+    TELEM_EVENT_SAFE_STOP = 1U,
+    TELEM_EVENT_HOT_RESTART = 2U,
+    TELEM_EVENT_HEALTH_DEGRADED = 3U,
+    TELEM_EVENT_HEALTH_CRITICAL = 4U,
+    TELEM_EVENT_HEALTH_NOMINAL = 5U,
+    TELEM_EVENT_GPS_LOST = 6U,
+    TELEM_EVENT_GPS_RESTORED = 7U,
+    TELEM_EVENT_WCET_VIOLATION = 8U,
+    TELEM_EVENT_POWER_CONSERVATION = 9U,
+    TELEM_EVENT_PREDICTIVE_DEGRADE = 10U,
+};
+
 #endif

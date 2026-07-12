@@ -17,6 +17,7 @@ void telemetry_udp_send(
     uint8_t scenario_id,
     uint8_t nav_mode,
     float temperature_c);
+void telemetry_udp_send_event(uint32_t timestamp_ms, uint8_t event_id, uint8_t param);
 uint32_t telemetry_udp_send_failures();
 void telemetry_udp_log_stats();
 

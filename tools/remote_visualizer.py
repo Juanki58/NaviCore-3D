@@ -26,6 +26,7 @@ class RemoteVisualizer:
         self.pos_z = deque(maxlen=max_points)
         self.scores = deque(maxlen=max_points)
         self.packets = deque(maxlen=max_points)
+        self.modes = deque(maxlen=max_points)
         self.colors = deque(maxlen=max_points)
 
         # Puntos marcadores de recuperación en caliente (Hot-Restart)
@@ -43,38 +44,41 @@ class RemoteVisualizer:
     def unpack_telemetry(self):
         """Lee el buffer de red y desempaqueta el payload atómico de 16 bytes"""
         try:
-            # Captura el paquete binario crudo del buffer de red
-            data, _ = self.sock.recvfrom(16)
-            if len(data) == 16:
-                # Estructura C++: float x, float y, float z, uint16_t score, uint16_t flags
-                x, y, z, score, flags = struct.unpack("<fffHH", data)
+            data, _ = self.sock.recvfrom(1024)
+            if len(data) != 16:
+                return
 
-                # Decodificación de flags (Bits 0-1: HealthMode, Bits 2-15: Dropped Packets)
-                mode_bits = flags & 0x03
-                dropped_packets = flags >> 2
-                mode_str = HEALTH_MODES.get(mode_bits, "CRITICAL")
+            # Estructura C++: float x, float y, float z, uint16_t score, uint16_t flags
+            x, y, z, score, flags = struct.unpack("<fffHH", data)
 
-                self.current_time_tick += 0.1
-                self.times.append(self.current_time_tick)
-                self.pos_x.append(x)
-                self.pos_y.append(y)
-                self.pos_z.append(z)
-                self.scores.append(score)
-                self.packets.append(dropped_packets)
-                self.colors.append(COLOR_MAP[mode_str])
+            # Decodificación de flags (Bits 0-1: HealthMode, Bits 2-15: Dropped Packets)
+            mode_bits = flags & 0x03
+            dropped_packets = flags >> 2
+            mode_str = HEALTH_MODES.get(mode_bits, "CRITICAL")
 
-                # Detección del marcador de recuperación en caliente (Hot-Restart)
-                if (self.last_score <= 10 and score >= 75) or (
-                    mode_str == "NOMINAL"
-                    and len(self.colors) > 1
-                    and self.colors[-2] != "green"
-                ):
-                    self.recovery_x.append(x)
-                    self.recovery_y.append(y)
+            self.current_time_tick += 0.1
+            self.times.append(self.current_time_tick)
+            self.pos_x.append(x)
+            self.pos_y.append(y)
+            self.pos_z.append(z)
+            self.scores.append(score)
+            self.packets.append(dropped_packets)
+            self.modes.append(mode_str)
+            self.colors.append(COLOR_MAP[mode_str])
 
-                self.last_score = score
+            # Detección del marcador de recuperación en caliente (Hot-Restart)
+            if (self.last_score <= 10 and score >= 75) or (
+                mode_str == "NOMINAL"
+                and len(self.colors) > 1
+                and self.colors[-2] != "green"
+            ):
+                self.recovery_x.append(x)
+                self.recovery_y.append(y)
+
+            self.last_score = score
         except BlockingIOError:
-            # El buffer de red está vacío en este tick, mantiene el flujo asíncrono
+            pass
+        except InterruptedError:
             pass
 
     def setup_dashboard(self):
@@ -98,7 +102,7 @@ class RemoteVisualizer:
         # Subgráfico 2: HealthScore
         self.ax_score.set_title("Evolución del Monitor de Salud (HealthScore)")
         (self.score_line,) = self.ax_score.plot([], [], "k-", label="Score")
-        (self.score_dot,) = self.ax_score.plot([], [], "ro")
+        (self.score_dot,) = self.ax_score.plot([], [], "o", color=COLOR_MAP["NOMINAL"])
         self.ax_score.set_ylim(-5, 105)
         self.ax_score.grid(True)
 
@@ -123,7 +127,13 @@ class RemoteVisualizer:
             self.ax_traj.cla()
             self.ax_traj.set_title("Trayectoria en Tiempo Real (Pos_X vs Pos_Y)")
             self.ax_traj.grid(True)
-            self.ax_traj.scatter(list(self.pos_x), list(self.pos_y), c=list(self.colors), s=15)
+            self.ax_traj.scatter(
+                list(self.pos_x),
+                list(self.pos_y),
+                c=list(self.colors),
+                s=15,
+                cmap=None,
+            )
             if self.recovery_x:
                 self.ax_traj.plot(
                     self.recovery_x, self.recovery_y, "b*", markersize=14, label="Hot-Restart"
@@ -137,6 +147,7 @@ class RemoteVisualizer:
         # Actualiza el subgráfico temporal del HealthScore
         self.score_line.set_data(list(self.times), list(self.scores))
         self.score_dot.set_data([self.times[-1]], [self.scores[-1]])
+        self.score_dot.set_color(COLOR_MAP[self.modes[-1]])
         self.ax_score.set_xlim(max(0, self.times[-1] - 20), self.times[-1] + 2)
 
         # Actualiza el subgráfico de descarte en formato escalonado

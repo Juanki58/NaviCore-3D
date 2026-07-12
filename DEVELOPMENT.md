@@ -13,7 +13,8 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 - **`src/core/vehicle_bus_adapter.*`**: Adaptador que traduce tramas de bus CAN (`ImuCanFrame`, `OdoCanFrame`) al formato nativo del filtro (`ImuSample`).
 - **`src/targets/generic_pc/`**: Simulador de estrés en PC (`NaviCore3D_Sim`) y Demo de bus de coche (`NaviCore3D_VehicleDemo`).
 - **`src/targets/ambiq_apollo/`**: Capa estructural de drivers bare-metal (DMA, SPI, GPIO, UART, Power Monitor) con stubs para compilación cruzada en host.
-- **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python.
+- **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
+- **`tools/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
 
 ---
 
@@ -75,6 +76,14 @@ cmake --build build --target NaviCore3D_VehicleDemo
 
 # Lanzar el Gemelo Digital (requiere: pip install matplotlib pandas)
 python tools/visualizer.py
+
+# Telemetría UDP en vivo (requiere: pip install matplotlib)
+python tools/remote_visualizer.py
+./build/NaviCore3D_Sim.exe
+
+# Pruebas del protocolo UDP
+python tools/test_udp_telemetry.py
+python tools/test_udp_integration.py
 ```
 
 **Salida esperada — VehicleDemo (5 ticks):**

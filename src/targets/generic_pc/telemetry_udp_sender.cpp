@@ -26,6 +26,8 @@ struct alignas(4) RemoteTelemetryPacket {
     uint16_t status_flags;
 };
 
+static_assert(sizeof(RemoteTelemetryPacket) == 16U, "RemoteTelemetryPacket debe ocupar 16 bytes");
+
 class TelemetrySender {
 public:
     TelemetrySender(const char *ip, int port) : m_socket(INVALID_SOCKET), m_initialized(false)
@@ -41,6 +43,9 @@ public:
         m_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (m_socket == INVALID_SOCKET) {
             std::cerr << "[-] No se pudo crear el socket UDP" << std::endl;
+#ifdef _WIN32
+            WSACleanup();
+#endif
             return;
         }
 
@@ -49,6 +54,13 @@ public:
         m_dest_addr.sin_port = htons(static_cast<uint16_t>(port));
         if (inet_pton(AF_INET, ip, &m_dest_addr.sin_addr) != 1) {
             std::cerr << "[-] Direccion UDP invalida: " << ip << std::endl;
+#ifdef _WIN32
+            closesocket(m_socket);
+            WSACleanup();
+#else
+            close(m_socket);
+#endif
+            m_socket = INVALID_SOCKET;
             return;
         }
 
@@ -84,13 +96,16 @@ public:
         packet.status_flags =
             static_cast<uint16_t>((health_mode & 0x03U) | (static_cast<uint16_t>(dropped) << 2));
 
-        sendto(
+        const int sent = sendto(
             m_socket,
             reinterpret_cast<const char *>(&packet),
             sizeof(packet),
             0,
             reinterpret_cast<sockaddr *>(&m_dest_addr),
             sizeof(m_dest_addr));
+        if (sent != static_cast<int>(sizeof(packet))) {
+            std::cerr << "[-] Fallo al enviar paquete UDP de telemetria" << std::endl;
+        }
     }
 
 private:

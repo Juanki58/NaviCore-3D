@@ -1,88 +1,39 @@
 #!/usr/bin/env python3
 """NaviCore-3D — Visualizador remoto de telemetría UDP (10 Hz HIL)."""
 
-import socket
-import struct
-import argparse
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from collections import deque
+from __future__ import annotations
 
-# Configuración y mapeo de flags de salud (Fase B/X)
-HEALTH_MODES = {0: "NOMINAL", 1: "DEGRADED", 2: "CRITICAL"}
-COLOR_MAP = {"NOMINAL": "green", "DEGRADED": "orange", "CRITICAL": "red"}
+import argparse
+from pathlib import Path
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.animation import FuncAnimation
+
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from telemetry_protocol import COLOR_MAP, TELEMETRY_UDP_DEFAULT_PORT
+from telemetry_receiver import TelemetryReceiver
 
 
 class RemoteVisualizer:
-    def __init__(self, host="0.0.0.0", port=5005, max_points=200):
-        self.host = host
-        self.port = port
-        self.max_points = max_points
+    def __init__(self, host: str = "0.0.0.0", port: int = TELEMETRY_UDP_DEFAULT_PORT, max_points: int = 200):
+        self.receiver = TelemetryReceiver(host=host, port=port, max_samples=max_points)
+        self.fig = None
+        self.ax_traj = None
+        self.ax_score = None
+        self.ax_radio = None
+        self.traj_scatter = None
+        self.score_line = None
+        self.score_dot = None
+        self.radio_line = None
+        self.status_text = None
+        self.recovery_artist = None
 
-        # Buffers estáticos circulares para la visualización fluida
-        self.times = deque(maxlen=max_points)
-        self.pos_x = deque(maxlen=max_points)
-        self.pos_y = deque(maxlen=max_points)
-        self.pos_z = deque(maxlen=max_points)
-        self.scores = deque(maxlen=max_points)
-        self.packets = deque(maxlen=max_points)
-        self.modes = deque(maxlen=max_points)
-        self.colors = deque(maxlen=max_points)
-
-        # Puntos marcadores de recuperación en caliente (Hot-Restart)
-        self.recovery_x = []
-        self.recovery_y = []
-
-        # Inicialización del socket UDP no bloqueante (Escucha en ráfaga)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((self.host, self.port))
-        self.sock.setblocking(False)
-
-        self.current_time_tick = 0
-        self.last_score = 100
-
-    def unpack_telemetry(self):
-        """Lee el buffer de red y desempaqueta el payload atómico de 16 bytes"""
-        try:
-            data, _ = self.sock.recvfrom(1024)
-            if len(data) != 16:
-                return
-
-            # Estructura C++: float x, float y, float z, uint16_t score, uint16_t flags
-            x, y, z, score, flags = struct.unpack("<fffHH", data)
-
-            # Decodificación de flags (Bits 0-1: HealthMode, Bits 2-15: Dropped Packets)
-            mode_bits = flags & 0x03
-            dropped_packets = flags >> 2
-            mode_str = HEALTH_MODES.get(mode_bits, "CRITICAL")
-
-            self.current_time_tick += 0.1
-            self.times.append(self.current_time_tick)
-            self.pos_x.append(x)
-            self.pos_y.append(y)
-            self.pos_z.append(z)
-            self.scores.append(score)
-            self.packets.append(dropped_packets)
-            self.modes.append(mode_str)
-            self.colors.append(COLOR_MAP[mode_str])
-
-            # Detección del marcador de recuperación en caliente (Hot-Restart)
-            if (self.last_score <= 10 and score >= 75) or (
-                mode_str == "NOMINAL"
-                and len(self.colors) > 1
-                and self.colors[-2] != "green"
-            ):
-                self.recovery_x.append(x)
-                self.recovery_y.append(y)
-
-            self.last_score = score
-        except BlockingIOError:
-            pass
-        except InterruptedError:
-            pass
-
-    def setup_dashboard(self):
-        """Inicializa la estructura de tres subgráficos en Matplotlib"""
+    def setup_dashboard(self) -> None:
         self.fig, (self.ax_traj, self.ax_score, self.ax_radio) = plt.subplots(3, 1, figsize=(10, 8))
         self.fig.suptitle(
             "NaviCore-3D — Telemetría de Red Remota (10 Hz HIL)",
@@ -90,89 +41,89 @@ class RemoteVisualizer:
             fontweight="bold",
         )
 
-        # Subgráfico 1: Trayectoria
         self.ax_traj.set_title("Trayectoria en Tiempo Real (Pos_X vs Pos_Y)")
-        self.traj_scatter = self.ax_traj.scatter([], [], c=[], s=10, cmap=None)
-        (self.recovery_marker,) = self.ax_traj.plot(
-            [], [], "b*", markersize=12, label="Hot-Restart Event"
-        )
+        self.traj_scatter = self.ax_traj.scatter([], [], s=15, cmap=None)
+        (self.recovery_artist,) = self.ax_traj.plot([], [], "b*", markersize=12, label="Hot-Restart")
         self.ax_traj.legend(loc="upper left")
         self.ax_traj.grid(True)
 
-        # Subgráfico 2: HealthScore
         self.ax_score.set_title("Evolución del Monitor de Salud (HealthScore)")
         (self.score_line,) = self.ax_score.plot([], [], "k-", label="Score")
         (self.score_dot,) = self.ax_score.plot([], [], "o", color=COLOR_MAP["NOMINAL"])
         self.ax_score.set_ylim(-5, 105)
         self.ax_score.grid(True)
 
-        # Subgráfico 3: RadioDroppedPackets
         self.ax_radio.set_title("Contador Acumulado de Paquetes Descartados (Radio)")
         (self.radio_line,) = self.ax_radio.plot([], [], "tab:purple", drawstyle="steps-post")
         self.ax_radio.grid(True)
 
-        plt.tight_layout()
+        self.status_text = self.fig.text(0.5, 0.01, "", ha="center", fontsize=9)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.97])
 
-    def update_plot(self, frame):
-        """Bucle de refresco dinámico invocado por el temporizador de la animación"""
-        # Extrae todas las ráfagas acumuladas en el buffer de red antes de redibujar
-        for _ in range(10):
-            self.unpack_telemetry()
+    def update_plot(self, _frame: int):
+        self.receiver.drain()
 
-        if not self.times:
-            return self.traj_scatter, self.score_line, self.score_dot, self.radio_line
+        if not self.receiver.dirty or not self.receiver.samples:
+            artists = [self.traj_scatter, self.score_line, self.score_dot, self.radio_line]
+            if self.status_text is not None:
+                artists.append(self.status_text)
+            return artists
 
-        # Actualiza el gráfico de trayectoria por tramos cromáticos
-        if len(self.pos_x) > 0:
-            self.ax_traj.cla()
-            self.ax_traj.set_title("Trayectoria en Tiempo Real (Pos_X vs Pos_Y)")
-            self.ax_traj.grid(True)
-            self.ax_traj.scatter(
-                list(self.pos_x),
-                list(self.pos_y),
-                c=list(self.colors),
-                s=15,
-                cmap=None,
-            )
-            if self.recovery_x:
-                self.ax_traj.plot(
-                    self.recovery_x, self.recovery_y, "b*", markersize=14, label="Hot-Restart"
-                )
-                self.ax_traj.legend(loc="upper left")
+        samples = list(self.receiver.samples)
+        times = np.fromiter((s.timestamp_s for s in samples), dtype=float, count=len(samples))
+        pos_x = np.fromiter((s.x for s in samples), dtype=float, count=len(samples))
+        pos_y = np.fromiter((s.y for s in samples), dtype=float, count=len(samples))
+        scores = np.fromiter((s.score for s in samples), dtype=float, count=len(samples))
+        dropped = np.fromiter((s.dropped_packets for s in samples), dtype=float, count=len(samples))
+        colors = [s.color for s in samples]
 
-            # Ajuste dinámico de márgenes de visión
-            self.ax_traj.set_xlim(min(self.pos_x) - 5, max(self.pos_x) + 5)
-            self.ax_traj.set_ylim(min(self.pos_y) - 5, max(self.pos_y) + 5)
+        offsets = np.column_stack((pos_x, pos_y))
+        self.traj_scatter.set_offsets(offsets)
+        self.traj_scatter.set_facecolors(colors)
 
-        # Actualiza el subgráfico temporal del HealthScore
-        self.score_line.set_data(list(self.times), list(self.scores))
-        self.score_dot.set_data([self.times[-1]], [self.scores[-1]])
-        self.score_dot.set_color(COLOR_MAP[self.modes[-1]])
-        self.ax_score.set_xlim(max(0, self.times[-1] - 20), self.times[-1] + 2)
+        if self.receiver.recovery_points:
+            rx, ry = zip(*self.receiver.recovery_points)
+            self.recovery_artist.set_data(rx, ry)
+        else:
+            self.recovery_artist.set_data([], [])
 
-        # Actualiza el subgráfico de descarte en formato escalonado
-        self.radio_line.set_data(list(self.times), list(self.packets))
-        self.ax_radio.set_xlim(max(0, self.times[-1] - 20), self.times[-1] + 2)
-        self.ax_radio.set_ylim(-1, max(self.packets) + 5 if self.packets else 10)
+        self.ax_traj.set_xlim(float(pos_x.min()) - 5.0, float(pos_x.max()) + 5.0)
+        self.ax_traj.set_ylim(float(pos_y.min()) - 5.0, float(pos_y.max()) + 5.0)
 
-        return self.score_line, self.score_dot, self.radio_line
+        self.score_line.set_data(times, scores)
+        self.score_dot.set_data([times[-1]], [scores[-1]])
+        self.score_dot.set_color(samples[-1].color)
 
-    def run(self):
-        self.setup_dashboard()
-        # Fuerza un refresco cada 100 ms (10 Hz), emparejado con el tick del firmware
-        self.ani = FuncAnimation(
-            self.fig, self.update_plot, interval=100, blit=False, save_count=100
+        t_end = float(times[-1])
+        t_start = max(0.0, t_end - 20.0)
+        self.ax_score.set_xlim(t_start, t_end + 2.0)
+
+        self.radio_line.set_data(times, dropped)
+        self.ax_radio.set_xlim(t_start, t_end + 2.0)
+        self.ax_radio.set_ylim(-1.0, max(float(dropped.max()) + 5.0, 10.0))
+
+        last = samples[-1]
+        self.status_text.set_text(
+            f"link={self.receiver.link_status()} | seq={last.seq} | "
+            f"salud={last.mode}({last.score}) | invalidos={self.receiver.packets_invalid} | "
+            f"muestras={len(samples)}"
         )
+
+        self.receiver.clear_dirty()
+
+        return self.traj_scatter, self.score_line, self.score_dot, self.radio_line, self.status_text
+
+    def run(self) -> None:
+        self.setup_dashboard()
+        self.ani = FuncAnimation(self.fig, self.update_plot, interval=100, blit=False, save_count=100)
         plt.show()
+        self.receiver.close()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="NaviCore-3D Remote Web/Radio Telemetry Visualizer"
-    )
-    parser.add_argument("--port", type=int, default=5005, help="Puerto UDP de escucha")
+    parser = argparse.ArgumentParser(description="NaviCore-3D Remote Web/Radio Telemetry Visualizer")
+    parser.add_argument("--port", type=int, default=TELEMETRY_UDP_DEFAULT_PORT, help="Puerto UDP de escucha")
     args = parser.parse_args()
 
     print(f"[*] Servidor de telemetría remota escuchando en UDP 0.0.0.0:{args.port}...")
-    visualizer = RemoteVisualizer(port=args.port)
-    visualizer.run()
+    RemoteVisualizer(port=args.port).run()

@@ -4,14 +4,16 @@
 from __future__ import annotations
 
 import socket
-import struct
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-PACKET_FMT = "<fffHH"
-PACKET_SIZE = struct.calcsize(PACKET_FMT)
+TOOLS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TOOLS_DIR))
+
+from telemetry_protocol import PACKET_SIZE, unpack_packet  # noqa: E402
+
 LISTEN_PORT = 5005
 SIM_PATH = Path(__file__).resolve().parent.parent / "build" / "NaviCore3D_Sim.exe"
 
@@ -72,15 +74,16 @@ def main() -> int:
 
     print(f"[+] Paquetes UDP recibidos: {len(packets)}")
 
-    first = struct.unpack(PACKET_FMT, packets[0])
-    last = struct.unpack(PACKET_FMT, packets[-1])
-    print(f"[+] Primer paquete: pos=({first[0]:.4f}, {first[1]:.4f}) score={first[3]} flags={first[4]}")
-    print(f"[+] Último paquete:  pos=({last[0]:.4f}, {last[1]:.4f}) score={last[3]} flags={last[4]}")
-
-    invalid = [p for p in packets if len(p) != PACKET_SIZE]
-    if invalid:
-        print(f"[-] Paquetes con tamaño inválido: {len(invalid)}")
-        return 1
+    first = unpack_packet(packets[0])
+    last = unpack_packet(packets[-1])
+    print(
+        f"[+] Primer paquete: t={first['timestamp_ms']}ms pos=({first['x']:.4f}, {first['y']:.4f}) "
+        f"score={first['score']} seq={first['seq']}"
+    )
+    print(
+        f"[+] Último paquete:  t={last['timestamp_ms']}ms pos=({last['x']:.4f}, {last['y']:.4f}) "
+        f"score={last['score']} seq={last['seq']}"
+    )
 
     if len(packets) < 100:
         print(f"[-] Muy pocos paquetes para un escenario de 20 s a 10 Hz: {len(packets)}")

@@ -36,7 +36,6 @@ constexpr uint32_t kStepMs = 100U;
 constexpr float kCruiseSpeedMps = 15.0f;
 constexpr float kDegradedCruiseSpeedMps = 8.0f;
 constexpr float kCruiseCourseDeg = 90.0f;
-constexpr float kKpHeading = 0.5f;
 constexpr float kSurfacePressurePa = 101325.0f;
 constexpr float kSubmersionPressureRatePaS = 10000.0f;
 constexpr float kSafeStopDecelMps2 = 3.0f;
@@ -65,6 +64,11 @@ constexpr float kSubmarineTemperatureC = 10.0f;
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
 constexpr float kWaypointLonStepDeg = 0.00018f;
+constexpr float kPurePursuitLookAheadM = 8.0f;
+constexpr float kSquareLegStepDeg = 0.00018f;
+constexpr float kSquareApproachLonOffsetDeg = 0.00009f;
+constexpr float kSquareArrivalRadiusM = 2.0f;
+constexpr size_t kSquareWaypointCount = 4U;
 constexpr float kWaypointArrivalRadiusNominalM = 5.0f;
 constexpr float kWaypointArrivalRadiusDegradedM = 15.0f;
 
@@ -486,60 +490,104 @@ void navigation_cortex_tick(
     telemetry_udp_emit_events(timestamp_ms, decision);
 }
 
-void init_test_waypoint_route(
+Vector3D square_vehicle_start(Vector3D corner_origin)
+{
+    return vector3d_make(
+        corner_origin.x,
+        corner_origin.y - kSquareApproachLonOffsetDeg,
+        corner_origin.z);
+}
+
+void init_square_waypoint_route(
     StaticWaypointBuffer *route,
-    Waypoint *leg_origin,
     Vector3D start,
     NavDomain domain)
 {
-    if (route == NULL || leg_origin == NULL) {
+    if (route == NULL) {
         return;
     }
 
     waypoint_buffer_init(route);
 
-    const uint32_t nominal_radius_m = contingency_arrival_radius_m(HEALTH_NOMINAL);
+    const uint32_t arrival_radius_m = static_cast<uint32_t>(kSquareArrivalRadiusM);
 
-    const Waypoint wp0 = waypoint_make("WP0", start, domain, nominal_radius_m);
+    /*
+     * Circuito cuadrado (vista desde el cielo, lat = norte, lon = este):
+     *   WP0 -----> WP1
+     *   ^            |
+     *   |            v
+     *   WP3 <----- WP2
+     */
+    const Waypoint wp0 = waypoint_make("SQ0", start, domain, arrival_radius_m);
     const Waypoint wp1 = waypoint_make(
-        "WP1",
-        vector3d_make(start.x, start.y + kWaypointLonStepDeg, start.z),
+        "SQ1",
+        vector3d_make(start.x, start.y + kSquareLegStepDeg, start.z),
         domain,
-        nominal_radius_m);
+        arrival_radius_m);
     const Waypoint wp2 = waypoint_make(
-        "WP2",
-        vector3d_make(start.x, start.y + (2.0f * kWaypointLonStepDeg), start.z),
+        "SQ2",
+        vector3d_make(start.x + kSquareLegStepDeg, start.y + kSquareLegStepDeg, start.z),
         domain,
-        nominal_radius_m);
+        arrival_radius_m);
+    const Waypoint wp3 = waypoint_make(
+        "SQ3",
+        vector3d_make(start.x + kSquareLegStepDeg, start.y, start.z),
+        domain,
+        arrival_radius_m);
 
     waypoint_buffer_push(route, wp0);
     waypoint_buffer_push(route, wp1);
     waypoint_buffer_push(route, wp2);
-    *leg_origin = wp0;
+    waypoint_buffer_push(route, wp3);
+
+    std::printf(
+        "GUIADO: circuito cuadrado — %zu waypoints | look-ahead=%.1f m | radio aceptacion=%.1f m\n",
+        kSquareWaypointCount,
+        kPurePursuitLookAheadM,
+        kSquareArrivalRadiusM);
 }
 
-GuidanceErrors guidance_tick_update_route(
-    StaticWaypointBuffer *route,
-    Waypoint *leg_origin,
+bool waypoint_buffer_at(
+    const StaticWaypointBuffer *buffer,
+    size_t index,
+    Waypoint *out)
+{
+    if (buffer == NULL || out == NULL || index >= buffer->count) {
+        return false;
+    }
+
+    *out = buffer->items[(buffer->head + index) % NAVICORE_MAX_WAYPOINTS];
+    return true;
+}
+
+GuidanceErrors guidance_telemetry_errors(
+    const StaticWaypointBuffer *route,
+    size_t active_index,
     Vector3D position)
 {
     GuidanceErrors errors{};
 
-    if (route == NULL || leg_origin == NULL || route->count < 2U) {
+    if (route == NULL || route->count < 2U || active_index >= route->count) {
         return errors;
     }
 
-    const Waypoint leg_dest = route->items[(route->head + 1U) % NAVICORE_MAX_WAYPOINTS];
-    errors = guidance_compute_errors(position, *leg_origin, leg_dest);
+    Waypoint origin{};
+    Waypoint destination{};
 
-    if (errors.along_track_m <= static_cast<float>(leg_dest.arrival_radius_m)) {
-        Waypoint passed{};
-        if (waypoint_buffer_pop(route, &passed)) {
-            *leg_origin = passed;
-        }
+    if (!waypoint_buffer_at(route, active_index, &origin)) {
+        return errors;
     }
 
-    return errors;
+    const size_t dest_index = active_index + 1U;
+    if (dest_index < route->count) {
+        if (!waypoint_buffer_at(route, dest_index, &destination)) {
+            return errors;
+        }
+    } else {
+        destination = origin;
+    }
+
+    return guidance_compute_errors(position, origin, destination);
 }
 
 float heading_delta_deg(float from_deg, float to_deg)
@@ -554,9 +602,10 @@ float heading_delta_deg(float from_deg, float to_deg)
     return delta;
 }
 
-void apply_closed_loop_heading_control(
+void apply_pure_pursuit_heading_control(
     SensorsSimulation *sensors,
-    float prev_cross_track_m,
+    float yaw_target_rad,
+    float current_heading_deg,
     float *synthetic_course_deg,
     float dt_s)
 {
@@ -564,16 +613,84 @@ void apply_closed_loop_heading_control(
         return;
     }
 
-    const float prev_course_deg = *synthetic_course_deg;
-    const float heading_correction_deg = -kKpHeading * prev_cross_track_m;
-    const float corrected_course_deg = navstate_normalize_heading(
-        kCruiseCourseDeg + heading_correction_deg);
+    const float yaw_target_deg = navstate_normalize_heading(
+        yaw_target_rad * (180.0f / static_cast<float>(M_PI)));
+    const float delta_heading_deg = heading_delta_deg(current_heading_deg, yaw_target_deg);
+    const float yaw_rate_radps = (dt_s > 0.0f)
+        ? ((delta_heading_deg * (static_cast<float>(M_PI) / 180.0f)) / dt_s)
+        : 0.0f;
 
-    const float delta_heading_deg = heading_delta_deg(prev_course_deg, corrected_course_deg);
-    const float yaw_rate_radps = (dt_s > 0.0f) ? ((delta_heading_deg * (M_PI / 180.0f)) / dt_s) : 0.0f;
+    sensors_simulation_apply_heading_control(sensors, yaw_target_deg, yaw_rate_radps);
+    *synthetic_course_deg = yaw_target_deg;
+}
 
-    sensors_simulation_apply_heading_control(sensors, corrected_course_deg, yaw_rate_radps);
-    *synthetic_course_deg = corrected_course_deg;
+void pure_pursuit_guidance_step(
+    PurePursuitGuidance *guidance,
+    const NavState *nav_state,
+    StaticWaypointBuffer *route,
+    size_t *active_waypoint_index,
+    uint32_t timestamp_ms,
+    SensorsSimulation *sensors,
+    float *synthetic_course_deg,
+    float dt_s,
+    bool enable_control,
+    GuidanceErrors *telemetry_out)
+{
+    if (guidance == NULL || nav_state == NULL || route == NULL
+        || active_waypoint_index == NULL || telemetry_out == NULL) {
+        return;
+    }
+
+    *telemetry_out = guidance_telemetry_errors(route, *active_waypoint_index, nav_state->position);
+
+    if (*active_waypoint_index >= route->count) {
+        return;
+    }
+
+    const PurePursuitOutput pp = guidance->compute(
+        *nav_state,
+        *route,
+        *active_waypoint_index);
+
+    if (pp.valid && enable_control) {
+        apply_pure_pursuit_heading_control(
+            sensors,
+            pp.yaw_target_rad,
+            nav_state->heading_deg,
+            synthetic_course_deg,
+            dt_s);
+    }
+
+    if (!pp.waypoint_completed) {
+        return;
+    }
+
+    Waypoint completed_wp{};
+    if (!waypoint_buffer_at(route, *active_waypoint_index, &completed_wp)) {
+        return;
+    }
+
+    const size_t completed_index = *active_waypoint_index;
+    const float t_s = static_cast<float>(timestamp_ms) * 0.001f;
+
+    if (*active_waypoint_index + 1U < route->count) {
+        ++(*active_waypoint_index);
+        std::printf(
+            "GUIADO: WP%zu '%s' completado @ t=%.2f s -> indice %zu\n",
+            completed_index,
+            completed_wp.name,
+            t_s,
+            *active_waypoint_index);
+    } else {
+        ++(*active_waypoint_index);
+        std::printf(
+            "GUIADO: WP%zu '%s' completado @ t=%.2f s -> circuito finalizado (%zu/%zu)\n",
+            completed_index,
+            completed_wp.name,
+            t_s,
+            route->count,
+            route->count);
+    }
 }
 
 void print_scenario_banner(SensorScenario scenario)
@@ -737,7 +854,8 @@ bool high_demand_apply_wcet_stress(SystemHealthMonitor *health, uint32_t t_ms)
 
 void run_high_demand_stress_test_scenario(FILE *telemetry_file)
 {
-    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
     sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
@@ -763,11 +881,11 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
     size_t radio_geometry_reject = 0U;
 
     StaticWaypointBuffer route{};
-    Waypoint leg_origin{};
-    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    size_t active_waypoint_index = 0U;
+    init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
     float cruise_speed_mps = kCruiseSpeedMps;
-    float prev_cross_track_m = 0.0f;
     float synthetic_course_deg = kCruiseCourseDeg;
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
@@ -791,12 +909,6 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
 
         if (safe_stop_active) {
             apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
-        } else {
-            apply_closed_loop_heading_control(
-                &sensors,
-                prev_cross_track_m,
-                &synthetic_course_deg,
-                dt_s);
         }
 
         ImuSample imu{};
@@ -922,12 +1034,18 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             }
         }
 
-        const GuidanceErrors guidance = guidance_tick_update_route(
+        GuidanceErrors guidance{};
+        pure_pursuit_guidance_step(
+            &pursuit_guidance,
+            &nav.state,
             &route,
-            &leg_origin,
-            nav.state.position);
-
-        prev_cross_track_m = guidance.cross_track_m;
+            &active_waypoint_index,
+            t_ms,
+            &sensors,
+            &synthetic_course_deg,
+            dt_s,
+            !safe_stop_active,
+            &guidance);
 
         telemetry_write_row(
             telemetry_file,
@@ -950,7 +1068,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
         if ((t_ms % 1000U) == 0U) {
             std::printf(
                 "[t=%5.1fs] mode=%-14s quality=%.3f health=%s(%u) power=%s shutdown=%u "
-                "speed=%.2f wp=%zu bsp=%u wcet_err=%u geom_err=%u\n",
+                "speed=%.2f wp_idx=%zu/%zu bsp=%u wcet_err=%u geom_err=%u\n",
                 static_cast<float>(t_ms) * 0.001f,
                 nav_mode_name(nav.state.mode),
                 nav.state.confidence.estimate_quality,
@@ -959,6 +1077,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
                 power_state_name(power_manager_get_state()),
                 power_manager_is_shutdown_latched() ? 1U : 0U,
                 speed_mps,
+                active_waypoint_index,
                 route.count,
                 static_cast<unsigned>(worst_bsp_bus),
                 static_cast<unsigned>(health.last_time_guard_error),
@@ -983,7 +1102,8 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
 
 void run_fault_injection_scenario(FILE *telemetry_file)
 {
-    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
     sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
@@ -1004,11 +1124,11 @@ void run_fault_injection_scenario(FILE *telemetry_file)
     size_t waypoint_count_before_radio = 0U;
 
     StaticWaypointBuffer route{};
-    Waypoint leg_origin{};
-    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    size_t active_waypoint_index = 0U;
+    init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
     float cruise_speed_mps = kCruiseSpeedMps;
-    float prev_cross_track_m = 0.0f;
     float synthetic_course_deg = kCruiseCourseDeg;
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
@@ -1029,12 +1149,6 @@ void run_fault_injection_scenario(FILE *telemetry_file)
 
         if (safe_stop_active) {
             apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
-        } else {
-            apply_closed_loop_heading_control(
-                &sensors,
-                prev_cross_track_m,
-                &synthetic_course_deg,
-                dt_s);
         }
 
         ImuSample imu{};
@@ -1154,12 +1268,18 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             }
         }
 
-        const GuidanceErrors guidance = guidance_tick_update_route(
+        GuidanceErrors guidance{};
+        pure_pursuit_guidance_step(
+            &pursuit_guidance,
+            &nav.state,
             &route,
-            &leg_origin,
-            nav.state.position);
-
-        prev_cross_track_m = guidance.cross_track_m;
+            &active_waypoint_index,
+            t_ms,
+            &sensors,
+            &synthetic_course_deg,
+            dt_s,
+            !safe_stop_active,
+            &guidance);
 
         telemetry_write_row(
             telemetry_file,
@@ -1181,7 +1301,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
-                "[t=%5.1fs] mode=%-14s quality=%.3f health=%s(%u) power=%s shutdown=%u speed=%.2f wp=%zu bsp=%u\n",
+                "[t=%5.1fs] mode=%-14s quality=%.3f health=%s(%u) power=%s shutdown=%u speed=%.2f wp_idx=%zu/%zu bsp=%u\n",
                 static_cast<float>(t_ms) * 0.001f,
                 nav_mode_name(nav.state.mode),
                 nav.state.confidence.estimate_quality,
@@ -1190,6 +1310,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
                 power_state_name(power_manager_get_state()),
                 power_manager_is_shutdown_latched() ? 1U : 0U,
                 speed_mps,
+                active_waypoint_index,
                 route.count,
                 static_cast<unsigned>(worst_bsp_bus));
         }
@@ -1208,7 +1329,8 @@ void run_fault_injection_scenario(FILE *telemetry_file)
 
 void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 {
-    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
     sensors_simulation_init(&sensors, scenario, origin, kCruiseSpeedMps, kCruiseCourseDeg, 11U);
@@ -1224,15 +1346,15 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     navigation_cortex_init(&cortex_state);
 
     StaticWaypointBuffer route{};
-    Waypoint leg_origin{};
-    init_test_waypoint_route(&route, &leg_origin, origin, NAVICORE_DOMAIN_AIR);
+    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    size_t active_waypoint_index = 0U;
+    init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
     print_scenario_banner(scenario);
 
     constexpr uint32_t kDurationMs = 20000U;
     bool prev_gps_valid = true;
     bool prev_odom_fault = false;
-    float prev_cross_track_m = 0.0f;
     float synthetic_course_deg = kCruiseCourseDeg;
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
 
@@ -1246,12 +1368,6 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
 
         if (safe_stop_active) {
             apply_safe_stop_air(&sensors, &nav, safe_stop_heading_deg, dt_s);
-        } else {
-            apply_closed_loop_heading_control(
-                &sensors,
-                prev_cross_track_m,
-                &synthetic_course_deg,
-                dt_s);
         }
 
         ImuSample imu;
@@ -1353,12 +1469,18 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             apply_health_contingency_air_state(&sensors, &route, health.mode, safe_stop_active);
         }
 
-        const GuidanceErrors guidance = guidance_tick_update_route(
+        GuidanceErrors guidance{};
+        pure_pursuit_guidance_step(
+            &pursuit_guidance,
+            &nav.state,
             &route,
-            &leg_origin,
-            nav.state.position);
-
-        prev_cross_track_m = guidance.cross_track_m;
+            &active_waypoint_index,
+            t_ms,
+            &sensors,
+            &synthetic_course_deg,
+            dt_s,
+            !safe_stop_active,
+            &guidance);
 
         telemetry_write_row(
             telemetry_file,
@@ -1440,8 +1562,8 @@ void run_scenario_submarine(FILE *telemetry_file)
     float active_pressure_rate_pa_s = kSubmersionPressureRatePaS;
 
     StaticWaypointBuffer route{};
-    Waypoint leg_origin{};
-    init_test_waypoint_route(&route, &leg_origin, surface, NAVICORE_DOMAIN_SEA);
+    size_t active_waypoint_index = 0U;
+    init_square_waypoint_route(&route, surface, NAVICORE_DOMAIN_SEA);
 
     std::printf("\n");
     std::printf("================================================================\n");
@@ -1522,9 +1644,9 @@ void run_scenario_submarine(FILE *telemetry_file)
             nav.state.position.z = frozen_pressure_pa;
         }
 
-        const GuidanceErrors guidance = guidance_tick_update_route(
+        const GuidanceErrors guidance = guidance_telemetry_errors(
             &route,
-            &leg_origin,
+            active_waypoint_index,
             nav.state.position);
 
         telemetry_write_row(

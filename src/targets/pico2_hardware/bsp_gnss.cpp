@@ -22,6 +22,9 @@ bool g_line_pending = false;
 
 GnssUartRxRing g_rx_ring;
 
+uint32_t g_last_overflow_count = 0U;
+bool g_stream_contaminated = false;
+
 bool nmea_checksum_ok(const char *sentence)
 {
     if (sentence == nullptr || sentence[0] != '$') {
@@ -163,6 +166,30 @@ void gnss_discard_rx_line(void)
     memset(g_rx_line, 0, sizeof(g_rx_line));
 }
 
+/*
+ * Tras overflow del ring, descartar bytes hasta el siguiente '\n' antes de parsear.
+ * Una línea NMEA parcialmente perdida nunca debe alimentar la fusión.
+ */
+void gnss_mark_stream_contaminated(void)
+{
+    g_stream_contaminated = true;
+    gnss_discard_rx_line();
+
+    const uint32_t irq_state = save_and_disable_interrupts();
+    g_line_pending = false;
+    memset(g_pending_line, 0, sizeof(g_pending_line));
+    restore_interrupts(irq_state);
+}
+
+void gnss_check_overflow_contamination(void)
+{
+    const uint32_t overflow_total = g_rx_ring.overflow_count_load();
+    if (overflow_total > g_last_overflow_count) {
+        g_last_overflow_count = overflow_total;
+        gnss_mark_stream_contaminated();
+    }
+}
+
 void gnss_commit_rx_line(void)
 {
     if (g_rx_len == 0U || g_rx_line[0] != '$' || !gnss_line_is_gga_candidate()) {
@@ -186,6 +213,14 @@ void gnss_commit_rx_line(void)
 
 void gnss_feed_byte(uint8_t byte)
 {
+    if (g_stream_contaminated) {
+        if (byte == '\n') {
+            g_stream_contaminated = false;
+            gnss_discard_rx_line();
+        }
+        return;
+    }
+
     if (byte == '\r') {
         return;
     }
@@ -239,6 +274,8 @@ bool pico2_bsp_gnss_init(void)
 
     gnss_discard_rx_line();
     g_line_pending = false;
+    g_last_overflow_count = 0U;
+    g_stream_contaminated = false;
     memset(g_pending_line, 0, sizeof(g_pending_line));
     return true;
 }
@@ -250,6 +287,8 @@ bool pico2_bsp_gnss_rx_pending(void)
 
 void pico2_bsp_gnss_rx_pump(uint16_t byte_budget)
 {
+    gnss_check_overflow_contamination();
+
     uint8_t byte = 0U;
     while (byte_budget > 0U && g_rx_ring.pop(&byte)) {
         gnss_feed_byte(byte);

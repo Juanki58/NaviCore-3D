@@ -1,51 +1,87 @@
 #include "loop_metrics.hpp"
 #include "hw_config.hpp"
-#include "safe_log.hpp"
-
-#include "pico/stdlib.h"
 
 namespace {
 
-uint32_t g_max_loop_time_us = 0U;
-uint32_t g_window_max_loop_time_us = 0U;
-uint64_t g_last_report_us = 0U;
+RuntimeHealth g_health{};
+
+void health_update_max(uint32_t *field, uint32_t value)
+{
+    if (value > *field) {
+        *field = value;
+    }
+}
 
 } /* namespace */
 
 void loop_metrics_init(void)
 {
-    g_max_loop_time_us = 0U;
-    g_window_max_loop_time_us = 0U;
-    g_last_report_us = time_us_64();
+    g_health = RuntimeHealth{};
 }
 
 void loop_metrics_on_loop_complete(uint64_t loop_time_us)
 {
     const uint32_t loop_us = static_cast<uint32_t>(loop_time_us);
-
-    if (loop_us > g_max_loop_time_us) {
-        g_max_loop_time_us = loop_us;
-    }
-    if (loop_us > g_window_max_loop_time_us) {
-        g_window_max_loop_time_us = loop_us;
-    }
+    health_update_max(&g_health.max_loop_us, loop_us);
 }
 
 void loop_metrics_report_due(void)
 {
-    const uint64_t now_us = time_us_64();
-    if ((now_us - g_last_report_us) < (static_cast<uint64_t>(PICO2_LOOP_METRICS_REPORT_MS) * 1000ULL)) {
-        return;
-    }
-
-    g_last_report_us = now_us;
-
-    safe_logf("WCET loop max_loop_time_us=%u (ventana %u ms)\n", g_window_max_loop_time_us, PICO2_LOOP_METRICS_REPORT_MS);
-
-    g_window_max_loop_time_us = 0U;
+    (void)PICO2_LOOP_METRICS_REPORT_MS;
 }
 
 uint32_t loop_metrics_max_loop_time_us(void)
 {
-    return g_max_loop_time_us;
+    return g_health.max_loop_us;
+}
+
+void loop_metrics_record_rx_pump_us(uint32_t elapsed_us)
+{
+    health_update_max(&g_health.max_rxpump_us, elapsed_us);
+}
+
+void loop_metrics_record_tick_us(uint32_t elapsed_us)
+{
+    health_update_max(&g_health.max_tick_us, elapsed_us);
+}
+
+void loop_metrics_record_housekeeping_us(uint32_t elapsed_us)
+{
+    health_update_max(&g_health.max_housekeeping_us, elapsed_us);
+}
+
+void loop_metrics_record_wifi_us(uint32_t elapsed_us)
+{
+    health_update_max(&g_health.max_wifi_us, elapsed_us);
+}
+
+void loop_metrics_record_logging_us(uint32_t elapsed_us)
+{
+    health_update_max(&g_health.max_logging_us, elapsed_us);
+}
+
+void loop_metrics_add_missed_ticks(uint32_t count)
+{
+    g_health.missed_ticks += count;
+}
+
+void loop_metrics_add_wifi_skipped(void)
+{
+    ++g_health.wifi_skipped_budget;
+}
+
+void loop_metrics_add_i2c_recovery(void)
+{
+    ++g_health.i2c_recoveries;
+}
+
+void loop_metrics_sync_uart_overflows(uint32_t uart0_total, uint32_t uart1_total)
+{
+    g_health.uart0_overflows = uart0_total;
+    g_health.uart1_overflows = uart1_total;
+}
+
+const RuntimeHealth *loop_metrics_health(void)
+{
+    return &g_health;
 }

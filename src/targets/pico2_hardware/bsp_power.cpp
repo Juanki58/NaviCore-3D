@@ -1,3 +1,4 @@
+#include "loop_metrics.hpp"
 #include "safe_log.hpp"
 #include "hw_config.hpp"
 
@@ -89,6 +90,7 @@ void power_enter_permanent_offline(void)
 
 void power_begin_recovery(void)
 {
+    loop_metrics_add_i2c_recovery();
     g_power_ready = false;
     g_i2c_fail_streak = 0U;
     g_recovery_pulse_count = 0U;

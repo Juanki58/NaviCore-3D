@@ -17,6 +17,9 @@
  *   - Tras PICO2_I2C_RECOVER_MAX secuencias 9-pulsos fallidas → UPS OFFLINE permanente.
  *   - cyw43_poll() es periférico "blando" sin timeout SDK — ver nota abajo.
  *   - WT61C: checksum de trama obligatorio antes de actualizar IMU (bsp_wt61c.cpp).
+ *   - Ticks: contador atómico (no bool) — un bool pierde ticks si el bucle > 10 ms.
+ *   - WDT: watchdog_update() al final del ciclo; bloqueo → reset sin enmascarar.
+ *   - Overflow UART: parser descarta hasta delimitador ('\n' / cabecera 0x55).
  *
  * Invariante WDT (3 pasos I2C fallidos × 2 ms = 6 ms << 50 ms WDT):
  *   PICO2_I2C_STEP_TIMEOUT_US × PICO2_I2C_RECOVER_AFTER < PICO2_WDT_TIMEOUT_MS × 1000
@@ -27,7 +30,7 @@
  * Ring SPSC: w/r son std::atomic<uint16_t> (release/acquire). Validar con
  * ring_stress_host_test.cpp @ -O3 durante 60 s.
  *
- * WCET: GP22 = sensors_tick(), GP21 = cyw43_poll(), max_loop_time_us cada 1 s.
+ * WCET: GP22 = sensors_tick(), GP21 = cyw43_poll(), máximos en RuntimeHealth.
  */
 #pragma once
 
@@ -71,6 +74,9 @@
 #define PICO2_I2C_RECOVER_AFTER      3U
 #define PICO2_I2C_RECOVER_MAX        3U    /* secuencias 9-pulsos fallidas → OFFLINE permanente */
 #define PICO2_WDT_TIMEOUT_MS         50U
+#define PICO2_LOOP_BUDGET_US           (static_cast<uint32_t>(PICO2_NAV_TICK_MS) * 1000U)
+#define PICO2_WIFI_MIN_REMAINING_US  500U
+#define PICO2_SAFE_LOG_MAX_BYTES_PER_LOOP 256U
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */

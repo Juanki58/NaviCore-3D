@@ -2,7 +2,7 @@
 
 > **Target CMake:** `src/targets/pico2_hardware/` → `NaviCore3D_Pico2`  
 > **Placa:** `PICO_BOARD=pico2_w`  
-> **Firmware de referencia:** commit `b8ca728` y posteriores
+> **Firmware de referencia:** commit `fc28d70` y posteriores (`RuntimeHealth`, `fault_tolerance`, `SystemHealth`)
 
 Este documento describe el hardware del banco Comarruga, la arquitectura de tiempo real del firmware y el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB.
 
@@ -65,14 +65,13 @@ cyw43_arch_poll() ──► stack Wi-Fi (periférico blando)
 Cada iteración del `while(true)` ejecuta, en este orden:
 
 1. `pico2_bsp_sensors_rx_pump()` — drena rings UART (hasta 8 rondas × 64 B/UART)
-2. `watchdog_update()` — alimenta WDT de 50 ms
-3. Si hay tick pendiente: **GP22 ↑** → `pico2_bsp_sensors_tick()` → **GP22 ↓**
-4. `pico2_bsp_sensors_housekeeping()` — FSM I2C UPS (un paso por llamada)
-5. **GP21 ↑** → `cyw43_arch_poll()` → **GP21 ↓**
-6. `loop_metrics_on_loop_complete()` — mide duración total de la iteración
-7. `loop_metrics_report_due()` — emite WCET por USB cada 1 s
-8. `safe_log_flush_pending()` — vacía cola de log no bloqueante
-9. `__wfi()` si no hay tick pendiente y los sensores permiten dormir
+2. Si hay tick pendiente: **GP22 ↑** → `pico2_bsp_sensors_tick()` → **GP22 ↓** (omitido si `max_tick_backlog > 2`)
+3. `pico2_bsp_sensors_housekeeping()` — FSM I2C UPS (un paso por llamada)
+4. **GP21 ↑** → `cyw43_arch_poll()` → **GP21 ↓** (omitido si sin presupuesto o `fault_tolerance` deshabilitó Wi-Fi)
+5. `loop_metrics_sync_uart_overflows()` + `safe_log_flush_pending()` (máx. 256 B/ciclo)
+6. `loop_metrics_on_loop_complete()` + `fault_tolerance_on_loop_complete()` + `loop_metrics_update_system_health()`
+7. `watchdog_update()` — alimenta WDT de 50 ms **solo si el ciclo terminó**
+8. `__wfi()` si no hay tick pendiente y los sensores permiten dormir
 
 ### Invariantes de diseño
 
@@ -141,100 +140,186 @@ Criterio de paso: sin mensajes `Error:` de init; WDT sin reset espurio (la placa
 
 ---
 
-### Fase 2 — WCET: osciloscopio en GP22 y GP21
+### Fase 2 — WCET: osciloscopio (smoke test rápido)
 
-Esta fase es el **gate principal de tiempo real**. Los pines de benchmark delimitan en hardware las secciones críticas; la telemetría USB reporta el WCET del bucle completo.
+Validación rápida previa a la campaña formal. Ver **Prioridad 2** para la demostración exhaustiva de WCET.
 
-#### Conexión del osciloscopio
+1. Flash, terminal USB, sondas GP22 (CH1) y GP21 (CH2).
+2. Correr **≥ 60 s** en nominal.
+3. Verificar: GP22 @ 10 ms, sin WDT reset, `max_loop_us` < 25 ms (lectura vía depurador, ver abajo).
 
-| Canal | Pin | Señal |
-|-------|-----|-------|
-| **CH1** | GP22 | Duración de `pico2_bsp_sensors_tick()` |
-| **CH2** | GP21 | Duración de `cyw43_arch_poll()` |
-| GND | GND Pico | Referencia común |
+---
 
-Configuración sugerida: 2 ms/div, trigger CH1 flanco ascendente, modo normal o persistencia limitada.
+## Prioridad 2 — Campaña WCET (demostración de presupuesto temporal)
 
-#### Qué mide cada pulso
+> **Objetivo:** no comprobar que “funciona en nominal”, sino **intentar romper el presupuesto temporal** bajo peor caso reproducible.  
+> **No basta** con mirar `max_wifi_us` aislado: el WCET del lazo es multi-variable.
 
-**GP22 (tick sensores @ 100 Hz)**
+### Métricas obligatorias (`RuntimeHealth`)
 
-- Se activa **solo cuando hay tick pendiente** (cada 10 ms en régimen estable).
-- El pulso cubre: actualización de ventanas de overflow, fusión dead-reckoning, aplicación de confianza degradada.
-- **No incluye** I2C UPS ni `rx_pump()` (eso ocurre fuera del pulso GP22).
+Leer al final de **cada escenario** (máximos desde arranque o tras `loop_metrics_init()` al inicio del escenario):
 
-Interpretación:
+| Campo | Qué acota | Correlación osciloscopio |
+|-------|-----------|--------------------------|
+| `max_tick_us` | WCET de `pico2_bsp_sensors_tick()` | Ancho pulso **GP22** |
+| `max_wifi_us` | WCET de `cyw43_arch_poll()` | Ancho pulso **GP21** |
+| `max_logging_us` | WCET de `safe_log_flush_pending()` | — |
+| `max_loop_us` | WCET del ciclo completo | Suma inferior a periodo 10 ms |
+| `max_tick_backlog` | Peor retraso de ticks (`pending - 1`) | Huecos GP22 > 10 ms |
 
-| Observación en CH1 | Diagnóstico |
-|--------------------|-------------|
-| Pulso periódico estable cada 10 ms | Tick @ 100 Hz correcto |
-| Ancho de pulso ≪ 10 ms (típ. sub-ms a pocos ms) | `sensors_tick()` dentro de presupuesto |
-| Ancho de pulso > 5 ms | Revisar carga de fusión o frecuencia efectiva de tick |
-| Pulso ausente o irregular | Problema de timer, bloqueo del bucle o WDT reset |
+Métricas de contexto (no sustituyen las anteriores): `loop_budget_exceeded`, `wifi_skipped_budget`, `uart0/1_overflows`, `i2c_recoveries`, `SystemHealth`.
 
-**GP21 (poll Wi-Fi)**
+### Presupuestos de referencia (`hw_config.hpp`)
 
-- Se activa **en cada iteración** del `while(true)`, con o sin tick.
-- El pulso cubre el trabajo del stack CYW43 en modo poll (sin bloqueo SDK).
-- Su ancho es **variable**: depende del tráfico Wi-Fi, retransmisiones y estado de la interfaz.
+| Umbral | Valor | Significado |
+|--------|-------|-------------|
+| `PICO2_LOOP_BUDGET_US` | 10 000 µs | Periodo nominal @ 100 Hz |
+| `PICO2_LOOP_DEGRADED_US` | 8 000 µs | Degradación de ritmo |
+| `PICO2_LOOP_RESTART_US` | 20 000 µs | 3 ciclos → reinicio controlado |
+| `PICO2_LOOP_CRITICAL_US` | 25 000 µs | 50 % del WDT (50 ms) |
+| `PICO2_WDT_TIMEOUT_MS` | 50 ms | Techo absoluto (bloqueo) |
 
-Interpretación:
+**Criterio de ruptura de presupuesto:** cualquier escenario donde `max_loop_us > PICO2_LOOP_BUDGET_US` de forma sostenida, o `max_tick_backlog > 2`, o activación de `fault_tolerance` / `SystemHealth::CRITICAL`.
 
-| Observación en CH2 | Diagnóstico |
-|--------------------|-------------|
-| Pulsos frecuentes (mucho más densos que CH1) | Normal: una iteración de poll por vuelta de bucle |
-| Ancho ocasionalmente mayor | Tráfico Wi-Fi o eventos de red |
-| Ancho sostenido alto en todas las iteraciones | Posible contención con el resto del bucle; correlacionar con `max_loop_time_us` |
+### Lectura de métricas en banco
 
-#### Correlación con métricas USB
+El firmware **no imprime** `RuntimeHealth` en caliente (evita bloquear USB). Opciones:
 
-Cada **1000 ms** el firmware emite por `safe_log`:
+**A — Depurador (recomendado en campaña)**
 
-```
-WCET loop max_loop_time_us=<N> (ventana 1000 ms)
-```
-
-| Campo | Significado |
-|-------|-------------|
-| `max_loop_time_us` | **Mayor duración observada del bucle completo** en la ventana de 1 s |
-| Ventana 1000 ms | Se reinicia el máximo tras cada reporte; no es un promedio |
-
-El bucle medido incluye, en orden: `rx_pump` + `watchdog_update` + (opcional) `sensors_tick` + `housekeeping` + `cyw43_arch_poll` + overhead de métricas/log.
-
-**Relación osciloscopio ↔ USB:**
-
-```
-max_loop_time_us  ≥  ancho_pulso_GP22  (en la misma iteración con tick)
-max_loop_time_us  ≥  ancho_pulso_GP21  (siempre)
-max_loop_time_us  ≈  suma de tramos + rx_pump + housekeeping + overhead
+```text
+# OpenOCD + GDB, halt al final del escenario:
+(gdb) p *loop_metrics_health()
+(gdb) p loop_metrics_system_health()
 ```
 
-La API `loop_metrics_max_loop_time_us()` conserva el **máximo desde arranque** (útil para depuración; el reporte periódico usa el máximo por ventana).
+**B — Reset de métricas por escenario**
 
-#### Umbrales de aceptación WCET
+Añadir breakpoint al inicio de cada escenario y llamar `loop_metrics_init()` solo en banco (o reiniciar placa entre escenarios S0…S7).
 
-Referencia: WDT = **50 ms** → el bucle debe permanecer muy por debajo de ese límite.
+**C — Correlación obligatoria con osciloscopio**
 
-| Métrica | Condición nominal | Límite de alerta | Acción si se supera |
-|---------|-------------------|------------------|---------------------|
-| Pulso GP22 | < 2 ms | > 5 ms | Perfil fusión / carga CPU en tick |
-| Pulso GP21 (pico) | < 3 ms | > 10 ms sostenido | Revisar tráfico Wi-Fi o prioridad del bucle |
-| `max_loop_time_us` (USB) | < 5 ms | > 25 ms | Investigar bloqueo I2C, UART o poll Wi-Fi |
-| WDT reset | ninguno | cualquier reset | `max_loop_time_us` se acercó a 50 ms o hay bloqueo |
+Para cada escenario, capturar **captura de pantalla** del osciloscopio (GP22/GP21) **y** volcado GDB de `RuntimeHealth`. Sin ambos, el escenario no es válido para certificación.
 
-> **Nota:** 25 ms es el 50 % del WDT — margen de seguridad antes de un reset. En operación nominal con sensores conectados y Wi-Fi asociado, se espera `max_loop_time_us` en el rango de **centenas de µs a pocos ms**.
+### Matriz de escenarios
 
-#### Procedimiento paso a paso (WCET)
+Ejecutar en orden. Duración mínima por escenario: **120 s** (WCET es evento raro). Anotar temperatura ambiente y tensión UPS.
 
-1. Flash del firmware de banco y apertura de terminal USB.
-2. Conectar sondas en GP22 (CH1) y GP21 (CH2); masa común.
-3. Dejar correr **≥ 60 s** en condiciones nominales (IMU + GNSS + Wi-Fi activos).
-4. Anotar el valor **máximo** de `max_loop_time_us` observado en la ventana.
-5. Medir en osciloscopio: ancho máximo de CH1 y CH2 en el mismo intervalo.
-6. Verificar: `max_loop_time_us` por encima de los anchos medidos de GP22/GP21, y por debajo de 25 ms.
-7. (Opcional) Repetir con tráfico Wi-Fi adicional (ping continuo al host) y comparar incremento de GP21 y `max_loop_time_us`.
+| ID | Escenario | Estímulo | Objetivo de estrés |
+|----|-----------|----------|-------------------|
+| **S0** | Baseline | Todo conectado, Wi-Fi asociado, sin tráfico host | Referencia |
+| **S1** | Wi-Fi inactivo | Asociado a AP; host sin ping/UDP/iperf; verificar `wifi_skipped` bajo | Aislar carga radio idle |
+| **S2** | UDP continuo | `iperf3 -u -b 5M -t 120` o script Python → `HOST_IP:UDP_PORT` @ ≥ 100 Hz | Saturar `cyw43_arch_poll` |
+| **S3** | Pérdida de paquetes | `tc netem loss 30%` en AP o router entre Pico y host | WCET Wi-Fi con retransmisiones |
+| **S4** | GNSS multi-constelación | u-blox: GPS+GLO+GAL+BDS, NMEA a máxima cadencia (UBX-CFG-RATE) | Saturar UART1 / parser |
+| **S5** | IMU máxima frecuencia | WT61C: 115200, salida acel+giro a máx. Hz (software WitMotion) | Saturar UART0 / parser |
+| **S6** | I²C recovery | Glitch SDA (pull-down 1 ms cada 2 s) o bloqueo SDA breve | FSM `power_poll` + recovery |
+| **S7** | **Todo simultáneo** | S2+S3+S4+S5+S6 activos a la vez | **Peor caso compuesto** |
 
-**Criterio de paso Fase 2:** sin resets WDT; `max_loop_time_us` estable por debajo de 25 ms; GP22 periódico @ 10 ms con ancho < 5 ms.
+### Procedimiento por escenario
+
+1. **Preparación**
+   - [ ] Flash `NaviCore3D_Pico2` (`fc28d70+`)
+   - [ ] `wifi_config.h` con IP host del banco
+   - [ ] Osciloscopio: CH1=GP22, CH2=GP21, 2 ms/div, trigger CH1
+   - [ ] GDB/OpenOCD conectado (lectura sin parar el lazo, o halt a los 120 s)
+
+2. **Inicio de escenario**
+   - Reiniciar placa **o** `loop_metrics_init()` + `fault_tolerance_init()` (solo banco)
+   - Aplicar estímulo del escenario
+   - Cronometrar **120 s**
+
+3. **Durante el escenario**
+   - Observar: resets WDT, mensajes `FT:` por USB, `SystemHealth`
+   - No interrumpir salvo reset espurio (anotar)
+
+4. **Fin de escenario**
+   - Halt GDB → volcar `*loop_metrics_health()`
+   - Captura osciloscopio (máximos anchos GP22/GP21)
+   - Completar fila en plantilla de registro
+
+5. **Criterio de fallo del escenario**
+   - `max_loop_us` > 10 000 µs **y** `loop_budget_exceeded` > 5 en la ventana
+   - `max_tick_backlog` > 2
+   - `SystemHealth::CRITICAL` o reinicio controlado
+   - Cualquier reset WDT no provocado
+
+### Configuración de estímulos (notas de banco)
+
+**S1 — Wi-Fi inactivo**
+
+- Pico asociada al AP; host en la misma subred pero **sin** tráfico (cerrar `iperf`, ping, visualizador UDP).
+- Esperado: `max_wifi_us` bajo; útil como contraste para S2/S3.
+
+**S2 — UDP continuo**
+
+```powershell
+# Host Windows/Linux — adaptar IP y puerto de wifi_config.h
+python tools/telemetry_receiver.py   # en una terminal
+# Emisor: NaviCore cuando UDP esté activo, o iperf:
+iperf3 -u -c <IP_PICO> -p 5005 -b 2M -t 120
+```
+
+**S3 — Pérdida de paquetes**
+
+```bash
+# Linux en el router/AP o PC puente:
+sudo tc qdisc add dev wlan0 root netem loss 30% delay 5ms
+# Retirar tras S3:
+sudo tc qdisc del dev wlan0 root
+```
+
+**S4 — GNSS todas las constelaciones**
+
+- u-center / u-blox NEO-M9N: habilitar GPS+GLONASS+Galileo+BeiDou; rate 10 Hz NMEA si el módulo lo permite.
+- Verificar en analizador lógico GP5: ráfagas `$GNGGA`/`$GNRMC` continuas @ 115200.
+
+**S5 — IMU máxima frecuencia**
+
+- Configurar WT61C-232 vía software WitMotion: salida acelerómetro + giroscopio a máxima cadencia @ 115200.
+- Verificar GP1: tramas `0x55` continuas sin huecos > 5 ms.
+
+**S6 — I²C recovery**
+
+- **Método seguro:** desconectar momentáneamente pull-up SDA (≤ 10 ms) cada 2 s con relay bajo control del operador.
+- **Método alternativo:** fuente de glitch en GP6 con resistencia serie 1 kΩ (solo con UPS sin carga crítica).
+- Esperado: `i2c_recoveries` incrementa; observar `max_housekeeping_us` y FSM en `safe_log`.
+
+**S7 — Todo simultáneo**
+
+- Activar S2+S3+S4+S5+S6 juntos durante 120 s.
+- Este escenario define el **WCET compuesto** del programa. Si solo un escenario puede romper el presupuesto, debe ser este.
+
+### Plantilla de registro
+
+Copiar una fila por escenario; archivar en `docs/banco_wcet_YYYYMMDD.csv` o cuaderno de laboratorio.
+
+```csv
+escenario,duracion_s,max_tick_us,max_wifi_us,max_logging_us,max_loop_us,max_tick_backlog,loop_budget_exceeded,wifi_skipped,uart0_ovf,uart1_ovf,i2c_recov,system_health,wdt_reset,notas
+S0,120,,,,,,,,,,,,,
+S1,120,,,,,,,,,,,,,
+...
+S7,120,,,,,,,,,,,,,
+```
+
+`system_health`: 0=NOMINAL, 1=DEGRADED, 2=CRITICAL.
+
+### Análisis post-campaña
+
+1. **Gráfico de barras** por escenario: `max_loop_us`, `max_tick_us`, `max_wifi_us`, `max_logging_us`.
+2. Identificar **dominante**: si S7 ≈ suma de parciales, los subsistemas son aditivos; si S7 >> suma, hay contención no lineal (priorizar).
+3. Comparar `max_wifi_us` (GDB) con ancho máximo GP21 (osciloscopio); discrepancia > 10 % → revisar medición.
+4. Documentar **margen al WDT:** `50000 - max_loop_us` en S7.
+5. Conclusión binaria: ¿el presupuesto de 10 ms se mantiene en S7 bajo peor caso? Si no, enumerar subsistema dominante y acción de `fault_tolerance` observada.
+
+### Gate de salida Prioridad 2
+
+| # | Criterio |
+|---|----------|
+| 1 | S0–S7 ejecutados 120 s cada uno con registro completo |
+| 2 | Cada escenario tiene captura osciloscopio + volcado `RuntimeHealth` |
+| 3 | S7 documentado con margen WDT y subsistema dominante |
+| 4 | Si `max_loop_us` > 10 ms en S7: informe de ruptura con causa raíz (no bloquear sin evidencia) |
 
 ---
 
@@ -343,7 +428,7 @@ Salida esperada: `OK: overflow_count == 0 en ambos rings tras 60 s` con tráfico
 | 2 | UART / I2C | Tráfico visible en pines de datos (lógico o terminal) |
 | 3 | GP22 @ 100 Hz | Pulso cada 10 ms, ancho < 5 ms |
 | 4 | GP21 poll Wi-Fi | Pulsos por iteración; picos < 10 ms en régimen nominal |
-| 5 | USB WCET | `max_loop_time_us` < 25 ms sostenido, sin WDT reset |
+| 5 | Campaña WCET S0–S7 | Registro completo + S7 con margen WDT documentado |
 | 6 | Overflow UART | Degradación tras ≥ 3 overflows/s; recuperación tras ventana limpia |
 | 7 | Host stress test | `overflow_count == 0` @ 60 s (`ring_stress_host_test`) |
 
@@ -355,7 +440,8 @@ Salida esperada: `OK: overflow_count == 0 en ambos rings tras 60 s` con tráfico
 |---------|-----|
 | `hw_config.hpp` | Pines, umbrales, invariantes WDT/UART/I2C |
 | `main.cpp` | Bucle principal, GPIO benchmark, WDT |
-| `loop_metrics.cpp` | `max_loop_time_us` y reporte periódico |
+| `loop_metrics.cpp` | `RuntimeHealth`, `SystemHealth`, máximos por bloque |
+| `fault_tolerance.cpp` | Acciones automáticas ante degradación |
 | `safe_log.cpp` | Log no bloqueante por USB CDC |
 | `bsp_uart_rx_ring.hpp` | Ring SPSC atómico + `overflow_count` |
 | `bsp_sensors.cpp` | Ventana de overflow y degradación de confianza |

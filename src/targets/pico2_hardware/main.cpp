@@ -8,6 +8,7 @@
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
 #include "safe_log.hpp"
+#include "task_monitor.hpp"
 
 #include "core/fusion.hpp"
 #include "core/navigation_cortex.hpp"
@@ -55,6 +56,7 @@ int main()
     safe_log_init();
     loop_metrics_init();
     fault_tolerance_init();
+    task_monitor_init();
 
     if (cyw43_arch_init()) {
         printf("Error: fallo al inicializar Wi-Fi\n");
@@ -113,6 +115,7 @@ int main()
         uint64_t phase_start_us = loop_start_us;
 
         pico2_bsp_sensors_rx_pump();
+        task_monitor_record(TaskId::RxPump, tick_count);
         loop_metrics_record_rx_pump_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
         phase_start_us = time_us_64();
 
@@ -130,6 +133,7 @@ int main()
                 gpio_put(PICO2_GPIO_BENCHMARK, 1);
                 pico2_bsp_sensors_tick(&nav_filter, timestamp_ms, &gps_fix_valid);
                 gpio_put(PICO2_GPIO_BENCHMARK, 0);
+                task_monitor_record(TaskId::NavTick, tick_count);
 
                 (void)HOST_IP;
                 (void)UDP_PORT;
@@ -141,6 +145,7 @@ int main()
         }
 
         pico2_bsp_sensors_housekeeping(tick_count);
+        task_monitor_record(TaskId::Housekeeping, tick_count);
         loop_metrics_record_housekeeping_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
         phase_start_us = time_us_64();
 
@@ -151,6 +156,7 @@ int main()
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 1);
             cyw43_arch_poll();
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 0);
+            task_monitor_record(TaskId::Wifi, tick_count);
             loop_metrics_record_wifi_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
         } else {
             loop_metrics_add_wifi_skipped();
@@ -162,10 +168,12 @@ int main()
             pico2_bsp_uart_get_overflow_count(PICO2_UART_ID_GNSS));
 
         safe_log_flush_pending();
+        task_monitor_record(TaskId::Logging, tick_count);
         loop_metrics_record_logging_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
 
         const uint64_t loop_elapsed = time_us_64() - loop_start_us;
         loop_metrics_on_loop_complete(loop_elapsed);
+        task_monitor_record(TaskId::Loop, tick_count);
 
         SensorConfidenceFlags confidence{};
         pico2_bsp_sensors_get_confidence_flags(&confidence);

@@ -76,30 +76,7 @@ add_executable(NaviCore3D_Ambiq
 )
 target_compile_definitions(NaviCore3D_Ambiq PRIVATE NAVICORE_TARGET_AMBIQ)
 
-# Comprobar si estamos compilando para la arquitectura Raspberry Pi Pico
-if(DEFINED ENV{PICO_SDK_PATH} AND NOT PICO_SDK_PATH)
-    set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
-endif()
-
-if(PICO_SDK_PATH)
-    include(pico_sdk_import.cmake)
-    pico_sdk_init()
-
-    add_executable(NaviCore3D_Pico2
-        src/targets/pico2_hardware/main.cpp
-        src/core/navigation_cortex.cpp
-    )
-
-    target_include_directories(NaviCore3D_Pico2 PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-    target_link_libraries(NaviCore3D_Pico2
-        pico_stdlib
-        pico_cyw43_arch_lwip_threadsafe_background
-        hardware_spi
-        hardware_uart
-    )
-
-    pico_enable_stdio_usb(NaviCore3D_Pico2 1)
-    pico_enable_stdio_uart(NaviCore3D_Pico2 0)
-    pico_add_extra_outputs(NaviCore3D_Pico2)
-endif()
+# Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe
+# fijarse antes de project(). Ver src/targets/pico2_hardware/CMakeLists.txt
+#   cmake -S src/targets/pico2_hardware -B build_pico2 -G Ninja
+#   cmake --build build_pico2

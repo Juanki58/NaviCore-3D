@@ -9,9 +9,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 set(NAVICORE_CORE_DIR ${CMAKE_SOURCE_DIR}/src/core)
 set(NAVICORE_PC_DIR ${CMAKE_SOURCE_DIR}/src/targets/generic_pc)
-set(NAVICORE_AMBIQ_DIR ${CMAKE_SOURCE_DIR}/src/targets/ambiq_apollo)
 
-include_directories(${NAVICORE_CORE_DIR} ${NAVICORE_PC_DIR} ${NAVICORE_AMBIQ_DIR} ${NAVICORE_AMBIQ_DIR}/drivers)
+include_directories(${NAVICORE_CORE_DIR} ${NAVICORE_PC_DIR})
 
 set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/NavState.cpp
@@ -41,40 +40,12 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/main.cpp
     ${NAVICORE_PC_DIR}/telemetry_udp_sender.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
-    ${NAVICORE_AMBIQ_DIR}/power_state_machine.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_hardware_timer.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_iom_master.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_imu_driver.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_uart_telemetry.cpp
+    ${NAVICORE_PC_DIR}/power_state_machine.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 if(WIN32)
     target_link_libraries(NaviCore3D_Sim PRIVATE ws2_32)
 endif()
-
-set(NAVICORE_AMBIQ_DRIVER_SOURCES
-    ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_dma_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_spi_imu_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_gpio_gnss_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_uart_telemetry_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/drivers/ambiq_power_monitor_stub.cpp
-)
-
-add_executable(NaviCore3D_Ambiq
-    ${NAVICORE_AMBIQ_DIR}/main_ambiq.cpp
-    ${NAVICORE_AMBIQ_DIR}/bsp_sensors.cpp
-    ${NAVICORE_AMBIQ_DIR}/telemetry_uart.cpp
-    ${NAVICORE_AMBIQ_DIR}/power_state_machine.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_system_stub.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_hardware_timer.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_iom_master.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_imu_driver.cpp
-    ${NAVICORE_AMBIQ_DIR}/ambiq_uart_telemetry.cpp
-    ${NAVICORE_AMBIQ_DRIVER_SOURCES}
-    ${NAVICORE_CORE_SOURCES}
-)
-target_compile_definitions(NaviCore3D_Ambiq PRIVATE NAVICORE_TARGET_AMBIQ)
 
 # Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe
 # fijarse antes de project(). Ver src/targets/pico2_hardware/CMakeLists.txt

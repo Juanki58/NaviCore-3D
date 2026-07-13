@@ -1,8 +1,10 @@
 # NaviCore-3D · Hardware Blueprint v1 (LOCKED)
 
 > **Tag:** `navicore_v1_hardware_blueprint_locked`  
-> **Estado:** Guía oficial de laboratorio — no modificar sin revisión de arquitectura.  
-> **Prerrequisito de software:** Core zero-heap, alineación SRAM 32 bits (Fase Y), buffer circular estático (Fase X) y capa `NaviCore3D_Ambiq` con stubs host verificados.
+> **Estado:** **ARCHIVADO** — blueprint histórico Ambiq Apollo4. No modificar (LOCKED).  
+> **Target activo:** `src/targets/pico2_hardware/` → [`docs/comarruga_lab_hardware.md`](comarruga_lab_hardware.md)  
+> **Targets eliminados:** `src/targets/ambiq_apollo/`, `src/targets/pico_w/` (prototipo Pico 1 W)  
+> **Prerrequisito de software (histórico):** Core zero-heap, alineación SRAM 32 bits (Fase Y), buffer circular estático (Fase X) y capa `NaviCore3D_Ambiq` con stubs host verificados.
 
 ---
 

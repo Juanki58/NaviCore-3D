@@ -79,19 +79,23 @@
 #define PICO2_LOOP_BUDGET_US           (static_cast<uint32_t>(PICO2_NAV_TICK_MS) * 1000U)
 #define PICO2_WIFI_MIN_REMAINING_US  500U
 #define PICO2_SAFE_LOG_MAX_BYTES_PER_LOOP 256U
-#define PICO2_LOOP_DEGRADED_US           8000U
-#define PICO2_LOOP_CRITICAL_US          25000U
-#define PICO2_TICK_BACKLOG_DEGRADED        1U
-#define PICO2_TICK_BACKLOG_CRITICAL        3U
-#define PICO2_LOOP_OVERRUN_DEGRADED        3U
-#define PICO2_LOOP_RESTART_US           20000U
-#define PICO2_LOOP_RESTART_STREAK          3U
+#define PICO2_LOOP_DEGRADED_US           8000U   /* SUPUESTO — pendiente P3 */
+#define PICO2_LOOP_CRITICAL_US          25000U   /* SUPUESTO — pendiente P3 */
+#define PICO2_TICK_BACKLOG_DEGRADED        1U     /* SUPUESTO — pendiente P3 */
+#define PICO2_TICK_BACKLOG_CRITICAL        3U     /* SUPUESTO — pendiente P3 */
+#define PICO2_LOOP_OVERRUN_DEGRADED        3U     /* SUPUESTO — pendiente P3 */
+#define PICO2_LOOP_RESTART_US           20000U   /* SUPUESTO — pendiente P3 */
+#define PICO2_LOOP_RESTART_STREAK          3U     /* SUPUESTO — pendiente P3 */
 #define PICO2_FT_RATE_WINDOW_MS         1000U
-#define PICO2_FT_LOOP_OVERRUN_DEGRADED_MAX 5U
-#define PICO2_FT_UART_OVERFLOW_PER_S_MAX 3U
-#define PICO2_FT_MISSED_TICKS_INVALID_MAX 2U
-#define PICO2_FT_I2C_RECOVERY_OFFLINE_MAX 5U
-#define PICO2_HOUSEKEEPING_MAX_IDLE_US  500000U
+#define PICO2_FT_LOOP_OVERRUN_DEGRADED_MAX 5U     /* SUPUESTO — pendiente P3 */
+#define PICO2_FT_UART_OVERFLOW_PER_S_MAX 3U     /* SUPUESTO — pendiente P3 */
+#define PICO2_FT_MISSED_TICKS_INVALID_MAX 2U     /* SUPUESTO — pendiente P3 */
+#define PICO2_FT_I2C_RECOVERY_OFFLINE_MAX 5U     /* SUPUESTO — pendiente P3 */
+#define PICO2_HOUSEKEEPING_MAX_IDLE_US  500000U  /* SUPUESTO — pendiente P3 */
+#define PICO2_RX_PUMP_MAX_IDLE_US        30000U  /* SUPUESTO — pendiente P3 */
+#define PICO2_NAV_TICK_MAX_IDLE_US       30000U  /* SUPUESTO — pendiente P3 */
+#define PICO2_WIFI_MAX_IDLE_US          200000U  /* SUPUESTO — pendiente P3 */
+#define PICO2_LOOP_MAX_IDLE_US           25000U  /* SUPUESTO — pendiente P3 */
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */

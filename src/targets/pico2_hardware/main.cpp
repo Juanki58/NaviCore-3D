@@ -4,7 +4,7 @@
  */
 #include "bsp_sensors.hpp"
 #include "bsp_power.hpp"
-#include "fault_tolerance.hpp"
+#include "health_monitor.hpp"
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
 #include "safe_log.hpp"
@@ -55,7 +55,7 @@ int main()
     stdio_set_translate_crlf(&stdio_usb, false);
     safe_log_init();
     loop_metrics_init();
-    fault_tolerance_init();
+    health_monitor_init();
     task_monitor_init();
 
     if (cyw43_arch_init()) {
@@ -114,6 +114,18 @@ int main()
         const uint64_t loop_start_us = time_us_64();
         uint64_t phase_start_us = loop_start_us;
 
+        if (g_tick_ready.load(std::memory_order_acquire) > 0U) {
+            health_monitor_check_task_deadline(
+                TaskId::Loop,
+                PICO2_LOOP_MAX_IDLE_US,
+                "loop");
+        }
+
+        health_monitor_check_task_deadline(
+            TaskId::RxPump,
+            PICO2_RX_PUMP_MAX_IDLE_US,
+            "rx_pump");
+
         pico2_bsp_sensors_rx_pump();
         task_monitor_record(TaskId::RxPump, tick_count);
         loop_metrics_record_rx_pump_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
@@ -128,7 +140,12 @@ int main()
             const uint32_t timestamp_ms = tick_count * PICO2_NAV_TICK_MS;
             ++tick_count;
 
-            if (fault_tolerance_nav_update_allowed(pending_ticks)) {
+            if (health_monitor_nav_update_allowed(pending_ticks)) {
+                health_monitor_check_task_deadline(
+                    TaskId::NavTick,
+                    PICO2_NAV_TICK_MAX_IDLE_US,
+                    "nav_tick");
+
                 bool gps_fix_valid = false;
                 gpio_put(PICO2_GPIO_BENCHMARK, 1);
                 pico2_bsp_sensors_tick(&nav_filter, timestamp_ms, &gps_fix_valid);
@@ -144,7 +161,10 @@ int main()
             phase_start_us = time_us_64();
         }
 
-        fault_tolerance_check_housekeeping_deadline();
+        health_monitor_check_task_deadline(
+            TaskId::Housekeeping,
+            PICO2_HOUSEKEEPING_MAX_IDLE_US,
+            "housekeeping");
         pico2_bsp_sensors_housekeeping(tick_count);
         task_monitor_record(TaskId::Housekeeping, tick_count);
         loop_metrics_record_housekeeping_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
@@ -153,7 +173,12 @@ int main()
         const uint32_t loop_elapsed_us = static_cast<uint32_t>(time_us_64() - loop_start_us);
         const bool wifi_budget_ok = (loop_elapsed_us < PICO2_LOOP_BUDGET_US)
             && ((PICO2_LOOP_BUDGET_US - loop_elapsed_us) >= PICO2_WIFI_MIN_REMAINING_US);
-        if (fault_tolerance_wifi_poll_allowed() && wifi_budget_ok) {
+        if (health_monitor_wifi_poll_allowed() && wifi_budget_ok) {
+            health_monitor_check_task_deadline(
+                TaskId::Wifi,
+                PICO2_WIFI_MAX_IDLE_US,
+                "wifi");
+
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 1);
             cyw43_arch_poll();
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 0);
@@ -178,15 +203,12 @@ int main()
 
         SensorConfidenceFlags confidence{};
         pico2_bsp_sensors_get_confidence_flags(&confidence);
-        loop_metrics_update_system_health(
+        health_monitor_on_loop_complete(
             static_cast<uint32_t>(loop_elapsed),
+            tick_count * PICO2_NAV_TICK_MS,
             confidence.imu_degraded,
             confidence.gnss_degraded,
             pico2_bsp_power_is_offline());
-
-        fault_tolerance_on_loop_complete(
-            static_cast<uint32_t>(loop_elapsed),
-            tick_count * PICO2_NAV_TICK_MS);
 
         loop_metrics_report_due();
 

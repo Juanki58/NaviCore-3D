@@ -40,7 +40,7 @@ add_executable(NaviCore3D_Pico2
     ${NAVICORE_PICO2_DIR}/main.cpp
     ${NAVICORE_PICO2_DIR}/safe_log.cpp
     ${NAVICORE_PICO2_DIR}/loop_metrics.cpp
-    ${NAVICORE_PICO2_DIR}/fault_tolerance.cpp
+    ${NAVICORE_PICO2_DIR}/health_monitor.cpp
     ${NAVICORE_PICO2_DIR}/task_monitor.cpp
     ${NAVICORE_PICO2_DIR}/bsp_sensors.cpp
     ${NAVICORE_PICO2_DIR}/bsp_wt61c.cpp

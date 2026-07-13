@@ -8,13 +8,52 @@
 
 El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignación dinámica en runtime) y determinismo estricto para entornos críticos.
 
+```
+NaviCore-3D/
+├── src/
+│   ├── core/                   # Motor matemático universal (agnóstico de plataforma)
+│   │   ├── NavState.*          # Estado de navegación unificado
+│   │   ├── vector3d.*          # Modelo de coordenadas 3D permanente
+│   │   ├── waypoint.*          # Rutas con buffer fijo
+│   │   ├── fusion.*            # Dead reckoning + fusión de sensores
+│   │   ├── navigation_cortex.* # Orquestación + guardas de seguridad
+│   │   ├── math_utils.hpp      # Umbrales FPU (sqrtf/sinf/cosf)
+│   │   └── sensor_types.hpp    # Muestras IMU/GPS/presión portables
+│   └── targets/
+│       ├── generic_pc/         # Simulador host + VehicleDemo (PC)
+│       │   ├── main.cpp
+│       │   ├── sensors_sim.*
+│       │   ├── power_state_machine.*
+│       │   └── telemetry_udp_sender.*
+│       └── pico2_hardware/     # ★ Pico 2 W — laboratorio Comarruga (validado)
+│           ├── main.cpp        # Bucle 100 Hz, health_monitor, WDT
+│           ├── health_monitor.*  # SystemHealth + políticas de degradación
+│           ├── task_monitor.*    # Starvation / progreso de tareas
+│           ├── loop_metrics.*    # RuntimeHealth (WCET por bloque)
+│           ├── bsp_sensors.*   # Orquestador HAL
+│           ├── bsp_wt61c.*     # IMU UART0 @ 115200 (WT61C-232)
+│           ├── bsp_gnss.*      # GNSS UART1 / NMEA $GNGGA (NEO-M9N)
+│           ├── bsp_power.*     # UPS I2C FSM cooperativa (Waveshare)
+│           ├── safe_log.*      # USB con presupuesto por ciclo
+│           └── hw_config.hpp   # Mapa de pines + invariantes RT
+├── docs/
+│   ├── comarruga_lab_hardware.md
+│   ├── sil_architecture.md
+│   └── telemetria_navicore.csv
+├── tools/
+│   ├── visualizer.py
+│   └── remote_visualizer.py
+├── CMakeLists.txt
+└── build/
+```
+
+**Targets activos (solo dos):**
+
 - **`src/core/`**: Motor matemático universal (X, Y, Z). Aislado de la plataforma física.
 - **`src/core/api_ingest.*`**: API universal de entrada de datos de sensores.
 - **`src/core/vehicle_bus_adapter.*`**: Adaptador que traduce tramas de bus CAN (`ImuCanFrame`, `OdoCanFrame`) al formato nativo del filtro (`ImuSample`).
 - **`src/targets/generic_pc/`**: Simulador de estrés en PC (`NaviCore3D_Sim`) y Demo de bus de coche (`NaviCore3D_VehicleDemo`).
 - **`src/targets/pico2_hardware/`**: ★ Target validado en banco — Raspberry Pi Pico 2 W, laboratorio Comarruga @ 100 Hz (`NaviCore3D_Pico2`). Ver `docs/comarruga_lab_hardware.md`.
-- **`src/targets/pico_w/`**: Prototipo Pico W (Wi-Fi / UDP).
-- **`src/targets/ambiq_apollo/`**: Capa estructural de drivers bare-metal (DMA, SPI, GPIO, UART, Power Monitor) con stubs para compilación cruzada en host.
 - **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
 - **`tools/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
 - **`tools/telemetry_protocol.py`** / **`tools/telemetry_receiver.py`**: Codec y capa de transporte UDP compartida.
@@ -27,22 +66,26 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 | Prioridad | Ámbito | Estado (`7f37724+`) | Pendiente |
 |-----------|--------|---------------------|-----------|
-| **P1** | Health Monitor + políticas de degradación | Parcial: `SystemHealth`, `RuntimeHealth`, `fault_tolerance` (tabla evento→acción) | Unificar en módulo `health_monitor`; políticas explícitas y recuperables documentadas |
-| **P2** | Starvation / progreso de tareas | Parcial: `TaskMonitor`, deadline housekeeping 500 ms | Extender a todas las tareas críticas; umbrales derivados de P3 |
+| **P1** | Health Monitor + políticas de degradación | `health_monitor`: `SystemHealth`, tabla `HealthPolicyDescriptor` (recuperable/permanente), acciones | Calibrar umbrales tras P3 |
+| **P2** | Starvation / progreso de tareas | `TaskMonitor` + `health_monitor_check_task_deadline()` en RxPump, NavTick, Housekeeping, Wifi, Loop | Calibrar umbrales tras P3 |
 | **P3** | Campaña WCET en banco | Documentado: `docs/comarruga_lab_hardware.md` § Prioridad 2, escenarios S0–S7 | **Ejecutar en placa**; foco en `max_wifi_us` / GP21 bajo S2/S3/S7 |
 | **P4** | Umbrales de degradación | Valores iniciales en `hw_config.hpp` (suposición) | Reemplazar por datos de P3 antes de certificar |
 
-### P1 — Políticas actuales (`fault_tolerance`)
+### P1 — Políticas actuales (`health_monitor`)
 
-| Evento | Acción |
-|--------|--------|
-| `loop_budget_exceeded` > 5 en 1 s | DEGRADED + Wi-Fi off |
-| `uart0_overflows` > 3/s | Confianza IMU ↓ |
-| `uart1_overflows` > 3/s | Confianza GNSS ↓ |
-| `missed_ticks` > 2 (backlog) | Omitir tick de navegación |
-| `i2c_recoveries` > 5 | UPS OFFLINE permanente |
-| `loop > 20 ms` × 3 | CRITICAL + `watchdog_reboot()` |
-| `housekeeping` idle > 500 ms | CRITICAL + `watchdog_reboot()` |
+| Evento | Clasificación | Recuperación | Acción |
+|--------|---------------|--------------|--------|
+| `loop_budget_exceeded` > 5 en 1 s | DEGRADED | Permanente | Wi-Fi off |
+| `uart0_overflows` > 3/s | DEGRADED | Permanente | Confianza IMU ↓ |
+| `uart1_overflows` > 3/s | DEGRADED | Permanente | Confianza GNSS ↓ |
+| `missed_ticks` > 2 (backlog) | DEGRADED | Recuperable | Omitir tick de navegación |
+| `i2c_recoveries` > 5 | CRITICAL | Permanente | UPS OFFLINE |
+| `loop > 20 ms` × 3 | CRITICAL | Permanente | `watchdog_reboot()` |
+| `housekeeping` idle > 500 ms | CRITICAL | Permanente | `watchdog_reboot()` |
+| `rx_pump` idle > 30 ms | CRITICAL | Permanente | `watchdog_reboot()` |
+| `nav_tick` idle > 30 ms (si permitido) | CRITICAL | Permanente | `watchdog_reboot()` |
+| `wifi` idle > 200 ms (si poll permitido) | CRITICAL | Permanente | `watchdog_reboot()` |
+| `loop` idle > 25 ms (si tick pendiente) | CRITICAL | Permanente | `watchdog_reboot()` |
 
 **Limitación conocida:** `cyw43_arch_poll()` no tiene WCET acotado en SDK — P3 debe caracterizarlo antes de endurecer políticas Wi-Fi.
 
@@ -57,8 +100,8 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 ## 🏁 2. Hitos Consolidados (Pico 2 Comarruga: `7f37724+`)
 
 - [x] Rings UART SPSC, FSM I2C, ticks atómicos, WDT al final de ciclo
-- [x] `RuntimeHealth` + `SystemHealth` + `fault_tolerance` (políticas P1)
-- [x] `TaskMonitor` + deadline housekeeping 500 ms (P2 parcial)
+- [x] `health_monitor` + `RuntimeHealth` + políticas P1 (recuperable/permanente)
+- [x] `TaskMonitor` + deadlines de starvation P2 (umbrales SUPUESTO)
 - [x] Protocolo campaña WCET S0–S7 documentado (P3 — pendiente ejecución)
 - [ ] Umbrales calibrados con datos de banco (P4)
 
@@ -82,21 +125,18 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 ### FASE B: Hardware Real (Medio Plazo)
 
-> **Guía oficial (LOCKED):** [`docs/navicore_v1_hardware_blueprint_locked.md`](docs/navicore_v1_hardware_blueprint_locked.md) — tag `navicore_v1_hardware_blueprint_locked`
+> **Target activo:** `src/targets/pico2_hardware/` — banco Comarruga validado. Ver [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md).
 
 **Fase 1 — Banco de pruebas (mesa de laboratorio):**
 
-- [ ] Apollo4 Plus / Blue Lite EVB + J-Link SWD
-- [ ] IMU MPU-9250 o BMX160 (SPI) + GNSS u-blox NEO-M8N/M9N (UART 9600)
-- [ ] Breadboard, Dupont, analizador lógico 8ch @ 24 MHz
+- [x] Raspberry Pi Pico 2 W + WT61C-232 (UART0) + NEO-M9N (UART1) + UPS Waveshare (I2C)
+- [x] Analizador lógico 8ch @ 24 MHz — GP22 (tick), GP21 (Wi-Fi poll)
 
-**Fase 2 — Drivers bare-metal (sustituir stubs):**
+**Fase 2 — Endurecimiento RT (en curso):**
 
-- [ ] **IOM SPI @ 1 MHz + DMA**: lectura atómica 6 ejes IMU (`ambiq_iom_master`, `ambiq_spi_imu_stub`)
-- [ ] **UART0 GNSS RX @ 9600**: ISR → buffer circular 128 slots, drop-oldest (`command_ingestor` como patrón)
-- [ ] **Parser NMEA estático**: `$GNGGA`, checksum, lat/lon → metros, zero-heap → `fusion`
-- [ ] **Remoción de stubs Ambiq**: llamadas reales `am_hal_*` del SDK Apollo4 sobre silicio
-- [ ] **Filtro de deriva inercial (bias térmico)**: calibración estática inicial en laboratorio
+- [x] Rings UART SPSC, FSM I2C, `health_monitor`, `TaskMonitor`, campaña WCET documentada (S0–S7)
+- [ ] **Campaña WCET en placa** (P3): caracterizar `cyw43_arch_poll()` y recalibrar umbrales (P4)
+- [ ] **Telemetría UDP en vivo** desde `NaviCore3D_Pico2`
 
 ### FASE C: Certificación e Industrialización (Largo Plazo)
 
@@ -150,7 +190,6 @@ HMI nav: lat=41.387417 lon=2.168600
 |--------|-------------|
 | `NaviCore3D_Sim` | Simulador PC + volcado CSV |
 | `NaviCore3D_VehicleDemo` | Demo bus CAN + HMI |
-| `NaviCore3D_Ambiq` | Loop bare-metal 100 ms (stubs host) |
 | `NaviCore3D_Pico2` | Pico 2 W Comarruga @ 100 Hz — build standalone en `src/targets/pico2_hardware/` |
 
 ```powershell

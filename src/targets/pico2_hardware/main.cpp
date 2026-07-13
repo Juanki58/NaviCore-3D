@@ -144,6 +144,7 @@ int main()
             phase_start_us = time_us_64();
         }
 
+        fault_tolerance_check_housekeeping_deadline();
         pico2_bsp_sensors_housekeeping(tick_count);
         task_monitor_record(TaskId::Housekeeping, tick_count);
         loop_metrics_record_housekeeping_us(static_cast<uint32_t>(time_us_64() - phase_start_us));

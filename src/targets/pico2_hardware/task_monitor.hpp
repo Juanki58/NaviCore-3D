@@ -5,6 +5,7 @@
 struct TaskMonitor {
     uint32_t last_execution_tick;
     uint32_t executions;
+    uint64_t last_execution_us;
 };
 
 enum class TaskId : uint8_t {
@@ -19,4 +20,5 @@ enum class TaskId : uint8_t {
 
 void task_monitor_init(void);
 void task_monitor_record(TaskId id, uint32_t nav_tick);
+uint64_t task_monitor_idle_us(TaskId id);
 const TaskMonitor *task_monitor_get(TaskId id);

@@ -1,4 +1,5 @@
 #include "safe_log.hpp"
+#include "hw_config.hpp"
 
 #include <stdio.h>
 #include <string.h>
@@ -101,18 +102,34 @@ void safe_log_flush_pending(void)
         return;
     }
 
+    uint16_t bytes_remaining = PICO2_SAFE_LOG_MAX_BYTES_PER_LOOP;
     char line[kSafeLogLineMax];
-    while (g_log_ring_count > 0U) {
+
+    while (g_log_ring_count > 0U && bytes_remaining > 0U) {
         if (!safe_log_ring_pop(line, sizeof(line))) {
             break;
         }
 
         const size_t len = strlen(line);
-        const size_t written = safe_log_cdc_write_nonblocking(line, len);
+        const size_t to_write = (len < static_cast<size_t>(bytes_remaining))
+            ? len
+            : static_cast<size_t>(bytes_remaining);
+        const size_t written = safe_log_cdc_write_nonblocking(line, to_write);
+
         if (written < len) {
-            safe_log_ring_push(line);
+            if (written > 0U) {
+                const size_t tail_len = len - written;
+                char partial[kSafeLogLineMax];
+                memcpy(partial, line + written, tail_len);
+                partial[tail_len] = '\0';
+                safe_log_ring_push(partial);
+            } else {
+                safe_log_ring_push(line);
+            }
             break;
         }
+
+        bytes_remaining = static_cast<uint16_t>(bytes_remaining - static_cast<uint16_t>(written));
     }
 }
 

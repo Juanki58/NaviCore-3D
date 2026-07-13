@@ -23,6 +23,8 @@ ImuUartRxRing g_rx_ring;
 uint8_t g_frame[kWt61cFrameLen];
 uint8_t g_frame_idx = 0U;
 uint64_t g_last_rx_us = 0U;
+uint32_t g_last_overflow_count = 0U;
+bool g_stream_contaminated = false;
 
 float g_accel_mps2[3] = {0.0f, 0.0f, 0.0f};
 float g_gyro_radps[3] = {0.0f, 0.0f, 0.0f};
@@ -47,6 +49,28 @@ bool wt61c_checksum_ok(const uint8_t *frame)
 void wt61c_reset_sync(void)
 {
     g_frame_idx = 0U;
+}
+
+/*
+ * Tras overflow del ring, el stream queda contaminado: bytes perdidos invalidan
+ * la trama en curso. Se descartan bytes hasta la siguiente cabecera 0x55 válida
+ * (equivalente a descartar hasta delimitador en protocolos línea a línea).
+ */
+void wt61c_mark_stream_contaminated(void)
+{
+    g_stream_contaminated = true;
+    wt61c_reset_sync();
+    g_accel_valid = false;
+    g_gyro_valid = false;
+}
+
+void wt61c_check_overflow_contamination(void)
+{
+    const uint32_t overflow_total = g_rx_ring.overflow_count_load();
+    if (overflow_total > g_last_overflow_count) {
+        g_last_overflow_count = overflow_total;
+        wt61c_mark_stream_contaminated();
+    }
 }
 
 void wt61c_check_frame_timeout(void)
@@ -88,6 +112,13 @@ void wt61c_consume_frame(const uint8_t *frame)
 
 void wt61c_feed_byte(uint8_t byte)
 {
+    if (g_stream_contaminated) {
+        if (byte != kWt61cHeader) {
+            return;
+        }
+        g_stream_contaminated = false;
+    }
+
     if (g_frame_idx == 0U) {
         if (byte != kWt61cHeader) {
             return;
@@ -146,6 +177,8 @@ bool pico2_bsp_wt61c_init(void)
 
     wt61c_reset_sync();
     g_last_rx_us = 0U;
+    g_last_overflow_count = 0U;
+    g_stream_contaminated = false;
     g_accel_valid = false;
     g_gyro_valid = false;
     memset(g_accel_mps2, 0, sizeof(g_accel_mps2));
@@ -160,6 +193,7 @@ bool pico2_bsp_wt61c_rx_pending(void)
 
 void pico2_bsp_wt61c_rx_pump(uint16_t byte_budget)
 {
+    wt61c_check_overflow_contamination();
     wt61c_check_frame_timeout();
 
     uint8_t byte = 0U;

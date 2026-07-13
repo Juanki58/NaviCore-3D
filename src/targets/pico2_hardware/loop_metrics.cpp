@@ -4,7 +4,6 @@
 namespace {
 
 RuntimeHealth g_health{};
-SystemHealth g_system_health = SystemHealth::NOMINAL;
 uint8_t g_consecutive_loop_overrun = 0U;
 uint32_t g_last_loop_us = 0U;
 
@@ -15,37 +14,11 @@ void health_update_max(uint32_t *field, uint32_t value)
     }
 }
 
-SystemHealth health_evaluate(
-    uint32_t last_loop_us,
-    bool imu_degraded,
-    bool gnss_degraded,
-    bool power_offline)
-{
-    if (last_loop_us >= PICO2_LOOP_CRITICAL_US
-        || g_health.max_tick_backlog >= PICO2_TICK_BACKLOG_CRITICAL
-        || power_offline) {
-        return SystemHealth::CRITICAL;
-    }
-
-    if (last_loop_us >= PICO2_LOOP_DEGRADED_US
-        || g_health.max_tick_backlog >= PICO2_TICK_BACKLOG_DEGRADED
-        || g_consecutive_loop_overrun >= PICO2_LOOP_OVERRUN_DEGRADED
-        || imu_degraded
-        || gnss_degraded
-        || g_health.uart0_overflows >= PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD
-        || g_health.uart1_overflows >= PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD) {
-        return SystemHealth::DEGRADED;
-    }
-
-    return SystemHealth::NOMINAL;
-}
-
 } /* namespace */
 
 void loop_metrics_init(void)
 {
     g_health = RuntimeHealth{};
-    g_system_health = SystemHealth::NOMINAL;
     g_consecutive_loop_overrun = 0U;
     g_last_loop_us = 0U;
 }
@@ -137,31 +110,7 @@ const RuntimeHealth *loop_metrics_health(void)
     return &g_health;
 }
 
-void loop_metrics_update_system_health(
-    uint32_t last_loop_us,
-    bool imu_degraded,
-    bool gnss_degraded,
-    bool power_offline)
+uint8_t loop_metrics_consecutive_overrun(void)
 {
-    const SystemHealth evaluated = health_evaluate(
-        last_loop_us,
-        imu_degraded,
-        gnss_degraded,
-        power_offline);
-
-    if (static_cast<uint8_t>(evaluated) > static_cast<uint8_t>(g_system_health)) {
-        g_system_health = evaluated;
-    }
-}
-
-void loop_metrics_set_system_health(SystemHealth health)
-{
-    if (static_cast<uint8_t>(health) > static_cast<uint8_t>(g_system_health)) {
-        g_system_health = health;
-    }
-}
-
-SystemHealth loop_metrics_system_health(void)
-{
-    return g_system_health;
+    return g_consecutive_loop_overrun;
 }

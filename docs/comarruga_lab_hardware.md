@@ -2,7 +2,7 @@
 
 > **Target CMake:** `src/targets/pico2_hardware/` → `NaviCore3D_Pico2`  
 > **Placa:** `PICO_BOARD=pico2_w`  
-> **Firmware de referencia:** commit `fc28d70` y posteriores (`RuntimeHealth`, `fault_tolerance`, `SystemHealth`)
+> **Firmware de referencia:** commit `fc28d70` y posteriores (`RuntimeHealth`, `health_monitor`, `SystemHealth`)
 
 Este documento describe el hardware del banco Comarruga, la arquitectura de tiempo real del firmware y el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB.
 
@@ -67,9 +67,9 @@ Cada iteración del `while(true)` ejecuta, en este orden:
 1. `pico2_bsp_sensors_rx_pump()` — drena rings UART (hasta 8 rondas × 64 B/UART)
 2. Si hay tick pendiente: **GP22 ↑** → `pico2_bsp_sensors_tick()` → **GP22 ↓** (omitido si `max_tick_backlog > 2`)
 3. `pico2_bsp_sensors_housekeeping()` — FSM I2C UPS (un paso por llamada)
-4. **GP21 ↑** → `cyw43_arch_poll()` → **GP21 ↓** (omitido si sin presupuesto o `fault_tolerance` deshabilitó Wi-Fi)
+4. **GP21 ↑** → `cyw43_arch_poll()` → **GP21 ↓** (omitido si sin presupuesto o `health_monitor` deshabilitó Wi-Fi)
 5. `loop_metrics_sync_uart_overflows()` + `safe_log_flush_pending()` (máx. 256 B/ciclo)
-6. `loop_metrics_on_loop_complete()` + `fault_tolerance_on_loop_complete()` + `loop_metrics_update_system_health()`
+6. `loop_metrics_on_loop_complete()` + `health_monitor_on_loop_complete()`
 7. `watchdog_update()` — alimenta WDT de 50 ms **solo si el ciclo terminó**
 8. `__wfi()` si no hay tick pendiente y los sensores permiten dormir
 
@@ -179,7 +179,7 @@ Métricas de contexto (no sustituyen las anteriores): `loop_budget_exceeded`, `w
 | `PICO2_LOOP_CRITICAL_US` | 25 000 µs | 50 % del WDT (50 ms) |
 | `PICO2_WDT_TIMEOUT_MS` | 50 ms | Techo absoluto (bloqueo) |
 
-**Criterio de ruptura de presupuesto:** cualquier escenario donde `max_loop_us > PICO2_LOOP_BUDGET_US` de forma sostenida, o `max_tick_backlog > 2`, o activación de `fault_tolerance` / `SystemHealth::CRITICAL`.
+**Criterio de ruptura de presupuesto:** cualquier escenario donde `max_loop_us > PICO2_LOOP_BUDGET_US` de forma sostenida, o `max_tick_backlog > 2`, o activación de `health_monitor` / `SystemHealth::CRITICAL`.
 
 ### Lectura de métricas en banco
 
@@ -190,7 +190,8 @@ El firmware **no imprime** `RuntimeHealth` en caliente (evita bloquear USB). Opc
 ```text
 # OpenOCD + GDB, halt al final del escenario:
 (gdb) p *loop_metrics_health()
-(gdb) p loop_metrics_system_health()
+(gdb) p health_monitor_system_health()
+(gdb) p *health_monitor_runtime()
 (gdb) p *task_monitor_get((TaskId)1)   /* NavTick: last_execution_tick, executions */
 ```
 
@@ -226,7 +227,7 @@ Ejecutar en orden. Duración mínima por escenario: **120 s** (WCET es evento ra
    - [ ] GDB/OpenOCD conectado (lectura sin parar el lazo, o halt a los 120 s)
 
 2. **Inicio de escenario**
-   - Reiniciar placa **o** `loop_metrics_init()` + `fault_tolerance_init()` (solo banco)
+   - Reiniciar placa **o** `loop_metrics_init()` + `health_monitor_init()` (solo banco)
    - Aplicar estímulo del escenario
    - Cronometrar **120 s**
 
@@ -311,7 +312,7 @@ S7,120,,,,,,,,,,,,,
 2. Identificar **dominante**: si S7 ≈ suma de parciales, los subsistemas son aditivos; si S7 >> suma, hay contención no lineal (priorizar).
 3. Comparar `max_wifi_us` (GDB) con ancho máximo GP21 (osciloscopio); discrepancia > 10 % → revisar medición.
 4. Documentar **margen al WDT:** `50000 - max_loop_us` en S7.
-5. Conclusión binaria: ¿el presupuesto de 10 ms se mantiene en S7 bajo peor caso? Si no, enumerar subsistema dominante y acción de `fault_tolerance` observada.
+5. Conclusión binaria: ¿el presupuesto de 10 ms se mantiene en S7 bajo peor caso? Si no, enumerar subsistema dominante y acción de `health_monitor` observada.
 
 ### Gate de salida Prioridad 2
 
@@ -442,7 +443,7 @@ Salida esperada: `OK: overflow_count == 0 en ambos rings tras 60 s` con tráfico
 | `hw_config.hpp` | Pines, umbrales, invariantes WDT/UART/I2C |
 | `main.cpp` | Bucle principal, GPIO benchmark, WDT |
 | `loop_metrics.cpp` | `RuntimeHealth`, `SystemHealth`, máximos por bloque |
-| `fault_tolerance.cpp` | Acciones automáticas ante degradación |
+| `health_monitor.cpp` | Clasificación `SystemHealth` + políticas de degradación |
 | `safe_log.cpp` | Log no bloqueante por USB CDC |
 | `bsp_uart_rx_ring.hpp` | Ring SPSC atómico + `overflow_count` |
 | `bsp_sensors.cpp` | Ventana de overflow y degradación de confianza |

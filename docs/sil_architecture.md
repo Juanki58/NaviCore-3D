@@ -2,6 +2,53 @@
 
 Entorno **Software-in-the-Loop** para validar algoritmos autónomos, visión artificial y protocolos de seguridad con hasta **7 UAVs** antes del vuelo real.
 
+## Estructura del repositorio (targets activos)
+
+```
+NaviCore-3D/
+├── src/
+│   ├── core/                   # Motor matemático universal (agnóstico de plataforma)
+│   │   ├── NavState.*          # Estado de navegación unificado
+│   │   ├── vector3d.*          # Modelo de coordenadas 3D permanente
+│   │   ├── waypoint.*          # Rutas con buffer fijo
+│   │   ├── fusion.*            # Dead reckoning + fusión de sensores
+│   │   ├── navigation_cortex.* # Orquestación + guardas de seguridad
+│   │   ├── math_utils.hpp      # Umbrales FPU (sqrtf/sinf/cosf)
+│   │   └── sensor_types.hpp    # Muestras IMU/GPS/presión portables
+│   └── targets/
+│       ├── generic_pc/         # Simulador host (NaviCore3D_Sim, NaviCore3D_VehicleDemo)
+│       │   ├── main.cpp
+│       │   ├── sensors_sim.*
+│       │   ├── power_state_machine.*
+│       │   └── telemetry_udp_sender.*
+│       └── pico2_hardware/     # ★ Target embebido — Pico 2 W, banco Comarruga
+│           ├── main.cpp
+│           ├── health_monitor.*
+│           ├── task_monitor.*
+│           ├── loop_metrics.*
+│           ├── bsp_sensors.* / bsp_wt61c.* / bsp_gnss.* / bsp_power.*
+│           ├── safe_log.*
+│           └── hw_config.hpp
+├── docs/
+│   ├── sil_architecture.md     # Este documento
+│   ├── comarruga_lab_hardware.md
+│   └── telemetria_navicore.csv
+├── tools/
+│   ├── visualizer.py           # CSV replay 3D
+│   ├── remote_visualizer.py    # UDP live telemetry
+│   └── sil_*.py / jsbsim_sil_bridge.py  # SIL multi-UAV
+├── CMakeLists.txt
+└── build/
+```
+
+**Targets de build:**
+
+| CMake target | Directorio | Plataforma |
+|--------------|------------|------------|
+| `NaviCore3D_Sim` | `src/targets/generic_pc/` | PC host |
+| `NaviCore3D_VehicleDemo` | `src/targets/generic_pc/` | PC host |
+| `NaviCore3D_Pico2` | `src/targets/pico2_hardware/` | RP2350 (build standalone) |
+
 ## Principio de separación
 
 NaviCore-3D es un **estimador de navegación** (fusión + salud). JSBSim es el **plant de dinámica**. El motor gráfico es el **cliente visual y generador de sensores sintéticos**.
@@ -95,6 +142,8 @@ NaviCore mantiene **X=lat°, Y=lon°, Z=alt m** en `GpsSample`; el bridge JSBSim
 
 ## Referencias en el repo
 
-- Telemetría existente: `src/targets/generic_pc/telemetry_udp.hpp`
+- Simulador host: `src/targets/generic_pc/`
+- Target embebido: `src/targets/pico2_hardware/` — ver `docs/comarruga_lab_hardware.md`
+- Telemetría UDP: `src/targets/generic_pc/telemetry_udp.hpp`
 - Ingesta universal: `src/core/api_ingest.hpp`
 - Patrón adaptador: `src/core/vehicle_bus_adapter.hpp`

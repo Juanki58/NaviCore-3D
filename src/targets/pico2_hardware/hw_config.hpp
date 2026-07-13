@@ -79,6 +79,11 @@
 #define PICO2_LOOP_BUDGET_US           (static_cast<uint32_t>(PICO2_NAV_TICK_MS) * 1000U)
 #define PICO2_WIFI_MIN_REMAINING_US  500U
 #define PICO2_SAFE_LOG_MAX_BYTES_PER_LOOP 256U
+#define PICO2_LOOP_DEGRADED_US           8000U
+#define PICO2_LOOP_CRITICAL_US          25000U
+#define PICO2_TICK_BACKLOG_DEGRADED        1U
+#define PICO2_TICK_BACKLOG_CRITICAL        3U
+#define PICO2_LOOP_OVERRUN_DEGRADED        3U
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */

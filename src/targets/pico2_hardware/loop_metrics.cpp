@@ -12,19 +12,58 @@ void health_update_max(uint32_t *field, uint32_t value)
     }
 }
 
+RuntimeHealth g_health{};
+SystemHealth g_system_health = SystemHealth::NOMINAL;
+uint8_t g_consecutive_loop_overrun = 0U;
+uint32_t g_last_loop_us = 0U;
+
+SystemHealth health_evaluate(
+    uint32_t last_loop_us,
+    bool imu_degraded,
+    bool gnss_degraded,
+    bool power_offline)
+{
+    if (last_loop_us >= PICO2_LOOP_CRITICAL_US
+        || g_health.max_tick_backlog >= PICO2_TICK_BACKLOG_CRITICAL
+        || power_offline) {
+        return SystemHealth::CRITICAL;
+    }
+
+    if (last_loop_us >= PICO2_LOOP_DEGRADED_US
+        || g_health.max_tick_backlog >= PICO2_TICK_BACKLOG_DEGRADED
+        || g_consecutive_loop_overrun >= PICO2_LOOP_OVERRUN_DEGRADED
+        || imu_degraded
+        || gnss_degraded
+        || g_health.uart0_overflows >= PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD
+        || g_health.uart1_overflows >= PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD) {
+        return SystemHealth::DEGRADED;
+    }
+
+    return SystemHealth::NOMINAL;
+}
+
 } /* namespace */
 
 void loop_metrics_init(void)
 {
     g_health = RuntimeHealth{};
+    g_system_health = SystemHealth::NOMINAL;
+    g_consecutive_loop_overrun = 0U;
+    g_last_loop_us = 0U;
 }
 
 void loop_metrics_on_loop_complete(uint64_t loop_time_us)
 {
     const uint32_t loop_us = static_cast<uint32_t>(loop_time_us);
+    g_last_loop_us = loop_us;
     health_update_max(&g_health.max_loop_us, loop_us);
     if (loop_us > PICO2_LOOP_BUDGET_US) {
         ++g_health.loop_budget_exceeded;
+        if (g_consecutive_loop_overrun < 255U) {
+            ++g_consecutive_loop_overrun;
+        }
+    } else {
+        g_consecutive_loop_overrun = 0U;
     }
 }
 
@@ -98,4 +137,22 @@ void loop_metrics_sync_uart_overflows(uint32_t uart0_total, uint32_t uart1_total
 const RuntimeHealth *loop_metrics_health(void)
 {
     return &g_health;
+}
+
+void loop_metrics_update_system_health(
+    uint32_t last_loop_us,
+    bool imu_degraded,
+    bool gnss_degraded,
+    bool power_offline)
+{
+    g_system_health = health_evaluate(
+        last_loop_us,
+        imu_degraded,
+        gnss_degraded,
+        power_offline);
+}
+
+SystemHealth loop_metrics_system_health(void)
+{
+    return g_system_health;
 }

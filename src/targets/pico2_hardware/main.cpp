@@ -3,6 +3,7 @@
  * @brief NaviCore-3D en Raspberry Pi Pico 2 W — laboratorio Comarruga @ 100 Hz
  */
 #include "bsp_sensors.hpp"
+#include "bsp_power.hpp"
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
 #include "safe_log.hpp"
@@ -159,7 +160,17 @@ int main()
         safe_log_flush_pending();
         loop_metrics_record_logging_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
 
-        loop_metrics_on_loop_complete(time_us_64() - loop_start_us);
+        const uint64_t loop_elapsed = time_us_64() - loop_start_us;
+        loop_metrics_on_loop_complete(loop_elapsed);
+
+        SensorConfidenceFlags confidence{};
+        pico2_bsp_sensors_get_confidence_flags(&confidence);
+        loop_metrics_update_system_health(
+            static_cast<uint32_t>(loop_elapsed),
+            confidence.imu_degraded,
+            confidence.gnss_degraded,
+            pico2_bsp_power_is_offline());
+
         loop_metrics_report_due();
 
         watchdog_update();

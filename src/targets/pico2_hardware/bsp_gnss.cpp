@@ -278,3 +278,8 @@ bool pico2_bsp_gnss_poll(GpsSample *gps_out)
     restore_interrupts(irq_state);
     return parsed;
 }
+
+uint32_t pico2_bsp_gnss_rx_overflow_count(void)
+{
+    return g_rx_ring.overflow_count_load();
+}

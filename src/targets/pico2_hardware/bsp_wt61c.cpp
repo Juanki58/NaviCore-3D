@@ -189,3 +189,8 @@ bool pico2_bsp_wt61c_poll(ImuSample *imu_out)
     imu_out->mag_ut[2] = 0.0f;
     return true;
 }
+
+uint32_t pico2_bsp_wt61c_rx_overflow_count(void)
+{
+    return g_rx_ring.overflow_count_load();
+}

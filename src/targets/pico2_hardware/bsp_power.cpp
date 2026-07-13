@@ -1,4 +1,4 @@
-#include "bsp_power.hpp"
+#include "safe_log.hpp"
 #include "hw_config.hpp"
 
 #include "hardware/clocks.h"
@@ -8,8 +8,6 @@
 #include "pico/error.h"
 #include "pico/stdlib.h"
 #include "pico/time.h"
-
-#include <stdio.h>
 
 namespace {
 
@@ -84,7 +82,7 @@ void power_enter_permanent_offline(void)
     g_recover_sessions = 0U;
     g_recovery_pulse_count = 0U;
     i2c_deinit(PICO2_POWER_I2C);
-    printf(
+    safe_logf(
         "Aviso: UPS I2C OFFLINE permanente (SDA bloqueada tras %u recoveries)\n",
         PICO2_I2C_RECOVER_MAX);
 }

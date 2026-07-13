@@ -17,11 +17,107 @@ namespace {
 uint32_t g_tick_count = 0U;
 uint8_t g_battery_low_streak = 0U;
 bool g_battery_low_latched = false;
+SensorConfidenceFlags g_sensor_confidence{};
+
+struct UartOverflowWindow {
+    uint32_t window_start_ms = 0U;
+    uint32_t last_overflow_total = 0U;
+    uint16_t events_in_window = 0U;
+    bool confidence_degraded = false;
+};
+
+UartOverflowWindow g_imu_overflow_window{};
+UartOverflowWindow g_gnss_overflow_window{};
+
+float sensors_clampf(float value, float min_v, float max_v)
+{
+    if (value < min_v) {
+        return min_v;
+    }
+    if (value > max_v) {
+        return max_v;
+    }
+    return value;
+}
+
+void sensors_overflow_window_update(
+    UartOverflowWindow *window,
+    uint8_t uart_id,
+    uint32_t timestamp_ms)
+{
+    if (window == nullptr) {
+        return;
+    }
+
+    const uint32_t total = pico2_bsp_uart_get_overflow_count(uart_id);
+    if (total > window->last_overflow_total) {
+        window->events_in_window = static_cast<uint16_t>(
+            window->events_in_window + (total - window->last_overflow_total));
+        window->last_overflow_total = total;
+    }
+
+    if (window->window_start_ms == 0U) {
+        window->window_start_ms = timestamp_ms;
+    }
+
+    if ((timestamp_ms - window->window_start_ms) >= PICO2_RING_OVERFLOW_WINDOW_MS) {
+        window->window_start_ms = timestamp_ms;
+        window->events_in_window = 0U;
+        window->confidence_degraded = false;
+    }
+
+    if (window->events_in_window >= PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD) {
+        window->confidence_degraded = true;
+    }
+}
+
+void sensors_update_confidence_flags(uint32_t timestamp_ms)
+{
+    sensors_overflow_window_update(
+        &g_imu_overflow_window,
+        PICO2_UART_ID_IMU,
+        timestamp_ms);
+    sensors_overflow_window_update(
+        &g_gnss_overflow_window,
+        PICO2_UART_ID_GNSS,
+        timestamp_ms);
+
+    g_sensor_confidence.imu_degraded = g_imu_overflow_window.confidence_degraded;
+    g_sensor_confidence.gnss_degraded = g_gnss_overflow_window.confidence_degraded;
+}
+
+void sensors_apply_degraded_confidence(DeadReckoningFilter *nav_filter)
+{
+    if (nav_filter == nullptr) {
+        return;
+    }
+
+    if (!g_sensor_confidence.imu_degraded && !g_sensor_confidence.gnss_degraded) {
+        return;
+    }
+
+    float quality = nav_filter->state.confidence.estimate_quality;
+
+    if (g_sensor_confidence.imu_degraded) {
+        quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
+    }
+
+    if (g_sensor_confidence.gnss_degraded) {
+        nav_filter->state.confidence.gps_trusted = false;
+        quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
+    }
+
+    nav_filter->state.confidence.estimate_quality = sensors_clampf(quality, 0.0f, 1.0f);
+}
 
 } /* namespace */
 
 bool pico2_bsp_sensors_init(void)
 {
+    g_sensor_confidence = SensorConfidenceFlags{};
+    g_imu_overflow_window = UartOverflowWindow{};
+    g_gnss_overflow_window = UartOverflowWindow{};
+
     if (!pico2_bsp_power_init()) {
         printf("Aviso: UPS I2C no responde (addr 0x%02X)\n", PICO2_POWER_I2C_ADDR);
     }
@@ -44,6 +140,27 @@ bool pico2_bsp_sensors_init(void)
         PICO2_GNSS_UART_BAUD);
 
     return true;
+}
+
+uint32_t pico2_bsp_uart_get_overflow_count(uint8_t uart_id)
+{
+    switch (uart_id) {
+    case PICO2_UART_ID_IMU:
+        return pico2_bsp_wt61c_rx_overflow_count();
+    case PICO2_UART_ID_GNSS:
+        return pico2_bsp_gnss_rx_overflow_count();
+    default:
+        return 0U;
+    }
+}
+
+void pico2_bsp_sensors_get_confidence_flags(SensorConfidenceFlags *flags_out)
+{
+    if (flags_out == nullptr) {
+        return;
+    }
+
+    *flags_out = g_sensor_confidence;
 }
 
 void pico2_bsp_sensors_rx_pump(void)
@@ -112,6 +229,8 @@ bool pico2_bsp_sensors_tick(
 
     g_tick_count++;
 
+    sensors_update_confidence_flags(timestamp_ms);
+
     ImuSample imu{};
     if (pico2_bsp_wt61c_poll(&imu)) {
         imu.timestamp_ms = timestamp_ms;
@@ -128,6 +247,8 @@ bool pico2_bsp_sensors_tick(
         gps.timestamp_ms = timestamp_ms;
         dead_reckoning_update_gps(nav_filter, &gps, nullptr);
     }
+
+    sensors_apply_degraded_confidence(nav_filter);
 
     nav_filter->state.timestamp_ms = timestamp_ms;
     return true;

@@ -4,6 +4,8 @@
  */
 #include "bsp_sensors.hpp"
 #include "hw_config.hpp"
+#include "loop_metrics.hpp"
+#include "safe_log.hpp"
 
 #include "core/fusion.hpp"
 #include "core/navigation_cortex.hpp"
@@ -13,6 +15,8 @@
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
 #include "pico/cyw43_arch.h"
+#include "pico/stdio.h"
+#include "pico/stdio_usb.h"
 #include "pico/stdlib.h"
 
 #if __has_include("wifi_config.h")
@@ -37,9 +41,14 @@ bool repeating_timer_callback(struct repeating_timer *timer)
 
 } /* namespace */
 
+static_assert(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS == 0, "USB stdio debe ser no bloqueante");
+
 int main()
 {
-    stdio_init_all();
+    stdio_usb_init();
+    stdio_set_translate_crlf(&stdio_usb, false);
+    safe_log_init();
+    loop_metrics_init();
 
     if (cyw43_arch_init()) {
         printf("Error: fallo al inicializar Wi-Fi\n");
@@ -81,14 +90,21 @@ int main()
     gpio_set_dir(PICO2_GPIO_BENCHMARK, GPIO_OUT);
     gpio_put(PICO2_GPIO_BENCHMARK, 0);
 
+    gpio_init(PICO2_GPIO_BENCHMARK_WIFI);
+    gpio_set_dir(PICO2_GPIO_BENCHMARK_WIFI, GPIO_OUT);
+    gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 0);
+
     printf(
-        "NavigationCortex @ %u Hz — WDT %u ms — WCET GP%u — hardware Comarruga validado\n",
+        "NavigationCortex @ %u Hz — WDT %u ms — WCET GP%u tick GP%u wifi — hardware Comarruga validado\n",
         1000U / PICO2_NAV_TICK_MS,
         PICO2_WDT_TIMEOUT_MS,
-        PICO2_GPIO_BENCHMARK);
+        PICO2_GPIO_BENCHMARK,
+        PICO2_GPIO_BENCHMARK_WIFI);
 
     uint32_t tick_count = 0U;
     while (true) {
+        const uint64_t loop_start_us = time_us_64();
+
         pico2_bsp_sensors_rx_pump();
         watchdog_update();
 
@@ -109,8 +125,14 @@ int main()
 
         pico2_bsp_sensors_housekeeping(tick_count);
 
-        /* Periférico blando: SPI CYW43439 + lwIP; sin timeout SDK acotado. */
+        gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 1);
         cyw43_arch_poll();
+        gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 0);
+
+        loop_metrics_on_loop_complete(time_us_64() - loop_start_us);
+        loop_metrics_report_due();
+
+        safe_log_flush_pending();
 
         if (!g_tick_ready && pico2_bsp_sensors_can_sleep()) {
             __wfi();

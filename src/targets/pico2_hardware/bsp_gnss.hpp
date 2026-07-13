@@ -9,3 +9,4 @@ bool pico2_bsp_gnss_init(void);
 bool pico2_bsp_gnss_rx_pending(void);
 void pico2_bsp_gnss_rx_pump(uint16_t byte_budget);
 bool pico2_bsp_gnss_poll(GpsSample *gps_out);
+uint32_t pico2_bsp_gnss_rx_overflow_count(void);

@@ -24,7 +24,10 @@
  * Invariante UART vs FSM (static_assert en bsp_power.cpp):
  *   PICO2_I2C_STEP_TIMEOUT_US < tiempo_equivalente(PICO2_UART_RX_BUDGET @ 115200)
  *
- * WCET: medir pulso en GP22 (PICO2_GPIO_BENCHMARK) durante sensors_tick().
+ * Ring SPSC: w/r son std::atomic<uint16_t> (release/acquire). Validar con
+ * ring_stress_host_test.cpp @ -O3 durante 60 s.
+ *
+ * WCET: GP22 = sensors_tick(), GP21 = cyw43_poll(), max_loop_time_us cada 1 s.
  */
 #pragma once
 
@@ -71,7 +74,16 @@
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */
+#define PICO2_GPIO_BENCHMARK_WIFI      21U   /* GP21: HIGH durante cyw43_arch_poll() */
+#define PICO2_LOOP_METRICS_REPORT_MS 1000U /* reporte max_loop_time_us por ventana */
 
 /* --- Eficiencia --- */
 #define PICO2_BATTERY_POLL_TICKS     10U
 #define PICO2_BATTERY_LOW_DEBOUNCE   3U
+
+/* --- UART ring overflow → degradación de confianza --- */
+#define PICO2_UART_ID_IMU             0U
+#define PICO2_UART_ID_GNSS             1U
+#define PICO2_RING_OVERFLOW_WINDOW_MS  1000U
+#define PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD 3U
+#define PICO2_RING_DEGRADED_QUALITY_FACTOR    0.50f

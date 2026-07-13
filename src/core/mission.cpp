@@ -1,5 +1,6 @@
 #include "mission.hpp"
 
+#include "NavState.h"
 #include "waypoint.hpp"
 
 #include <math.h>
@@ -239,8 +240,11 @@ bool mission_controller_tick(
                 input->nav_state->position,
                 controller->home);
             if (dist_home_m <= NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M) {
-                controller->state = MissionState::READY;
-                controller->start_requested = false;
+                const float speed_mps = navstate_speed_mps(input->nav_state);
+                if (speed_mps <= NAVICORE_MISSION_STOPPED_SPEED_MPS) {
+                    controller->state = MissionState::SAFE_MODE;
+                    controller->start_requested = false;
+                }
             }
         }
         break;

@@ -887,6 +887,44 @@ void ins_ekf_get_bias(
     out_gyro_bias[2] = filter->bias_g_[2];
 }
 
+void ins_ekf_get_position_ned(const InsEkfFilter *filter, float out_ned[3])
+{
+    if (filter == NULL || out_ned == NULL || !filter->initialized) {
+        return;
+    }
+
+    out_ned[0] = filter->pos_[0];
+    out_ned[1] = filter->pos_[1];
+    out_ned[2] = filter->pos_[2];
+}
+
+void ins_ekf_get_velocity_ned(const InsEkfFilter *filter, float out_ned[3])
+{
+    if (filter == NULL || out_ned == NULL || !filter->initialized) {
+        return;
+    }
+
+    out_ned[0] = filter->vel_[0];
+    out_ned[1] = filter->vel_[1];
+    out_ned[2] = filter->vel_[2];
+}
+
+float ins_ekf_get_covariance_flat(const InsEkfFilter *filter, uint16_t linear_idx)
+{
+    if (filter == NULL || !filter->initialized) {
+        return 0.0f;
+    }
+
+    constexpr uint16_t kCovElements =
+        static_cast<uint16_t>(INS_EKF_STATE_DIM * INS_EKF_STATE_DIM);
+    if (linear_idx >= kCovElements) {
+        return 0.0f;
+    }
+
+    const float *cov_flat = &filter->cov.P[0][0];
+    return cov_flat[linear_idx];
+}
+
 void ins_ekf_get_attitude_rad(
     const InsEkfFilter *filter,
     float *roll_rad,

@@ -161,6 +161,9 @@ void ins_ekf_get_bias(
     const InsEkfFilter *filter,
     float out_accel_bias[3],
     float out_gyro_bias[3]);
+void ins_ekf_get_position_ned(const InsEkfFilter *filter, float out_ned[3]);
+void ins_ekf_get_velocity_ned(const InsEkfFilter *filter, float out_ned[3]);
+float ins_ekf_get_covariance_flat(const InsEkfFilter *filter, uint16_t linear_idx);
 void ins_ekf_get_attitude_rad(
     const InsEkfFilter *filter,
     float *roll_rad,

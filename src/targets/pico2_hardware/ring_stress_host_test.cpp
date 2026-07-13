@@ -8,6 +8,10 @@
  *   - Bloqueo I2C de PICO2_I2C_STEP_TIMEOUT_US cada 100 ms sin pump
  *
  * Build & run:
+ *   cmake --build build --target ring_stress_test
+ *   ./build/ring_stress_test
+ *
+ * Manual (equivalente):
  *   g++ -std=c++17 -O3 -I src/targets/pico2_hardware \
  *       src/targets/pico2_hardware/ring_stress_host_test.cpp -o ring_stress_host_test
  *   ./ring_stress_host_test

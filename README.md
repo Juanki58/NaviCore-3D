@@ -47,7 +47,7 @@ Representación estática del frame UART / consola del simulador (`NaviCore3D_Si
 
 | | **English** | **Español** |
 |---|---|---|
-| **Mission** | Provide a single navigation state model across domains, with dead reckoning when GNSS fails, ready for Ambiq Apollo (Cortex-M + FPU). | Ofrecer un modelo único de estado de navegación en todos los dominios, con navegación estimada cuando falla el GNSS, listo para Ambiq Apollo (Cortex-M + FPU). |
+| **Mission** | Provide a single navigation state model across domains, with dead reckoning when GNSS fails, on bare-metal MCUs (Pico 2 W validated, Ambiq Apollo stubs). | Ofrecer un modelo único de estado de navegación en todos los dominios, con navegación estimada cuando falla el GNSS, en MCUs bare-metal (Pico 2 W validado, Ambiq Apollo stubs). |
 | **Language** | C++17 (PC simulator), embedded-oriented style: fixed structs, no heap. | C++17 (simulador PC), estilo embebido: estructuras fijas, sin heap. |
 | **Memory** | **Zero dynamic allocation** in `core/` and `fusion/`: no `std::vector`, no `std::string`, fixed waypoint buffers, stack-only data paths. | **Cero asignación dinámica** en `core/` y `fusion/`: sin `std::vector`, sin `std::string`, buffers fijos, datos en stack. |
 | **Math** | `sqrtf` / `sinf` / `cosf` with motion thresholds — skip redundant FPU work when the vehicle is stationary. | `sqrtf` / `sinf` / `cosf` con umbrales de movimiento — se evita trabajo FPU redundante con el vehículo parado. |
@@ -65,19 +65,34 @@ NaviCore-3D/
 │   │   ├── vector3d.*          # Permanent 3D coordinate model
 │   │   ├── waypoint.*          # Fixed-buffer route types
 │   │   ├── fusion.*            # Dead reckoning + sensor fusion
+│   │   ├── navigation_cortex.* # Orchestration + safety guards
 │   │   ├── math_utils.hpp      # FPU thresholds (sqrtf/sinf/cosf)
 │   │   └── sensor_types.hpp    # Portable IMU/GPS/pressure samples
 │   └── targets/
-│       ├── generic_pc/         # Open PC stress simulator
+│       ├── generic_pc/         # Open PC stress simulator + VehicleDemo
 │       │   ├── main.cpp
-│       │   └── sensors_sim.*   # Synthetic sensor feeds
-│       └── ambiq_apollo/       # Ambiq Apollo bare-metal target (host stubs)
+│       │   └── sensors_sim.*   # Synthetic sensor feeds + fault injection
+│       ├── pico2_hardware/     # ★ Pico 2 W — laboratorio Comarruga (validated)
+│       │   ├── main.cpp        # 100 Hz sync loop, RuntimeHealth, WDT
+│       │   ├── bsp_sensors.*   # HAL orchestrator
+│       │   ├── bsp_wt61c.*     # IMU UART0 @ 115200 (WT61C-232)
+│       │   ├── bsp_gnss.*      # GNSS UART1 / NMEA $GNGGA (NEO-M9N)
+│       │   ├── bsp_power.*     # UPS I2C FSM cooperativa (Waveshare)
+│       │   ├── hw_config.hpp   # Pin map + RT invariants
+│       │   └── loop_metrics.*  # RuntimeHealth (WCET por bloque)
+│       ├── pico_w/             # Pico W prototype (Wi-Fi / UDP)
+│       └── ambiq_apollo/       # Ambiq Apollo bare-metal (host stubs)
 │           ├── main_ambiq.cpp
 │           ├── bsp_sensors.*     # HAL orchestrator
 │           ├── ambiq_system.*
 │           └── drivers/          # Structural driver layer (SPI/DMA/GPIO/UART)
 ├── docs/
-│   └── telemetria_navicore.csv # Digital Twin black-box export
+│   ├── comarruga_lab_hardware.md  # Banco Comarruga: GP22/GP21, WCET, overflow
+│   ├── telemetria_navicore.csv    # Digital Twin black-box export
+│   └── sil_architecture.md
+├── tools/
+│   ├── visualizer.py           # CSV replay 3D
+│   └── remote_visualizer.py    # UDP live telemetry
 ├── CMakeLists.txt
 └── build/                      # Local CMake output
 ```
@@ -184,7 +199,9 @@ Stubs in `drivers/*_stub.cpp` emulate DMA completion, SPI register bursts, GPIO 
 
 ## Build & Run / Compilar y ejecutar
 
-**Requirements:** CMake ≥ 3.15, C++17 compiler (MinGW, MSVC, or Clang)
+**Requirements:** CMake ≥ 3.15, C++17 compiler (MinGW, MSVC, or Clang). Pico targets require [Pico SDK](https://github.com/raspberrypi/pico-sdk).
+
+### PC (simulator + Ambiq stubs)
 
 ```powershell
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
@@ -195,6 +212,16 @@ cmake --build build --target NaviCore3D_Ambiq  # Ambiq bare-metal loop (host stu
 
 Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is written automatically (~302 data rows per run). `NaviCore3D_Ambiq` runs an infinite 100 ms control loop (no console output — expected for bare-metal stub).
 
+### Pico 2 W — laboratorio Comarruga (`NaviCore3D_Pico2`)
+
+```powershell
+$env:PICO_SDK_PATH = 'C:\ruta\a\pico-sdk'
+cmake -S src/targets/pico2_hardware -B build_pico2 -G Ninja
+cmake --build build_pico2
+```
+
+Copia `wifi_config.h.example` → `wifi_config.h`. Validación en banco: [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md). Release: tag `pico2-comarruga-banco-v1`.
+
 ---
 
 ## Roadmap
@@ -202,8 +229,9 @@ Console prints stress-test summaries; **`docs/telemetria_navicore.csv`** is writ
 | Phase | Target |
 |-------|--------|
 | **Now** | PC simulator + CSV black box + fusion core hardened |
+| **Now** | **`pico2_hardware`** — Pico 2 W @ 100 Hz, banco Comarruga validado (`pico2-comarruga-banco-v1`) |
 | **Now** | `NaviCore-Ambiq` — structural driver layer with host stubs (DMA/SPI/GPIO/UART/power) |
-| **Next** | Physical test bench + bare-metal drivers — see [`docs/navicore_v1_hardware_blueprint_locked.md`](docs/navicore_v1_hardware_blueprint_locked.md) |
+| **Next** | Telemetría UDP en vivo desde `NaviCore3D_Pico2` |
 | **Twin** | Live telemetry → Digital Twin 3D dashboard |
 
 ---

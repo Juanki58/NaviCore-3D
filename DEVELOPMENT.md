@@ -12,6 +12,8 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 - **`src/core/api_ingest.*`**: API universal de entrada de datos de sensores.
 - **`src/core/vehicle_bus_adapter.*`**: Adaptador que traduce tramas de bus CAN (`ImuCanFrame`, `OdoCanFrame`) al formato nativo del filtro (`ImuSample`).
 - **`src/targets/generic_pc/`**: Simulador de estrés en PC (`NaviCore3D_Sim`) y Demo de bus de coche (`NaviCore3D_VehicleDemo`).
+- **`src/targets/pico2_hardware/`**: ★ Target validado en banco — Raspberry Pi Pico 2 W, laboratorio Comarruga @ 100 Hz (`NaviCore3D_Pico2`). Ver `docs/comarruga_lab_hardware.md`.
+- **`src/targets/pico_w/`**: Prototipo Pico W (Wi-Fi / UDP).
 - **`src/targets/ambiq_apollo/`**: Capa estructural de drivers bare-metal (DMA, SPI, GPIO, UART, Power Monitor) con stubs para compilación cruzada en host.
 - **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
 - **`tools/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
@@ -108,6 +110,7 @@ HMI nav: lat=41.387417 lon=2.168600
 | `NaviCore3D_Sim` | Simulador PC + volcado CSV |
 | `NaviCore3D_VehicleDemo` | Demo bus CAN + HMI |
 | `NaviCore3D_Ambiq` | Loop bare-metal 100 ms (stubs host) |
+| `NaviCore3D_Pico2` | Pico 2 W Comarruga @ 100 Hz — build standalone en `src/targets/pico2_hardware/` |
 
 ```powershell
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release

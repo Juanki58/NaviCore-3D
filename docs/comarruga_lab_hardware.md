@@ -191,6 +191,7 @@ El firmware **no imprime** `RuntimeHealth` en caliente (evita bloquear USB). Opc
 # OpenOCD + GDB, halt al final del escenario:
 (gdb) p *loop_metrics_health()
 (gdb) p loop_metrics_system_health()
+(gdb) p *task_monitor_get((TaskId)1)   /* NavTick: last_execution_tick, executions */
 ```
 
 **B — Reset de métricas por escenario**

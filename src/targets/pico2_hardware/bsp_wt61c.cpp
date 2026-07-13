@@ -25,6 +25,7 @@ uint8_t g_frame_idx = 0U;
 uint64_t g_last_rx_us = 0U;
 uint32_t g_last_overflow_count = 0U;
 bool g_stream_contaminated = false;
+bool g_discard_next_frame = false;
 
 float g_accel_mps2[3] = {0.0f, 0.0f, 0.0f};
 float g_gyro_radps[3] = {0.0f, 0.0f, 0.0f};
@@ -59,6 +60,7 @@ void wt61c_reset_sync(void)
 void wt61c_mark_stream_contaminated(void)
 {
     g_stream_contaminated = true;
+    g_discard_next_frame = false;
     wt61c_reset_sync();
     g_accel_valid = false;
     g_gyro_valid = false;
@@ -87,6 +89,22 @@ void wt61c_check_frame_timeout(void)
 void wt61c_consume_frame(const uint8_t *frame)
 {
     if (!wt61c_checksum_ok(frame)) {
+        if (g_stream_contaminated) {
+            wt61c_reset_sync();
+        }
+        return;
+    }
+
+    if (frame[1] != kWt61cTypeAccel && frame[1] != kWt61cTypeGyro) {
+        if (g_stream_contaminated) {
+            wt61c_reset_sync();
+        }
+        return;
+    }
+
+    if (g_stream_contaminated || g_discard_next_frame) {
+        g_stream_contaminated = false;
+        g_discard_next_frame = false;
         return;
     }
 
@@ -116,7 +134,10 @@ void wt61c_feed_byte(uint8_t byte)
         if (byte != kWt61cHeader) {
             return;
         }
-        g_stream_contaminated = false;
+        g_last_rx_us = time_us_64();
+        g_frame[0] = byte;
+        g_frame_idx = 1U;
+        return;
     }
 
     if (g_frame_idx == 0U) {
@@ -179,6 +200,7 @@ bool pico2_bsp_wt61c_init(void)
     g_last_rx_us = 0U;
     g_last_overflow_count = 0U;
     g_stream_contaminated = false;
+    g_discard_next_frame = false;
     g_accel_valid = false;
     g_gyro_valid = false;
     memset(g_accel_mps2, 0, sizeof(g_accel_mps2));

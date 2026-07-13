@@ -50,6 +50,15 @@ if(WIN32)
     target_link_libraries(NaviCore3D_Sim PRIVATE ws2_32)
 endif()
 
+# Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)
+set(NAVICORE_PICO2_HW_DIR ${CMAKE_SOURCE_DIR}/src/targets/pico2_hardware)
+
+add_executable(ring_stress_test
+    ${NAVICORE_PICO2_HW_DIR}/ring_stress_host_test.cpp
+)
+target_include_directories(ring_stress_test PRIVATE ${NAVICORE_PICO2_HW_DIR})
+target_compile_options(ring_stress_test PRIVATE -O3)
+
 # Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe
 # fijarse antes de project(). Ver src/targets/pico2_hardware/CMakeLists.txt
 #   cmake -S src/targets/pico2_hardware -B build_pico2 -G Ninja

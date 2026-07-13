@@ -43,6 +43,10 @@
 #define NAVICORE_GUIDANCE_MIN_SPEED_FACTOR 0.35f
 #endif
 
+#ifndef NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M
+#define NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M 10.0f
+#endif
+
 /*
  * Guiado 3D — zero-heap, float/FPU.
  * Cross-track: proyeccion lineal r_perp = r - t*d, t = (r·d)/|d|^2 (sin cross product).

@@ -646,7 +646,8 @@ GuidanceOutput guidance_compute_homing(
         output.track_errors.along_track_m + 1.0f,
         profile);
 
-    const float home_accept_sq_m2 = 25.0f; /* 5 m radial */
+    const float home_accept_sq_m2 =
+        NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M * NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M;
     output.waypoint_completed =
         (horiz_dist_sq_m2 <= home_accept_sq_m2) && (fabsf(alt_error_m) <= 2.0f);
 

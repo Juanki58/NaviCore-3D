@@ -41,7 +41,11 @@ enum class MissionState : uint8_t {
 #endif
 
 #ifndef NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M
-#define NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M 5.0f
+#define NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M 10.0f
+#endif
+
+#ifndef NAVICORE_MISSION_STOPPED_SPEED_MPS
+#define NAVICORE_MISSION_STOPPED_SPEED_MPS 0.05f
 #endif
 
 struct MissionController {

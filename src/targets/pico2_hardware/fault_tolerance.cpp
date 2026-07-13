@@ -5,6 +5,7 @@
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
 #include "safe_log.hpp"
+#include "task_monitor.hpp"
 
 #include "hardware/watchdog.h"
 #include "pico/stdlib.h"
@@ -118,6 +119,19 @@ bool fault_tolerance_nav_update_allowed(uint32_t pending_before_consume)
 
     const uint32_t backlog = pending_before_consume - 1U;
     return backlog <= PICO2_FT_MISSED_TICKS_INVALID_MAX;
+}
+
+void fault_tolerance_check_housekeeping_deadline(void)
+{
+    const uint64_t idle_us = task_monitor_idle_us(TaskId::Housekeeping);
+    if (idle_us > static_cast<uint64_t>(PICO2_HOUSEKEEPING_MAX_IDLE_US)) {
+        loop_metrics_set_system_health(SystemHealth::CRITICAL);
+        safe_logf(
+            "FT: CRITICAL — housekeeping sin ejecutar en %u ms\n",
+            PICO2_HOUSEKEEPING_MAX_IDLE_US / 1000U);
+        safe_log_flush_pending();
+        watchdog_reboot(0U, 0U);
+    }
 }
 
 void fault_tolerance_on_loop_complete(uint32_t loop_us, uint32_t nav_timestamp_ms)

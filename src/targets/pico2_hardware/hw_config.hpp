@@ -91,6 +91,7 @@
 #define PICO2_FT_UART_OVERFLOW_PER_S_MAX 3U
 #define PICO2_FT_MISSED_TICKS_INVALID_MAX 2U
 #define PICO2_FT_I2C_RECOVERY_OFFLINE_MAX 5U
+#define PICO2_HOUSEKEEPING_MAX_IDLE_US  500000U
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */

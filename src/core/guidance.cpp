@@ -3,18 +3,49 @@
 #include "math_utils.hpp"
 
 #include <math.h>
+#include <string.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
+#ifndef NAVICORE_GUIDANCE_PI_F
+#define NAVICORE_GUIDANCE_PI_F 3.14159265358979323846f
 #endif
 
 #ifndef NAVICORE_METERS_PER_DEG_LAT
 #define NAVICORE_METERS_PER_DEG_LAT 111132.954f
 #endif
 
+/*
+ * Proyeccion local del vehiculo sobre el tramo — solo en .cpp (no expuesta).
+ */
+typedef struct {
+    float pos_n;
+    float pos_e;
+    float pos_u;
+    float t_param;
+    float along_from_origin_m;
+    float along_remaining_m;
+    float cross_track_m;
+    float cross_track_signed_m;
+    float cross_track_sq_m2;
+    float to_dest_n;
+    float to_dest_e;
+    float to_dest_u;
+    float to_dest_sq_m2;
+} GuidanceLegProjection;
+
 static float deg_to_rad(float deg)
 {
-    return deg * (static_cast<float>(M_PI) / 180.0f);
+    return deg * (NAVICORE_GUIDANCE_PI_F / 180.0f);
+}
+
+static float clampf(float value, float min_value, float max_value)
+{
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
 }
 
 static void latlon_to_local_ne_m(
@@ -46,277 +77,578 @@ static bool waypoint_buffer_at(
     return true;
 }
 
-static float hypot2f(float north_m, float east_m)
+static void guidance_position_to_local_neu(
+    const Waypoint *origin,
+    Vector3D position,
+    float *north_m,
+    float *east_m,
+    float *up_m)
 {
-    return sqrtf((north_m * north_m) + (east_m * east_m));
+    if (origin == NULL || north_m == NULL || east_m == NULL || up_m == NULL) {
+        return;
+    }
+
+    latlon_to_local_ne_m(
+        origin->position.x,
+        origin->position.y,
+        position.x,
+        position.y,
+        north_m,
+        east_m);
+    *up_m = position.z - origin->position.z;
 }
 
-static PurePursuitOutput pure_pursuit_invalid_output(void)
+static void guidance_waypoint_delta_neu(
+    const Waypoint *origin,
+    const Waypoint *target,
+    float *north_m,
+    float *east_m,
+    float *up_m)
 {
-    PurePursuitOutput out{};
-    out.yaw_target_rad = 0.0f;
-    out.waypoint_completed = false;
+    if (origin == NULL || target == NULL || north_m == NULL || east_m == NULL || up_m == NULL) {
+        return;
+    }
+
+    latlon_to_local_ne_m(
+        origin->position.x,
+        origin->position.y,
+        target->position.x,
+        target->position.y,
+        north_m,
+        east_m);
+    *up_m = target->position.z - origin->position.z;
+}
+
+static bool guidance_prepare_leg_geom(
+    const Waypoint *origin,
+    const Waypoint *destination,
+    GuidanceLegGeom *geom)
+{
+    if (origin == NULL || destination == NULL || geom == NULL) {
+        return false;
+    }
+
+    guidance_waypoint_delta_neu(
+        origin,
+        destination,
+        &geom->seg_n,
+        &geom->seg_e,
+        &geom->seg_u);
+
+    const float seg_len_sq_m2 =
+        (geom->seg_n * geom->seg_n)
+        + (geom->seg_e * geom->seg_e)
+        + (geom->seg_u * geom->seg_u);
+
+    if (seg_len_sq_m2 <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+        geom->valid = false;
+        return false;
+    }
+
+    geom->inv_seg_len_sq = 1.0f / seg_len_sq_m2;
+    geom->seg_len_m = sqrtf(seg_len_sq_m2);
+    geom->valid = true;
+    return true;
+}
+
+/*
+ * Proyeccion lineal r sobre d (sin producto vectorial):
+ *   t = (r·d) / |d|^2
+ *   r_perp = r - t*d
+ *   |e_xt| = |r_perp|  — un solo sqrtf si hace falta magnitud
+ */
+static void guidance_project_onto_leg(
+    const GuidanceLegGeom *geom,
+    float pos_n,
+    float pos_e,
+    float pos_u,
+    float dest_n,
+    float dest_e,
+    float dest_u,
+    GuidanceLegProjection *proj)
+{
+    if (geom == NULL || proj == NULL || !geom->valid) {
+        return;
+    }
+
+    proj->pos_n = pos_n;
+    proj->pos_e = pos_e;
+    proj->pos_u = pos_u;
+
+    const float dot_rd =
+        (pos_n * geom->seg_n) + (pos_e * geom->seg_e) + (pos_u * geom->seg_u);
+    const float t = dot_rd * geom->inv_seg_len_sq;
+    proj->t_param = t;
+
+    const float proj_n = t * geom->seg_n;
+    const float proj_e = t * geom->seg_e;
+    const float proj_u = t * geom->seg_u;
+
+    const float cross_n = pos_n - proj_n;
+    const float cross_e = pos_e - proj_e;
+    const float cross_u = pos_u - proj_u;
+
+    proj->cross_track_sq_m2 =
+        (cross_n * cross_n) + (cross_e * cross_e) + (cross_u * cross_u);
+
+    if (proj->cross_track_sq_m2 <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+        proj->cross_track_m = 0.0f;
+        proj->cross_track_signed_m = 0.0f;
+    } else {
+        proj->cross_track_m = sqrtf(proj->cross_track_sq_m2);
+        const float horiz_sign = (geom->seg_n * pos_e) - (geom->seg_e * pos_n);
+        proj->cross_track_signed_m =
+            (horiz_sign >= 0.0f) ? proj->cross_track_m : -proj->cross_track_m;
+    }
+
+    proj->along_from_origin_m = dot_rd / geom->seg_len_m;
+    proj->along_remaining_m = geom->seg_len_m - proj->along_from_origin_m;
+    if (proj->along_remaining_m < 0.0f) {
+        proj->along_remaining_m = 0.0f;
+    }
+
+    proj->to_dest_n = dest_n - pos_n;
+    proj->to_dest_e = dest_e - pos_e;
+    proj->to_dest_u = dest_u - pos_u;
+    proj->to_dest_sq_m2 =
+        (proj->to_dest_n * proj->to_dest_n)
+        + (proj->to_dest_e * proj->to_dest_e)
+        + (proj->to_dest_u * proj->to_dest_u);
+}
+
+static GuidanceOutput guidance_invalid_output(void)
+{
+    GuidanceOutput out{};
     out.valid = false;
     return out;
 }
 
-static bool circle_segment_lookahead(
-    float p1_n,
-    float p1_e,
-    float p2_n,
-    float p2_e,
-    float radius_m,
-    float *lookahead_n,
-    float *lookahead_e)
+GuidanceProfile guidance_profile_default(void)
 {
-    const float seg_n = p2_n - p1_n;
-    const float seg_e = p2_e - p1_e;
-    const float seg_len_sq = (seg_n * seg_n) + (seg_e * seg_e);
-
-    if (seg_len_sq <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
-        const float dist_p2 = hypot2f(p2_n, p2_e);
-        if (dist_p2 <= NAVICORE_EPS_DISPLACEMENT_M) {
-            return false;
-        }
-
-        const float scale = (dist_p2 <= radius_m) ? 1.0f : (radius_m / dist_p2);
-        *lookahead_n = p2_n * scale;
-        *lookahead_e = p2_e * scale;
-        return true;
-    }
-
-    const float b = 2.0f * ((p1_n * seg_n) + (p1_e * seg_e));
-    const float c = (p1_n * p1_n) + (p1_e * p1_e) - (radius_m * radius_m);
-    const float disc = (b * b) - (4.0f * seg_len_sq * c);
-
-    float t_best = -1.0f;
-
-    if (disc >= 0.0f) {
-        const float sqrt_disc = sqrtf(disc);
-        const float inv_2a = 0.5f / seg_len_sq;
-        const float t0 = (-b - sqrt_disc) * inv_2a;
-        const float t1 = (-b + sqrt_disc) * inv_2a;
-
-        if (t0 >= 0.0f && t0 <= 1.0f) {
-            t_best = t0;
-        }
-        if (t1 >= 0.0f && t1 <= 1.0f && t1 > t_best) {
-            t_best = t1;
-        }
-    }
-
-    if (t_best >= 0.0f) {
-        *lookahead_n = p1_n + (t_best * seg_n);
-        *lookahead_e = p1_e + (t_best * seg_e);
-        return true;
-    }
-
-    const float dist_p2 = hypot2f(p2_n, p2_e);
-    if (dist_p2 <= radius_m) {
-        *lookahead_n = p2_n;
-        *lookahead_e = p2_e;
-        return true;
-    }
-
-    if (dist_p2 > NAVICORE_EPS_DISPLACEMENT_M) {
-        const float scale = radius_m / dist_p2;
-        *lookahead_n = p2_n * scale;
-        *lookahead_e = p2_e * scale;
-        return true;
-    }
-
-    return false;
+    GuidanceProfile profile{};
+    profile.cruise_speed_mps = NAVICORE_GUIDANCE_CRUISE_SPEED_MPS;
+    profile.arrival_speed_mps = NAVICORE_GUIDANCE_ARRIVAL_SPEED_MPS;
+    profile.slowdown_along_track_m = NAVICORE_GUIDANCE_SLOWDOWN_ALONG_M;
+    profile.max_climb_mps = NAVICORE_GUIDANCE_MAX_CLIMB_MPS;
+    profile.max_descent_mps = NAVICORE_GUIDANCE_MAX_DESCENT_MPS;
+    profile.climb_time_constant_s = NAVICORE_GUIDANCE_CLIMB_TIME_CONSTANT_S;
+    profile.cross_track_slowdown_m = NAVICORE_GUIDANCE_CROSS_TRACK_SLOW_M;
+    profile.min_speed_factor = NAVICORE_GUIDANCE_MIN_SPEED_FACTOR;
+    return profile;
 }
 
-PurePursuitGuidance::PurePursuitGuidance()
-    : look_ahead_distance_m_(kDefaultLookAheadM)
+bool guidance_get_leg_waypoints(
+    const StaticWaypointBuffer *route,
+    size_t active_waypoint_index,
+    Waypoint *origin_out,
+    Waypoint *destination_out)
 {
-}
-
-PurePursuitGuidance::PurePursuitGuidance(float look_ahead_distance_m)
-    : look_ahead_distance_m_(look_ahead_distance_m)
-{
-}
-
-void PurePursuitGuidance::set_look_ahead_distance(float look_ahead_distance_m)
-{
-    look_ahead_distance_m_ = look_ahead_distance_m;
-}
-
-float PurePursuitGuidance::get_look_ahead_distance() const
-{
-    return look_ahead_distance_m_;
-}
-
-PurePursuitOutput PurePursuitGuidance::compute(
-    const NavState &nav_state,
-    const StaticWaypointBuffer &route,
-    size_t active_waypoint_index) const
-{
-    if (look_ahead_distance_m_ <= NAVICORE_EPS_DISPLACEMENT_M) {
-        return pure_pursuit_invalid_output();
+    if (route == NULL || origin_out == NULL || destination_out == NULL
+        || route->count == 0U || active_waypoint_index >= route->count) {
+        return false;
     }
 
-    if (route.count == 0U || active_waypoint_index >= route.count) {
-        return pure_pursuit_invalid_output();
+    if (!waypoint_buffer_at(route, active_waypoint_index, origin_out)) {
+        return false;
     }
 
-    Waypoint active_wp{};
-    if (!waypoint_buffer_at(&route, active_waypoint_index, &active_wp)) {
-        return pure_pursuit_invalid_output();
+    const size_t dest_index = active_waypoint_index + 1U;
+    if (dest_index < route->count) {
+        return waypoint_buffer_at(route, dest_index, destination_out);
     }
 
-    const float ref_lat = nav_state.position.x;
-    const float ref_lon = nav_state.position.y;
-
-    float active_n_m = 0.0f;
-    float active_e_m = 0.0f;
-    latlon_to_local_ne_m(
-        ref_lat,
-        ref_lon,
-        active_wp.position.x,
-        active_wp.position.y,
-        &active_n_m,
-        &active_e_m);
-
-    const float dist_active_m = hypot2f(active_n_m, active_e_m);
-    const float acceptance_m = static_cast<float>(active_wp.arrival_radius_m);
-
-    PurePursuitOutput out{};
-    out.waypoint_completed = (dist_active_m <= acceptance_m);
-    out.valid = true;
-
-    float lookahead_n_m = active_n_m;
-    float lookahead_e_m = active_e_m;
-
-    const bool has_next_leg = (active_waypoint_index + 1U) < route.count;
-    if (has_next_leg) {
-        Waypoint next_wp{};
-        if (!waypoint_buffer_at(&route, active_waypoint_index + 1U, &next_wp)) {
-            return pure_pursuit_invalid_output();
-        }
-
-        float next_n_m = 0.0f;
-        float next_e_m = 0.0f;
-        latlon_to_local_ne_m(
-            ref_lat,
-            ref_lon,
-            next_wp.position.x,
-            next_wp.position.y,
-            &next_n_m,
-            &next_e_m);
-
-        if (!circle_segment_lookahead(
-                active_n_m,
-                active_e_m,
-                next_n_m,
-                next_e_m,
-                look_ahead_distance_m_,
-                &lookahead_n_m,
-                &lookahead_e_m)) {
-            return pure_pursuit_invalid_output();
-        }
-    } else {
-        const float dist_m = hypot2f(active_n_m, active_e_m);
-        if (dist_m <= NAVICORE_EPS_DISPLACEMENT_M) {
-            out.yaw_target_rad = deg_to_rad(nav_state.heading_deg);
-            return out;
-        }
-
-        const float scale = (dist_m <= look_ahead_distance_m_)
-            ? 1.0f
-            : (look_ahead_distance_m_ / dist_m);
-        lookahead_n_m = active_n_m * scale;
-        lookahead_e_m = active_e_m * scale;
-    }
-
-    const float lookahead_len_sq =
-        (lookahead_n_m * lookahead_n_m) + (lookahead_e_m * lookahead_e_m);
-    if (lookahead_len_sq <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
-        out.yaw_target_rad = deg_to_rad(nav_state.heading_deg);
-        return out;
-    }
-
-    out.yaw_target_rad = atan2f(lookahead_e_m, lookahead_n_m);
-    return out;
+    *destination_out = *origin_out;
+    return true;
 }
 
-static GuidanceErrors guidance_errors_degenerate(
-    float pos_n_m,
-    float pos_e_m,
-    float track_len_m)
-{
-    GuidanceErrors errors{};
-
-    const float pos_len_sq = (pos_n_m * pos_n_m) + (pos_e_m * pos_e_m);
-    if (pos_len_sq <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
-        errors.cross_track_m = 0.0f;
-        errors.along_track_m = track_len_m;
-        return errors;
-    }
-
-    errors.cross_track_m = sqrtf(pos_len_sq);
-    errors.along_track_m = track_len_m;
-    return errors;
-}
-
-GuidanceErrors guidance_compute_errors(
+GuidanceErrors guidance_compute_errors_3d(
     Vector3D position,
     Waypoint origin,
     Waypoint destination)
 {
-    const float ref_lat = origin.position.x;
-    const float ref_lon = origin.position.y;
-
-    float track_n_m = 0.0f;
-    float track_e_m = 0.0f;
-    latlon_to_local_ne_m(
-        ref_lat,
-        ref_lon,
-        destination.position.x,
-        destination.position.y,
-        &track_n_m,
-        &track_e_m);
-
-    float pos_n_m = 0.0f;
-    float pos_e_m = 0.0f;
-    latlon_to_local_ne_m(
-        ref_lat,
-        ref_lon,
-        position.x,
-        position.y,
-        &pos_n_m,
-        &pos_e_m);
-
-    const float track_len_sq = (track_n_m * track_n_m) + (track_e_m * track_e_m);
-    if (track_len_sq <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
-        return guidance_errors_degenerate(pos_n_m, pos_e_m, 0.0f);
-    }
-
-    const float track_len_m = sqrtf(track_len_sq);
-    const float inv_track_len_sq = 1.0f / track_len_sq;
-
-    const float along_from_origin_m =
-        ((pos_n_m * track_n_m) + (pos_e_m * track_e_m)) * inv_track_len_sq * track_len_m;
-
-    const float proj_n_m = along_from_origin_m * (track_n_m / track_len_m);
-    const float proj_e_m = along_from_origin_m * (track_e_m / track_len_m);
-
-    const float cross_n_m = pos_n_m - proj_n_m;
-    const float cross_e_m = pos_e_m - proj_e_m;
-    const float cross_len_sq = (cross_n_m * cross_n_m) + (cross_e_m * cross_e_m);
-
     GuidanceErrors errors{};
-    errors.along_track_m = track_len_m - along_from_origin_m;
 
-    if (cross_len_sq <= (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
-        errors.cross_track_m = 0.0f;
+    GuidanceLegGeom geom{};
+    if (!guidance_prepare_leg_geom(&origin, &destination, &geom)) {
+        float pos_n = 0.0f;
+        float pos_e = 0.0f;
+        float pos_u = 0.0f;
+        guidance_position_to_local_neu(&origin, position, &pos_n, &pos_e, &pos_u);
+        const float pos_len_sq = (pos_n * pos_n) + (pos_e * pos_e) + (pos_u * pos_u);
+        if (pos_len_sq > (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+            errors.cross_track_m = sqrtf(pos_len_sq);
+            errors.cross_track_signed_m = errors.cross_track_m;
+        }
         return errors;
     }
 
-    const float cross_sign = (track_n_m * pos_e_m) - (track_e_m * pos_n_m);
-    const float cross_mag_m = sqrtf(cross_len_sq);
-    errors.cross_track_m = (cross_sign >= 0.0f) ? cross_mag_m : -cross_mag_m;
+    float pos_n = 0.0f;
+    float pos_e = 0.0f;
+    float pos_u = 0.0f;
+    guidance_position_to_local_neu(&origin, position, &pos_n, &pos_e, &pos_u);
 
+    GuidanceLegProjection proj{};
+    guidance_project_onto_leg(&geom, pos_n, pos_e, pos_u, geom.seg_n, geom.seg_e, geom.seg_u, &proj);
+
+    errors.cross_track_m = proj.cross_track_m;
+    errors.cross_track_signed_m = proj.cross_track_signed_m;
+    errors.along_track_m = proj.along_remaining_m;
     return errors;
+}
+
+GuidanceErrors guidance_compute_leg_errors(
+    const StaticWaypointBuffer *route,
+    size_t active_waypoint_index,
+    Vector3D position)
+{
+    GuidanceErrors errors{};
+
+    Waypoint origin{};
+    Waypoint destination{};
+    if (!guidance_get_leg_waypoints(route, active_waypoint_index, &origin, &destination)) {
+        return errors;
+    }
+
+    return guidance_compute_errors_3d(position, origin, destination);
+}
+
+static float guidance_desired_speed_mps(
+    float along_track_m,
+    float cross_track_sq_m2,
+    const GuidanceProfile &profile)
+{
+    const float cruise = profile.cruise_speed_mps;
+    const float arrival = profile.arrival_speed_mps;
+    const float slowdown = profile.slowdown_along_track_m;
+    const float cross_slow = profile.cross_track_slowdown_m;
+    const float min_factor = profile.min_speed_factor;
+
+    float along_factor = 1.0f;
+    if (slowdown > NAVICORE_EPS_DISPLACEMENT_M && along_track_m < slowdown) {
+        along_factor = clampf(along_track_m / slowdown, 0.0f, 1.0f);
+    }
+
+    float cross_factor = 1.0f;
+    const float cross_slow_sq = cross_slow * cross_slow;
+    if (cross_slow_sq > (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+        cross_factor = clampf(1.0f - (cross_track_sq_m2 / cross_slow_sq), min_factor, 1.0f);
+    }
+
+    const float blend_factor = (along_factor < cross_factor) ? along_factor : cross_factor;
+    return arrival + ((cruise - arrival) * blend_factor);
+}
+
+static float guidance_desired_climb_mps(
+    float current_alt_m,
+    float origin_alt_m,
+    float destination_alt_m,
+    float along_remaining_m,
+    float leg_length_m,
+    const GuidanceProfile &profile)
+{
+    if (leg_length_m <= NAVICORE_EPS_DISPLACEMENT_M) {
+        return 0.0f;
+    }
+
+    const float progress = clampf(1.0f - (along_remaining_m / leg_length_m), 0.0f, 1.0f);
+    const float target_alt_m = origin_alt_m + (progress * (destination_alt_m - origin_alt_m));
+    const float alt_error_m = target_alt_m - current_alt_m;
+
+    if (fabsf(alt_error_m) <= NAVICORE_EPS_DISPLACEMENT_M) {
+        return 0.0f;
+    }
+
+    const float time_constant_s = (profile.climb_time_constant_s > 0.01f)
+        ? profile.climb_time_constant_s
+        : NAVICORE_GUIDANCE_CLIMB_TIME_CONSTANT_S;
+
+    return clampf(
+        alt_error_m / time_constant_s,
+        -profile.max_descent_mps,
+        profile.max_climb_mps);
+}
+
+static void guidance_fill_commands_from_projection(
+    const GuidanceLegGeom *geom,
+    const GuidanceLegProjection *proj,
+    float look_ahead_distance_m,
+    float current_heading_deg,
+    float origin_alt_m,
+    float destination_alt_m,
+    float current_alt_m,
+    const GuidanceProfile &profile,
+    GuidanceOutput *output)
+{
+    if (geom == NULL || proj == NULL || output == NULL || !geom->valid) {
+        return;
+    }
+
+    float t_lookahead = proj->t_param + (look_ahead_distance_m / geom->seg_len_m);
+    t_lookahead = clampf(t_lookahead, 0.0f, 1.0f);
+
+    const float lookahead_n = t_lookahead * geom->seg_n;
+    const float lookahead_e = t_lookahead * geom->seg_e;
+
+    const float track_heading_rad = atan2f(geom->seg_e, geom->seg_n);
+    const float los_correction_rad = atan2f(
+        -proj->cross_track_signed_m,
+        look_ahead_distance_m);
+    output->commands.desired_heading = track_heading_rad + los_correction_rad;
+
+    const float lookahead_len_sq = (lookahead_n * lookahead_n) + (lookahead_e * lookahead_e);
+    if (lookahead_len_sq > (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+        const float pp_heading_rad = atan2f(lookahead_e, lookahead_n);
+        const float cross_abs_m = proj->cross_track_m;
+        const float blend = clampf(1.0f - (cross_abs_m / look_ahead_distance_m), 0.0f, 1.0f);
+        output->commands.desired_heading =
+            (blend * pp_heading_rad) + ((1.0f - blend) * output->commands.desired_heading);
+    } else {
+        output->commands.desired_heading = deg_to_rad(current_heading_deg);
+    }
+
+    output->commands.desired_speed = guidance_desired_speed_mps(
+        proj->along_remaining_m,
+        proj->cross_track_sq_m2,
+        profile);
+    output->commands.desired_climb = guidance_desired_climb_mps(
+        current_alt_m,
+        origin_alt_m,
+        destination_alt_m,
+        proj->along_remaining_m,
+        geom->seg_len_m,
+        profile);
+}
+
+GuidanceOutput guidance_compute_output(
+    const NavState &nav_state,
+    const StaticWaypointBuffer &route,
+    size_t active_waypoint_index,
+    const GuidanceProfile &profile,
+    float look_ahead_distance_m)
+{
+    if (look_ahead_distance_m <= NAVICORE_EPS_DISPLACEMENT_M
+        || route.count == 0U || active_waypoint_index >= route.count) {
+        return guidance_invalid_output();
+    }
+
+    Waypoint origin{};
+    Waypoint destination{};
+    if (!guidance_get_leg_waypoints(&route, active_waypoint_index, &origin, &destination)) {
+        return guidance_invalid_output();
+    }
+
+    GuidanceLegGeom geom{};
+    if (!guidance_prepare_leg_geom(&origin, &destination, &geom)) {
+        return guidance_invalid_output();
+    }
+
+    float pos_n = 0.0f;
+    float pos_e = 0.0f;
+    float pos_u = 0.0f;
+    guidance_position_to_local_neu(&origin, nav_state.position, &pos_n, &pos_e, &pos_u);
+
+    GuidanceLegProjection proj{};
+    guidance_project_onto_leg(
+        &geom,
+        pos_n,
+        pos_e,
+        pos_u,
+        geom.seg_n,
+        geom.seg_e,
+        geom.seg_u,
+        &proj);
+
+    GuidanceOutput output{};
+    output.track_errors.cross_track_m = proj.cross_track_m;
+    output.track_errors.cross_track_signed_m = proj.cross_track_signed_m;
+    output.track_errors.along_track_m = proj.along_remaining_m;
+
+    const float acceptance_m = static_cast<float>(destination.arrival_radius_m);
+    const float acceptance_sq_m2 = acceptance_m * acceptance_m;
+    const float along_progress_m = geom.seg_len_m - proj.along_remaining_m;
+
+    output.waypoint_completed =
+        (proj.to_dest_sq_m2 <= acceptance_sq_m2)
+        || ((along_progress_m >= (geom.seg_len_m - acceptance_m))
+            && (proj.cross_track_sq_m2 <= acceptance_sq_m2));
+    output.valid = true;
+
+    guidance_fill_commands_from_projection(
+        &geom,
+        &proj,
+        look_ahead_distance_m,
+        nav_state.heading_deg,
+        origin.position.z,
+        destination.position.z,
+        nav_state.position.z,
+        profile,
+        &output);
+
+    return output;
+}
+
+Guidance3D::Guidance3D()
+    : look_ahead_distance_m_(NAVICORE_GUIDANCE_LOOK_AHEAD_M)
+    , profile_(guidance_profile_default())
+    , cached_leg_index_(SIZE_MAX)
+    , leg_cache_{}
+{
+}
+
+Guidance3D::Guidance3D(float look_ahead_distance_m)
+    : look_ahead_distance_m_(look_ahead_distance_m)
+    , profile_(guidance_profile_default())
+    , cached_leg_index_(SIZE_MAX)
+    , leg_cache_{}
+{
+}
+
+void Guidance3D::set_look_ahead_distance(float look_ahead_distance_m)
+{
+    look_ahead_distance_m_ = look_ahead_distance_m;
+}
+
+void Guidance3D::set_profile(const GuidanceProfile &profile)
+{
+    profile_ = profile;
+}
+
+float Guidance3D::get_look_ahead_distance() const
+{
+    return look_ahead_distance_m_;
+}
+
+bool Guidance3D::prepare_cached_leg(
+    const StaticWaypointBuffer &route,
+    size_t active_waypoint_index,
+    const Waypoint *origin,
+    const Waypoint *destination) const
+{
+    if (active_waypoint_index == cached_leg_index_ && leg_cache_.valid) {
+        return true;
+    }
+
+    leg_cache_.valid = guidance_prepare_leg_geom(origin, destination, &leg_cache_);
+    if (leg_cache_.valid) {
+        cached_leg_index_ = active_waypoint_index;
+    } else {
+        cached_leg_index_ = SIZE_MAX;
+    }
+
+    return leg_cache_.valid;
+}
+
+GuidanceOutput Guidance3D::compute(
+    const NavState &nav_state,
+    const StaticWaypointBuffer &route,
+    size_t active_waypoint_index) const
+{
+    if (look_ahead_distance_m_ <= NAVICORE_EPS_DISPLACEMENT_M
+        || route.count == 0U || active_waypoint_index >= route.count) {
+        return guidance_invalid_output();
+    }
+
+    Waypoint origin{};
+    Waypoint destination{};
+    if (!guidance_get_leg_waypoints(&route, active_waypoint_index, &origin, &destination)) {
+        return guidance_invalid_output();
+    }
+
+    if (!prepare_cached_leg(route, active_waypoint_index, &origin, &destination)) {
+        return guidance_invalid_output();
+    }
+
+    float pos_n = 0.0f;
+    float pos_e = 0.0f;
+    float pos_u = 0.0f;
+    guidance_position_to_local_neu(&origin, nav_state.position, &pos_n, &pos_e, &pos_u);
+
+    GuidanceLegProjection proj{};
+    guidance_project_onto_leg(
+        &leg_cache_,
+        pos_n,
+        pos_e,
+        pos_u,
+        leg_cache_.seg_n,
+        leg_cache_.seg_e,
+        leg_cache_.seg_u,
+        &proj);
+
+    GuidanceOutput output{};
+    output.track_errors.cross_track_m = proj.cross_track_m;
+    output.track_errors.cross_track_signed_m = proj.cross_track_signed_m;
+    output.track_errors.along_track_m = proj.along_remaining_m;
+
+    const float acceptance_m = static_cast<float>(destination.arrival_radius_m);
+    const float acceptance_sq_m2 = acceptance_m * acceptance_m;
+    const float along_progress_m = leg_cache_.seg_len_m - proj.along_remaining_m;
+
+    output.waypoint_completed =
+        (proj.to_dest_sq_m2 <= acceptance_sq_m2)
+        || ((along_progress_m >= (leg_cache_.seg_len_m - acceptance_m))
+            && (proj.cross_track_sq_m2 <= acceptance_sq_m2));
+    output.valid = true;
+
+    guidance_fill_commands_from_projection(
+        &leg_cache_,
+        &proj,
+        look_ahead_distance_m_,
+        nav_state.heading_deg,
+        origin.position.z,
+        destination.position.z,
+        nav_state.position.z,
+        profile_,
+        &output);
+
+    return output;
+}
+
+GuidanceOutput guidance_compute_homing(
+    const NavState &nav_state,
+    Vector3D target_position,
+    const GuidanceProfile &profile)
+{
+    GuidanceOutput output{};
+    output.valid = true;
+
+    float north_m = 0.0f;
+    float east_m = 0.0f;
+    latlon_to_local_ne_m(
+        nav_state.position.x,
+        nav_state.position.y,
+        target_position.x,
+        target_position.y,
+        &north_m,
+        &east_m);
+
+    const float horiz_dist_sq_m2 = (north_m * north_m) + (east_m * east_m);
+    const float alt_error_m = target_position.z - nav_state.position.z;
+
+    output.track_errors.cross_track_m = 0.0f;
+    output.track_errors.cross_track_signed_m = 0.0f;
+
+    if (horiz_dist_sq_m2 > (NAVICORE_EPS_DISPLACEMENT_M * NAVICORE_EPS_DISPLACEMENT_M)) {
+        const float horiz_dist_m = sqrtf(horiz_dist_sq_m2);
+        output.track_errors.along_track_m = horiz_dist_m;
+        output.commands.desired_heading = atan2f(east_m, north_m);
+        output.commands.desired_speed = guidance_desired_speed_mps(horiz_dist_m, 0.0f, profile);
+    } else {
+        output.track_errors.along_track_m = 0.0f;
+        output.commands.desired_heading = deg_to_rad(nav_state.heading_deg);
+        output.commands.desired_speed = 0.0f;
+    }
+
+    output.commands.desired_climb = guidance_desired_climb_mps(
+        nav_state.position.z,
+        nav_state.position.z,
+        target_position.z,
+        output.track_errors.along_track_m,
+        output.track_errors.along_track_m + 1.0f,
+        profile);
+
+    const float home_accept_sq_m2 = 25.0f; /* 5 m radial */
+    output.waypoint_completed =
+        (horiz_dist_sq_m2 <= home_accept_sq_m2) && (fabsf(alt_error_m) <= 2.0f);
+
+    return output;
 }

@@ -106,6 +106,11 @@
 #define PICO2_BATTERY_POLL_TICKS     10U
 #define PICO2_BATTERY_LOW_DEBOUNCE   3U
 
+/* --- INS EKF 15 estados (Fase 2) — SUPUESTO — pendiente P3 --- */
+#ifndef NAVICORE_INS_EKF_NIS_THRESHOLD
+#define NAVICORE_INS_EKF_NIS_THRESHOLD 11.345f /* Chi-cuadrado 3 DoF, p=0.99 */
+#endif
+
 /* --- UART ring overflow → degradación de confianza --- */
 #define PICO2_UART_ID_IMU             0U
 #define PICO2_UART_ID_GNSS             1U

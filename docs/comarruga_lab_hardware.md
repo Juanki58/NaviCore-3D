@@ -4,7 +4,7 @@
 > **Placa:** `PICO_BOARD=pico2_w`  
 > **Firmware de referencia:** commit `fc28d70` y posteriores (`RuntimeHealth`, `health_monitor`, `SystemHealth`)
 
-Este documento describe el hardware del banco Comarruga, la arquitectura de tiempo real del firmware y el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB.
+Este documento describe el hardware del banco Comarruga, la arquitectura de tiempo real del firmware, el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB, y el **plan estratégico de desarrollo** del NaviCore Runtime (horizonte 12 meses).
 
 ---
 
@@ -436,6 +436,112 @@ Salida esperada: `OK: overflow_count == 0 en ambos rings tras 60 s` con tráfico
 
 ---
 
+## Plan estratégico de desarrollo — NaviCore Runtime
+
+> **Horizonte:** 12 meses · **Estado del chasis físico:** estable (BSP Comarruga, bucle @ 100 Hz, `RuntimeHealth`, campaña WCET S0–S7).  
+> **Objetivo:** construir y demostrar la Propiedad Intelectual del **NaviCore Runtime** — motor de navegación OEM portátil — independiente de la plataforma de referencia.
+
+### 1. Filosofía de producto: OEM Navigation Runtime
+
+La **Raspberry Pi Pico 2 W (RP2350)** es la plataforma de referencia y desarrollo de bajo coste del laboratorio Comarruga: valida el chasis defensivo en hardware real, acota el WCET y expone los puntos de fallo del bus (UART, I2C, Wi-Fi). **No es el producto.**
+
+El producto es **NaviCore Runtime**: un motor de navegación **determinista**, **portátil** y **agnóstico de plataforma**, compilable hacia:
+
+| Target | Rol |
+|--------|-----|
+| **RP2350** (`pico2_hardware`) | Plataforma de referencia y banco WCET |
+| **STM32H7 / STM32U5** | Integración OEM en vehículos y drones |
+| **NXP** | Variantes industriales y automoción |
+| **Linux** | Gateway de misión y telemetría |
+| **Simulador host** (`generic_pc`) | SIL, replay y acumulación de horas virtuales |
+
+La separación `src/core/` ↔ `src/targets/` materializa este contrato: el núcleo matemático y las políticas de navegación viven en **core**; los drivers, el scheduler y el I/O viven en **targets**.
+
+El valor diferencial no reside en un pinout concreto, sino en:
+
+- **Chasis defensivo** — guardas de geometría, divergencia, recuperación y `SystemHealth` con degradación activa.
+- **Runtime síncrono** — bucle fijo @ 100 Hz, presupuesto temporal explícito (`PICO2_LOOP_BUDGET_US`), WDT y `RuntimeHealth` por bloque.
+- **Gestión de sensores con tolerancia a fallos** — rings SPSC, contadores de overflow UART, degradación de confianza por ventana temporal.
+- **Políticas de degradación activa** — de `NOMINAL` a `DEGRADED` / `CRITICAL` con acciones medibles (Wi-Fi omitido, `gps_trusted` retirado, transición a `SAFE_MODE`).
+
+La Pico 2 W es el **chasis estable** sobre el que se endurece y certifica el runtime; el entregable comercial es el **motor**, no la placa.
+
+---
+
+### 2. Plan estratégico a 12 meses (por hitos)
+
+#### Trimestre 1 — El cerebro estimador (INS/EKF profesional)
+
+Objetivo: sustituir la fusión heurística por un estimador de estados con garantías estadísticas y comportamiento predecible bajo pérdida de GNSS.
+
+| Entregable | Descripción |
+|------------|-------------|
+| **ESKF 15 estados** | Posición NED, velocidad, actitud (roll/pitch/yaw), bias de acelerómetro (3) y bias de giroscopio (3). Matrices fijas, aritmética `float`/FPU, zero-heap. |
+| **Propagación @ 100 Hz** | Mecánica strapdown pura gobernada por la IMU; `predict()` síncrono en cada tick de navegación. |
+| **Integridad GNSS** | Innovación normalizada (NIS) y distancia de Mahalanobis para rechazo estricto de outliers; contadores `gnss_accept` / `gnss_reject`. |
+| **Pérdida y recuperación de fix** | Dead Reckoning consistente cuando el GNSS degrada o se rechaza; transición controlada `HYBRID` ↔ `DEAD_RECKONING` con `estimate_quality` acotada. |
+
+**Criterio de cierre T1:** EKF integrado en banco Comarruga y en simulador; NIS y bias visibles en telemetría; sin divergencia en escenario nominal de 60 s.
+
+---
+
+#### Trimestre 2 — El multiplicador de fuerza (simulador SIL avanzado y replay)
+
+Objetivo: desacoplar el ritmo de desarrollo del hardware físico; acumular evidencia estadística a velocidad acelerada.
+
+| Entregable | Descripción |
+|------------|-------------|
+| **SIL host** | Evolución de `generic_pc` hacia entorno Software-in-the-Loop con escenarios reproducibles (`MISION_CLEAN`, stress, fault injection) y puente JSBSim documentado en `docs/sil_architecture.md`. |
+| **Replay de logs** | `NaviCore3D_Replay`: alimentación offline del EKF con archivos de campo (UART/flash/USB) para regresión determinista sin placa. |
+| **Caja negra expandida** | `FlightRecorder` (`src/core/flight_recorder.*`): volcado síncrono en CSV de los 15 estados del EKF, √diag(P), sesgos estimados, innovación/NIS residual y métricas WCET (`loop_us`, `missed_ticks`). |
+
+**Criterio de cierre T2:** 100 h de vuelo virtual acumulables en < 1 h de CPU host; replay bit-a-bit del EKF sobre log de banco; CSV con esquema v1 congelado.
+
+---
+
+#### Trimestre 3 — El piloto táctico (guiado 3D y planificador de misión)
+
+Objetivo: cerrar el lazo de control de misión con leyes de guiado acotadas en WCET y máquina de estados jerárquica.
+
+| Entregable | Descripción |
+|------------|-------------|
+| **Guiado 3D** | Pure Pursuit + Line-of-Sight: cross-track por proyección lineal (sin producto vectorial redundante), rumbo objetivo, velocidad variable por \|e_xt\| y tasa de ascenso deseada. Cache de tramo: ≤ 2 `sqrtf`/tick. |
+| **Mission HFSM** | `INIT` → `WAIT_GPS` → `READY` → `NAVIGATE` → `RETURN_HOME` → `SAFE_MODE`; rutas 3D con buffer fijo de waypoints. |
+| **Failsafe estratégico** | Acoplamiento `RuntimeHealth` ↔ transiciones automáticas: `missed_ticks > 5`, overflows UART ≥ 3 → `SAFE_MODE` con home grabado en `WAIT_GPS`. |
+
+**Criterio de cierre T3:** misión 4 WP 3D completada en sim (NAVIGATE → RETURN_HOME → READY); guiado cableado en Pico2; SAFE_MODE activado bajo estrés de backlog verificable.
+
+---
+
+#### Trimestre 4 — El búnker de verificación (evidencia y pruebas de estrés)
+
+Objetivo: empaquetar evidencia empírica de consistencia estadística y robustez del runtime bajo peor caso compuesto.
+
+| Entregable | Descripción |
+|------------|-------------|
+| **Horas de vuelo virtuales** | Campaña SIL acelerada: acumulación y registro de trayectorias, innovaciones y covarianzas a máxima velocidad de simulación. |
+| **Inyección de fallos masivos** | Caídas de tensión simuladas en I2C, saturación de colas UART, interferencias EMI en tramas WT61C/NMEA; correlación con degradación de confianza y `SystemHealth`. |
+| **Evidencia estadística** | Paquetes de telemetría + matrices de covarianza exportadas para demostrar consistencia del filtro (NIS acotado en nominal, P estable, bias convergente). |
+
+**Criterio de cierre T4:** informe de campaña con S0–S7 (banco) + suite SIL automatizada (host); gate de salida binario documentado para OEM.
+
+---
+
+### 3. Herramientas en paralelo (infraestructura de depuración)
+
+Desarrollo concurrente al plan por trimestres; ningún algoritmo se mergea sin visibilidad en datos.
+
+| Herramienta | Ruta | Evolución planificada |
+|-------------|------|----------------------|
+| **Visualizador de telemetría** | `tools/visualizer.py` | Mapa interactivo trayectoria real vs. ideal; perfil de velocidad y climb; panel de NIS/innovación; elipse de incertidumbre geométrica a partir de √diag(P) del EKF. |
+| **Receptor UDP live** | `tools/remote_visualizer.py` | Telemetría en vuelo desde banco Comarruga vía Wi-Fi. |
+| **FlightRecorder CSV** | `docs/telemetria_navicore.csv` | Esquema v1 (22 columnas legacy + 56 de estado interno); compatible con replay offline. |
+| **SIL multi-UAV** | `tools/sil_*.py`, `docs/sil_architecture.md` | Flota JSBSim × NaviCore para validación autónoma pre-vuelo. |
+
+**Regla de oro:** los bugs de navegación no se encuentran mirando el código; se encuentran mirando los datos. Cada hito del plan exige un campo nuevo en `FlightRecorder` y, como mínimo, un panel en el visualizador.
+
+---
+
 ## Referencia rápida de archivos
 
 | Archivo | Rol |
@@ -448,10 +554,8 @@ Salida esperada: `OK: overflow_count == 0 en ambos rings tras 60 s` con tráfico
 | `bsp_uart_rx_ring.hpp` | Ring SPSC atómico + `overflow_count` |
 | `bsp_sensors.cpp` | Ventana de overflow y degradación de confianza |
 | `ring_stress_host_test.cpp` | Simulación de estrés 60 s en host |
-
----
-
-## Fusión y telemetría (próxima fase)
-
-- Transición `INITIALIZING` → `HYBRID` con fix GNSS activo (validación funcional adicional).
-- Telemetría UDP hacia el host del laboratorio (`HOST_IP`, `UDP_PORT` en `wifi_config.h`).
+| `src/core/ins_ekf.*` | ESKF 15 estados (T1) |
+| `src/core/flight_recorder.*` | Caja negra expandida — esquema CSV v1 (T2) |
+| `src/core/guidance.*` | Guiado 3D Pure Pursuit / LOS (T3) |
+| `src/core/mission.*` | Mission HFSM y failsafe estratégico (T3) |
+| `tools/visualizer.py` | Visualizador de telemetría (infraestructura de depuración) |

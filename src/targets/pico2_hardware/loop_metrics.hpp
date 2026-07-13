@@ -12,6 +12,8 @@ struct RuntimeHealth {
     uint32_t uart0_overflows;
     uint32_t uart1_overflows;
     uint32_t missed_ticks;
+    uint32_t max_tick_backlog;
+    uint32_t loop_budget_exceeded;
     uint32_t wifi_skipped_budget;
     uint32_t i2c_recoveries;
 };
@@ -26,6 +28,7 @@ void loop_metrics_record_housekeeping_us(uint32_t elapsed_us);
 void loop_metrics_record_wifi_us(uint32_t elapsed_us);
 void loop_metrics_record_logging_us(uint32_t elapsed_us);
 void loop_metrics_add_missed_ticks(uint32_t count);
+void loop_metrics_record_tick_backlog(uint32_t pending_before_consume);
 void loop_metrics_add_wifi_skipped(void);
 void loop_metrics_add_i2c_recovery(void);
 void loop_metrics_sync_uart_overflows(uint32_t uart0_total, uint32_t uart1_total);

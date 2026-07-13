@@ -15,7 +15,9 @@
  *   - El tick @ 100 Hz solo fusiona muestras ya parseadas; NO hace I2C.
  *   - pico2_bsp_power_poll(): FSM cooperativa UPS; un paso por llamada (≤ 2 ms).
  *   - Tras PICO2_I2C_RECOVER_MAX secuencias 9-pulsos fallidas → UPS OFFLINE permanente.
- *   - cyw43_poll() es periférico "blando" sin timeout SDK — ver nota abajo.
+ *   - cyw43_poll() es periférico "blando" sin timeout SDK — WCET no acotado; solo se
+ *     omite si el ciclo agota PICO2_LOOP_BUDGET_US (mitigación, no demostración WCET).
+ *   - WDT detecta bloqueos; loop_budget_exceeded detecta degradación sostenida de ritmo.
  *   - WT61C: checksum de trama obligatorio antes de actualizar IMU (bsp_wt61c.cpp).
  *   - Ticks: contador atómico (no bool) — un bool pierde ticks si el bucle > 10 ms.
  *   - WDT: watchdog_update() al final del ciclo; bloqueo → reset sin enmascarar.

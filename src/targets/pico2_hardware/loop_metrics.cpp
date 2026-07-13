@@ -23,6 +23,9 @@ void loop_metrics_on_loop_complete(uint64_t loop_time_us)
 {
     const uint32_t loop_us = static_cast<uint32_t>(loop_time_us);
     health_update_max(&g_health.max_loop_us, loop_us);
+    if (loop_us > PICO2_LOOP_BUDGET_US) {
+        ++g_health.loop_budget_exceeded;
+    }
 }
 
 void loop_metrics_report_due(void)
@@ -63,6 +66,17 @@ void loop_metrics_record_logging_us(uint32_t elapsed_us)
 void loop_metrics_add_missed_ticks(uint32_t count)
 {
     g_health.missed_ticks += count;
+}
+
+void loop_metrics_record_tick_backlog(uint32_t pending_before_consume)
+{
+    if (pending_before_consume <= 1U) {
+        return;
+    }
+
+    const uint32_t backlog = pending_before_consume - 1U;
+    health_update_max(&g_health.missed_ticks, backlog);
+    health_update_max(&g_health.max_tick_backlog, backlog);
 }
 
 void loop_metrics_add_wifi_skipped(void)

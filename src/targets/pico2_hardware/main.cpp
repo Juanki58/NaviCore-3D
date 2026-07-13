@@ -113,12 +113,11 @@ int main()
         loop_metrics_record_rx_pump_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
         phase_start_us = time_us_64();
 
-        const uint32_t pending_ticks = g_tick_ready.load(std::memory_order_acquire);
-        if (pending_ticks > 0U) {
-            g_tick_ready.fetch_sub(1U, std::memory_order_release);
-            if (pending_ticks > 1U) {
-                loop_metrics_add_missed_ticks(1U);
-            }
+        const uint32_t pending_ticks = g_tick_ready.fetch_sub(1U, std::memory_order_acq_rel);
+        if (pending_ticks == 0U) {
+            g_tick_ready.fetch_add(1U, std::memory_order_release);
+        } else {
+            loop_metrics_record_tick_backlog(pending_ticks);
 
             const uint32_t timestamp_ms = tick_count * PICO2_NAV_TICK_MS;
             ++tick_count;

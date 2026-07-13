@@ -163,6 +163,22 @@ void pico2_bsp_sensors_get_confidence_flags(SensorConfidenceFlags *flags_out)
     *flags_out = g_sensor_confidence;
 }
 
+void pico2_bsp_sensors_set_imu_degraded(bool degraded)
+{
+    g_sensor_confidence.imu_degraded = degraded;
+    if (degraded) {
+        g_imu_overflow_window.confidence_degraded = true;
+    }
+}
+
+void pico2_bsp_sensors_set_gnss_degraded(bool degraded)
+{
+    g_sensor_confidence.gnss_degraded = degraded;
+    if (degraded) {
+        g_gnss_overflow_window.confidence_degraded = true;
+    }
+}
+
 void pico2_bsp_sensors_rx_pump(void)
 {
     for (uint8_t round = 0U; round < PICO2_UART_PUMP_MAX_ROUNDS; ++round) {

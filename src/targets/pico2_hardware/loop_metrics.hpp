@@ -43,5 +43,6 @@ void loop_metrics_update_system_health(
     bool imu_degraded,
     bool gnss_degraded,
     bool power_offline);
+void loop_metrics_set_system_health(SystemHealth health);
 const RuntimeHealth *loop_metrics_health(void);
 SystemHealth loop_metrics_system_health(void);

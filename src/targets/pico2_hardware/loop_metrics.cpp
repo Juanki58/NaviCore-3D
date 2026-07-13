@@ -4,6 +4,9 @@
 namespace {
 
 RuntimeHealth g_health{};
+SystemHealth g_system_health = SystemHealth::NOMINAL;
+uint8_t g_consecutive_loop_overrun = 0U;
+uint32_t g_last_loop_us = 0U;
 
 void health_update_max(uint32_t *field, uint32_t value)
 {
@@ -11,11 +14,6 @@ void health_update_max(uint32_t *field, uint32_t value)
         *field = value;
     }
 }
-
-RuntimeHealth g_health{};
-SystemHealth g_system_health = SystemHealth::NOMINAL;
-uint8_t g_consecutive_loop_overrun = 0U;
-uint32_t g_last_loop_us = 0U;
 
 SystemHealth health_evaluate(
     uint32_t last_loop_us,
@@ -145,11 +143,22 @@ void loop_metrics_update_system_health(
     bool gnss_degraded,
     bool power_offline)
 {
-    g_system_health = health_evaluate(
+    const SystemHealth evaluated = health_evaluate(
         last_loop_us,
         imu_degraded,
         gnss_degraded,
         power_offline);
+
+    if (static_cast<uint8_t>(evaluated) > static_cast<uint8_t>(g_system_health)) {
+        g_system_health = evaluated;
+    }
+}
+
+void loop_metrics_set_system_health(SystemHealth health)
+{
+    if (static_cast<uint8_t>(health) > static_cast<uint8_t>(g_system_health)) {
+        g_system_health = health;
+    }
 }
 
 SystemHealth loop_metrics_system_health(void)

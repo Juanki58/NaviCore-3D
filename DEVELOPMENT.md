@@ -21,7 +21,48 @@ El proyecto está estructurado bajo la filosofía **Zero-Heap** (cero asignació
 
 ---
 
-## 🏁 2. Hitos Consolidados y Verificados (Último Commit: `af1978b`)
+## 🛡️ 1b. Prioridades RT — Pico 2 Comarruga (software crítico)
+
+> **Filosofía:** detectar → clasificar → responder. Sin medidas de banco, no se ajustan umbrales.
+
+| Prioridad | Ámbito | Estado (`7f37724+`) | Pendiente |
+|-----------|--------|---------------------|-----------|
+| **P1** | Health Monitor + políticas de degradación | Parcial: `SystemHealth`, `RuntimeHealth`, `fault_tolerance` (tabla evento→acción) | Unificar en módulo `health_monitor`; políticas explícitas y recuperables documentadas |
+| **P2** | Starvation / progreso de tareas | Parcial: `TaskMonitor`, deadline housekeeping 500 ms | Extender a todas las tareas críticas; umbrales derivados de P3 |
+| **P3** | Campaña WCET en banco | Documentado: `docs/comarruga_lab_hardware.md` § Prioridad 2, escenarios S0–S7 | **Ejecutar en placa**; foco en `max_wifi_us` / GP21 bajo S2/S3/S7 |
+| **P4** | Umbrales de degradación | Valores iniciales en `hw_config.hpp` (suposición) | Reemplazar por datos de P3 antes de certificar |
+
+### P1 — Políticas actuales (`fault_tolerance`)
+
+| Evento | Acción |
+|--------|--------|
+| `loop_budget_exceeded` > 5 en 1 s | DEGRADED + Wi-Fi off |
+| `uart0_overflows` > 3/s | Confianza IMU ↓ |
+| `uart1_overflows` > 3/s | Confianza GNSS ↓ |
+| `missed_ticks` > 2 (backlog) | Omitir tick de navegación |
+| `i2c_recoveries` > 5 | UPS OFFLINE permanente |
+| `loop > 20 ms` × 3 | CRITICAL + `watchdog_reboot()` |
+| `housekeeping` idle > 500 ms | CRITICAL + `watchdog_reboot()` |
+
+**Limitación conocida:** `cyw43_arch_poll()` no tiene WCET acotado en SDK — P3 debe caracterizarlo antes de endurecer políticas Wi-Fi.
+
+### Regla para agentes / desarrolladores
+
+1. No añadir umbrales nuevos sin etiqueta `// SUPUESTO — pendiente P3`.
+2. No afirmar "tiempo real duro" en rutas Wi-Fi hasta datos S7.
+3. Toda nueva política: detección + clasificación (`SystemHealth`) + acción + métrica en `RuntimeHealth`.
+
+---
+
+## 🏁 2. Hitos Consolidados (Pico 2 Comarruga: `7f37724+`)
+
+- [x] Rings UART SPSC, FSM I2C, ticks atómicos, WDT al final de ciclo
+- [x] `RuntimeHealth` + `SystemHealth` + `fault_tolerance` (políticas P1)
+- [x] `TaskMonitor` + deadline housekeeping 500 ms (P2 parcial)
+- [x] Protocolo campaña WCET S0–S7 documentado (P3 — pendiente ejecución)
+- [ ] Umbrales calibrados con datos de banco (P4)
+
+### Hitos históricos (PC / Ambiq)
 
 - [x] **Core matemático unificado**: Gestión de dominios (Tierra, Aire, Mar).
 - [x] **Simulación de escenarios de estrés**: Pérdida de GPS por 10 s e inmersión submarina (presión).

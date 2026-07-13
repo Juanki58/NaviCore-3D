@@ -297,3 +297,13 @@ bool pico2_bsp_power_consume_battery(uint16_t *battery_mv_out)
     }
     return true;
 }
+
+void pico2_bsp_power_force_offline(void)
+{
+    if (!g_power_permanently_offline) {
+        power_enter_permanent_offline();
+        safe_logf(
+            "FT: UPS OFFLINE permanente (i2c_recoveries > %u)\n",
+            PICO2_FT_I2C_RECOVERY_OFFLINE_MAX);
+    }
+}

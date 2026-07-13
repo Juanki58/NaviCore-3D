@@ -84,6 +84,13 @@
 #define PICO2_TICK_BACKLOG_DEGRADED        1U
 #define PICO2_TICK_BACKLOG_CRITICAL        3U
 #define PICO2_LOOP_OVERRUN_DEGRADED        3U
+#define PICO2_LOOP_RESTART_US           20000U
+#define PICO2_LOOP_RESTART_STREAK          3U
+#define PICO2_FT_RATE_WINDOW_MS         1000U
+#define PICO2_FT_LOOP_OVERRUN_DEGRADED_MAX 5U
+#define PICO2_FT_UART_OVERFLOW_PER_S_MAX 3U
+#define PICO2_FT_MISSED_TICKS_INVALID_MAX 2U
+#define PICO2_FT_I2C_RECOVERY_OFFLINE_MAX 5U
 
 /* --- Métricas de control (Fase 2 gate — osciloscopio en banco) --- */
 #define PICO2_GPIO_BENCHMARK         22U   /* GP22: HIGH durante pico2_bsp_sensors_tick() */

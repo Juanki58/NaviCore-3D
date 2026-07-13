@@ -16,6 +16,8 @@ void pico2_bsp_sensors_housekeeping(uint32_t nav_tick_count);
 bool pico2_bsp_sensors_can_sleep(void);
 uint32_t pico2_bsp_uart_get_overflow_count(uint8_t uart_id);
 void pico2_bsp_sensors_get_confidence_flags(SensorConfidenceFlags *flags_out);
+void pico2_bsp_sensors_set_imu_degraded(bool degraded);
+void pico2_bsp_sensors_set_gnss_degraded(bool degraded);
 bool pico2_bsp_sensors_tick(
     DeadReckoningFilter *nav_filter,
     uint32_t timestamp_ms,

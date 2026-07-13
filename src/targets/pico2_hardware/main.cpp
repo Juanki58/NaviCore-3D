@@ -4,6 +4,7 @@
  */
 #include "bsp_sensors.hpp"
 #include "bsp_power.hpp"
+#include "fault_tolerance.hpp"
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
 #include "safe_log.hpp"
@@ -53,6 +54,7 @@ int main()
     stdio_set_translate_crlf(&stdio_usb, false);
     safe_log_init();
     loop_metrics_init();
+    fault_tolerance_init();
 
     if (cyw43_arch_init()) {
         printf("Error: fallo al inicializar Wi-Fi\n");
@@ -123,17 +125,19 @@ int main()
             const uint32_t timestamp_ms = tick_count * PICO2_NAV_TICK_MS;
             ++tick_count;
 
-            bool gps_fix_valid = false;
-            gpio_put(PICO2_GPIO_BENCHMARK, 1);
-            pico2_bsp_sensors_tick(&nav_filter, timestamp_ms, &gps_fix_valid);
-            gpio_put(PICO2_GPIO_BENCHMARK, 0);
+            if (fault_tolerance_nav_update_allowed(pending_ticks)) {
+                bool gps_fix_valid = false;
+                gpio_put(PICO2_GPIO_BENCHMARK, 1);
+                pico2_bsp_sensors_tick(&nav_filter, timestamp_ms, &gps_fix_valid);
+                gpio_put(PICO2_GPIO_BENCHMARK, 0);
+
+                (void)HOST_IP;
+                (void)UDP_PORT;
+                (void)gps_fix_valid;
+            }
 
             loop_metrics_record_tick_us(static_cast<uint32_t>(time_us_64() - phase_start_us));
             phase_start_us = time_us_64();
-
-            (void)HOST_IP;
-            (void)UDP_PORT;
-            (void)gps_fix_valid;
         }
 
         pico2_bsp_sensors_housekeeping(tick_count);
@@ -143,7 +147,7 @@ int main()
         const uint32_t loop_elapsed_us = static_cast<uint32_t>(time_us_64() - loop_start_us);
         const bool wifi_budget_ok = (loop_elapsed_us < PICO2_LOOP_BUDGET_US)
             && ((PICO2_LOOP_BUDGET_US - loop_elapsed_us) >= PICO2_WIFI_MIN_REMAINING_US);
-        if (wifi_budget_ok) {
+        if (fault_tolerance_wifi_poll_allowed() && wifi_budget_ok) {
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 1);
             cyw43_arch_poll();
             gpio_put(PICO2_GPIO_BENCHMARK_WIFI, 0);
@@ -170,6 +174,10 @@ int main()
             confidence.imu_degraded,
             confidence.gnss_degraded,
             pico2_bsp_power_is_offline());
+
+        fault_tolerance_on_loop_complete(
+            static_cast<uint32_t>(loop_elapsed),
+            tick_count * PICO2_NAV_TICK_MS);
 
         loop_metrics_report_due();
 

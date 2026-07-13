@@ -12,11 +12,16 @@
 
 #include <stdio.h>
 
+#ifndef NAVICORE_INS_EKF_PI_F
+#define NAVICORE_INS_EKF_PI_F 3.14159265358979323846f
+#endif
+
 namespace {
 
 uint32_t g_tick_count = 0U;
 uint8_t g_battery_low_streak = 0U;
 bool g_battery_low_latched = false;
+bool g_ins_seeded = false;
 SensorConfidenceFlags g_sensor_confidence{};
 
 struct UartOverflowWindow {
@@ -86,9 +91,14 @@ void sensors_update_confidence_flags(uint32_t timestamp_ms)
     g_sensor_confidence.gnss_degraded = g_gnss_overflow_window.confidence_degraded;
 }
 
-void sensors_apply_degraded_confidence(DeadReckoningFilter *nav_filter)
+float sensors_course_deg_to_yaw_rad(float course_deg)
 {
-    if (nav_filter == nullptr) {
+    return course_deg * (NAVICORE_INS_EKF_PI_F / 180.0f);
+}
+
+void sensors_apply_degraded_confidence(NavState *nav_state)
+{
+    if (nav_state == nullptr) {
         return;
     }
 
@@ -96,18 +106,18 @@ void sensors_apply_degraded_confidence(DeadReckoningFilter *nav_filter)
         return;
     }
 
-    float quality = nav_filter->state.confidence.estimate_quality;
+    float quality = nav_state->confidence.estimate_quality;
 
     if (g_sensor_confidence.imu_degraded) {
         quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
     }
 
     if (g_sensor_confidence.gnss_degraded) {
-        nav_filter->state.confidence.gps_trusted = false;
+        nav_state->confidence.gps_trusted = false;
         quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
     }
 
-    nav_filter->state.confidence.estimate_quality = sensors_clampf(quality, 0.0f, 1.0f);
+    nav_state->confidence.estimate_quality = sensors_clampf(quality, 0.0f, 1.0f);
 }
 
 } /* namespace */
@@ -235,11 +245,12 @@ bool pico2_bsp_sensors_can_sleep(void)
 }
 
 bool pico2_bsp_sensors_tick(
-    DeadReckoningFilter *nav_filter,
+    InsEkfFilter *ins_filter,
+    NavState *nav_state_out,
     uint32_t timestamp_ms,
     bool *gps_fix_valid_out)
 {
-    if (nav_filter == nullptr) {
+    if (ins_filter == nullptr || nav_state_out == nullptr) {
         return false;
     }
 
@@ -247,25 +258,44 @@ bool pico2_bsp_sensors_tick(
 
     sensors_update_confidence_flags(timestamp_ms);
 
-    ImuSample imu{};
-    if (pico2_bsp_wt61c_poll(&imu)) {
-        imu.timestamp_ms = timestamp_ms;
-        dead_reckoning_update_imu(nav_filter, &imu, nullptr);
-    }
-
     GpsSample gps{};
     const bool gps_fix_valid = pico2_bsp_gnss_poll(&gps);
     if (gps_fix_valid_out != nullptr) {
         *gps_fix_valid_out = gps_fix_valid;
     }
 
-    if (gps_fix_valid) {
-        gps.timestamp_ms = timestamp_ms;
-        dead_reckoning_update_gps(nav_filter, &gps, nullptr);
+    if (gps_fix_valid && !g_ins_seeded) {
+        ins_ekf_init(
+            ins_filter,
+            gps.position,
+            sensors_course_deg_to_yaw_rad(gps.course_deg),
+            NAVICORE_DOMAIN_AIR);
+        g_ins_seeded = true;
     }
 
-    sensors_apply_degraded_confidence(nav_filter);
+    ImuSample imu{};
+    if (g_ins_seeded && pico2_bsp_wt61c_poll(&imu)) {
+        imu.timestamp_ms = timestamp_ms;
+        (void)ins_ekf_predict(ins_filter, &imu);
+    }
 
-    nav_filter->state.timestamp_ms = timestamp_ms;
+    const GpsSample *last_gps_ptr = nullptr;
+    if (g_ins_seeded && gps_fix_valid) {
+        gps.timestamp_ms = timestamp_ms;
+        if (!ins_ekf_update_gnss(ins_filter, &gps)) {
+            pico2_bsp_sensors_set_gnss_degraded(true);
+        }
+        last_gps_ptr = &gps;
+    }
+
+    if (g_ins_seeded) {
+        ins_ekf_export_nav_state(ins_filter, nav_state_out, timestamp_ms, last_gps_ptr);
+        sensors_apply_degraded_confidence(nav_state_out);
+    } else {
+        *nav_state_out = navstate_zero(NAVICORE_DOMAIN_AIR);
+        nav_state_out->timestamp_ms = timestamp_ms;
+        nav_state_out->mode = NAV_MODE_INITIALIZING;
+    }
+
     return true;
 }

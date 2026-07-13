@@ -17,6 +17,11 @@ namespace {
  */
 constexpr HealthPolicyDescriptor k_policy_table[] = {
     {
+        "gnss_nis_outlier",
+        HealthPolicyRecovery::Recoverable,
+        SystemHealth::DEGRADED,
+    },
+    {
         "loop_budget_exceeded_rate",
         HealthPolicyRecovery::Permanent,
         SystemHealth::DEGRADED,

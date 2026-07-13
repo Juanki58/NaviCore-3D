@@ -10,7 +10,8 @@
 #include "safe_log.hpp"
 #include "task_monitor.hpp"
 
-#include "core/fusion.hpp"
+#include "core/ins_ekf.hpp"
+#include "core/NavState.h"
 #include "core/navigation_cortex.hpp"
 #include "core/vector3d.h"
 
@@ -86,8 +87,8 @@ int main()
         return -1;
     }
 
-    DeadReckoningFilter nav_filter{};
-    dead_reckoning_init(&nav_filter, vector3d_zero(), NAVICORE_DOMAIN_AIR);
+    InsEkfFilter ins_filter{};
+    NavState nav_state = navstate_zero(NAVICORE_DOMAIN_AIR);
 
     struct repeating_timer timer;
     add_repeating_timer_ms(-static_cast<int64_t>(PICO2_NAV_TICK_MS), repeating_timer_callback, nullptr, &timer);
@@ -148,7 +149,7 @@ int main()
 
                 bool gps_fix_valid = false;
                 gpio_put(PICO2_GPIO_BENCHMARK, 1);
-                pico2_bsp_sensors_tick(&nav_filter, timestamp_ms, &gps_fix_valid);
+                pico2_bsp_sensors_tick(&ins_filter, &nav_state, timestamp_ms, &gps_fix_valid);
                 gpio_put(PICO2_GPIO_BENCHMARK, 0);
                 task_monitor_record(TaskId::NavTick, tick_count);
 

@@ -28,6 +28,7 @@ typedef struct {
     Vector3D origin;
     Vector3D position;
     float speed_mps;
+    float vertical_speed_mps;
     float course_deg;
     uint32_t seed;
     uint32_t last_timestamp_ms;
@@ -88,5 +89,13 @@ void sensors_simulation_apply_heading_control(
     SensorsSimulation *ctx,
     float course_deg,
     float yaw_rate_radps);
+
+void sensors_simulation_apply_guidance_control(
+    SensorsSimulation *ctx,
+    float heading_rad,
+    float desired_speed_mps,
+    float desired_climb_mps,
+    float current_heading_deg,
+    float dt_s);
 
 #endif /* NAVICORE_SENSORS_SIM_HPP */

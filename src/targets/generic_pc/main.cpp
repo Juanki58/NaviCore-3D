@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cerrno>
 #include <cstring>
+#include <chrono>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -16,6 +17,9 @@
 #include "NavState.h"
 #include "fusion.hpp"
 #include "guidance.hpp"
+#include "mission.hpp"
+#include "ins_ekf.hpp"
+#include "flight_recorder.hpp"
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
 #include "diagnostic.hpp"
@@ -64,13 +68,37 @@ constexpr float kSubmarineTemperatureC = 10.0f;
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
 constexpr float kWaypointLonStepDeg = 0.00018f;
-constexpr float kPurePursuitLookAheadM = 8.0f;
+constexpr float kGuidanceLookAheadM = 8.0f;
 constexpr float kSquareLegStepDeg = 0.00018f;
 constexpr float kSquareApproachLonOffsetDeg = 0.00009f;
 constexpr float kSquareArrivalRadiusM = 2.0f;
 constexpr size_t kSquareWaypointCount = 4U;
+constexpr size_t kMission3dWaypointCount = 4U;
+constexpr uint32_t kMissionCleanDurationMs = 60000U;
+constexpr uint32_t kMissionAutoStartReadyTicks = 3U;
 constexpr float kWaypointArrivalRadiusNominalM = 5.0f;
 constexpr float kWaypointArrivalRadiusDegradedM = 15.0f;
+
+struct MissionGuidanceSnapshot {
+    GuidanceCommands commands;
+    bool guidance_valid;
+    bool return_home_active;
+    size_t active_waypoint_index;
+};
+
+struct FlightRecorderExtras {
+    const ImuSample *imu;
+    const GpsSample *gps;
+    const InsEkfFilter *ekf;
+    bool gnss_update_accepted;
+    const GuidanceCommands *commands;
+    bool guidance_commands_valid;
+    MissionState mission_state;
+    bool return_home_active;
+    size_t active_waypoint_index;
+    const RuntimeHealth *runtime_health;
+    uint32_t loop_us;
+};
 
 uint32_t contingency_arrival_radius_m(NavHealthMode health_mode)
 {
@@ -372,13 +400,37 @@ FILE *telemetry_open(const char *path)
 
 void telemetry_write_header(FILE *file)
 {
-    if (file == NULL) {
+    flight_recorder_write_csv_header(file);
+}
+
+void telemetry_record_tick(FILE *file, const FlightRecorderTickInput *input)
+{
+    if (file == NULL || input == NULL || input->nav_state == NULL) {
         return;
     }
 
-    std::fprintf(
-        file,
-        "Timestamp_ms,Escenario,Modo,Calidad,Satelites,Pos_X,Pos_Y,Pos_Z,Vel_X,Vel_Y,Vel_Z,Rumbo,CrossTrack_m,AlongTrack_m,OdomFault,HealthScore,HealthMode,PowerState,ShutdownLatched,WaypointCount,BspBus,RadioDroppedPackets\n");
+    FlightRecorderSample sample{};
+    if (!flight_recorder_capture(&sample, input)) {
+        return;
+    }
+
+    flight_recorder_write_csv_row(file, &sample);
+
+    const uint16_t dropped_packets_udp = static_cast<uint16_t>(
+        input->radio_dropped_packets > 16383U ? 16383U : input->radio_dropped_packets);
+    telemetry_udp_send(
+        input->timestamp_ms,
+        input->nav_state->position.x,
+        input->nav_state->position.y,
+        input->nav_state->position.z,
+        sample.cross_track_m,
+        sample.along_track_m,
+        input->health_score,
+        static_cast<uint8_t>(input->health_mode),
+        dropped_packets_udp,
+        input->scenario_id,
+        static_cast<uint8_t>(input->nav_state->mode),
+        input->temperature_c);
 }
 
 void telemetry_write_row(
@@ -397,56 +449,44 @@ void telemetry_write_row(
     uint8_t bsp_bus_status,
     uint32_t radio_dropped_packets,
     uint8_t scenario_id,
-    float temperature_c)
+    float temperature_c,
+    const FlightRecorderExtras *extras)
 {
-    if (file == NULL || state == NULL || scenario == NULL) {
+    if (state == NULL || scenario == NULL) {
         return;
     }
 
-    const float cross_track_m = (guidance != NULL) ? guidance->cross_track_m : 0.0f;
-    const float along_track_m = (guidance != NULL) ? guidance->along_track_m : 0.0f;
+    FlightRecorderTickInput input{};
+    input.timestamp_ms = timestamp_ms;
+    input.scenario_name = scenario;
+    input.scenario_id = scenario_id;
+    input.nav_state = state;
+    input.guidance_errors = guidance;
+    input.health_score = health_score;
+    input.health_mode = health_mode;
+    input.power_state = static_cast<uint8_t>(power_state);
+    input.shutdown_latched = shutdown_latched;
+    input.odom_fault = odom_fault;
+    input.waypoint_count = waypoint_count;
+    input.bsp_bus_status = bsp_bus_status;
+    input.radio_dropped_packets = radio_dropped_packets;
+    input.temperature_c = temperature_c;
 
-    std::fprintf(
-        file,
-        "%u,%s,%s,%.6f,%u,%.8f,%.8f,%.4f,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%u,%u,%s,%s,%u,%zu,%u,%u\n",
-        timestamp_ms,
-        scenario,
-        nav_mode_name(state->mode),
-        state->confidence.estimate_quality,
-        static_cast<unsigned>(scenario_satellites),
-        state->position.x,
-        state->position.y,
-        state->position.z,
-        state->velocity.x,
-        state->velocity.y,
-        state->velocity.z,
-        state->heading_deg,
-        cross_track_m,
-        along_track_m,
-        static_cast<unsigned>(odom_fault),
-        static_cast<unsigned>(health_score),
-        health_mode_name(health_mode),
-        power_state_name(power_state),
-        shutdown_latched ? 1U : 0U,
-        waypoint_count,
-        static_cast<unsigned>(bsp_bus_status),
-        static_cast<unsigned>(radio_dropped_packets));
+    if (extras != NULL) {
+        input.imu = extras->imu;
+        input.gps = extras->gps;
+        input.ekf = extras->ekf;
+        input.gnss_update_accepted = extras->gnss_update_accepted;
+        input.guidance_commands = extras->commands;
+        input.guidance_commands_valid = extras->guidance_commands_valid;
+        input.mission_state = extras->mission_state;
+        input.return_home_active = extras->return_home_active;
+        input.active_waypoint_index = extras->active_waypoint_index;
+        input.runtime_health = extras->runtime_health;
+        input.loop_us = extras->loop_us;
+    }
 
-    const uint16_t dropped_packets_udp =
-        static_cast<uint16_t>(radio_dropped_packets > 16383U ? 16383U : radio_dropped_packets);
-    telemetry_udp_send(
-        timestamp_ms,
-        state->position.x,
-        state->position.y,
-        state->position.z,
-        cross_track_m,
-        along_track_m,
-        health_score,
-        static_cast<uint8_t>(health_mode),
-        dropped_packets_udp,
-        scenario_id,
-        static_cast<uint8_t>(state->mode),
-        temperature_c);
+    telemetry_record_tick(file, &input);
 }
 
 void telemetry_udp_emit_events(uint32_t timestamp_ms, const NavigationDecision *decision)
@@ -498,6 +538,51 @@ Vector3D square_vehicle_start(Vector3D corner_origin)
         corner_origin.z);
 }
 
+void init_mission_3d_route(
+    StaticWaypointBuffer *route,
+    Vector3D start,
+    NavDomain domain)
+{
+    if (route == NULL) {
+        return;
+    }
+
+    waypoint_buffer_init(route);
+
+    const uint32_t arrival_radius_m = 15U;
+
+    const Waypoint wp0 = waypoint_make(
+        "M0",
+        vector3d_make(start.x, start.y, 12.0f),
+        domain,
+        arrival_radius_m);
+    const Waypoint wp1 = waypoint_make(
+        "M1",
+        vector3d_make(start.x, start.y + kSquareLegStepDeg, 18.0f),
+        domain,
+        arrival_radius_m);
+    const Waypoint wp2 = waypoint_make(
+        "M2",
+        vector3d_make(start.x + kSquareLegStepDeg, start.y + kSquareLegStepDeg, 22.0f),
+        domain,
+        arrival_radius_m);
+    const Waypoint wp3 = waypoint_make(
+        "M3",
+        vector3d_make(start.x + kSquareLegStepDeg, start.y, 15.0f),
+        domain,
+        arrival_radius_m);
+
+    waypoint_buffer_push(route, wp0);
+    waypoint_buffer_push(route, wp1);
+    waypoint_buffer_push(route, wp2);
+    waypoint_buffer_push(route, wp3);
+
+    std::printf(
+        "MISION: ruta 3D — %zu waypoints | look-ahead=%.1f m | altitudes 12/18/22/15 m\n",
+        kMission3dWaypointCount,
+        kGuidanceLookAheadM);
+}
+
 void init_square_waypoint_route(
     StaticWaypointBuffer *route,
     Vector3D start,
@@ -543,7 +628,7 @@ void init_square_waypoint_route(
     std::printf(
         "GUIADO: circuito cuadrado — %zu waypoints | look-ahead=%.1f m | radio aceptacion=%.1f m\n",
         kSquareWaypointCount,
-        kPurePursuitLookAheadM,
+        kGuidanceLookAheadM,
         kSquareArrivalRadiusM);
 }
 
@@ -565,29 +650,7 @@ GuidanceErrors guidance_telemetry_errors(
     size_t active_index,
     Vector3D position)
 {
-    GuidanceErrors errors{};
-
-    if (route == NULL || route->count < 2U || active_index >= route->count) {
-        return errors;
-    }
-
-    Waypoint origin{};
-    Waypoint destination{};
-
-    if (!waypoint_buffer_at(route, active_index, &origin)) {
-        return errors;
-    }
-
-    const size_t dest_index = active_index + 1U;
-    if (dest_index < route->count) {
-        if (!waypoint_buffer_at(route, dest_index, &destination)) {
-            return errors;
-        }
-    } else {
-        destination = origin;
-    }
-
-    return guidance_compute_errors(position, origin, destination);
+    return guidance_compute_leg_errors(route, active_index, position);
 }
 
 float heading_delta_deg(float from_deg, float to_deg)
@@ -602,30 +665,36 @@ float heading_delta_deg(float from_deg, float to_deg)
     return delta;
 }
 
-void apply_pure_pursuit_heading_control(
-    SensorsSimulation *sensors,
-    float yaw_target_rad,
-    float current_heading_deg,
-    float *synthetic_course_deg,
-    float dt_s)
+float deg_to_rad(float deg)
 {
-    if (sensors == NULL || synthetic_course_deg == NULL) {
+    return deg * (static_cast<float>(M_PI) / 180.0f);
+}
+
+void apply_guidance_commands(
+    SensorsSimulation *sensors,
+    const GuidanceCommands *commands,
+    float current_heading_deg,
+    float dt_s,
+    float *synthetic_course_deg)
+{
+    if (sensors == NULL || commands == NULL || synthetic_course_deg == NULL) {
         return;
     }
 
-    const float yaw_target_deg = navstate_normalize_heading(
-        yaw_target_rad * (180.0f / static_cast<float>(M_PI)));
-    const float delta_heading_deg = heading_delta_deg(current_heading_deg, yaw_target_deg);
-    const float yaw_rate_radps = (dt_s > 0.0f)
-        ? ((delta_heading_deg * (static_cast<float>(M_PI) / 180.0f)) / dt_s)
-        : 0.0f;
+    sensors_simulation_apply_guidance_control(
+        sensors,
+        commands->desired_heading,
+        commands->desired_speed,
+        commands->desired_climb,
+        current_heading_deg,
+        dt_s);
 
-    sensors_simulation_apply_heading_control(sensors, yaw_target_deg, yaw_rate_radps);
-    *synthetic_course_deg = yaw_target_deg;
+    const float heading_deg = commands->desired_heading * (180.0f / static_cast<float>(M_PI));
+    *synthetic_course_deg = navstate_normalize_heading(heading_deg);
 }
 
-void pure_pursuit_guidance_step(
-    PurePursuitGuidance *guidance,
+void guidance3d_step(
+    Guidance3D *guidance,
     const NavState *nav_state,
     StaticWaypointBuffer *route,
     size_t *active_waypoint_index,
@@ -641,33 +710,40 @@ void pure_pursuit_guidance_step(
         return;
     }
 
-    *telemetry_out = guidance_telemetry_errors(route, *active_waypoint_index, nav_state->position);
-
     if (*active_waypoint_index >= route->count) {
+        *telemetry_out = GuidanceErrors{};
         return;
     }
 
-    const PurePursuitOutput pp = guidance->compute(
+    const GuidanceOutput output = guidance->compute(
         *nav_state,
         *route,
         *active_waypoint_index);
 
-    if (pp.valid && enable_control) {
-        apply_pure_pursuit_heading_control(
-            sensors,
-            pp.yaw_target_rad,
-            nav_state->heading_deg,
-            synthetic_course_deg,
-            dt_s);
+    *telemetry_out = output.track_errors;
+
+    if (!output.valid) {
+        return;
     }
 
-    if (!pp.waypoint_completed) {
+    if (enable_control) {
+        apply_guidance_commands(
+            sensors,
+            &output.commands,
+            nav_state->heading_deg,
+            dt_s,
+            synthetic_course_deg);
+    }
+
+    if (!output.waypoint_completed) {
         return;
     }
 
     Waypoint completed_wp{};
-    if (!waypoint_buffer_at(route, *active_waypoint_index, &completed_wp)) {
-        return;
+    if (!waypoint_buffer_at(route, *active_waypoint_index + 1U, &completed_wp)) {
+        if (!waypoint_buffer_at(route, *active_waypoint_index, &completed_wp)) {
+            return;
+        }
     }
 
     const size_t completed_index = *active_waypoint_index;
@@ -676,21 +752,142 @@ void pure_pursuit_guidance_step(
     if (*active_waypoint_index + 1U < route->count) {
         ++(*active_waypoint_index);
         std::printf(
-            "GUIADO: WP%zu '%s' completado @ t=%.2f s -> indice %zu\n",
+            "GUIADO: leg WP%zu completado @ t=%.2f s -> indice %zu\n",
             completed_index,
-            completed_wp.name,
             t_s,
             *active_waypoint_index);
     } else {
         ++(*active_waypoint_index);
         std::printf(
-            "GUIADO: WP%zu '%s' completado @ t=%.2f s -> circuito finalizado (%zu/%zu)\n",
-            completed_index,
-            completed_wp.name,
+            "GUIADO: ruta finalizada @ t=%.2f s (%zu/%zu)\n",
             t_s,
             route->count,
             route->count);
     }
+}
+
+void mission_guidance_step(
+    Guidance3D *guidance,
+    MissionController *mission,
+    const NavState *nav_state,
+    bool gps_fix_valid,
+    uint8_t satellites,
+    SensorsSimulation *sensors,
+    uint32_t timestamp_ms,
+    float dt_s,
+    GuidanceErrors *telemetry_out,
+    RuntimeHealth *runtime_health,
+    MissionGuidanceSnapshot *snapshot_out)
+{
+    if (guidance == NULL || mission == NULL || nav_state == NULL
+        || sensors == NULL || telemetry_out == NULL || runtime_health == NULL) {
+        return;
+    }
+
+    MissionTickInput input{};
+    MissionTickOutput output{};
+
+    if (snapshot_out != NULL) {
+        snapshot_out->guidance_valid = false;
+        snapshot_out->return_home_active = false;
+        snapshot_out->active_waypoint_index = mission->active_waypoint_index;
+    }
+
+    input.nav_state = nav_state;
+    input.runtime_health = runtime_health;
+    input.gps_fix_valid = gps_fix_valid;
+    input.satellites = satellites;
+    input.estimate_quality = nav_state->confidence.estimate_quality;
+    input.start_signal = false;
+    input.timestamp_ms = timestamp_ms;
+
+    static uint32_t ready_ticks = 0U;
+    static bool mission_auto_start_sent = false;
+    if (mission_controller_state(mission) == MissionState::READY && !mission_auto_start_sent) {
+        ++ready_ticks;
+        if (ready_ticks >= kMissionAutoStartReadyTicks) {
+            input.start_signal = true;
+            mission_auto_start_sent = true;
+        }
+    } else {
+        ready_ticks = 0U;
+    }
+
+    (void)mission_controller_tick(mission, &input, &output);
+
+    if (snapshot_out != NULL) {
+        snapshot_out->return_home_active = output.return_home_active;
+        snapshot_out->active_waypoint_index = output.active_waypoint_index;
+    }
+
+    if (output.safe_mode) {
+        GuidanceCommands zero{};
+        float hold_heading_deg = nav_state->heading_deg;
+        apply_guidance_commands(sensors, &zero, nav_state->heading_deg, dt_s, &hold_heading_deg);
+        *telemetry_out = GuidanceErrors{};
+        return;
+    }
+
+    if (!output.guidance_active || output.active_route == NULL) {
+        *telemetry_out = GuidanceErrors{};
+        return;
+    }
+
+    const GuidanceOutput guidance_out = output.return_home_active
+        ? guidance_compute_homing(*nav_state, mission->home, guidance_profile_default())
+        : guidance->compute(
+            *nav_state,
+            *output.active_route,
+            output.active_waypoint_index);
+
+    *telemetry_out = guidance_out.track_errors;
+
+    if (snapshot_out != NULL) {
+        snapshot_out->commands = guidance_out.commands;
+        snapshot_out->guidance_valid = guidance_out.valid;
+    }
+
+    if (!guidance_out.valid) {
+        return;
+    }
+
+    float synthetic_course_deg = nav_state->heading_deg;
+    apply_guidance_commands(
+        sensors,
+        &guidance_out.commands,
+        nav_state->heading_deg,
+        dt_s,
+        &synthetic_course_deg);
+
+    if ((timestamp_ms % 1000U) == 0U) {
+        std::printf(
+            "GUIADO: hdg=%.1f deg speed=%.2f m/s climb=%.2f m/s | xt=%.2f m along=%.1f m\n",
+            synthetic_course_deg,
+            guidance_out.commands.desired_speed,
+            guidance_out.commands.desired_climb,
+            guidance_out.track_errors.cross_track_signed_m,
+            guidance_out.track_errors.along_track_m);
+    }
+
+    if (guidance_out.waypoint_completed && output.return_home_active) {
+        mission->state = MissionState::READY;
+        mission->start_requested = false;
+        std::printf(
+            "MISION: HOME alcanzado @ t=%.2f s -> READY\n",
+            static_cast<float>(timestamp_ms) * 0.001f);
+        return;
+    }
+
+    if (!guidance_out.waypoint_completed || mission->return_home_requested) {
+        return;
+    }
+
+    mission_controller_on_waypoint_completed(mission);
+    std::printf(
+        "MISION: WP%zu completado @ t=%.2f s | estado=%s\n",
+        output.active_waypoint_index,
+        static_cast<float>(timestamp_ms) * 0.001f,
+        mission_state_name(mission_controller_state(mission)));
 }
 
 void print_scenario_banner(SensorScenario scenario)
@@ -881,7 +1078,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
     size_t radio_geometry_reject = 0U;
 
     StaticWaypointBuffer route{};
-    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    Guidance3D pursuit_guidance(kGuidanceLookAheadM);
     size_t active_waypoint_index = 0U;
     init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
@@ -1035,7 +1232,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
         }
 
         GuidanceErrors guidance{};
-        pure_pursuit_guidance_step(
+        guidance3d_step(
             &pursuit_guidance,
             &nav.state,
             &route,
@@ -1063,7 +1260,8 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             worst_bsp_bus,
             command_ingestor_hw_dropped_packets(),
             TELEM_SCENARIO_HIGH_DEMAND,
-            kAmbientTemperatureC);
+            kAmbientTemperatureC,
+            NULL);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1124,7 +1322,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
     size_t waypoint_count_before_radio = 0U;
 
     StaticWaypointBuffer route{};
-    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    Guidance3D pursuit_guidance(kGuidanceLookAheadM);
     size_t active_waypoint_index = 0U;
     init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
@@ -1269,7 +1467,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
         }
 
         GuidanceErrors guidance{};
-        pure_pursuit_guidance_step(
+        guidance3d_step(
             &pursuit_guidance,
             &nav.state,
             &route,
@@ -1297,7 +1495,8 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             worst_bsp_bus,
             command_ingestor_hw_dropped_packets(),
             TELEM_SCENARIO_FAULT_INJECTION,
-            kAmbientTemperatureC);
+            kAmbientTemperatureC,
+            NULL);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1346,7 +1545,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     navigation_cortex_init(&cortex_state);
 
     StaticWaypointBuffer route{};
-    PurePursuitGuidance pursuit_guidance(kPurePursuitLookAheadM);
+    Guidance3D pursuit_guidance(kGuidanceLookAheadM);
     size_t active_waypoint_index = 0U;
     init_square_waypoint_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
 
@@ -1470,7 +1669,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
         }
 
         GuidanceErrors guidance{};
-        pure_pursuit_guidance_step(
+        guidance3d_step(
             &pursuit_guidance,
             &nav.state,
             &route,
@@ -1498,7 +1697,8 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             worst_bsp_bus,
             command_ingestor_hw_dropped_packets(),
             telemetry_scenario_id_from_sensor(scenario),
-            kAmbientTemperatureC);
+            kAmbientTemperatureC,
+            NULL);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -1665,7 +1865,8 @@ void run_scenario_submarine(FILE *telemetry_file)
             worst_bsp_bus,
             command_ingestor_hw_dropped_packets(),
             TELEM_SCENARIO_SUBMARINE,
-            kSubmarineTemperatureC);
+            kSubmarineTemperatureC,
+            NULL);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -1703,19 +1904,173 @@ void run_scenario_submarine(FILE *telemetry_file)
         safe_stop_active ? "yes" : "no");
 }
 
+void run_mission_clean_scenario(FILE *telemetry_file)
+{
+    const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const Vector3D origin = corner_origin;
+
+    SensorsSimulation sensors{};
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, 90.0f, 23U);
+
+    DeadReckoningFilter nav{};
+    dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
+
+    InsEkfFilter ekf{};
+    bool ekf_seeded = false;
+
+    SystemHealthMonitor health{};
+    MissionController mission{};
+    Guidance3D guidance(kGuidanceLookAheadM);
+    RuntimeHealth runtime_health{};
+
+    GuidanceProfile profile = guidance_profile_default();
+    guidance.set_profile(profile);
+
+    StaticWaypointBuffer route{};
+    init_mission_3d_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
+    mission_controller_init(&mission);
+    mission_controller_set_route(&mission, &route);
+
+    const float dt_s = static_cast<float>(kStepMs) * 0.001f;
+
+    std::printf("\n");
+    std::printf("================================================================\n");
+    std::printf(" ESCENARIO: MISION 3D — SCENARIO_CLEAN (FlightRecorder + shadow EKF)\n");
+    std::printf("  FSM: INIT -> WAIT_GPS -> READY -> NAVIGATE -> RETURN_HOME\n");
+    std::printf("  %zu waypoints 3D | Guiado: cross-track + heading + speed + climb\n",
+                kMission3dWaypointCount);
+    std::printf("================================================================\n");
+
+    for (uint32_t t_ms = 0U; t_ms <= kMissionCleanDurationMs; t_ms += kStepMs) {
+        const auto tick_start = std::chrono::steady_clock::now();
+
+        ImuSample imu{};
+        GpsSample gps{};
+
+        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps)) {
+            continue;
+        }
+
+        dead_reckoning_update_imu(&nav, &imu, &health);
+        if (gps.fix_valid) {
+            dead_reckoning_update_gps(&nav, &gps, &health);
+        }
+
+        bool gnss_update_accepted = false;
+        if (gps.fix_valid && !ekf_seeded) {
+            const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
+            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
+            ekf_seeded = true;
+        }
+        if (ekf_seeded) {
+            ins_ekf_predict(&ekf, &imu);
+            if (gps.fix_valid) {
+                gnss_update_accepted = ins_ekf_update_gnss(&ekf, &gps);
+            }
+        }
+
+        MissionGuidanceSnapshot guidance_snapshot{};
+        GuidanceErrors guidance_errors{};
+        mission_guidance_step(
+            &guidance,
+            &mission,
+            &nav.state,
+            gps.fix_valid,
+            gps.satellites,
+            &sensors,
+            t_ms,
+            dt_s,
+            &guidance_errors,
+            &runtime_health,
+            &guidance_snapshot);
+
+        const auto tick_end = std::chrono::steady_clock::now();
+        const uint32_t loop_us = static_cast<uint32_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(tick_end - tick_start).count());
+        if (loop_us > runtime_health.max_loop_us) {
+            runtime_health.max_loop_us = loop_us;
+        }
+
+        const bool ekf_outlier = ekf_seeded && ins_ekf_outlier_detected(&ekf);
+        const uint8_t health_score = health.health_score;
+        const NavHealthMode health_mode = health.mode;
+
+        FlightRecorderExtras extras{};
+        extras.imu = &imu;
+        extras.gps = &gps;
+        extras.ekf = ekf_seeded ? &ekf : NULL;
+        extras.gnss_update_accepted = gnss_update_accepted;
+        extras.commands = guidance_snapshot.guidance_valid ? &guidance_snapshot.commands : NULL;
+        extras.guidance_commands_valid = guidance_snapshot.guidance_valid;
+        extras.mission_state = mission_controller_state(&mission);
+        extras.return_home_active = guidance_snapshot.return_home_active;
+        extras.active_waypoint_index = guidance_snapshot.active_waypoint_index;
+        extras.runtime_health = &runtime_health;
+        extras.loop_us = loop_us;
+
+        telemetry_write_row(
+            telemetry_file,
+            t_ms,
+            sensor_scenario_name(SCENARIO_CLEAN),
+            &nav.state,
+            gps.fix_valid ? gps.satellites : 0U,
+            &guidance_errors,
+            0U,
+            health_score,
+            health_mode,
+            POWER_PERFORMANCE,
+            false,
+            route.count,
+            DIAG_BSP_BUS_IDLE,
+            0U,
+            TELEM_SCENARIO_CLEAN,
+            kAmbientTemperatureC,
+            &extras);
+
+        if ((t_ms % 2000U) == 0U) {
+            std::printf(
+                "[t=%5.1fs] mission=%s mode=%-14s pos=(%.6f,%.6f,%.1f) speed=%.2f nis=%.2f loop=%uus\n",
+                static_cast<float>(t_ms) * 0.001f,
+                mission_state_name(mission_controller_state(&mission)),
+                nav_mode_name(nav.state.mode),
+                nav.state.position.x,
+                nav.state.position.y,
+                nav.state.position.z,
+                navstate_speed_mps(&nav.state),
+                ekf_seeded ? ins_ekf_last_nis(&ekf) : 0.0f,
+                loop_us);
+        }
+    }
+
+    std::printf("----------------------------------------------------------------\n");
+    std::printf(
+        "Resultado [MISION_CLEAN]: estado=%s | pos=(%.6f,%.6f,%.1f) | home_valid=%u | ekf_accepts=%u rejects=%u\n",
+        mission_state_name(mission_controller_state(&mission)),
+        nav.state.position.x,
+        nav.state.position.y,
+        nav.state.position.z,
+        mission.home_valid ? 1U : 0U,
+        ekf_seeded ? ins_ekf_gnss_accept_count(&ekf) : 0U,
+        ekf_seeded ? ins_ekf_gnss_reject_count(&ekf) : 0U);
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
 {
     bool enable_udp = true;
+    bool run_stress = false;
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--no-udp") == 0) {
             enable_udp = false;
         }
+        if (std::strcmp(argv[i], "--stress") == 0) {
+            run_stress = true;
+        }
     }
 
-    std::printf("NaviCore-3D — Simulador de estres PC\n");
-    std::printf("Escenario principal: HIGH_DEMAND_STRESS_TEST\n");
+    std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");
+    std::printf("Escenario principal: MISION_CLEAN (SCENARIO_CLEAN)\n");
 
     FILE *telemetry_file = telemetry_open(kTelemetryCsvPath);
     if (telemetry_file == NULL) {
@@ -1732,7 +2087,11 @@ int main(int argc, char *argv[])
         std::printf("Telemetria UDP: deshabilitada (--no-udp)\n");
     }
 
-    run_high_demand_stress_test_scenario(telemetry_file);
+    run_mission_clean_scenario(telemetry_file);
+
+    if (run_stress) {
+        run_high_demand_stress_test_scenario(telemetry_file);
+    }
 
     std::fclose(telemetry_file);
     telemetry_udp_log_stats();

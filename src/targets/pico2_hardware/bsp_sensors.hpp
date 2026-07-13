@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../../core/fusion.hpp"
+#include "../../core/ins_ekf.hpp"
+#include "../../core/NavState.h"
 
 typedef struct {
     bool imu_degraded;
@@ -19,6 +20,7 @@ void pico2_bsp_sensors_get_confidence_flags(SensorConfidenceFlags *flags_out);
 void pico2_bsp_sensors_set_imu_degraded(bool degraded);
 void pico2_bsp_sensors_set_gnss_degraded(bool degraded);
 bool pico2_bsp_sensors_tick(
-    DeadReckoningFilter *nav_filter,
+    InsEkfFilter *ins_filter,
+    NavState *nav_state_out,
     uint32_t timestamp_ms,
     bool *gps_fix_valid_out);

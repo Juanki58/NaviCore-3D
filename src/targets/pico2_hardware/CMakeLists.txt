@@ -24,6 +24,9 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/waypoint.cpp
     ${NAVICORE_CORE_DIR}/fusion.cpp
     ${NAVICORE_CORE_DIR}/guidance.cpp
+    ${NAVICORE_CORE_DIR}/mission.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/flight_recorder.cpp
     ${NAVICORE_CORE_DIR}/diagnostic.cpp
     ${NAVICORE_CORE_DIR}/api_ingest.cpp
     ${NAVICORE_CORE_DIR}/vehicle_bus_adapter.cpp

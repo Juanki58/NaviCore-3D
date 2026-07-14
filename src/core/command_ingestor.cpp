@@ -152,7 +152,8 @@ static bool command_ingestor_handle_add_waypoint(
         wp_name,
         position,
         NAVICORE_DOMAIN_AIR,
-        COMMAND_INGEST_DEFAULT_ARRIVAL_RADIUS_M);
+        COMMAND_INGEST_DEFAULT_ARRIVAL_RADIUS_M,
+        NAVICORE_WAYPOINT_DEFAULT_TRANSIT_SPEED_MPS);
 
     return waypoint_buffer_push_strict(wpm_buffer, &wp);
 }

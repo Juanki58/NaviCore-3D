@@ -136,6 +136,7 @@ void gps_simulator_init(GpsSimulator *sim, Vector3D origin, float speed_mps, flo
     sim->speed_mps = speed_mps;
     sim->vertical_speed_mps = 0.0f;
     sim->course_deg = course_deg;
+    sim->yaw_rate_radps = 0.0f;
     sim->seed = (seed == 0U) ? 1U : seed;
     sim->last_timestamp_ms = 0U;
 }
@@ -317,6 +318,7 @@ void sensors_simulation_apply_heading_control(
     }
 
     ctx->gps.course_deg = course_deg;
+    ctx->gps.yaw_rate_radps = yaw_rate_radps;
     ctx->imu.commanded_yaw_rate_radps = yaw_rate_radps;
     ctx->imu.commanded_forward_accel_mps2 = 0.0f;
 }
@@ -330,6 +332,65 @@ static float sim_clampf(float value, float min_value, float max_value)
         return max_value;
     }
     return value;
+}
+
+static float sim_normalize_course_deg(float course_deg)
+{
+    float normalized = course_deg;
+    while (normalized < 0.0f) {
+        normalized += 360.0f;
+    }
+    while (normalized >= 360.0f) {
+        normalized -= 360.0f;
+    }
+    return normalized;
+}
+
+void sensors_simulation_apply_actuator_forces(
+    SensorsSimulation *ctx,
+    float forward_accel_mps2,
+    float yaw_rate_cmd_radps,
+    float vertical_accel_mps2,
+    float dt_s)
+{
+    if (ctx == NULL || dt_s <= 0.0f) {
+        return;
+    }
+
+    constexpr float kMaxForwardAccelMps2 = 3.5f;
+    constexpr float kMaxYawRateSlewRadps2 = 4.0f;
+    constexpr float kMaxVerticalAccelMps2 = 2.5f;
+    constexpr float kMaxYawRateRadps = 1.2f;
+    constexpr float kMaxSpeedMps = 40.0f;
+    constexpr float kMaxVerticalSpeedMps = 8.0f;
+
+    const float fwd_accel = sim_clampf(forward_accel_mps2, -kMaxForwardAccelMps2, kMaxForwardAccelMps2);
+    const float vert_accel = sim_clampf(vertical_accel_mps2, -kMaxVerticalAccelMps2, kMaxVerticalAccelMps2);
+
+    const float yaw_rate_target = sim_clampf(yaw_rate_cmd_radps, -kMaxYawRateRadps, kMaxYawRateRadps);
+    const float max_yaw_rate_delta = kMaxYawRateSlewRadps2 * dt_s;
+    float yaw_rate_delta = yaw_rate_target - ctx->gps.yaw_rate_radps;
+    yaw_rate_delta = sim_clampf(yaw_rate_delta, -max_yaw_rate_delta, max_yaw_rate_delta);
+    const float yaw_rate = sim_clampf(
+        ctx->gps.yaw_rate_radps + yaw_rate_delta,
+        -kMaxYawRateRadps,
+        kMaxYawRateRadps);
+
+    float speed = ctx->gps.speed_mps + (fwd_accel * dt_s);
+    speed = sim_clampf(speed, 0.0f, kMaxSpeedMps);
+
+    float vertical_speed = ctx->gps.vertical_speed_mps + (vert_accel * dt_s);
+    vertical_speed = sim_clampf(vertical_speed, -kMaxVerticalSpeedMps, kMaxVerticalSpeedMps);
+
+    const float course_delta_deg = yaw_rate * dt_s * (180.0f / M_PI);
+    const float course_deg = sim_normalize_course_deg(ctx->gps.course_deg + course_delta_deg);
+
+    ctx->gps.yaw_rate_radps = yaw_rate;
+    ctx->gps.speed_mps = speed;
+    ctx->gps.vertical_speed_mps = vertical_speed;
+    ctx->gps.course_deg = course_deg;
+    ctx->imu.commanded_yaw_rate_radps = yaw_rate;
+    ctx->imu.commanded_forward_accel_mps2 = fwd_accel;
 }
 
 static float sim_heading_delta_deg(float from_deg, float to_deg)

@@ -2,7 +2,12 @@
 
 #include <string.h>
 
-Waypoint waypoint_make(const char *name, Vector3D position, NavDomain domain, uint32_t arrival_radius_m)
+Waypoint waypoint_make(
+    const char *name,
+    Vector3D position,
+    NavDomain domain,
+    uint32_t arrival_radius_m,
+    float desired_speed_mps)
 {
     Waypoint wp{};
 
@@ -11,6 +16,7 @@ Waypoint waypoint_make(const char *name, Vector3D position, NavDomain domain, ui
         wp.name[NAVICORE_WAYPOINT_NAME_MAX - 1U] = '\0';
     }
     wp.position = position;
+    wp.desired_speed_mps = desired_speed_mps;
     wp.domain = domain;
     wp.arrival_radius_m = arrival_radius_m;
     return wp;

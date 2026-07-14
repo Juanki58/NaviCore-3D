@@ -41,6 +41,7 @@ Vector3D vector3d_add(Vector3D a, Vector3D b);
 Vector3D vector3d_sub(Vector3D a, Vector3D b);
 Vector3D vector3d_scale(Vector3D v, float s);
 float vector3d_distance_flat_m(Vector3D a, Vector3D b);
+float vector3d_distance_3d_m(Vector3D a, Vector3D b);
 bool vector3d_equal(Vector3D a, Vector3D b, float epsilon);
 
 #endif /* NAVICORE_VECTOR3D_H */

@@ -1018,15 +1018,21 @@ void mission_guidance_step(
     GuidanceErrors *telemetry_out,
     RuntimeHealth *runtime_health,
     MissionGuidanceSnapshot *snapshot_out,
-    ClosedLoopPidPlant *pid_plant)
+    ClosedLoopPidPlant *pid_plant,
+    bool ekf_calibrated,
+    float cov_pos_n_m2,
+    float cov_pos_e_m2,
+    float cov_pos_d_m2,
+    float gnss_nis,
+    bool gnss_nis_rejected)
 {
     if (guidance == NULL || mission == NULL || nav_state == NULL
         || sensors == NULL || telemetry_out == NULL || runtime_health == NULL) {
         return;
     }
 
-    MissionTickInput input{};
-    MissionTickOutput output{};
+    MissionInput input{};
+    MissionOutput output{};
 
     if (snapshot_out != NULL) {
         snapshot_out->guidance_valid = false;
@@ -1034,43 +1040,62 @@ void mission_guidance_step(
         snapshot_out->active_waypoint_index = mission->active_waypoint_index;
     }
 
+    input.dt_s = dt_s;
     input.nav_state = nav_state;
     input.runtime_health = runtime_health;
     input.guidance = guidance;
     input.gps_fix_valid = gps_fix_valid;
     input.satellites = satellites;
     input.estimate_quality = nav_state->confidence.estimate_quality;
-    input.start_signal = false;
-    input.timestamp_ms = timestamp_ms;
+    input.ekf_calibrated = ekf_calibrated;
+    input.cov_pos_n_m2 = cov_pos_n_m2;
+    input.cov_pos_e_m2 = cov_pos_e_m2;
+    input.cov_pos_d_m2 = cov_pos_d_m2;
+    input.gnss_nis = gnss_nis;
+    input.gnss_nis_rejected = gnss_nis_rejected;
+    input.route_loaded = mission->route.count >= 2U;
 
     static uint32_t ready_ticks = 0U;
-    static bool mission_auto_start_sent = false;
-    if (mission_controller_state(mission) == MissionState::READY && !mission_auto_start_sent) {
+    static bool mission_auto_arm_sent = false;
+    if (mission_state(mission) == MISSION_STATE_READY && !mission_auto_arm_sent) {
         ++ready_ticks;
         if (ready_ticks >= kMissionAutoStartReadyTicks) {
-            input.start_signal = true;
-            mission_auto_start_sent = true;
+            input.arm_system = true;
+            mission_auto_arm_sent = true;
         }
     } else {
         ready_ticks = 0U;
     }
 
-    const MissionState prev_state = mission_controller_state(mission);
-    (void)mission_controller_tick(mission, &input, &output);
+    input.arm_system = input.arm_system || mission->armed;
+
+    const MissionState prev_state = mission_state(mission);
+    mission_update(mission, &input, &output);
 
     if (snapshot_out != NULL) {
         snapshot_out->return_home_active = output.return_home_active;
         snapshot_out->active_waypoint_index = output.active_waypoint_index;
     }
 
-    if (output.safe_mode || !output.control_outputs_enabled) {
+    if (output.safe_mode) {
+        const GuidanceCommands *commands = output.safe_commands_active
+            ? &output.safe_commands
+            : nullptr;
         GuidanceCommands zero{};
+        const GuidanceCommands *applied = (commands != NULL) ? commands : &zero;
         float hold_heading_deg = nav_state->heading_deg;
-        apply_guidance_commands(sensors, &zero, nav_state, dt_s, &hold_heading_deg, pid_plant);
+        apply_guidance_commands(
+            sensors,
+            applied,
+            nav_state,
+            dt_s,
+            &hold_heading_deg,
+            pid_plant);
         *telemetry_out = GuidanceErrors{};
-        if (output.safe_mode && prev_state != MissionState::SAFE_MODE) {
+        if (prev_state != MISSION_STATE_SAFE_MODE) {
             std::printf(
-                "MISION: SAFE_MODE @ t=%.2f s — salidas de control desactivadas\n",
+                "MISION: SAFE_MODE (%s) @ t=%.2f s\n",
+                mission_safe_cause_name(output.safe_cause),
                 static_cast<float>(timestamp_ms) * 0.001f);
         }
         return;
@@ -1108,7 +1133,7 @@ void mission_guidance_step(
             output.active_waypoint_index);
     }
 
-    if (output.guidance.route_completed && prev_state == MissionState::NAVIGATE) {
+    if (output.guidance.route_completed && prev_state == MISSION_STATE_NAVIGATE) {
         std::printf(
             "MISION: ruta completada @ t=%.2f s -> RETURN_HOME\n",
             static_cast<float>(timestamp_ms) * 0.001f);
@@ -2130,10 +2155,12 @@ void run_mission_clean_scenario(FILE *telemetry_file)
     init_mission_3d_route(&route, corner_origin, NAVICORE_DOMAIN_AIR);
     mission_controller_init(&mission);
     mission_controller_set_route(&mission, &route);
+    mission.config.require_terminal_speed_at_home = true;
+    mission.config.terminal_speed_mps = kVehicleStoppedSpeedMps;
 
     const float dt_s = kEkfDtS;
     const uint32_t max_duration_ms = kMissionCleanMaxTicks * kEkfStepMs;
-    MissionState last_mission_state = MissionState::INIT;
+    MissionState last_mission_state = MISSION_STATE_INIT;
 
     std::printf("\n");
     std::printf("================================================================\n");
@@ -2170,6 +2197,11 @@ void run_mission_clean_scenario(FILE *telemetry_file)
         float tick_nis = 0.0f;
         float tick_innov_ned[3] = {0.0f, 0.0f, 0.0f};
 
+        bool gnss_nis_rejected = false;
+        float cov_pos_n_m2 = 999.0f;
+        float cov_pos_e_m2 = 999.0f;
+        float cov_pos_d_m2 = 999.0f;
+
         if (gps.fix_valid && !ekf_seeded) {
             const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
             ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
@@ -2177,9 +2209,13 @@ void run_mission_clean_scenario(FILE *telemetry_file)
         }
         if (ekf_seeded && imu.valid) {
             ekf.predict(imu, kEkfDtS);
+            cov_pos_n_m2 = ins_ekf_get_covariance_flat(&ekf, 0U);
+            cov_pos_e_m2 = ins_ekf_get_covariance_flat(&ekf, 16U);
+            cov_pos_d_m2 = ins_ekf_get_covariance_flat(&ekf, 32U);
             if (gps.fix_valid) {
                 gnss_update_this_cycle = true;
                 const bool accepted = ekf.update_gnss(gps, &tick_nis);
+                gnss_nis_rejected = !accepted;
                 ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
                 if (accepted) {
                     ins_ekf_clear_outlier_flag(&ekf);
@@ -2205,7 +2241,13 @@ void run_mission_clean_scenario(FILE *telemetry_file)
             &guidance_errors,
             &runtime_health,
             &guidance_snapshot,
-            &pid_plant);
+            &pid_plant,
+            ekf_seeded,
+            cov_pos_n_m2,
+            cov_pos_e_m2,
+            cov_pos_d_m2,
+            tick_nis,
+            gnss_nis_rejected);
 
         const MissionState mission_state = mission_controller_state(&mission);
         if (mission_state != last_mission_state) {
@@ -2265,7 +2307,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
                 loop_us);
         }
 
-        if (mission_state == MissionState::SAFE_MODE) {
+        if (mission_state == MISSION_STATE_SAFE_MODE) {
             std::printf(
                 "MISION: SAFE_MODE alcanzado tras %u ticks (t=%.2f s)\n",
                 ticks_logged,

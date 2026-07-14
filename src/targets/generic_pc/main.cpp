@@ -28,6 +28,7 @@
 #include "time_guard.hpp"
 #include "telemetry_udp_sender.hpp"
 #include "telemetry_udp.hpp"
+#include "pid.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -76,10 +77,12 @@ constexpr float kSquareArrivalRadiusM = 2.0f;
 constexpr size_t kSquareWaypointCount = 4U;
 constexpr size_t kMission3dWaypointCount = 4U;
 constexpr uint32_t kMissionCleanNominalTicks = 6000U;
-constexpr uint32_t kMissionCleanMaxTicks = 18000U;
+constexpr uint32_t kMissionCleanMaxTicks = 36000U;
 constexpr uint32_t kMissionAutoStartReadyTicks = 3U;
 constexpr float kWaypointArrivalRadiusNominalM = 5.0f;
 constexpr float kWaypointArrivalRadiusDegradedM = 15.0f;
+constexpr float kWaypointStraightSpeedMps = NAVICORE_WAYPOINT_DEFAULT_TRANSIT_SPEED_MPS;
+constexpr float kWaypointCornerSpeedMps = NAVICORE_WAYPOINT_DEFAULT_TERMINAL_SPEED_MPS;
 
 /*
  * Perfil de ejecución del simulador PC (compile-time + CLI).
@@ -119,11 +122,37 @@ struct MissionGuidanceSnapshot {
     size_t active_waypoint_index;
 };
 
+struct ClosedLoopPidTelemetry {
+    float des_speed_mps;
+    float des_heading_rad;
+    float des_climb_mps;
+    float pid_speed_out;
+    float pid_yaw_out;
+    float pid_alt_out;
+    float speed_meas_mps;
+    float yaw_meas_rad;
+    float climb_meas_mps;
+    float forward_accel_mps2;
+    float yaw_accel_radps2;
+    float vertical_accel_mps2;
+    float yaw_rate_cmd_radps;
+    float yaw_rate_radps;
+    bool active;
+};
+
+struct ClosedLoopPidPlant {
+    PIDController speed_pid;
+    PIDController yaw_pid;
+    PIDController altitude_pid;
+    ClosedLoopPidTelemetry telemetry;
+};
+
 struct EkfBlackBoxExtras {
     const InsEkfFilter *ekf;
     bool gnss_update_this_cycle;
     float tick_nis;
     float tick_innov_ned[3];
+    const ClosedLoopPidTelemetry *pid;
 };
 
 float horizontal_distance_m(Vector3D a, Vector3D b)
@@ -442,7 +471,9 @@ void telemetry_write_header(FILE *file)
         file,
         "time_us,pos_x,pos_y,pos_z,vel_x,vel_y,vel_z,roll,pitch,yaw,"
         "bias_ax,bias_ay,bias_az,bias_gx,bias_gy,bias_gz,"
-        "nis,innov_x,innov_y,innov_z,cov_pos_x,cov_pos_y,cov_pos_z,cov_yaw\n");
+        "nis,innov_x,innov_y,innov_z,cov_pos_x,cov_pos_y,cov_pos_z,cov_yaw,"
+        "des_speed,des_heading,des_climb,pid_speed,pid_yaw,pid_alt,"
+        "speed_meas,yaw_meas,climb_meas,fwd_accel,yaw_rate,vert_accel\n");
 }
 
 void telemetry_write_ekf_blackbox_row(
@@ -467,6 +498,18 @@ void telemetry_write_ekf_blackbox_row(
     float cov_pos_y = 0.0f;
     float cov_pos_z = 0.0f;
     float cov_yaw = 0.0f;
+    float des_speed = 0.0f;
+    float des_heading = 0.0f;
+    float des_climb = 0.0f;
+    float pid_speed = 0.0f;
+    float pid_yaw = 0.0f;
+    float pid_alt = 0.0f;
+    float speed_meas = 0.0f;
+    float yaw_meas = 0.0f;
+    float climb_meas = 0.0f;
+    float fwd_accel = 0.0f;
+    float yaw_rate = 0.0f;
+    float vert_accel = 0.0f;
 
     if (extras != NULL && extras->ekf != NULL && extras->ekf->initialized) {
         const InsEkfFilter *ekf = extras->ekf;
@@ -489,9 +532,26 @@ void telemetry_write_ekf_blackbox_row(
         }
     }
 
+    if (extras != NULL && extras->pid != NULL && extras->pid->active) {
+        const ClosedLoopPidTelemetry *pid = extras->pid;
+        des_speed = pid->des_speed_mps;
+        des_heading = pid->des_heading_rad;
+        des_climb = pid->des_climb_mps;
+        pid_speed = pid->pid_speed_out;
+        pid_yaw = pid->pid_yaw_out;
+        pid_alt = pid->pid_alt_out;
+        speed_meas = pid->speed_meas_mps;
+        yaw_meas = pid->yaw_meas_rad;
+        climb_meas = pid->climb_meas_mps;
+        fwd_accel = pid->forward_accel_mps2;
+        yaw_rate = pid->yaw_rate_radps;
+        vert_accel = pid->vertical_accel_mps2;
+    }
+
     std::fprintf(
         file,
-        "%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+        "%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,"
+        "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
         static_cast<unsigned long long>(time_us),
         pos_ned[0],
         pos_ned[1],
@@ -515,7 +575,19 @@ void telemetry_write_ekf_blackbox_row(
         cov_pos_x,
         cov_pos_y,
         cov_pos_z,
-        cov_yaw);
+        cov_yaw,
+        des_speed,
+        des_heading,
+        des_climb,
+        pid_speed,
+        pid_yaw,
+        pid_alt,
+        speed_meas,
+        yaw_meas,
+        climb_meas,
+        fwd_accel,
+        yaw_rate,
+        vert_accel);
 }
 
 void telemetry_record_tick(
@@ -633,22 +705,26 @@ void init_mission_3d_route(
         "M0",
         vector3d_make(start.x, start.y, 12.0f),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointCornerSpeedMps);
     const Waypoint wp1 = waypoint_make(
         "M1",
         vector3d_make(start.x, start.y + kSquareLegStepDeg, 18.0f),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointStraightSpeedMps);
     const Waypoint wp2 = waypoint_make(
         "M2",
         vector3d_make(start.x, start.y + (2.0f * kSquareLegStepDeg), 22.0f),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointStraightSpeedMps);
     const Waypoint wp3 = waypoint_make(
         "M3",
         vector3d_make(start.x + kSquareLegStepDeg, start.y + (2.0f * kSquareLegStepDeg), 15.0f),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointCornerSpeedMps);
 
     waypoint_buffer_push(route, wp0);
     waypoint_buffer_push(route, wp1);
@@ -681,22 +757,30 @@ void init_square_waypoint_route(
      *   |            v
      *   WP3 <----- WP2
      */
-    const Waypoint wp0 = waypoint_make("SQ0", start, domain, arrival_radius_m);
+    const Waypoint wp0 = waypoint_make(
+        "SQ0",
+        start,
+        domain,
+        arrival_radius_m,
+        kWaypointCornerSpeedMps);
     const Waypoint wp1 = waypoint_make(
         "SQ1",
         vector3d_make(start.x, start.y + kSquareLegStepDeg, start.z),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointStraightSpeedMps);
     const Waypoint wp2 = waypoint_make(
         "SQ2",
         vector3d_make(start.x + kSquareLegStepDeg, start.y + kSquareLegStepDeg, start.z),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointCornerSpeedMps);
     const Waypoint wp3 = waypoint_make(
         "SQ3",
         vector3d_make(start.x + kSquareLegStepDeg, start.y, start.z),
         domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        kWaypointCornerSpeedMps);
 
     waypoint_buffer_push(route, wp0);
     waypoint_buffer_push(route, wp1);
@@ -748,14 +832,91 @@ float deg_to_rad(float deg)
     return deg * (static_cast<float>(M_PI) / 180.0f);
 }
 
+void closed_loop_pid_plant_init(ClosedLoopPidPlant *plant)
+{
+    if (plant == NULL) {
+        return;
+    }
+
+    plant->speed_pid.init(0.85f, 0.18f, 0.10f, -3.5f, 3.5f);
+    plant->yaw_pid.init(1.75f, 0.04f, 0.28f, -1.2f, 1.2f);
+    plant->altitude_pid.init(0.65f, 0.14f, 0.09f, -2.5f, 2.5f);
+    plant->telemetry = ClosedLoopPidTelemetry{};
+}
+
+float closed_loop_yaw_measurement_rad(const NavState *nav_state)
+{
+    if (nav_state == NULL) {
+        return 0.0f;
+    }
+
+    const float speed_mps = navstate_speed_mps(nav_state);
+    constexpr float kMinSpeedForCourseRadps = 0.35f;
+    if (speed_mps > kMinSpeedForCourseRadps) {
+        return atan2f(nav_state->velocity.y, nav_state->velocity.x);
+    }
+
+    return deg_to_rad(nav_state->heading_deg);
+}
+
+void apply_closed_loop_pid(
+    ClosedLoopPidPlant *plant,
+    SensorsSimulation *sensors,
+    const NavState *nav_state,
+    const GuidanceCommands *commands,
+    float dt_s)
+{
+    if (plant == NULL || sensors == NULL || nav_state == NULL || commands == NULL || dt_s <= 0.0f) {
+        return;
+    }
+
+    const float speed_meas = navstate_speed_mps(nav_state);
+    const float yaw_meas = closed_loop_yaw_measurement_rad(nav_state);
+    const float climb_meas = nav_state->velocity.z;
+
+    const float forward_accel = plant->speed_pid.update(commands->desired_speed, speed_meas, dt_s);
+    const float yaw_rate_cmd = plant->yaw_pid.update_yaw(commands->desired_heading, yaw_meas, dt_s);
+    const float vertical_accel = plant->altitude_pid.update(commands->desired_climb, climb_meas, dt_s);
+
+    sensors_simulation_apply_actuator_forces(
+        sensors,
+        forward_accel,
+        yaw_rate_cmd,
+        vertical_accel,
+        dt_s);
+
+    plant->telemetry.des_speed_mps = commands->desired_speed;
+    plant->telemetry.des_heading_rad = commands->desired_heading;
+    plant->telemetry.des_climb_mps = commands->desired_climb;
+    plant->telemetry.pid_speed_out = forward_accel;
+    plant->telemetry.pid_yaw_out = yaw_rate_cmd;
+    plant->telemetry.pid_alt_out = vertical_accel;
+    plant->telemetry.speed_meas_mps = speed_meas;
+    plant->telemetry.yaw_meas_rad = yaw_meas;
+    plant->telemetry.climb_meas_mps = climb_meas;
+    plant->telemetry.forward_accel_mps2 = forward_accel;
+    plant->telemetry.yaw_accel_radps2 = 0.0f;
+    plant->telemetry.yaw_rate_cmd_radps = yaw_rate_cmd;
+    plant->telemetry.vertical_accel_mps2 = vertical_accel;
+    plant->telemetry.yaw_rate_radps = sensors->gps.yaw_rate_radps;
+    plant->telemetry.active = true;
+}
+
 void apply_guidance_commands(
     SensorsSimulation *sensors,
     const GuidanceCommands *commands,
-    float current_heading_deg,
+    const NavState *nav_state,
     float dt_s,
-    float *synthetic_course_deg)
+    float *synthetic_course_deg,
+    ClosedLoopPidPlant *pid_plant)
 {
-    if (sensors == NULL || commands == NULL || synthetic_course_deg == NULL) {
+    if (sensors == NULL || commands == NULL || nav_state == NULL || synthetic_course_deg == NULL) {
+        return;
+    }
+
+    if (pid_plant != NULL) {
+        apply_closed_loop_pid(pid_plant, sensors, nav_state, commands, dt_s);
+        *synthetic_course_deg = navstate_normalize_heading(sensors->gps.course_deg);
         return;
     }
 
@@ -764,7 +925,7 @@ void apply_guidance_commands(
         commands->desired_heading,
         commands->desired_speed,
         commands->desired_climb,
-        current_heading_deg,
+        nav_state->heading_deg,
         dt_s);
 
     const float heading_deg = commands->desired_heading * (180.0f / static_cast<float>(M_PI));
@@ -808,9 +969,10 @@ void guidance3d_step(
         apply_guidance_commands(
             sensors,
             &output.commands,
-            nav_state->heading_deg,
+            nav_state,
             dt_s,
-            synthetic_course_deg);
+            synthetic_course_deg,
+            NULL);
     }
 
     if (!output.waypoint_completed) {
@@ -855,7 +1017,8 @@ void mission_guidance_step(
     float dt_s,
     GuidanceErrors *telemetry_out,
     RuntimeHealth *runtime_health,
-    MissionGuidanceSnapshot *snapshot_out)
+    MissionGuidanceSnapshot *snapshot_out,
+    ClosedLoopPidPlant *pid_plant)
 {
     if (guidance == NULL || mission == NULL || nav_state == NULL
         || sensors == NULL || telemetry_out == NULL || runtime_health == NULL) {
@@ -873,6 +1036,7 @@ void mission_guidance_step(
 
     input.nav_state = nav_state;
     input.runtime_health = runtime_health;
+    input.guidance = guidance;
     input.gps_fix_valid = gps_fix_valid;
     input.satellites = satellites;
     input.estimate_quality = nav_state->confidence.estimate_quality;
@@ -891,6 +1055,7 @@ void mission_guidance_step(
         ready_ticks = 0U;
     }
 
+    const MissionState prev_state = mission_controller_state(mission);
     (void)mission_controller_tick(mission, &input, &output);
 
     if (snapshot_out != NULL) {
@@ -898,109 +1063,56 @@ void mission_guidance_step(
         snapshot_out->active_waypoint_index = output.active_waypoint_index;
     }
 
-    if (output.safe_mode) {
+    if (output.safe_mode || !output.control_outputs_enabled) {
         GuidanceCommands zero{};
         float hold_heading_deg = nav_state->heading_deg;
-        apply_guidance_commands(sensors, &zero, nav_state->heading_deg, dt_s, &hold_heading_deg);
+        apply_guidance_commands(sensors, &zero, nav_state, dt_s, &hold_heading_deg, pid_plant);
         *telemetry_out = GuidanceErrors{};
-        return;
-    }
-
-    if (!output.guidance_active || output.active_route == NULL) {
-        *telemetry_out = GuidanceErrors{};
-        return;
-    }
-
-    if (output.return_home_active && mission->home_valid) {
-        const float dist_home_m = horizontal_distance_m(nav_state->position, mission->home);
-
-        if (dist_home_m <= NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M) {
-            GuidanceCommands brake{};
-            float hold_heading_deg = nav_state->heading_deg;
-            apply_guidance_commands(
-                sensors,
-                &brake,
-                nav_state->heading_deg,
-                dt_s,
-                &hold_heading_deg);
-
-            if (navstate_speed_mps(nav_state) <= kVehicleStoppedSpeedMps) {
-                mission->state = MissionState::SAFE_MODE;
-                mission->start_requested = false;
-                std::printf(
-                    "MISION: HOME alcanzado y detenido @ t=%.2f s -> SAFE_MODE\n",
-                    static_cast<float>(timestamp_ms) * 0.001f);
-            }
-            *telemetry_out = GuidanceErrors{};
-            return;
-        }
-    }
-
-    const GuidanceOutput guidance_out = output.return_home_active
-        ? guidance_compute_homing(*nav_state, mission->home, guidance_profile_default())
-        : guidance->compute(
-            *nav_state,
-            *output.active_route,
-            output.active_waypoint_index);
-
-    *telemetry_out = guidance_out.track_errors;
-
-    if (snapshot_out != NULL) {
-        snapshot_out->commands = guidance_out.commands;
-        snapshot_out->guidance_valid = guidance_out.valid;
-    }
-
-    if (!guidance_out.valid) {
-        return;
-    }
-
-    float synthetic_course_deg = nav_state->heading_deg;
-    apply_guidance_commands(
-        sensors,
-        &guidance_out.commands,
-        nav_state->heading_deg,
-        dt_s,
-        &synthetic_course_deg);
-
-    if ((timestamp_ms % 1000U) == 0U) {
-        std::printf(
-            "GUIADO: hdg=%.1f deg speed=%.2f m/s climb=%.2f m/s | xt=%.2f m along=%.1f m\n",
-            synthetic_course_deg,
-            guidance_out.commands.desired_speed,
-            guidance_out.commands.desired_climb,
-            guidance_out.track_errors.cross_track_signed_m,
-            guidance_out.track_errors.along_track_m);
-    }
-
-    if (guidance_out.waypoint_completed && output.return_home_active) {
-        GuidanceCommands zero{};
-        float hold_heading_deg = nav_state->heading_deg;
-        apply_guidance_commands(sensors, &zero, nav_state->heading_deg, dt_s, &hold_heading_deg);
-
-        if (navstate_speed_mps(nav_state) <= kVehicleStoppedSpeedMps) {
-            mission->state = MissionState::SAFE_MODE;
-            mission->start_requested = false;
+        if (output.safe_mode && prev_state != MissionState::SAFE_MODE) {
             std::printf(
-                "MISION: HOME alcanzado y detenido @ t=%.2f s -> SAFE_MODE\n",
+                "MISION: SAFE_MODE @ t=%.2f s — salidas de control desactivadas\n",
                 static_cast<float>(timestamp_ms) * 0.001f);
         }
         return;
     }
 
-    if (!guidance_out.waypoint_completed) {
+    if (!output.guidance_active || !output.guidance_valid) {
+        *telemetry_out = GuidanceErrors{};
         return;
     }
 
-    if (mission->return_home_requested) {
-        return;
+    *telemetry_out = output.guidance.track_errors;
+
+    if (snapshot_out != NULL) {
+        snapshot_out->commands = output.guidance.commands;
+        snapshot_out->guidance_valid = true;
     }
 
-    mission_controller_on_waypoint_completed(mission);
-    std::printf(
-        "MISION: WP%zu completado @ t=%.2f s | estado=%s\n",
-        output.active_waypoint_index,
-        static_cast<float>(timestamp_ms) * 0.001f,
-        mission_state_name(mission_controller_state(mission)));
+    float synthetic_course_deg = nav_state->heading_deg;
+    apply_guidance_commands(
+        sensors,
+        &output.guidance.commands,
+        nav_state,
+        dt_s,
+        &synthetic_course_deg,
+        pid_plant);
+
+    if ((timestamp_ms % 1000U) == 0U) {
+        std::printf(
+            "GUIADO: hdg=%.1f deg speed=%.2f m/s climb=%.2f m/s | xt=%.2f m along=%.1f m | WP%zu\n",
+            synthetic_course_deg,
+            output.guidance.commands.desired_speed,
+            output.guidance.commands.desired_climb,
+            output.guidance.track_errors.cross_track_signed_m,
+            output.guidance.track_errors.along_track_m,
+            output.active_waypoint_index);
+    }
+
+    if (output.guidance.route_completed && prev_state == MissionState::NAVIGATE) {
+        std::printf(
+            "MISION: ruta completada @ t=%.2f s -> RETURN_HOME\n",
+            static_cast<float>(timestamp_ms) * 0.001f);
+    }
 }
 
 void print_scenario_banner(SensorScenario scenario)
@@ -1993,6 +2105,9 @@ void run_mission_clean_scenario(FILE *telemetry_file)
     SensorsSimulation sensors{};
     sensors_simulation_init(&sensors, SCENARIO_CLEAN, start_pos, kCruiseSpeedMps, 90.0f, 23U);
 
+    ClosedLoopPidPlant pid_plant{};
+    closed_loop_pid_plant_init(&pid_plant);
+
     DeadReckoningFilter nav{};
     dead_reckoning_init(&nav, start_pos, NAVICORE_DOMAIN_AIR);
 
@@ -2006,6 +2121,9 @@ void run_mission_clean_scenario(FILE *telemetry_file)
 
     GuidanceProfile profile = guidance_profile_default();
     profile.cruise_speed_mps = kCruiseSpeedMps;
+    /* Target PC/sim: vehiculo terrestre con detencion en HOME. */
+    profile.require_terminal_speed_at_home = true;
+    profile.terminal_speed_mps = kVehicleStoppedSpeedMps;
     guidance.set_profile(profile);
 
     StaticWaypointBuffer route{};
@@ -2020,6 +2138,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
     std::printf("\n");
     std::printf("================================================================\n");
     std::printf(" ESCENARIO: MISION 3D — SCENARIO_CLEAN (Caja Negra EKF @ 100 Hz)\n");
+    std::printf("  Lazo cerrado: 3x PID (velocidad, rumbo, altitud) + dinamica con inercia\n");
     std::printf("  Sin fallos: sin WCET artificial, UART stress ni GPS loss\n");
     std::printf("  FSM: INIT -> WAIT_GPS -> READY -> NAVIGATE -> RETURN_HOME -> SAFE_MODE\n");
     std::printf("  %zu waypoints 3D | nominal %u ticks (%u s) | max %u ticks (%u s)\n",
@@ -2085,7 +2204,8 @@ void run_mission_clean_scenario(FILE *telemetry_file)
             dt_s,
             &guidance_errors,
             &runtime_health,
-            &guidance_snapshot);
+            &guidance_snapshot,
+            &pid_plant);
 
         const MissionState mission_state = mission_controller_state(&mission);
         if (mission_state != last_mission_state) {
@@ -2114,6 +2234,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
         extras.tick_innov_ned[0] = tick_innov_ned[0];
         extras.tick_innov_ned[1] = tick_innov_ned[1];
         extras.tick_innov_ned[2] = tick_innov_ned[2];
+        extras.pid = pid_plant.telemetry.active ? &pid_plant.telemetry : NULL;
 
         telemetry_write_row(
             telemetry_file,

@@ -19,6 +19,14 @@
 #define NAVICORE_GUIDANCE_SLOWDOWN_ALONG_M 40.0f
 #endif
 
+#ifndef NAVICORE_GUIDANCE_TURN_SLOWDOWN_ALONG_M
+#define NAVICORE_GUIDANCE_TURN_SLOWDOWN_ALONG_M 35.0f
+#endif
+
+#ifndef NAVICORE_GUIDANCE_TURN_ANGLE_SLOW_RAD
+#define NAVICORE_GUIDANCE_TURN_ANGLE_SLOW_RAD 0.5235987755982988f /* ~30 deg */
+#endif
+
 #ifndef NAVICORE_GUIDANCE_MAX_CLIMB_MPS
 #define NAVICORE_GUIDANCE_MAX_CLIMB_MPS 3.0f
 #endif
@@ -35,6 +43,10 @@
 #define NAVICORE_GUIDANCE_LOOK_AHEAD_M 8.0f
 #endif
 
+#ifndef NAVICORE_GUIDANCE_ACCEPTANCE_RADIUS_M
+#define NAVICORE_GUIDANCE_ACCEPTANCE_RADIUS_M 3.0f
+#endif
+
 #ifndef NAVICORE_GUIDANCE_CROSS_TRACK_SLOW_M
 #define NAVICORE_GUIDANCE_CROSS_TRACK_SLOW_M 12.0f
 #endif
@@ -47,10 +59,27 @@
 #define NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M 10.0f
 #endif
 
+#ifndef NAVICORE_GUIDANCE_HOME_ALT_TOLERANCE_M
+#define NAVICORE_GUIDANCE_HOME_ALT_TOLERANCE_M 2.0f
+#endif
+
+#ifndef NAVICORE_GUIDANCE_HOME_PRESSURE_TOLERANCE_PA
+#define NAVICORE_GUIDANCE_HOME_PRESSURE_TOLERANCE_PA 500.0f
+#endif
+
+#ifndef NAVICORE_GUIDANCE_TERMINAL_SPEED_MPS
+#define NAVICORE_GUIDANCE_TERMINAL_SPEED_MPS 0.05f
+#endif
+
 /*
- * Guiado 3D — zero-heap, float/FPU.
+ * Guiado tactico — zero-heap, float/FPU, agnostico de plataforma.
+ *
+ * Emite consignas cinematicas (rumbo, velocidad escalar, tasa vertical) validas para
+ * seguidores no holonomicos: embarcaciones (2D+vel), vehiculos terrestres, ala fija.
+ * Plataformas holonomicas (multicopter) deben mapear estas consignas a su controlador
+ * en la capa target (p. ej. vector velocidad deseado).
+ *
  * Cross-track: proyeccion lineal r_perp = r - t*d, t = (r·d)/|d|^2 (sin cross product).
- * WCET @ 100 Hz: 1 sqrtf(|r_perp|) + sqrtf(|d|) solo al cambiar de tramo (cache).
  */
 
 typedef struct {
@@ -63,32 +92,41 @@ typedef struct {
 } GuidanceLegGeom;
 
 typedef struct {
-    float cross_track_m;  /* |e_xt| perpendicular al pasillo 3D A->B [m] */
-    float along_track_m;  /* distancia restante a B a lo largo del segmento [m] */
-    float cross_track_signed_m; /* signo en plano horizontal (+ = izquierda del track) */
+    float cross_track_m;
+    float along_track_m;
+    float cross_track_signed_m;
 } GuidanceErrors;
 
 typedef struct {
-    float desired_heading; /* rumbo objetivo [rad], 0 = norte, via atan2f */
-    float desired_speed;   /* velocidad lineal recomendada [m/s] */
-    float desired_climb;   /* tasa de ascenso/descenso (+ = subir) [m/s] */
+    float desired_heading; /* rumbo objetivo [rad], 0 = norte */
+    float desired_speed;   /* velocidad escalar sobre el plano de rumbo [m/s] */
+    float desired_climb;   /* tasa vertical (+ = subir) [m/s] o dZ/dt en dominio mar */
 } GuidanceCommands;
 
 typedef struct {
     float cruise_speed_mps;
     float arrival_speed_mps;
+    float min_speed_mps; /* piso de velocidad (sustentacion ala fija); 0 = puede detenerse */
     float slowdown_along_track_m;
+    float turn_slowdown_along_m;
     float max_climb_mps;
     float max_descent_mps;
     float climb_time_constant_s;
     float cross_track_slowdown_m;
     float min_speed_factor;
+    float home_arrival_radius_m;
+    float home_alt_tolerance_m;
+    float home_pressure_tolerance_pa;
+    float terminal_speed_mps;
+    bool require_terminal_speed_at_home; /* true solo si la plataforma debe quedar detenida */
 } GuidanceProfile;
 
 typedef struct {
     GuidanceErrors track_errors;
     GuidanceCommands commands;
     bool waypoint_completed;
+    bool route_completed;
+    size_t active_waypoint_index;
     bool valid;
 } GuidanceOutput;
 
@@ -98,8 +136,19 @@ public:
     explicit Guidance3D(float look_ahead_distance_m);
 
     void set_look_ahead_distance(float look_ahead_distance_m);
+    void set_acceptance_radius(float acceptance_radius_m);
     void set_profile(const GuidanceProfile &profile);
+    const GuidanceProfile &get_profile() const;
     float get_look_ahead_distance() const;
+    float get_acceptance_radius() const;
+
+    void set_route(const StaticWaypointBuffer &route);
+    void reset_route();
+    bool route_loaded() const;
+    bool route_completed() const;
+    size_t active_waypoint_index() const;
+
+    GuidanceOutput compute(const NavState &nav_state);
 
     GuidanceOutput compute(
         const NavState &nav_state,
@@ -107,6 +156,12 @@ public:
         size_t active_waypoint_index) const;
 
 private:
+    GuidanceOutput compute_leg(
+        const NavState &nav_state,
+        const StaticWaypointBuffer &route,
+        size_t active_waypoint_index,
+        float acceptance_radius_m) const;
+
     bool prepare_cached_leg(
         const StaticWaypointBuffer &route,
         size_t active_waypoint_index,
@@ -114,7 +169,12 @@ private:
         const Waypoint *destination) const;
 
     float look_ahead_distance_m_;
+    float acceptance_radius_m_;
     GuidanceProfile profile_;
+    StaticWaypointBuffer route_;
+    size_t active_waypoint_index_;
+    bool route_loaded_;
+    bool route_completed_;
     mutable size_t cached_leg_index_;
     mutable GuidanceLegGeom leg_cache_;
 };
@@ -142,11 +202,17 @@ GuidanceOutput guidance_compute_output(
     const StaticWaypointBuffer &route,
     size_t active_waypoint_index,
     const GuidanceProfile &profile,
-    float look_ahead_distance_m);
+    float look_ahead_distance_m,
+    float acceptance_radius_m);
 
 GuidanceOutput guidance_compute_homing(
     const NavState &nav_state,
     Vector3D target_position,
+    const GuidanceProfile &profile);
+
+bool guidance_terminal_arrival_satisfied(
+    const GuidanceOutput &output,
+    const NavState &nav_state,
     const GuidanceProfile &profile);
 
 #endif /* NAVICORE_GUIDANCE_HPP */

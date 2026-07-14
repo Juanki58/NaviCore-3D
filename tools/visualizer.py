@@ -16,17 +16,36 @@ Esquema CSV:
 
 from __future__ import annotations
 
-import argparse
 import sys
+import os
+
+# Forzar el backend interactivo QtAgg ANTES de importar pyplot
+if '--estatico' not in sys.argv:
+    try:
+        import matplotlib
+        # Forzar explícitamente el uso de QtAgg (PyQt6 que instalamos)
+        matplotlib.use('QtAgg')
+    except Exception as e:
+        try:
+            # Alternativa si QtAgg falla por alguna razón del path
+            matplotlib.use('TkAgg')
+        except Exception:
+            pass
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+import argparse
 import time
 from pathlib import Path
 
-import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.collections import LineCollection
 from matplotlib.patches import Ellipse
+
+# Referencia fuerte a la animación (evita GC prematuro en Windows antes de plt.show)
+global_anim: animation.FuncAnimation | None = None
 
 # ---------------------------------------------------------------------------
 # Configuración
@@ -392,18 +411,18 @@ class DashboardCajaNegra:
         artistas.extend(self.trail_patches)
         return artistas
 
-    def mostrar_animado(self, intervalo_ms: int) -> None:
+    def mostrar_animado(self, intervalo_ms: int) -> animation.FuncAnimation:
+        plt.tight_layout(rect=[0, 0.03, 1, 0.96])
         anim = animation.FuncAnimation(
             self.fig,
             self._actualizar_marco,
             frames=self.num_frames,
             interval=intervalo_ms,
             blit=False,
-            repeat=True,
+            repeat=False,
         )
         self._anim = anim
-        plt.tight_layout(rect=[0, 0.03, 1, 0.96])
-        plt.show()
+        return anim
 
     def mostrar_estatico(self) -> None:
         self._actualizar_marco(self.num_frames - 1)
@@ -506,12 +525,15 @@ def main() -> int:
             dashboard.fig.savefig(args.save, dpi=150, bbox_inches="tight")
             print(f"Captura guardada en {args.save}")
     else:
+        global global_anim
+
         print(
             f"Reproduciendo {len(df)} filas a {args.hz:.1f} Hz "
             f"({intervalo_ms} ms/fila), rastro cada {args.trail_step} frames "
             f"(alpha={args.trail_alpha:.2f}). Cierre la ventana para salir."
         )
-        dashboard.mostrar_animado(intervalo_ms=intervalo_ms)
+        global_anim = dashboard.mostrar_animado(intervalo_ms=intervalo_ms)
+        plt.show()
 
     return 0
 

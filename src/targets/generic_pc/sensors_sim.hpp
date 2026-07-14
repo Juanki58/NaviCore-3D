@@ -30,6 +30,7 @@ typedef struct {
     float speed_mps;
     float vertical_speed_mps;
     float course_deg;
+    float yaw_rate_radps;
     uint32_t seed;
     uint32_t last_timestamp_ms;
 } GpsSimulator;
@@ -96,6 +97,13 @@ void sensors_simulation_apply_guidance_control(
     float desired_speed_mps,
     float desired_climb_mps,
     float current_heading_deg,
+    float dt_s);
+
+void sensors_simulation_apply_actuator_forces(
+    SensorsSimulation *ctx,
+    float forward_accel_mps2,
+    float yaw_rate_cmd_radps,
+    float vertical_accel_mps2,
     float dt_s);
 
 #endif /* NAVICORE_SENSORS_SIM_HPP */

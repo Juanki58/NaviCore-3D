@@ -37,6 +37,7 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/divergence_guard.cpp
     ${NAVICORE_CORE_DIR}/recovery_guard.cpp
     ${NAVICORE_CORE_DIR}/navigation_cortex.cpp
+    ${NAVICORE_CORE_DIR}/pid.cpp
 )
 
 add_executable(NaviCore3D_Pico2

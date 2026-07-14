@@ -1,9 +1,9 @@
 #include "mission.hpp"
 
 #include "NavState.h"
+#include "guidance.hpp"
 #include "waypoint.hpp"
 
-#include <math.h>
 #include <string.h>
 
 static void mission_copy_route(StaticWaypointBuffer *dst, const StaticWaypointBuffer *src)
@@ -13,14 +13,6 @@ static void mission_copy_route(StaticWaypointBuffer *dst, const StaticWaypointBu
     }
 
     memcpy(dst, src, sizeof(StaticWaypointBuffer));
-}
-
-static float mission_horizontal_distance_m(Vector3D a, Vector3D b)
-{
-    const float dlat_m = (b.x - a.x) * 111132.954f;
-    const float mean_lat_rad = (a.x + b.x) * 0.5f * (3.14159265358979323846f / 180.0f);
-    const float dlon_m = (b.y - a.y) * 111132.954f * cosf(mean_lat_rad);
-    return sqrtf((dlat_m * dlat_m) + (dlon_m * dlon_m));
 }
 
 static void mission_build_return_route(
@@ -34,35 +26,109 @@ static void mission_build_return_route(
     waypoint_buffer_init(&controller->return_route);
 
     const uint32_t arrival_radius_m =
-        static_cast<uint32_t>(NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M);
+        static_cast<uint32_t>(NAVICORE_GUIDANCE_HOME_ARRIVAL_RADIUS_M);
 
     const Waypoint start_wp = waypoint_make(
         "RTN0",
         nav_state->position,
         nav_state->domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        NAVICORE_WAYPOINT_DEFAULT_TRANSIT_SPEED_MPS);
     const Waypoint home_wp = waypoint_make(
         "HOME",
         controller->home,
         nav_state->domain,
-        arrival_radius_m);
+        arrival_radius_m,
+        NAVICORE_WAYPOINT_DEFAULT_TERMINAL_SPEED_MPS);
 
     waypoint_buffer_push(&controller->return_route, start_wp);
     waypoint_buffer_push(&controller->return_route, home_wp);
 }
 
-static void mission_advance_waypoint(MissionController *controller)
+static void mission_begin_return_home(
+    MissionController *controller,
+    const NavState *nav_state)
 {
-    if (controller == NULL) {
+    if (controller == NULL || nav_state == NULL || !controller->home_valid) {
         return;
     }
 
-    const StaticWaypointBuffer *route = (controller->state == MissionState::RETURN_HOME)
-        ? &controller->return_route
-        : &controller->route;
+    mission_build_return_route(controller, nav_state);
+    controller->state = MissionState::RETURN_HOME;
+    controller->active_waypoint_index = 0U;
+    controller->return_home_requested = false;
+}
 
-    if (controller->active_waypoint_index + 1U < route->count) {
-        ++controller->active_waypoint_index;
+static void mission_enter_safe_mode(
+    MissionController *controller,
+    MissionTickOutput *output)
+{
+    if (controller == NULL || output == NULL) {
+        return;
+    }
+
+    controller->state = MissionState::SAFE_MODE;
+    controller->start_requested = false;
+    output->state = MissionState::SAFE_MODE;
+    output->safe_mode = true;
+    output->guidance_active = false;
+    output->control_outputs_enabled = false;
+    output->guidance_valid = false;
+}
+
+static void mission_update_guidance(
+    MissionController *controller,
+    const MissionTickInput *input,
+    MissionTickOutput *output)
+{
+    if (controller == NULL || input == NULL || output == NULL
+        || input->guidance == NULL || input->nav_state == NULL
+        || !output->guidance_active) {
+        return;
+    }
+
+    const GuidanceProfile &profile = input->guidance->get_profile();
+
+    if (output->return_home_active && controller->home_valid) {
+        output->guidance = guidance_compute_homing(
+            *input->nav_state,
+            controller->home,
+            profile);
+        output->guidance_valid = output->guidance.valid;
+        controller->active_waypoint_index = 0U;
+        output->active_waypoint_index = 0U;
+
+        if (guidance_terminal_arrival_satisfied(
+                output->guidance,
+                *input->nav_state,
+                profile)) {
+            mission_enter_safe_mode(controller, output);
+        }
+        return;
+    }
+
+    output->guidance = input->guidance->compute(*input->nav_state);
+    output->guidance_valid = output->guidance.valid;
+    controller->active_waypoint_index = input->guidance->active_waypoint_index();
+    output->active_waypoint_index = controller->active_waypoint_index;
+
+    if (!output->guidance.route_completed) {
+        return;
+    }
+
+    if (controller->state == MissionState::NAVIGATE && controller->home_valid) {
+        mission_begin_return_home(controller, input->nav_state);
+        output->state = MissionState::RETURN_HOME;
+        output->return_home_active = true;
+        output->guidance_active = true;
+        output->active_route = &controller->return_route;
+        output->active_waypoint_index = 0U;
+
+        output->guidance = guidance_compute_homing(
+            *input->nav_state,
+            controller->home,
+            profile);
+        output->guidance_valid = output->guidance.valid;
     }
 }
 
@@ -167,6 +233,7 @@ bool mission_controller_tick(
 
     memset(output, 0, sizeof(MissionTickOutput));
     output->state = controller->state;
+    output->control_outputs_enabled = true;
     output->active_route = &controller->route;
     output->active_waypoint_index = controller->active_waypoint_index;
 
@@ -211,16 +278,16 @@ bool mission_controller_tick(
             controller->state = MissionState::NAVIGATE;
             controller->active_waypoint_index = 0U;
             controller->start_requested = false;
+            if (input->guidance != NULL) {
+                input->guidance->set_route(controller->route);
+            }
         }
         break;
 
     case MissionState::NAVIGATE:
         output->guidance_active = true;
         if (controller->return_home_requested && controller->home_valid && input->nav_state != NULL) {
-            mission_build_return_route(controller, input->nav_state);
-            controller->state = MissionState::RETURN_HOME;
-            controller->active_waypoint_index = 0U;
-            controller->return_home_requested = false;
+            mission_begin_return_home(controller, input->nav_state);
         }
         break;
 
@@ -229,32 +296,29 @@ bool mission_controller_tick(
         output->return_home_active = true;
         output->active_route = &controller->return_route;
         output->active_waypoint_index = controller->active_waypoint_index;
-
-        if (controller->return_route.count >= 2U && input->nav_state != NULL) {
-            controller->return_route.items[controller->return_route.head].position =
-                input->nav_state->position;
-        }
-
-        if (controller->home_valid && input->nav_state != NULL) {
-            const float dist_home_m = mission_horizontal_distance_m(
-                input->nav_state->position,
-                controller->home);
-            if (dist_home_m <= NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M) {
-                const float speed_mps = navstate_speed_mps(input->nav_state);
-                if (speed_mps <= NAVICORE_MISSION_STOPPED_SPEED_MPS) {
-                    controller->state = MissionState::SAFE_MODE;
-                    controller->start_requested = false;
-                }
-            }
-        }
         break;
 
     case MissionState::SAFE_MODE:
         output->safe_mode = true;
+        output->control_outputs_enabled = false;
+        output->guidance_active = false;
         break;
 
     default:
         break;
+    }
+
+    output->state = controller->state;
+
+    if (output->return_home_active) {
+        output->active_route = &controller->return_route;
+    }
+
+    mission_update_guidance(controller, input, output);
+
+    if (output->safe_mode) {
+        output->control_outputs_enabled = false;
+        output->guidance_active = false;
     }
 
     output->state = controller->state;
@@ -263,25 +327,17 @@ bool mission_controller_tick(
 
 void mission_controller_on_waypoint_completed(MissionController *controller)
 {
-    if (controller == NULL || controller->return_home_requested) {
+    if (controller == NULL) {
         return;
     }
 
-    if (controller->state == MissionState::NAVIGATE) {
-        if (controller->route.count < 2U) {
-            return;
-        }
-
-        const size_t last_leg_index = controller->route.count - 2U;
-        if (controller->active_waypoint_index >= last_leg_index) {
-            controller->return_home_requested = true;
-        } else if (controller->active_waypoint_index + 1U < controller->route.count) {
+    /*
+     * Legacy: la conmutacion de waypoints en NAVIGATE la gestiona Guidance3D (modo stateful).
+     * Solo se mantiene avance manual para escenarios sin guiado integrado en RETURN_HOME.
+     */
+    if (controller->state == MissionState::RETURN_HOME) {
+        if (controller->active_waypoint_index + 1U < controller->return_route.count) {
             ++controller->active_waypoint_index;
         }
-        return;
-    }
-
-    if (controller->state == MissionState::RETURN_HOME) {
-        mission_advance_waypoint(controller);
     }
 }

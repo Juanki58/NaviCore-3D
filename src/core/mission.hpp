@@ -1,11 +1,20 @@
 #pragma once
 
 #include "NavState.h"
+#include "guidance.hpp"
 #include "runtime_health.hpp"
 #include "waypoint.hpp"
 
 #include <stdbool.h>
 #include <stdint.h>
+
+/*
+ * FSM de mision agnostica de plataforma.
+ * No impone dinamicas de tierra: las transiciones usan criterios de guiado
+ * configurables via GuidanceProfile (velocidad terminal, tolerancias 3D, etc.).
+ * La capa target traduce GuidanceCommands al actuador concreto (ruedas, timon,
+ * superficies, motores multicopter, etc.).
+ */
 
 enum class MissionState : uint8_t {
     INIT = 0,
@@ -40,14 +49,6 @@ enum class MissionState : uint8_t {
 #define NAVICORE_MISSION_SAFE_UART_OVERFLOW_MAX 3U
 #endif
 
-#ifndef NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M
-#define NAVICORE_MISSION_HOME_ARRIVAL_RADIUS_M 10.0f
-#endif
-
-#ifndef NAVICORE_MISSION_STOPPED_SPEED_MPS
-#define NAVICORE_MISSION_STOPPED_SPEED_MPS 0.05f
-#endif
-
 struct MissionController {
     MissionState state;
     Vector3D home;
@@ -64,6 +65,7 @@ struct MissionController {
 struct MissionTickInput {
     const NavState *nav_state;
     const RuntimeHealth *runtime_health;
+    Guidance3D *guidance;
     bool gps_fix_valid;
     uint8_t satellites;
     float estimate_quality;
@@ -74,10 +76,13 @@ struct MissionTickInput {
 struct MissionTickOutput {
     MissionState state;
     bool guidance_active;
+    bool guidance_valid;
+    bool control_outputs_enabled;
     bool safe_mode;
     bool return_home_active;
     const StaticWaypointBuffer *active_route;
     size_t active_waypoint_index;
+    GuidanceOutput guidance;
 };
 
 void mission_controller_init(MissionController *controller);

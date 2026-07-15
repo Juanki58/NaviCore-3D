@@ -21,13 +21,13 @@
 #include "ins_ekf.hpp"
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
+#include "inertial_replay.hpp"
 #include "diagnostic.hpp"
 #include "command_ingestor.hpp"
 #include "navigation_cortex.hpp"
 #include "power_state_machine.hpp"
 #include "time_guard.hpp"
-#include "telemetry_udp_sender.hpp"
-#include "telemetry_udp.hpp"
+#include "telemetry_interface.hpp"
 #include "pid.hpp"
 
 #ifndef M_PI
@@ -60,9 +60,8 @@ constexpr uint32_t kHighDemandWcetArtificialDelayMs = 150U;
 constexpr float kHighDemandRadioStepDeg = 0.000120f;
 constexpr float kHighDemandGeomViolationStepDeg = 0.0020f;
 
-constexpr const char *kTelemetryCsvPath = "docs/telemetria_navicore.csv";
-constexpr const char *kTelemetryUdpHost = "127.0.0.1";
-constexpr int kTelemetryUdpPort = 5005;
+constexpr const char *kTelemetryCsvPath = TELEMETRY_LOGGER_DEFAULT_PATH;
+constexpr const char *kTelemetryUnityHost = UNITY_TELEMETRY_DEFAULT_HOST;
 constexpr const char *kHighDemandScenarioName = "HIGH_DEMAND_STRESS_TEST";
 constexpr float kAmbientTemperatureC = 25.0f;
 constexpr float kSubmarineTemperatureC = 10.0f;
@@ -79,6 +78,7 @@ constexpr size_t kMission3dWaypointCount = 4U;
 constexpr uint32_t kMissionCleanNominalTicks = 6000U;
 constexpr uint32_t kMissionCleanMaxTicks = 36000U;
 constexpr uint32_t kMissionAutoStartReadyTicks = 3U;
+constexpr uint32_t kGpsStalenessThresholdMs = 1500U;
 constexpr float kWaypointArrivalRadiusNominalM = 5.0f;
 constexpr float kWaypointArrivalRadiusDegradedM = 15.0f;
 constexpr float kWaypointStraightSpeedMps = NAVICORE_WAYPOINT_DEFAULT_TRANSIT_SPEED_MPS;
@@ -122,38 +122,72 @@ struct MissionGuidanceSnapshot {
     size_t active_waypoint_index;
 };
 
-struct ClosedLoopPidTelemetry {
-    float des_speed_mps;
-    float des_heading_rad;
-    float des_climb_mps;
-    float pid_speed_out;
-    float pid_yaw_out;
-    float pid_alt_out;
-    float speed_meas_mps;
-    float yaw_meas_rad;
-    float climb_meas_mps;
-    float forward_accel_mps2;
-    float yaw_accel_radps2;
-    float vertical_accel_mps2;
-    float yaw_rate_cmd_radps;
-    float yaw_rate_radps;
-    bool active;
-};
-
 struct ClosedLoopPidPlant {
     PIDController speed_pid;
     PIDController yaw_pid;
     PIDController altitude_pid;
-    ClosedLoopPidTelemetry telemetry;
+    TelemetryPidSnapshot telemetry;
 };
 
-struct EkfBlackBoxExtras {
-    const InsEkfFilter *ekf;
-    bool gnss_update_this_cycle;
-    float tick_nis;
-    float tick_innov_ned[3];
-    const ClosedLoopPidTelemetry *pid;
+struct GpsDeadReckoningState {
+    uint32_t last_fresh_gps_ms;
+    uint32_t prev_gps_timestamp_ms;
+    bool active;
+    bool initialized;
 };
+
+struct GpsDeadReckoningEval {
+    bool allow_gnss_update;
+    bool dead_reckoning_active;
+};
+
+GpsDeadReckoningEval gps_dead_reckoning_step(
+    GpsDeadReckoningState *state,
+    const GpsSample *gps,
+    uint32_t t_ms,
+    bool sample_is_fresh)
+{
+    GpsDeadReckoningEval result{};
+    result.allow_gnss_update = false;
+    result.dead_reckoning_active = (state != NULL) ? state->active : false;
+
+    if (state == NULL || gps == NULL) {
+        return result;
+    }
+
+    const bool timestamp_changed = (gps->timestamp_ms != state->prev_gps_timestamp_ms);
+    state->prev_gps_timestamp_ms = gps->timestamp_ms;
+
+    const bool fresh_valid = gps->fix_valid && sample_is_fresh
+        && (timestamp_changed || !state->initialized);
+
+    if (fresh_valid) {
+        state->last_fresh_gps_ms = t_ms;
+        state->initialized = true;
+    }
+
+    const bool gps_stale = state->initialized
+        && ((t_ms - state->last_fresh_gps_ms) > kGpsStalenessThresholdMs);
+
+    const bool was_active = state->active;
+
+    if (gps_stale) {
+        state->active = true;
+        if (!was_active) {
+            std::printf(
+                "⚠️ GPS PERDIDO: Iniciando navegación por estima (Dead Reckoning)\n");
+        }
+    } else if (fresh_valid && was_active) {
+        state->active = false;
+        std::printf("✅ GPS RECUPERADO: Sincronizando posición\n");
+    } else if (!gps_stale) {
+        state->active = false;
+    }
+
+    result.dead_reckoning_active = state->active;
+    result.allow_gnss_update = gps->fix_valid && !gps_stale;
+    return result;
+}
 
 float horizontal_distance_m(Vector3D a, Vector3D b)
 {
@@ -446,210 +480,6 @@ void apply_health_contingency_submarine(
     waypoint_route_set_arrival_radius(route, arrival_radius_m);
 }
 
-bool telemetry_ensure_docs_dir()
-{
-#ifdef _WIN32
-    return _mkdir("docs") == 0 || errno == EEXIST;
-#else
-    return mkdir("docs", 0755) == 0 || errno == EEXIST;
-#endif
-}
-
-FILE *telemetry_open(const char *path)
-{
-    telemetry_ensure_docs_dir();
-    return std::fopen(path, "w");
-}
-
-void telemetry_write_header(FILE *file)
-{
-    if (file == NULL) {
-        return;
-    }
-
-    std::fprintf(
-        file,
-        "time_us,pos_x,pos_y,pos_z,vel_x,vel_y,vel_z,roll,pitch,yaw,"
-        "bias_ax,bias_ay,bias_az,bias_gx,bias_gy,bias_gz,"
-        "nis,innov_x,innov_y,innov_z,cov_pos_x,cov_pos_y,cov_pos_z,cov_yaw,"
-        "des_speed,des_heading,des_climb,pid_speed,pid_yaw,pid_alt,"
-        "speed_meas,yaw_meas,climb_meas,fwd_accel,yaw_rate,vert_accel\n");
-}
-
-void telemetry_write_ekf_blackbox_row(
-    FILE *file,
-    uint64_t time_us,
-    const EkfBlackBoxExtras *extras)
-{
-    if (file == NULL) {
-        return;
-    }
-
-    float pos_ned[3] = {0.0f, 0.0f, 0.0f};
-    float vel_ned[3] = {0.0f, 0.0f, 0.0f};
-    float roll_rad = 0.0f;
-    float pitch_rad = 0.0f;
-    float yaw_rad = 0.0f;
-    float bias_a[3] = {0.0f, 0.0f, 0.0f};
-    float bias_g[3] = {0.0f, 0.0f, 0.0f};
-    float nis = 0.0f;
-    float innov[3] = {0.0f, 0.0f, 0.0f};
-    float cov_pos_x = 0.0f;
-    float cov_pos_y = 0.0f;
-    float cov_pos_z = 0.0f;
-    float cov_yaw = 0.0f;
-    float des_speed = 0.0f;
-    float des_heading = 0.0f;
-    float des_climb = 0.0f;
-    float pid_speed = 0.0f;
-    float pid_yaw = 0.0f;
-    float pid_alt = 0.0f;
-    float speed_meas = 0.0f;
-    float yaw_meas = 0.0f;
-    float climb_meas = 0.0f;
-    float fwd_accel = 0.0f;
-    float yaw_rate = 0.0f;
-    float vert_accel = 0.0f;
-
-    if (extras != NULL && extras->ekf != NULL && extras->ekf->initialized) {
-        const InsEkfFilter *ekf = extras->ekf;
-
-        ins_ekf_get_position_ned(ekf, pos_ned);
-        ins_ekf_get_velocity_ned(ekf, vel_ned);
-        ins_ekf_get_attitude_rad(ekf, &roll_rad, &pitch_rad, &yaw_rad);
-        ins_ekf_get_bias(ekf, bias_a, bias_g);
-
-        cov_pos_x = ins_ekf_get_covariance_flat(ekf, 0U);
-        cov_pos_y = ins_ekf_get_covariance_flat(ekf, 16U);
-        cov_pos_z = ins_ekf_get_covariance_flat(ekf, 32U);
-        cov_yaw = ins_ekf_get_covariance_flat(ekf, 80U);
-
-        if (extras->gnss_update_this_cycle) {
-            nis = extras->tick_nis;
-            innov[0] = extras->tick_innov_ned[0];
-            innov[1] = extras->tick_innov_ned[1];
-            innov[2] = extras->tick_innov_ned[2];
-        }
-    }
-
-    if (extras != NULL && extras->pid != NULL && extras->pid->active) {
-        const ClosedLoopPidTelemetry *pid = extras->pid;
-        des_speed = pid->des_speed_mps;
-        des_heading = pid->des_heading_rad;
-        des_climb = pid->des_climb_mps;
-        pid_speed = pid->pid_speed_out;
-        pid_yaw = pid->pid_yaw_out;
-        pid_alt = pid->pid_alt_out;
-        speed_meas = pid->speed_meas_mps;
-        yaw_meas = pid->yaw_meas_rad;
-        climb_meas = pid->climb_meas_mps;
-        fwd_accel = pid->forward_accel_mps2;
-        yaw_rate = pid->yaw_rate_radps;
-        vert_accel = pid->vertical_accel_mps2;
-    }
-
-    std::fprintf(
-        file,
-        "%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,"
-        "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-        static_cast<unsigned long long>(time_us),
-        pos_ned[0],
-        pos_ned[1],
-        pos_ned[2],
-        vel_ned[0],
-        vel_ned[1],
-        vel_ned[2],
-        roll_rad,
-        pitch_rad,
-        yaw_rad,
-        bias_a[0],
-        bias_a[1],
-        bias_a[2],
-        bias_g[0],
-        bias_g[1],
-        bias_g[2],
-        nis,
-        innov[0],
-        innov[1],
-        innov[2],
-        cov_pos_x,
-        cov_pos_y,
-        cov_pos_z,
-        cov_yaw,
-        des_speed,
-        des_heading,
-        des_climb,
-        pid_speed,
-        pid_yaw,
-        pid_alt,
-        speed_meas,
-        yaw_meas,
-        climb_meas,
-        fwd_accel,
-        yaw_rate,
-        vert_accel);
-}
-
-void telemetry_record_tick(
-    FILE *file,
-    uint32_t timestamp_ms,
-    const EkfBlackBoxExtras *extras)
-{
-    if (file == NULL) {
-        return;
-    }
-
-    const uint64_t time_us = static_cast<uint64_t>(timestamp_ms) * 1000ULL;
-    telemetry_write_ekf_blackbox_row(file, time_us, extras);
-}
-
-void telemetry_write_row(
-    FILE *file,
-    uint32_t timestamp_ms,
-    const NavState *state,
-    const GuidanceErrors *guidance,
-    uint8_t health_score,
-    NavHealthMode health_mode,
-    uint8_t scenario_id,
-    const EkfBlackBoxExtras *extras)
-{
-    (void)state;
-    (void)guidance;
-    (void)health_score;
-    (void)health_mode;
-    (void)scenario_id;
-
-    telemetry_record_tick(file, timestamp_ms, extras);
-
-    if (state != NULL) {
-        const uint16_t dropped_packets_udp = 0U;
-        telemetry_udp_send(
-            timestamp_ms,
-            state->position.x,
-            state->position.y,
-            state->position.z,
-            0.0f,
-            0.0f,
-            health_score,
-            static_cast<uint8_t>(health_mode),
-            dropped_packets_udp,
-            scenario_id,
-            static_cast<uint8_t>(state->mode),
-            kAmbientTemperatureC);
-    }
-}
-
-void telemetry_udp_emit_events(uint32_t timestamp_ms, const NavigationDecision *decision)
-{
-    if (decision == NULL) {
-        return;
-    }
-
-    for (uint8_t i = 0; i < decision->event_count; ++i) {
-        telemetry_udp_send_event(timestamp_ms, decision->events[i].id, decision->events[i].param);
-    }
-}
-
 void navigation_cortex_tick(
     NavigationCortexState *cortex_state,
     DeadReckoningFilter *nav,
@@ -677,7 +507,10 @@ void navigation_cortex_tick(
     input.bsp_bus_status = worst_bsp_bus;
 
     navigation_cortex_step(cortex_state, &input, decision);
-    telemetry_udp_emit_events(timestamp_ms, decision);
+    TelemetryInterface *telemetry = TelemetryInterface::active();
+    if (telemetry != NULL) {
+        telemetry->emit_events(timestamp_ms, decision);
+    }
 }
 
 Vector3D square_vehicle_start(Vector3D corner_origin)
@@ -841,7 +674,7 @@ void closed_loop_pid_plant_init(ClosedLoopPidPlant *plant)
     plant->speed_pid.init(0.85f, 0.18f, 0.10f, -3.5f, 3.5f);
     plant->yaw_pid.init(1.75f, 0.04f, 0.28f, -1.2f, 1.2f);
     plant->altitude_pid.init(0.65f, 0.14f, 0.09f, -2.5f, 2.5f);
-    plant->telemetry = ClosedLoopPidTelemetry{};
+    plant->telemetry = TelemetryPidSnapshot{};
 }
 
 float closed_loop_yaw_measurement_rad(const NavState *nav_state)
@@ -1299,7 +1132,7 @@ bool high_demand_apply_wcet_stress(SystemHealthMonitor *health, uint32_t t_ms)
     return within_budget;
 }
 
-void run_high_demand_stress_test_scenario(FILE *telemetry_file)
+void run_high_demand_stress_test_scenario(TelemetryInterface *telemetry)
 {
     const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     const Vector3D origin = square_vehicle_start(corner_origin);
@@ -1345,6 +1178,14 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
                 TIME_GUARD_WCET_PENALTY);
     std::printf("  CRITICAL -> SAFE STOP -> POWER_SAFE_SHUTDOWN latched\n");
     std::printf("================================================================\n");
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.health = &health;
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = TELEM_SCENARIO_HIGH_DEMAND;
+    bindings.temperature_c = kAmbientTemperatureC;
+    telemetry->bind_sources(&bindings);
 
     for (uint32_t t_ms = 0U; t_ms <= kHighDemandDurationMs; t_ms += kStepMs) {
         apply_health_contingency_air(
@@ -1464,7 +1305,10 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
 
         const PowerState current_power = power_manager_get_state();
         if (current_power == POWER_CONSERVATION && prev_power_state != POWER_CONSERVATION) {
-            telemetry_udp_send_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+            TelemetryInterface *telemetry = TelemetryInterface::active();
+            if (telemetry != NULL) {
+                telemetry->emit_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+            }
         }
         prev_power_state = current_power;
 
@@ -1494,15 +1338,9 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
             !safe_stop_active,
             &guidance);
 
-        telemetry_write_row(
-            telemetry_file,
-            t_ms,
-            &nav.state,
-            &guidance,
-            health.health_score,
-            health.mode,
-            TELEM_SCENARIO_HIGH_DEMAND,
-            NULL);
+        bindings.guidance = &guidance;
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1539,7 +1377,7 @@ void run_high_demand_stress_test_scenario(FILE *telemetry_file)
         radio_geometry_reject);
 }
 
-void run_fault_injection_scenario(FILE *telemetry_file)
+void run_fault_injection_scenario(TelemetryInterface *telemetry)
 {
     const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     const Vector3D origin = square_vehicle_start(corner_origin);
@@ -1577,6 +1415,14 @@ void run_fault_injection_scenario(FILE *telemetry_file)
     std::printf("  t=5s  GPS -> DEGRADED | t=10s CMD_ADD_WAYPOINT | t=15s SPI -> CRITICAL\n");
     std::printf("  Parada segura -> POWER_SAFE_SHUTDOWN al detenerse\n");
     std::printf("================================================================\n");
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.health = &health;
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = TELEM_SCENARIO_FAULT_INJECTION;
+    bindings.temperature_c = kAmbientTemperatureC;
+    telemetry->bind_sources(&bindings);
 
     for (uint32_t t_ms = 0U; t_ms <= kFaultInjectDurationMs; t_ms += kStepMs) {
         apply_health_contingency_air(
@@ -1690,7 +1536,10 @@ void run_fault_injection_scenario(FILE *telemetry_file)
 
         const PowerState current_power = power_manager_get_state();
         if (current_power == POWER_CONSERVATION && prev_power_state != POWER_CONSERVATION) {
-            telemetry_udp_send_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+            TelemetryInterface *telemetry = TelemetryInterface::active();
+            if (telemetry != NULL) {
+                telemetry->emit_event(t_ms, NAV_EVENT_POWER_CONSERVATION, health.health_score);
+            }
         }
         prev_power_state = current_power;
 
@@ -1720,15 +1569,9 @@ void run_fault_injection_scenario(FILE *telemetry_file)
             !safe_stop_active,
             &guidance);
 
-        telemetry_write_row(
-            telemetry_file,
-            t_ms,
-            &nav.state,
-            &guidance,
-            health.health_score,
-            health.mode,
-            TELEM_SCENARIO_FAULT_INJECTION,
-            NULL);
+        bindings.guidance = &guidance;
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1758,7 +1601,7 @@ void run_fault_injection_scenario(FILE *telemetry_file)
         radio_cmd_injected ? "injected" : "pending");
 }
 
-void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
+void run_sensor_scenario(TelemetryInterface *telemetry, SensorScenario scenario)
 {
     const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     const Vector3D origin = square_vehicle_start(corner_origin);
@@ -1788,6 +1631,14 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
     bool prev_odom_fault = false;
     float synthetic_course_deg = kCruiseCourseDeg;
     const float dt_s = static_cast<float>(kStepMs) * 0.001f;
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.health = &health;
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = telemetry_scenario_id_from_sensor(scenario);
+    bindings.temperature_c = kAmbientTemperatureC;
+    telemetry->bind_sources(&bindings);
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
         apply_health_contingency_air(
@@ -1913,15 +1764,9 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
             !safe_stop_active,
             &guidance);
 
-        telemetry_write_row(
-            telemetry_file,
-            t_ms,
-            &nav.state,
-            &guidance,
-            health.health_score,
-            health.mode,
-            telemetry_scenario_id_from_sensor(scenario),
-            NULL);
+        bindings.guidance = &guidance;
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -1969,7 +1814,7 @@ void run_sensor_scenario(FILE *telemetry_file, SensorScenario scenario)
         safe_stop_active ? "yes" : "no");
 }
 
-void run_scenario_submarine(FILE *telemetry_file)
+void run_scenario_submarine(TelemetryInterface *telemetry)
 {
     const Vector3D surface = vector3d_make(41.3900f, 2.1750f, kSurfacePressurePa);
 
@@ -2006,6 +1851,14 @@ void run_scenario_submarine(FILE *telemetry_file)
     std::printf(">>> t=0.0s: INMERSION — GPS desactivado, dominio MAR activo\n");
 
     constexpr uint32_t kDurationMs = 10000U;
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.health = &health;
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = TELEM_SCENARIO_SUBMARINE;
+    bindings.temperature_c = kSubmarineTemperatureC;
+    telemetry->bind_sources(&bindings);
 
     for (uint32_t t_ms = 0U; t_ms <= kDurationMs; t_ms += kStepMs) {
         apply_health_contingency_submarine(
@@ -2072,15 +1925,9 @@ void run_scenario_submarine(FILE *telemetry_file)
             active_waypoint_index,
             nav.state.position);
 
-        telemetry_write_row(
-            telemetry_file,
-            t_ms,
-            &nav.state,
-            &guidance,
-            health.health_score,
-            health.mode,
-            TELEM_SCENARIO_SUBMARINE,
-            NULL);
+        bindings.guidance = &guidance;
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -2118,7 +1965,7 @@ void run_scenario_submarine(FILE *telemetry_file)
         safe_stop_active ? "yes" : "no");
 }
 
-void run_mission_clean_scenario(FILE *telemetry_file)
+void run_mission_clean_scenario(TelemetryInterface *telemetry)
 {
     const Vector3D corner_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     const Vector3D start_pos = square_vehicle_start(corner_origin);
@@ -2178,6 +2025,16 @@ void run_mission_clean_scenario(FILE *telemetry_file)
 
     uint32_t ticks_logged = 0U;
 
+    GpsDeadReckoningState gps_dr{};
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.health = &health;
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = TELEM_SCENARIO_CLEAN;
+    bindings.temperature_c = kAmbientTemperatureC;
+    telemetry->bind_sources(&bindings);
+
     for (uint32_t t_ms = 0U; t_ms <= max_duration_ms; t_ms += kEkfStepMs) {
         const auto tick_start = std::chrono::steady_clock::now();
 
@@ -2188,9 +2045,18 @@ void run_mission_clean_scenario(FILE *telemetry_file)
             continue;
         }
 
+        const GpsDeadReckoningEval gps_dr_eval = gps_dead_reckoning_step(
+            &gps_dr,
+            &gps,
+            t_ms,
+            gps.fix_valid);
+
         dead_reckoning_update_imu(&nav, &imu, &health);
-        if (gps.fix_valid) {
+        if (gps_dr_eval.allow_gnss_update) {
             dead_reckoning_update_gps(&nav, &gps, &health);
+        }
+        if (gps_dr_eval.dead_reckoning_active) {
+            nav.state.mode = NAV_MODE_DEAD_RECKONING;
         }
 
         bool gnss_update_this_cycle = false;
@@ -2212,7 +2078,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
             cov_pos_n_m2 = ins_ekf_get_covariance_flat(&ekf, 0U);
             cov_pos_e_m2 = ins_ekf_get_covariance_flat(&ekf, 16U);
             cov_pos_d_m2 = ins_ekf_get_covariance_flat(&ekf, 32U);
-            if (gps.fix_valid) {
+            if (gps_dr_eval.allow_gnss_update) {
                 gnss_update_this_cycle = true;
                 const bool accepted = ekf.update_gnss(gps, &tick_nis);
                 gnss_nis_rejected = !accepted;
@@ -2233,7 +2099,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
             &guidance,
             &mission,
             &nav.state,
-            gps.fix_valid,
+            gps_dr_eval.allow_gnss_update,
             gps.satellites,
             &sensors,
             t_ms,
@@ -2268,43 +2134,24 @@ void run_mission_clean_scenario(FILE *telemetry_file)
 
         const uint8_t health_score = health.health_score;
         const NavHealthMode health_mode = health.mode;
+        (void)health_score;
+        (void)health_mode;
 
-        EkfBlackBoxExtras extras{};
-        extras.ekf = ekf_seeded ? &ekf : NULL;
-        extras.gnss_update_this_cycle = gnss_update_this_cycle;
-        extras.tick_nis = tick_nis;
-        extras.tick_innov_ned[0] = tick_innov_ned[0];
-        extras.tick_innov_ned[1] = tick_innov_ned[1];
-        extras.tick_innov_ned[2] = tick_innov_ned[2];
-        extras.pid = pid_plant.telemetry.active ? &pid_plant.telemetry : NULL;
+        bindings.ekf = ekf_seeded ? &ekf : NULL;
+        bindings.pid = pid_plant.telemetry.active ? &pid_plant.telemetry : NULL;
+        bindings.guidance = &guidance_errors;
+        ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
+        ekf_tick.nis = tick_nis;
+        ekf_tick.innov_ned[0] = tick_innov_ned[0];
+        ekf_tick.innov_ned[1] = tick_innov_ned[1];
+        ekf_tick.innov_ned[2] = tick_innov_ned[2];
 
-        telemetry_write_row(
-            telemetry_file,
-            t_ms,
-            &nav.state,
-            &guidance_errors,
-            health_score,
-            health_mode,
-            TELEM_SCENARIO_CLEAN,
-            &extras);
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, mission_state);
         ++ticks_logged;
 
         if ((ticks_logged % 1000U) == 0U) {
-            std::fflush(telemetry_file);
-        }
-
-        if ((t_ms % 2000U) == 0U) {
-            std::printf(
-                "[t=%5.1fs] mission=%s mode=%-14s pos=(%.6f,%.6f,%.1f) speed=%.2f nis=%.2f loop=%uus\n",
-                static_cast<float>(t_ms) * 0.001f,
-                mission_state_name(mission_state),
-                nav_mode_name(nav.state.mode),
-                nav.state.position.x,
-                nav.state.position.y,
-                nav.state.position.z,
-                navstate_speed_mps(&nav.state),
-                gnss_update_this_cycle ? tick_nis : 0.0f,
-                loop_us);
+            telemetry->flush();
         }
 
         if (mission_state == MISSION_STATE_SAFE_MODE) {
@@ -2316,7 +2163,7 @@ void run_mission_clean_scenario(FILE *telemetry_file)
         }
     }
 
-    std::fflush(telemetry_file);
+    telemetry->flush();
 
     std::printf("----------------------------------------------------------------\n");
     std::printf(
@@ -2332,12 +2179,171 @@ void run_mission_clean_scenario(FILE *telemetry_file)
         ekf_seeded ? ins_ekf_gnss_reject_count(&ekf) : 0U);
 }
 
+void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_path)
+{
+    InertialReplayLog replay{};
+    if (!inertial_replay_load(&replay, replay_csv_path)) {
+        return;
+    }
+
+    InsEkfFilter ekf{};
+    bool ekf_seeded = false;
+
+    DeadReckoningFilter nav{};
+    const Vector3D default_origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    dead_reckoning_init(&nav, default_origin, NAVICORE_DOMAIN_AIR);
+
+    const float dt_s = kEkfDtS;
+    const uint32_t max_duration_ms = inertial_replay_duration_ms(&replay);
+
+    uint32_t ticks_logged = 0U;
+    uint32_t predict_ticks = 0U;
+    uint32_t gnss_update_ticks = 0U;
+    uint32_t gnss_skip_ticks = 0U;
+    uint32_t imu_gap_ticks = 0U;
+
+    GpsDeadReckoningState gps_dr{};
+
+    std::printf("\n");
+    std::printf("================================================================\n");
+    std::printf(" ESCENARIO: REPLAY SiL — Log inercial CSV @ 100 Hz\n");
+    std::printf("  Entrada:  %s\n", replay_csv_path);
+    std::printf("  Salida:   %s\n", kTelemetryCsvPath);
+    std::printf("  Muestras: %zu | duracion=%u ms (%.2f s)\n",
+                inertial_replay_row_count(&replay),
+                max_duration_ms,
+                static_cast<float>(max_duration_ms) * 0.001f);
+    std::printf("  Lazo: predict(IMU) + update_gnss(GPS) cuando hay fix\n");
+    std::printf("================================================================\n");
+
+    TelemetryEkfTick ekf_tick{};
+    TelemetryBindings bindings{};
+    bindings.ekf_tick = &ekf_tick;
+    bindings.scenario_id = TELEM_SCENARIO_REPLAY;
+    bindings.temperature_c = kAmbientTemperatureC;
+    telemetry->bind_sources(&bindings);
+
+    for (uint32_t t_ms = 0U; t_ms <= max_duration_ms; t_ms += kEkfStepMs) {
+        ImuSample imu{};
+        GpsSample gps{};
+        bool has_imu = false;
+        bool has_gnss = false;
+
+        if (!inertial_replay_sample_at(&replay, t_ms, &imu, &gps, &has_imu, &has_gnss)) {
+            break;
+        }
+
+        if (!has_imu) {
+            ++imu_gap_ticks;
+            continue;
+        }
+
+        const GpsDeadReckoningEval gps_dr_eval = gps_dead_reckoning_step(
+            &gps_dr,
+            &gps,
+            t_ms,
+            has_gnss);
+
+        if (has_gnss && !ekf_seeded) {
+            float yaw_rad = 0.0f;
+            if (gps.course_deg != 0.0f) {
+                yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
+            }
+            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
+            dead_reckoning_init(&nav, gps.position, NAVICORE_DOMAIN_AIR);
+            ekf_seeded = true;
+            std::printf(
+                "REPLAY: EKF inicializado @ t=%.3f s | ref=(%.6f, %.6f, %.1f m)\n",
+                static_cast<float>(t_ms) * 0.001f,
+                gps.position.x,
+                gps.position.y,
+                gps.position.z);
+        }
+
+        bool gnss_update_this_cycle = false;
+        float tick_nis = 0.0f;
+        float tick_innov_ned[3] = {0.0f, 0.0f, 0.0f};
+        bool gnss_nis_rejected = false;
+
+        if (ekf_seeded && imu.valid) {
+            ekf.predict(imu, dt_s);
+            ++predict_ticks;
+
+            if (gps_dr_eval.allow_gnss_update) {
+                gnss_update_this_cycle = true;
+                const bool accepted = ekf.update_gnss(gps, &tick_nis);
+                gnss_nis_rejected = !accepted;
+                ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
+                if (accepted) {
+                    ins_ekf_clear_outlier_flag(&ekf);
+                    ++ekf.gnss_accept_count;
+                    ekf.last_gnss_accept_ms = gps.timestamp_ms;
+                    ++gnss_update_ticks;
+                } else {
+                    ++ekf.gnss_reject_count;
+                }
+            } else {
+                ++gnss_skip_ticks;
+            }
+
+            ins_ekf_export_nav_state(&ekf, &nav.state, t_ms, &gps);
+            if (gps_dr_eval.dead_reckoning_active) {
+                nav.state.mode = NAV_MODE_DEAD_RECKONING;
+            }
+        }
+
+        bindings.ekf = ekf_seeded ? &ekf : NULL;
+        ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
+        ekf_tick.nis = tick_nis;
+        ekf_tick.innov_ned[0] = tick_innov_ned[0];
+        ekf_tick.innov_ned[1] = tick_innov_ned[1];
+        ekf_tick.innov_ned[2] = tick_innov_ned[2];
+
+        nav.state.timestamp_ms = t_ms;
+        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        ++ticks_logged;
+
+        if ((ticks_logged % 1000U) == 0U) {
+            telemetry->flush();
+        }
+
+        if ((t_ms % 2000U) == 0U && ekf_seeded) {
+            std::printf(
+                "[t=%5.1fs] predict=%u gnss_ok=%u gnss_skip=%u nis=%.2f pos=(%.2f,%.2f,%.2f) m (NED)\n",
+                static_cast<float>(t_ms) * 0.001f,
+                predict_ticks,
+                gnss_update_ticks,
+                gnss_skip_ticks,
+                gnss_update_this_cycle ? tick_nis : 0.0f,
+                nav.state.position.x,
+                nav.state.position.y,
+                nav.state.position.z);
+        }
+    }
+
+    telemetry->flush();
+    inertial_replay_free(&replay);
+
+    std::printf("----------------------------------------------------------------\n");
+    std::printf(
+        "Resultado [REPLAY]: ticks=%u | predict=%u | gnss_updates=%u | "
+        "gnss_skipped=%u | imu_gaps=%u | ekf_accepts=%u rejects=%u\n",
+        ticks_logged,
+        predict_ticks,
+        gnss_update_ticks,
+        gnss_skip_ticks,
+        imu_gap_ticks,
+        ekf_seeded ? ins_ekf_gnss_accept_count(&ekf) : 0U,
+        ekf_seeded ? ins_ekf_gnss_reject_count(&ekf) : 0U);
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
 {
     bool enable_udp = true;
     SimPrimaryScenario scenario = kCompileTimeSimScenario;
+    const char *replay_csv_path = NULL;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--no-udp") == 0) {
@@ -2347,38 +2353,59 @@ int main(int argc, char *argv[])
             scenario = SimPrimaryScenario::SCENARIO_HIGH_STRESS;
         } else if (std::strcmp(argv[i], "--clean") == 0) {
             scenario = SimPrimaryScenario::SCENARIO_CLEAN;
+        } else if (std::strcmp(argv[i], "--replay") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --replay requiere la ruta al archivo CSV\n");
+                std::printf("Uso: NaviCore3D_Sim --replay <ruta_archivo.csv> [--no-udp]\n");
+                return 1;
+            }
+            replay_csv_path = argv[i + 1];
+            ++i;
         }
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");
-    std::printf(
-        "Perfil de simulacion: %s\n",
-        sim_primary_scenario_name(scenario));
+    if (replay_csv_path != NULL) {
+        std::printf("Modo: REPLAY SiL (%s)\n", replay_csv_path);
+    } else {
+        std::printf(
+            "Perfil de simulacion: %s\n",
+            sim_primary_scenario_name(scenario));
+    }
 
-    FILE *telemetry_file = telemetry_open(kTelemetryCsvPath);
-    if (telemetry_file == NULL) {
-        std::printf("ERROR: no se pudo crear %s\n", kTelemetryCsvPath);
+    TelemetryConfig telemetry_config{};
+    telemetry_config.enable_simulator_channel = true;
+    telemetry_config.enable_unity_channel = enable_udp;
+    telemetry_config.enable_logger_channel = true;
+    telemetry_config.logger_csv_path = kTelemetryCsvPath;
+    telemetry_config.unity_host = kTelemetryUnityHost;
+    telemetry_config.unity_port = UNITY_TELEMETRY_DEFAULT_PORT;
+    telemetry_config.sim_console_interval_ms = TELEMETRY_SIM_CONSOLE_INTERVAL_MS;
+
+    TelemetryInterface telemetry;
+    if (!telemetry.initialize(telemetry_config)) {
+        std::printf("ERROR: no se pudo inicializar telemetria (%s)\n", kTelemetryCsvPath);
         return 1;
     }
 
-    telemetry_write_header(telemetry_file);
-    std::printf("Telemetria CSV: %s\n", kTelemetryCsvPath);
+    TelemetryInterface::set_active(&telemetry);
 
-    if (enable_udp) {
-        telemetry_udp_init(kTelemetryUdpHost, kTelemetryUdpPort);
-    } else {
-        std::printf("Telemetria UDP: deshabilitada (--no-udp)\n");
+    if (!enable_udp) {
+        std::printf("Canal Unity UDP: deshabilitado (--no-udp)\n");
     }
 
-    if (scenario == SimPrimaryScenario::SCENARIO_CLEAN) {
-        run_mission_clean_scenario(telemetry_file);
+    if (replay_csv_path != NULL) {
+        run_replay_scenario(&telemetry, replay_csv_path);
+    } else if (scenario == SimPrimaryScenario::SCENARIO_CLEAN) {
+        run_mission_clean_scenario(&telemetry);
     } else {
-        run_high_demand_stress_test_scenario(telemetry_file);
+        run_high_demand_stress_test_scenario(&telemetry);
     }
 
-    std::fflush(telemetry_file);
-    std::fclose(telemetry_file);
-    telemetry_udp_log_stats();
+    telemetry.flush();
+    telemetry.log_stats();
+    telemetry.shutdown();
+    TelemetryInterface::set_active(NULL);
 
     std::printf("\nSimulacion completada. Gemelo Digital: %s\n", kTelemetryCsvPath);
     std::printf("Visualizar CSV:     python tools/visualizer.py\n");

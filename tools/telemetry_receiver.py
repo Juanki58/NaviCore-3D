@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capa de transporte UDP: decode, ring buffer y estadísticas de enlace."""
+"""Capa de transporte UDP: decode UnityTelemetryPacket, ring buffer y estadísticas."""
 
 from __future__ import annotations
 
@@ -11,9 +11,8 @@ from typing import Deque
 from telemetry_protocol import (
     COLOR_MAP,
     EVENT_SIZE,
-    PACKET_SIZE,
-    SCENARIO_NAMES,
-    TELEMETRY_SCENARIO_UNKNOWN,
+    UNITY_PACKET_SIZE,
+    UNITY_TELEMETRY_DEFAULT_PORT,
     TELEM_EVENT_HOT_RESTART,
     unpack_event,
     unpack_packet,
@@ -23,21 +22,29 @@ from telemetry_protocol import (
 @dataclass(frozen=True, slots=True)
 class TelemetrySample:
     timestamp_s: float
-    x: float
-    y: float
-    z: float
-    cross_track_m: float
-    along_track_m: float
+    pos_n_m: float
+    pos_e_m: float
+    pos_d_m: float
+    vel_n_mps: float
+    vel_e_mps: float
+    vel_d_mps: float
+    speed_mps: float
+    roll_deg: float
+    pitch_deg: float
+    yaw_deg: float
     score: int
     mode: str
     color: str
-    dropped_packets: int
     seq: int
-    scenario_id: int
-    scenario_name: str
     nav_mode: int
     nav_mode_name: str
-    temperature_c: float
+    mission_state: int
+    mission_state_name: str
+    flags: int
+    # Alias para paneles que usaban x/y
+    x: float
+    y: float
+    z: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,7 +56,12 @@ class TelemetryEvent:
 
 
 class TelemetryReceiver:
-    def __init__(self, host: str = "0.0.0.0", port: int = 5005, max_samples: int = 200):
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = UNITY_TELEMETRY_DEFAULT_PORT,
+        max_samples: int = 500,
+    ):
         self.max_samples = max_samples
         self.samples: Deque[TelemetrySample] = deque(maxlen=max_samples)
         self.events: Deque[TelemetryEvent] = deque(maxlen=50)
@@ -106,10 +118,10 @@ class TelemetryReceiver:
 
                 if event.event_id == TELEM_EVENT_HOT_RESTART and self.samples:
                     last = self.samples[-1]
-                    self.recovery_points.append((last.x, last.y))
+                    self.recovery_points.append((last.pos_n_m, last.pos_e_m))
                 continue
 
-            if len(data) != PACKET_SIZE:
+            if len(data) != UNITY_PACKET_SIZE:
                 self.packets_invalid += 1
                 continue
 
@@ -127,21 +139,28 @@ class TelemetryReceiver:
 
             sample = TelemetrySample(
                 timestamp_s=decoded["timestamp_ms"] * 1e-3,
-                x=decoded["x"],
-                y=decoded["y"],
-                z=decoded["z"],
-                cross_track_m=decoded["cross_track_m"],
-                along_track_m=decoded["along_track_m"],
+                pos_n_m=decoded["pos_n_m"],
+                pos_e_m=decoded["pos_e_m"],
+                pos_d_m=decoded["pos_d_m"],
+                vel_n_mps=decoded["vel_n_mps"],
+                vel_e_mps=decoded["vel_e_mps"],
+                vel_d_mps=decoded["vel_d_mps"],
+                speed_mps=decoded["speed_mps"],
+                roll_deg=decoded["roll_deg"],
+                pitch_deg=decoded["pitch_deg"],
+                yaw_deg=decoded["yaw_deg"],
                 score=decoded["score"],
                 mode=decoded["mode_str"],
                 color=decoded["color"],
-                dropped_packets=decoded["dropped_packets"],
                 seq=decoded["seq"],
-                scenario_id=decoded["scenario_id"],
-                scenario_name=decoded["scenario_name"],
                 nav_mode=decoded["nav_mode"],
                 nav_mode_name=decoded["nav_mode_name"],
-                temperature_c=decoded["temperature_c"],
+                mission_state=decoded["mission_state"],
+                mission_state_name=decoded["mission_state_name"],
+                flags=decoded["flags"],
+                x=decoded["x"],
+                y=decoded["y"],
+                z=decoded["z"],
             )
             self.samples.append(sample)
             self._dirty = True
@@ -153,7 +172,7 @@ class TelemetryReceiver:
                 and len(self.samples) > 1
                 and self.samples[-2].color != COLOR_MAP["NOMINAL"]
             ):
-                self.recovery_points.append((sample.x, sample.y))
+                self.recovery_points.append((sample.pos_n_m, sample.pos_e_m))
 
             self._last_score = sample.score
 
@@ -177,7 +196,7 @@ class TelemetryReceiver:
         last = self.events[-1]
         return f"{last.event_name}({last.param}) @{last.timestamp_s:.1f}s"
 
-    def latest_scenario_name(self) -> str:
+    def latest_mission_state_name(self) -> str:
         if not self.samples:
-            return SCENARIO_NAMES[TELEMETRY_SCENARIO_UNKNOWN]
-        return self.samples[-1].scenario_name
+            return "UNKNOWN"
+        return self.samples[-1].mission_state_name

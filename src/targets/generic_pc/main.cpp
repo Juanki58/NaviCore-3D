@@ -5,6 +5,10 @@
 #include <cstring>
 #include <chrono>
 
+#include "telemetry_udp.hpp"
+#include "telemetry_file_logger.hpp"
+#include "navigation_state.hpp"
+
 #ifdef _WIN32
 #include <direct.h>
 #include <windows.h>
@@ -63,10 +67,64 @@ constexpr float kHighDemandRadioStepDeg = 0.000120f;
 constexpr float kHighDemandGeomViolationStepDeg = 0.0020f;
 
 constexpr const char *kTelemetryCsvPath = TELEMETRY_LOGGER_DEFAULT_PATH;
+constexpr const char *kNavigationStateCsvPath = TELEMETRY_FILE_LOGGER_DEFAULT_PATH;
 constexpr const char *kTelemetryUnityHost = UNITY_TELEMETRY_DEFAULT_HOST;
 constexpr const char *kHighDemandScenarioName = "HIGH_DEMAND_STRESS_TEST";
 constexpr float kAmbientTemperatureC = 25.0f;
 constexpr float kSubmarineTemperatureC = 10.0f;
+
+TelemetryUdpSender *g_navigation_state_udp = nullptr;
+TelemetryFileLogger *g_navigation_state_file_logger = nullptr;
+
+void emit_ekf_navigation_state(
+    const InsEkfFilter *ekf,
+    uint32_t timestamp_ms,
+    const GpsSample *gps,
+    bool dead_reckoning)
+{
+    if (ekf == NULL || !ekf->initialized) {
+        return;
+    }
+
+    uint32_t flags = NAV_STATE_FLAG_EKF_VALID;
+    if (gps != NULL && gps->fix_valid) {
+        flags |= NAV_STATE_FLAG_GPS_FIX;
+    }
+    if (ins_ekf_nhc_enabled(ekf)) {
+        flags |= NAV_STATE_FLAG_NHC_ENABLED;
+    }
+    if (ins_ekf_outlier_detected(ekf)) {
+        flags |= NAV_STATE_FLAG_GNSS_OUTLIER;
+    }
+    if (dead_reckoning) {
+        flags |= NAV_STATE_FLAG_DEAD_RECKONING;
+    }
+
+    NavigationState nav_packet{};
+    if (!navigation_state_pack_from_ekf(ekf, timestamp_ms, flags, &nav_packet)) {
+        return;
+    }
+
+    if (g_navigation_state_udp != NULL && g_navigation_state_udp->is_ready()) {
+        (void)g_navigation_state_udp->send(nav_packet);
+    }
+    if (g_navigation_state_file_logger != NULL && g_navigation_state_file_logger->is_ready()) {
+        (void)g_navigation_state_file_logger->log(nav_packet);
+    }
+}
+
+void simulation_tick_broadcast(
+    TelemetryInterface *telemetry,
+    const NavState &nav_state,
+    MissionState mission,
+    const InsEkfFilter *ekf,
+    uint32_t timestamp_ms,
+    const GpsSample *gps,
+    bool dead_reckoning)
+{
+    telemetry->broadcast(nav_state, mission);
+    emit_ekf_navigation_state(ekf, timestamp_ms, gps, dead_reckoning);
+}
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
 
@@ -1348,7 +1406,14 @@ void run_high_demand_stress_test_scenario(TelemetryInterface *telemetry)
 
         bindings.guidance = &guidance;
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            MISSION_STATE_INIT,
+            NULL,
+            t_ms,
+            NULL,
+            false);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1579,7 +1644,14 @@ void run_fault_injection_scenario(TelemetryInterface *telemetry)
 
         bindings.guidance = &guidance;
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            MISSION_STATE_INIT,
+            NULL,
+            t_ms,
+            NULL,
+            false);
 
         if ((t_ms % 1000U) == 0U) {
             std::printf(
@@ -1774,7 +1846,14 @@ void run_sensor_scenario(TelemetryInterface *telemetry, SensorScenario scenario)
 
         bindings.guidance = &guidance;
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            MISSION_STATE_INIT,
+            NULL,
+            t_ms,
+            NULL,
+            false);
 
         if ((t_ms % 1000U) == 0U) {
             const char *note = "";
@@ -1935,7 +2014,14 @@ void run_scenario_submarine(TelemetryInterface *telemetry)
 
         bindings.guidance = &guidance;
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            MISSION_STATE_INIT,
+            NULL,
+            t_ms,
+            NULL,
+            false);
 
         if ((t_ms % 1000U) == 0U) {
             const float expected_pressure_pa = kSurfacePressurePa + (kSubmersionPressureRatePaS * t_s);
@@ -2157,7 +2243,14 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
         ekf_tick.innov_ned[2] = tick_innov_ned[2];
 
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, mission_state);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            mission_state,
+            ekf_seeded ? &ekf : NULL,
+            t_ms,
+            &gps,
+            gps_dr_eval.dead_reckoning_active);
         ++ticks_logged;
 
         if ((ticks_logged % 1000U) == 0U) {
@@ -2314,7 +2407,14 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
         ekf_tick.innov_ned[2] = tick_innov_ned[2];
 
         nav.state.timestamp_ms = t_ms;
-        telemetry->broadcast(nav.state, MISSION_STATE_INIT);
+        simulation_tick_broadcast(
+            telemetry,
+            nav.state,
+            MISSION_STATE_INIT,
+            ekf_seeded ? &ekf : NULL,
+            t_ms,
+            has_gnss ? &gps : NULL,
+            gps_dr_eval.dead_reckoning_active);
         ++ticks_logged;
 
         if ((ticks_logged % 1000U) == 0U) {
@@ -2416,8 +2516,21 @@ int main(int argc, char *argv[])
 
     TelemetryInterface::set_active(&telemetry);
 
+    TelemetryUdpSender nav_state_udp_sender;
+    if (enable_udp && nav_state_udp_sender.is_ready()) {
+        g_navigation_state_udp = &nav_state_udp_sender;
+    }
+
+    TelemetryFileLogger nav_state_file_logger(kNavigationStateCsvPath);
+    if (nav_state_file_logger.is_ready()) {
+        g_navigation_state_file_logger = &nav_state_file_logger;
+    } else {
+        std::printf("AVISO: logger NavigationState CSV no disponible (%s)\n", kNavigationStateCsvPath);
+    }
+
     if (!enable_udp) {
         std::printf("Canal Unity UDP: deshabilitado (--no-udp)\n");
+        std::printf("NavigationState UDP: deshabilitado (--no-udp)\n");
     }
 
     if (super_tunnel) {
@@ -2431,11 +2544,22 @@ int main(int argc, char *argv[])
     }
 
     telemetry.flush();
+    if (g_navigation_state_file_logger != NULL) {
+        g_navigation_state_file_logger->flush();
+    }
     telemetry.log_stats();
     telemetry.shutdown();
     TelemetryInterface::set_active(NULL);
+    if (g_navigation_state_udp != NULL && nav_state_udp_sender.send_failures() > 0U) {
+        std::printf(
+            "NavigationState UDP: %u envios fallidos\n",
+            nav_state_udp_sender.send_failures());
+    }
+    g_navigation_state_udp = NULL;
+    g_navigation_state_file_logger = NULL;
 
     std::printf("\nSimulacion completada. Gemelo Digital: %s\n", kTelemetryCsvPath);
+    std::printf("NavigationState CSV: %s\n", kNavigationStateCsvPath);
     std::printf("Visualizar CSV:     python tools/visualizer.py\n");
     std::printf("Visualizar remoto:  python tools/remote_visualizer.py\n");
     return 0;

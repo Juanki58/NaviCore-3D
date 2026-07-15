@@ -9,7 +9,7 @@
  * Tambien disponible via simulador:
  *   ./build/NaviCore3D_Sim --run-tests
  *
- * Casos incluidos: gravedad IMU, contador NHC, SUPER_TUNNEL, TC_03_Constant_Slope.
+ * Casos incluidos: gravedad IMU, contador NHC, SUPER_TUNNEL, TC_03, TC_04.
  */
 
 #include "regression_suite.hpp"

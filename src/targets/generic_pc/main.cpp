@@ -122,6 +122,11 @@ struct MissionGuidanceSnapshot {
     size_t active_waypoint_index;
 };
 
+struct MissionAutoArmState {
+    uint32_t ready_ticks;
+    bool arm_sent;
+};
+
 struct ClosedLoopPidPlant {
     PIDController speed_pid;
     PIDController yaw_pid;
@@ -185,7 +190,7 @@ GpsDeadReckoningEval gps_dead_reckoning_step(
     }
 
     result.dead_reckoning_active = state->active;
-    result.allow_gnss_update = gps->fix_valid && !gps_stale;
+    result.allow_gnss_update = gps->fix_valid && !gps_stale && sample_is_fresh;
     return result;
 }
 
@@ -857,7 +862,8 @@ void mission_guidance_step(
     float cov_pos_e_m2,
     float cov_pos_d_m2,
     float gnss_nis,
-    bool gnss_nis_rejected)
+    bool gnss_nis_rejected,
+    MissionAutoArmState *auto_arm_state)
 {
     if (guidance == NULL || mission == NULL || nav_state == NULL
         || sensors == NULL || telemetry_out == NULL || runtime_health == NULL) {
@@ -888,16 +894,16 @@ void mission_guidance_step(
     input.gnss_nis_rejected = gnss_nis_rejected;
     input.route_loaded = mission->route.count >= 2U;
 
-    static uint32_t ready_ticks = 0U;
-    static bool mission_auto_arm_sent = false;
-    if (mission_state(mission) == MISSION_STATE_READY && !mission_auto_arm_sent) {
-        ++ready_ticks;
-        if (ready_ticks >= kMissionAutoStartReadyTicks) {
-            input.arm_system = true;
-            mission_auto_arm_sent = true;
+    if (auto_arm_state != NULL) {
+        if (mission_state(mission) == MISSION_STATE_READY && !auto_arm_state->arm_sent) {
+            ++auto_arm_state->ready_ticks;
+            if (auto_arm_state->ready_ticks >= kMissionAutoStartReadyTicks) {
+                input.arm_system = true;
+                auto_arm_state->arm_sent = true;
+            }
+        } else {
+            auto_arm_state->ready_ticks = 0U;
         }
-    } else {
-        ready_ticks = 0U;
     }
 
     input.arm_system = input.arm_system || mission->armed;
@@ -2026,6 +2032,7 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
     uint32_t ticks_logged = 0U;
 
     GpsDeadReckoningState gps_dr{};
+    MissionAutoArmState mission_auto_arm{};
 
     TelemetryEkfTick ekf_tick{};
     TelemetryBindings bindings{};
@@ -2113,7 +2120,8 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
             cov_pos_e_m2,
             cov_pos_d_m2,
             tick_nis,
-            gnss_nis_rejected);
+            gnss_nis_rejected,
+            &mission_auto_arm);
 
         const MissionState mission_state = mission_controller_state(&mission);
         if (mission_state != last_mission_state) {
@@ -2223,7 +2231,11 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
     bindings.temperature_c = kAmbientTemperatureC;
     telemetry->bind_sources(&bindings);
 
+    inertial_replay_pace_reset();
+
     for (uint32_t t_ms = 0U; t_ms <= max_duration_ms; t_ms += kEkfStepMs) {
+        inertial_replay_pace_until(t_ms);
+
         ImuSample imu{};
         GpsSample gps{};
         bool has_imu = false;

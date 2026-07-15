@@ -45,12 +45,22 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_CORE_DIR}/telemetry_interface.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_PC_DIR}/inertial_replay.cpp
+    ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
     ${NAVICORE_PC_DIR}/power_state_machine.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 if(WIN32)
     target_link_libraries(NaviCore3D_Sim PRIVATE ws2_32)
 endif()
+
+add_executable(navicore_regression_test
+    ${NAVICORE_PC_DIR}/regression_tests.cpp
+    ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
+    ${NAVICORE_PC_DIR}/sensors_sim.cpp
+    ${NAVICORE_CORE_DIR}/NavState.cpp
+    ${NAVICORE_CORE_DIR}/vector3d.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+)
 
 # Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)
 set(NAVICORE_PICO2_HW_DIR ${CMAKE_SOURCE_DIR}/src/targets/pico2_hardware)

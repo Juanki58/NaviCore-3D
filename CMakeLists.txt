@@ -42,8 +42,9 @@ target_compile_definitions(NaviCore3D_VehicleDemo PRIVATE NAVICORE_VEHICLE_BUS_D
 
 add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/main.cpp
-    ${NAVICORE_PC_DIR}/telemetry_udp_sender.cpp
+    ${NAVICORE_CORE_DIR}/telemetry_interface.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
+    ${NAVICORE_PC_DIR}/inertial_replay.cpp
     ${NAVICORE_PC_DIR}/power_state_machine.cpp
     ${NAVICORE_CORE_SOURCES}
 )

@@ -1,21 +1,40 @@
 #!/usr/bin/env python3
-"""Protocolo UDP de telemetría NaviCore-3D v3 (espejo de telemetry_udp.hpp)."""
+"""Protocolo UDP de telemetría NaviCore-3D — Unity unified + eventos legacy."""
 
 from __future__ import annotations
 
+import math
 import struct
 from typing import TypedDict
 
+# --- Unity unified telemetry (espejo de src/core/telemetry_interface.hpp) ---
+UNITY_TELEMETRY_MAGIC = 0x4E55
+UNITY_TELEMETRY_DEFAULT_PORT = 5556
+UNITY_TELEMETRY_DEFAULT_HOST = "127.0.0.1"
+
+UNITY_PACKET_FMT = "<HHIffffffffffBBBBH"
+UNITY_PACKET_SIZE = struct.calcsize(UNITY_PACKET_FMT)
+
+UNITY_TELEM_FLAG_EKF_VALID = 0x01
+UNITY_TELEM_FLAG_POS_VALID = 0x02
+UNITY_TELEM_FLAG_VEL_VALID = 0x04
+UNITY_TELEM_FLAG_ATT_VALID = 0x08
+
+# --- Legacy v3 (32 B) — mantenido para pruebas retrocompatibles ---
 TELEMETRY_UDP_MAGIC = 0x4E43
 TELEMETRY_UDP_EVENT_MAGIC = 0x4E45
 TELEMETRY_UDP_DEFAULT_PORT = 5005
 TELEMETRY_UDP_DEFAULT_HOST = "127.0.0.1"
 
-PACKET_FMT = "<HHIfffHHBBhhH"
-PACKET_SIZE = struct.calcsize(PACKET_FMT)
+LEGACY_PACKET_FMT = "<HHIfffHHBBhhH"
+LEGACY_PACKET_SIZE = struct.calcsize(LEGACY_PACKET_FMT)
 
 EVENT_FMT = "<HHI"
 EVENT_SIZE = struct.calcsize(EVENT_FMT)
+
+# Alias del receptor unificado
+PACKET_SIZE = UNITY_PACKET_SIZE
+PACKET_FMT = UNITY_PACKET_FMT
 
 TELEMETRY_SCENARIO_HIGH_DEMAND = 0
 TELEMETRY_SCENARIO_FAULT_INJECTION = 1
@@ -42,6 +61,15 @@ NAV_MODE_NAMES = {
     1: "GPS",
     2: "DEAD_RECKONING",
     3: "HYBRID",
+}
+
+MISSION_STATE_NAMES = {
+    0: "INIT",
+    1: "WAIT_GPS",
+    2: "READY",
+    3: "NAVIGATE",
+    4: "RETURN_HOME",
+    5: "SAFE_MODE",
 }
 
 HEALTH_MODES = {0: "NOMINAL", 1: "DEGRADED", 2: "CRITICAL"}
@@ -76,22 +104,34 @@ class DecodedPacket(TypedDict):
     magic: int
     seq: int
     timestamp_ms: int
-    x: float
-    y: float
-    z: float
-    cross_track_m: float
-    along_track_m: float
-    score: int
-    flags: int
-    scenario_id: int
+    pos_n_m: float
+    pos_e_m: float
+    pos_d_m: float
+    vel_n_mps: float
+    vel_e_mps: float
+    vel_d_mps: float
+    quat_w: float
+    quat_x: float
+    quat_y: float
+    quat_z: float
+    roll_deg: float
+    pitch_deg: float
+    yaw_deg: float
+    speed_mps: float
     nav_mode: int
-    temperature_c: float
+    mission_state: int
+    health_mode: int
+    flags: int
+    score: int
     mode_bits: int
     mode_str: str
     color: str
-    dropped_packets: int
-    scenario_name: str
+    mission_state_name: str
     nav_mode_name: str
+    # Alias retrocompatibles con el visualizador anterior
+    x: float
+    y: float
+    z: float
 
 
 class DecodedEvent(TypedDict):
@@ -100,6 +140,29 @@ class DecodedEvent(TypedDict):
     param: int
     timestamp_ms: int
     event_name: str
+
+
+def quat_to_euler_deg(w: float, x: float, y: float, z: float) -> tuple[float, float, float]:
+    """Cuaternión Hamilton (w,x,y,z) → roll/pitch/yaw en grados (convención NED / ZYX)."""
+    sinr_cosp = 2.0 * (w * x + y * z)
+    cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
+    roll = math.atan2(sinr_cosp, cosr_cosp)
+
+    sinp = 2.0 * (w * y - z * x)
+    if abs(sinp) >= 1.0:
+        pitch = math.copysign(math.pi / 2.0, sinp)
+    else:
+        pitch = math.asin(sinp)
+
+    siny_cosp = 2.0 * (w * z + x * y)
+    cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+    yaw = math.atan2(siny_cosp, cosy_cosp)
+
+    return math.degrees(roll), math.degrees(pitch), math.degrees(yaw)
+
+
+def ned_speed_mps(vel_n_mps: float, vel_e_mps: float, vel_d_mps: float) -> float:
+    return math.sqrt((vel_n_mps * vel_n_mps) + (vel_e_mps * vel_e_mps) + (vel_d_mps * vel_d_mps))
 
 
 def encode_flags(health_mode: int, dropped: int) -> int:
@@ -121,7 +184,7 @@ def encode_along_deci_m(value_m: float) -> int:
     return int(round(clamped * 10.0))
 
 
-def pack_packet(
+def pack_legacy_packet(
     timestamp_ms: int,
     x: float,
     y: float,
@@ -139,7 +202,7 @@ def pack_packet(
 ) -> bytes:
     flags = encode_flags(health_mode, dropped)
     return struct.pack(
-        PACKET_FMT,
+        LEGACY_PACKET_FMT,
         magic,
         seq & 0xFFFF,
         timestamp_ms & 0xFFFFFFFF,
@@ -156,9 +219,153 @@ def pack_packet(
     )
 
 
+def pack_packet(
+    timestamp_ms: int,
+    x: float,
+    y: float,
+    z: float,
+    cross_track_m: float,
+    along_track_m: float,
+    score: int,
+    health_mode: int,
+    dropped: int,
+    scenario_id: int,
+    nav_mode: int,
+    temperature_c: float,
+    seq: int = 0,
+    magic: int = TELEMETRY_UDP_MAGIC,
+) -> bytes:
+    """Alias retrocompatible — empaqueta telemetría legacy v3 (32 B)."""
+    return pack_legacy_packet(
+        timestamp_ms,
+        x,
+        y,
+        z,
+        cross_track_m,
+        along_track_m,
+        score,
+        health_mode,
+        dropped,
+        scenario_id,
+        nav_mode,
+        temperature_c,
+        seq=seq,
+        magic=magic,
+    )
+
+
+def pack_unity_packet(
+    timestamp_ms: int,
+    pos_n_m: float,
+    pos_e_m: float,
+    pos_d_m: float,
+    vel_n_mps: float,
+    vel_e_mps: float,
+    vel_d_mps: float,
+    quat_w: float,
+    quat_x: float,
+    quat_y: float,
+    quat_z: float,
+    nav_mode: int,
+    mission_state: int,
+    health_mode: int,
+    flags: int,
+    health_score: int,
+    seq: int = 0,
+    magic: int = UNITY_TELEMETRY_MAGIC,
+) -> bytes:
+    return struct.pack(
+        UNITY_PACKET_FMT,
+        magic,
+        seq & 0xFFFF,
+        timestamp_ms & 0xFFFFFFFF,
+        pos_n_m,
+        pos_e_m,
+        pos_d_m,
+        vel_n_mps,
+        vel_e_mps,
+        vel_d_mps,
+        quat_w,
+        quat_x,
+        quat_y,
+        quat_z,
+        nav_mode & 0xFF,
+        mission_state & 0xFF,
+        health_mode & 0xFF,
+        flags & 0xFF,
+        health_score & 0xFFFF,
+    )
+
+
 def unpack_packet(data: bytes) -> DecodedPacket:
-    if len(data) != PACKET_SIZE:
-        raise ValueError(f"Paquete invalido: {len(data)} bytes (esperado {PACKET_SIZE})")
+    if len(data) != UNITY_PACKET_SIZE:
+        raise ValueError(f"Paquete invalido: {len(data)} bytes (esperado {UNITY_PACKET_SIZE})")
+
+    (
+        magic,
+        seq,
+        timestamp_ms,
+        pos_n_m,
+        pos_e_m,
+        pos_d_m,
+        vel_n_mps,
+        vel_e_mps,
+        vel_d_mps,
+        quat_w,
+        quat_x,
+        quat_y,
+        quat_z,
+        nav_mode,
+        mission_state,
+        health_mode,
+        flags,
+        health_score,
+    ) = struct.unpack(UNITY_PACKET_FMT, data)
+
+    if magic != UNITY_TELEMETRY_MAGIC:
+        raise ValueError(f"Magic invalido: 0x{magic:04X} (esperado 0x{UNITY_TELEMETRY_MAGIC:04X})")
+
+    mode_str = HEALTH_MODES.get(health_mode, "CRITICAL")
+    roll_deg, pitch_deg, yaw_deg = quat_to_euler_deg(quat_w, quat_x, quat_y, quat_z)
+    speed_mps = ned_speed_mps(vel_n_mps, vel_e_mps, vel_d_mps)
+
+    return {
+        "magic": magic,
+        "seq": seq,
+        "timestamp_ms": timestamp_ms,
+        "pos_n_m": pos_n_m,
+        "pos_e_m": pos_e_m,
+        "pos_d_m": pos_d_m,
+        "vel_n_mps": vel_n_mps,
+        "vel_e_mps": vel_e_mps,
+        "vel_d_mps": vel_d_mps,
+        "quat_w": quat_w,
+        "quat_x": quat_x,
+        "quat_y": quat_y,
+        "quat_z": quat_z,
+        "roll_deg": roll_deg,
+        "pitch_deg": pitch_deg,
+        "yaw_deg": yaw_deg,
+        "speed_mps": speed_mps,
+        "nav_mode": nav_mode,
+        "mission_state": mission_state,
+        "health_mode": health_mode,
+        "flags": flags,
+        "score": health_score,
+        "mode_bits": health_mode,
+        "mode_str": mode_str,
+        "color": COLOR_MAP[mode_str],
+        "mission_state_name": MISSION_STATE_NAMES.get(mission_state, f"STATE_{mission_state}"),
+        "nav_mode_name": NAV_MODE_NAMES.get(nav_mode, "UNKNOWN"),
+        "x": pos_n_m,
+        "y": pos_e_m,
+        "z": pos_d_m,
+    }
+
+
+def unpack_legacy_packet(data: bytes) -> dict:
+    if len(data) != LEGACY_PACKET_SIZE:
+        raise ValueError(f"Paquete legacy invalido: {len(data)} bytes (esperado {LEGACY_PACKET_SIZE})")
 
     (
         magic,
@@ -174,13 +381,12 @@ def unpack_packet(data: bytes) -> DecodedPacket:
         temperature_deci_c,
         cross_track_deci_m,
         along_track_deci_m,
-    ) = struct.unpack(PACKET_FMT, data)
+    ) = struct.unpack(LEGACY_PACKET_FMT, data)
 
     if magic != TELEMETRY_UDP_MAGIC:
-        raise ValueError(f"Magic invalido: 0x{magic:04X} (esperado 0x{TELEMETRY_UDP_MAGIC:04X})")
+        raise ValueError(f"Magic legacy invalido: 0x{magic:04X}")
 
     mode_bits = flags & 0x03
-    dropped_packets = flags >> 2
     mode_str = HEALTH_MODES.get(mode_bits, "CRITICAL")
 
     return {
@@ -190,19 +396,15 @@ def unpack_packet(data: bytes) -> DecodedPacket:
         "x": x,
         "y": y,
         "z": z,
-        "cross_track_m": cross_track_deci_m / 10.0,
-        "along_track_m": along_track_deci_m / 10.0,
         "score": score,
-        "flags": flags,
-        "scenario_id": scenario_id,
-        "nav_mode": nav_mode,
-        "temperature_c": temperature_deci_c / 10.0,
-        "mode_bits": mode_bits,
         "mode_str": mode_str,
         "color": COLOR_MAP[mode_str],
-        "dropped_packets": dropped_packets,
         "scenario_name": SCENARIO_NAMES.get(scenario_id, SCENARIO_NAMES[TELEMETRY_SCENARIO_UNKNOWN]),
         "nav_mode_name": NAV_MODE_NAMES.get(nav_mode, "UNKNOWN"),
+        "temperature_c": temperature_deci_c / 10.0,
+        "cross_track_m": cross_track_deci_m / 10.0,
+        "along_track_m": along_track_deci_m / 10.0,
+        "dropped_packets": flags >> 2,
     }
 
 

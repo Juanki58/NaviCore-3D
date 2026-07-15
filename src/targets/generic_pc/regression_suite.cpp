@@ -1,6 +1,7 @@
 #include "regression_suite.hpp"
 
 #include "ins_ekf.hpp"
+#include "constant_slope_benchmark.hpp"
 #include "super_tunnel_benchmark.hpp"
 
 #include <cmath>
@@ -14,7 +15,7 @@
 
 namespace {
 
-constexpr int kRegressionTestCount = 3;
+constexpr int kRegressionTestCount = 4;
 constexpr int kMaxRegressionReports = 8;
 constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
@@ -34,6 +35,12 @@ struct SuperTunnelCaseMetrics {
     SuperTunnelPassResult result;
 };
 
+struct ConstantSlopeCaseMetrics {
+    bool valid;
+    bool nhc_enabled;
+    ConstantSlopePassResult result;
+};
+
 struct RegressionTestReport {
     char name[64];
     bool passed;
@@ -43,6 +50,8 @@ struct RegressionTestReport {
     bool has_super_tunnel_cases;
     SuperTunnelCaseMetrics super_tunnel_cases[2];
     int super_tunnel_case_count;
+    bool has_constant_slope_case;
+    ConstantSlopeCaseMetrics constant_slope_case;
 };
 
 RegressionTestReport g_reports[kMaxRegressionReports];
@@ -106,6 +115,8 @@ RegressionTestReport *begin_test_report(const char *name)
     report->simple_metric_count = 0;
     report->has_super_tunnel_cases = false;
     report->super_tunnel_case_count = 0;
+    report->has_constant_slope_case = false;
+    report->constant_slope_case.valid = false;
     return report;
 }
 
@@ -141,6 +152,21 @@ void add_super_tunnel_case(
     entry->nhc_enabled = nhc_enabled;
     entry->result = *result;
     report->has_super_tunnel_cases = true;
+}
+
+void add_constant_slope_case(
+    RegressionTestReport *report,
+    bool nhc_enabled,
+    const ConstantSlopePassResult *result)
+{
+    if (report == NULL || result == NULL) {
+        return;
+    }
+
+    report->constant_slope_case.valid = true;
+    report->constant_slope_case.nhc_enabled = nhc_enabled;
+    report->constant_slope_case.result = *result;
+    report->has_constant_slope_case = true;
 }
 
 void run_test(const char *name, void (*body)(RegressionTestReport *report))
@@ -239,6 +265,29 @@ void test_super_tunnel_nhc_regression(RegressionTestReport *report)
         "updates NHC durante trayecto completo");
 }
 
+void test_tc_03_constant_slope(RegressionTestReport *report)
+{
+    const ConstantSlopePassResult result = constant_slope_run_pass(true, false);
+
+    add_constant_slope_case(report, true, &result);
+
+    std::printf(
+        "  metricas: rms_pos=%.2f rms_vel=%.2f rms_vel_d=%.2f rms_yaw=%.2f innov_norm=%.3f\n",
+        result.outage_rms.position_m,
+        result.outage_rms.velocity_mps,
+        result.outage_rms.velocity_d_mps,
+        result.outage_rms.yaw_deg,
+        result.nhc_innovation_max.norm_mps);
+
+    expect_less(result.outage_rms.position_m, 3.0f, "TC-03 RMS posicion 3D en apagon < 3 m");
+    expect_less(result.outage_rms.velocity_d_mps, 0.5f, "TC-03 RMS velocidad vertical NED baja");
+    expect_less(result.drift_final_m, 5.0f, "TC-03 deriva final tras recuperar GPS");
+    expect_greater(
+        static_cast<float>(result.nhc_updates),
+        1000.0f,
+        "TC-03 updates NHC durante trayecto");
+}
+
 void write_json_string(FILE *fp, const char *value)
 {
     std::fprintf(fp, "\"");
@@ -272,6 +321,53 @@ void write_super_tunnel_case_json(FILE *fp, const SuperTunnelCaseMetrics *entry)
     std::fprintf(fp, "          \"outage_rms\": {\n");
     std::fprintf(fp, "            \"position_m\": %.6f,\n", result->outage_rms.position_m);
     std::fprintf(fp, "            \"velocity_mps\": %.6f,\n", result->outage_rms.velocity_mps);
+    std::fprintf(fp, "            \"yaw_deg\": %.6f,\n", result->outage_rms.yaw_deg);
+    std::fprintf(fp, "            \"sample_count\": %u\n", result->outage_rms.sample_count);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"nhc_innovation_max_mps\": {\n");
+    std::fprintf(
+        fp,
+        "            \"lateral\": %.6f,\n",
+        result->nhc_innovation_max.lateral_mps);
+    std::fprintf(
+        fp,
+        "            \"vertical\": %.6f,\n",
+        result->nhc_innovation_max.vertical_mps);
+    std::fprintf(
+        fp,
+        "            \"norm\": %.6f\n",
+        result->nhc_innovation_max.norm_mps);
+    std::fprintf(fp, "          }\n");
+    std::fprintf(fp, "        }");
+}
+
+void write_constant_slope_case_json(FILE *fp, const ConstantSlopeCaseMetrics *entry)
+{
+    const ConstantSlopePassResult *result = &entry->result;
+    std::fprintf(fp, "        {\n");
+    std::fprintf(fp, "          \"nhc_enabled\": %s,\n", entry->nhc_enabled ? "true" : "false");
+    std::fprintf(fp, "          \"scenario\": {\n");
+    std::fprintf(fp, "            \"grade_percent\": %.1f,\n", TC03_GRADE_PERCENT);
+    std::fprintf(fp, "            \"pitch_deg\": %.6f,\n", TC03_PITCH_RAD * (180.0f / static_cast<float>(M_PI)));
+    std::fprintf(fp, "            \"speed_mps\": %.1f\n", TC03_SPEED_MPS);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"gps_outage\": {\n");
+    std::fprintf(
+        fp,
+        "            \"start_s\": %.1f,\n",
+        static_cast<float>(TC03_GPS_OFF_START_MS) * 0.001f);
+    std::fprintf(
+        fp,
+        "            \"end_s\": %.1f\n",
+        static_cast<float>(TC03_GPS_OFF_END_MS) * 0.001f);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"drift_exit_outage_m\": %.6f,\n", result->drift_exit_outage_m);
+    std::fprintf(fp, "          \"drift_final_m\": %.6f,\n", result->drift_final_m);
+    std::fprintf(fp, "          \"nhc_updates\": %u,\n", result->nhc_updates);
+    std::fprintf(fp, "          \"outage_rms\": {\n");
+    std::fprintf(fp, "            \"position_m\": %.6f,\n", result->outage_rms.position_m);
+    std::fprintf(fp, "            \"velocity_mps\": %.6f,\n", result->outage_rms.velocity_mps);
+    std::fprintf(fp, "            \"velocity_d_mps\": %.6f,\n", result->outage_rms.velocity_d_mps);
     std::fprintf(fp, "            \"yaw_deg\": %.6f,\n", result->outage_rms.yaw_deg);
     std::fprintf(fp, "            \"sample_count\": %u\n", result->outage_rms.sample_count);
     std::fprintf(fp, "          },\n");
@@ -359,6 +455,11 @@ bool export_regression_report_json()
             std::fprintf(fp, "      ]");
         }
 
+        if (report->has_constant_slope_case) {
+            std::fprintf(fp, ",\n      \"case\": ");
+            write_constant_slope_case_json(fp, &report->constant_slope_case);
+        }
+
         std::fprintf(fp, "\n    }%s\n", (i + 1 < g_report_count) ? "," : "");
     }
 
@@ -382,6 +483,7 @@ int run_regression_suite()
     run_test("ins_ekf_gravity_compensation", test_ins_ekf_gravity_compensation);
     run_test("nhc_predict_counter", test_nhc_enabled_predict_increments_counter);
     run_test("super_tunnel_nhc_regression", test_super_tunnel_nhc_regression);
+    run_test("TC_03_Constant_Slope", test_tc_03_constant_slope);
 
     std::printf("============================\n");
     (void)export_regression_report_json();

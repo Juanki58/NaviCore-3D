@@ -1,6 +1,6 @@
 {
   "suite": "NaviCore-3D",
-  "generated_at": "2026-07-15T11:53:21",
+  "generated_at": "2026-07-15T16:09:20",
   "result": "OK",
   "failure_count": 0,
   "tests": [
@@ -68,6 +68,37 @@
           }
         }
       ]
+    },
+    {
+      "name": "TC_03_Constant_Slope",
+      "passed": true,
+      "case":         {
+          "nhc_enabled": true,
+          "scenario": {
+            "grade_percent": 10.0,
+            "pitch_deg": 5.710593,
+            "speed_mps": 25.0
+          },
+          "gps_outage": {
+            "start_s": 15.0,
+            "end_s": 30.0
+          },
+          "drift_exit_outage_m": 0.028504,
+          "drift_final_m": 0.000308,
+          "nhc_updates": 4001,
+          "outage_rms": {
+            "position_m": 0.016113,
+            "velocity_mps": 0.001744,
+            "velocity_d_mps": 0.000236,
+            "yaw_deg": 0.000005,
+            "sample_count": 1500
+          },
+          "nhc_innovation_max_mps": {
+            "lateral": 0.000003,
+            "vertical": 0.000001,
+            "norm": 0.000003
+          }
+        }
     }
   ]
 }

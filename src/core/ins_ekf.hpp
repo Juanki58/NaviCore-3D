@@ -55,6 +55,14 @@ typedef float InsEkfVec3[3];
 #define NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR 1.0e-6f
 #endif
 
+#ifndef NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS
+#define NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS 0.1f
+#endif
+
+#ifndef NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS
+#define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 0.05f
+#endif
+
 enum InsEkfErrorIdx : uint8_t {
     INS_ERR_POS_N = 0,
     INS_ERR_POS_E = 1,
@@ -132,13 +140,18 @@ struct InsEkfFilter {
     uint32_t last_gnss_accept_ms;
     uint32_t gnss_accept_count;
     uint32_t gnss_reject_count;
+    uint32_t nhc_update_count;
 
     NavDomain domain;
     bool initialized;
     bool outlier_detected;
+    bool nhc_enabled;
+    float nhc_lateral_var_m2;
+    float nhc_vertical_var_m2;
 
     void predict(const ImuSample &imu_sample, float dt_s);
     bool update_gnss(const GpsSample &gps_sample, float *out_nis);
+    bool update_nhc();
 };
 
 NAVICORE_STATIC_ASSERT(sizeof(InsEkfCovariance) == (INS_EKF_STATE_DIM * INS_EKF_STATE_DIM * sizeof(float)),
@@ -152,6 +165,10 @@ void ins_ekf_init(
 
 bool ins_ekf_predict(InsEkfFilter *filter, const ImuSample *imu);
 bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps);
+bool ins_ekf_update_nhc(InsEkfFilter *filter);
+void ins_ekf_set_nhc_enabled(InsEkfFilter *filter, bool enabled);
+bool ins_ekf_nhc_enabled(const InsEkfFilter *filter);
+uint32_t ins_ekf_nhc_update_count(const InsEkfFilter *filter);
 
 bool ins_ekf_outlier_detected(const InsEkfFilter *filter);
 void ins_ekf_clear_outlier_flag(InsEkfFilter *filter);

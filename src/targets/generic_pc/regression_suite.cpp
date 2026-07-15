@@ -2,6 +2,7 @@
 
 #include "ins_ekf.hpp"
 #include "constant_slope_benchmark.hpp"
+#include "slalom_benchmark.hpp"
 #include "super_tunnel_benchmark.hpp"
 
 #include <cmath>
@@ -15,7 +16,7 @@
 
 namespace {
 
-constexpr int kRegressionTestCount = 4;
+constexpr int kRegressionTestCount = 5;
 constexpr int kMaxRegressionReports = 8;
 constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
@@ -41,6 +42,12 @@ struct ConstantSlopeCaseMetrics {
     ConstantSlopePassResult result;
 };
 
+struct SlalomCaseMetrics {
+    bool valid;
+    bool nhc_enabled;
+    SlalomPassResult result;
+};
+
 struct RegressionTestReport {
     char name[64];
     bool passed;
@@ -52,6 +59,8 @@ struct RegressionTestReport {
     int super_tunnel_case_count;
     bool has_constant_slope_case;
     ConstantSlopeCaseMetrics constant_slope_case;
+    bool has_slalom_case;
+    SlalomCaseMetrics slalom_case;
 };
 
 RegressionTestReport g_reports[kMaxRegressionReports];
@@ -117,6 +126,8 @@ RegressionTestReport *begin_test_report(const char *name)
     report->super_tunnel_case_count = 0;
     report->has_constant_slope_case = false;
     report->constant_slope_case.valid = false;
+    report->has_slalom_case = false;
+    report->slalom_case.valid = false;
     return report;
 }
 
@@ -167,6 +178,21 @@ void add_constant_slope_case(
     report->constant_slope_case.nhc_enabled = nhc_enabled;
     report->constant_slope_case.result = *result;
     report->has_constant_slope_case = true;
+}
+
+void add_slalom_case(
+    RegressionTestReport *report,
+    bool nhc_enabled,
+    const SlalomPassResult *result)
+{
+    if (report == NULL || result == NULL) {
+        return;
+    }
+
+    report->slalom_case.valid = true;
+    report->slalom_case.nhc_enabled = nhc_enabled;
+    report->slalom_case.result = *result;
+    report->has_slalom_case = true;
 }
 
 void run_test(const char *name, void (*body)(RegressionTestReport *report))
@@ -288,6 +314,29 @@ void test_tc_03_constant_slope(RegressionTestReport *report)
         "TC-03 updates NHC durante trayecto");
 }
 
+void test_tc_04_aggressive_slalom(RegressionTestReport *report)
+{
+    const SlalomPassResult result = slalom_run_pass(true, false);
+
+    add_slalom_case(report, true, &result);
+
+    std::printf(
+        "  metricas: rms_pos=%.2f rms_vel=%.2f rms_yaw=%.2f innov_norm=%.3f nhc_updates=%u\n",
+        result.outage_rms.position_m,
+        result.outage_rms.velocity_mps,
+        result.outage_rms.yaw_deg,
+        result.nhc_innovation_max.norm_mps,
+        result.nhc_updates);
+
+    expect_less(result.outage_rms.position_m, 5.0f, "TC-04 RMS posicion 3D en apagon < 5 m");
+    expect_less(result.outage_rms.yaw_deg, 1.5f, "TC-04 RMS yaw en apagon < 1.5 deg");
+    expect_less(result.drift_final_m, 5.0f, "TC-04 deriva final tras recuperar GPS");
+    expect_greater(
+        static_cast<float>(result.nhc_updates),
+        1000.0f,
+        "TC-04 updates NHC durante slalom agresivo");
+}
+
 void write_json_string(FILE *fp, const char *value)
 {
     std::fprintf(fp, "\"");
@@ -388,6 +437,52 @@ void write_constant_slope_case_json(FILE *fp, const ConstantSlopeCaseMetrics *en
     std::fprintf(fp, "        }");
 }
 
+void write_slalom_case_json(FILE *fp, const SlalomCaseMetrics *entry)
+{
+    const SlalomPassResult *result = &entry->result;
+    std::fprintf(fp, "        {\n");
+    std::fprintf(fp, "          \"nhc_enabled\": %s,\n", entry->nhc_enabled ? "true" : "false");
+    std::fprintf(fp, "          \"scenario\": {\n");
+    std::fprintf(fp, "            \"speed_kmh\": %.1f,\n", TC04_SPEED_KMH);
+    std::fprintf(fp, "            \"max_lateral_accel_mps2\": %.1f,\n", TC04_MAX_LATERAL_ACCEL_MPS2);
+    std::fprintf(fp, "            \"slalom_period_s\": %.1f\n", TC04_SLALOM_PERIOD_S);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"gps_outage\": {\n");
+    std::fprintf(
+        fp,
+        "            \"start_s\": %.1f,\n",
+        static_cast<float>(TC04_GPS_OFF_START_MS) * 0.001f);
+    std::fprintf(
+        fp,
+        "            \"end_s\": %.1f\n",
+        static_cast<float>(TC04_GPS_OFF_END_MS) * 0.001f);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"drift_exit_outage_m\": %.6f,\n", result->drift_exit_outage_m);
+    std::fprintf(fp, "          \"drift_final_m\": %.6f,\n", result->drift_final_m);
+    std::fprintf(fp, "          \"nhc_updates\": %u,\n", result->nhc_updates);
+    std::fprintf(fp, "          \"outage_rms\": {\n");
+    std::fprintf(fp, "            \"position_m\": %.6f,\n", result->outage_rms.position_m);
+    std::fprintf(fp, "            \"velocity_mps\": %.6f,\n", result->outage_rms.velocity_mps);
+    std::fprintf(fp, "            \"yaw_deg\": %.6f,\n", result->outage_rms.yaw_deg);
+    std::fprintf(fp, "            \"sample_count\": %u\n", result->outage_rms.sample_count);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"nhc_innovation_max_mps\": {\n");
+    std::fprintf(
+        fp,
+        "            \"lateral\": %.6f,\n",
+        result->nhc_innovation_max.lateral_mps);
+    std::fprintf(
+        fp,
+        "            \"vertical\": %.6f,\n",
+        result->nhc_innovation_max.vertical_mps);
+    std::fprintf(
+        fp,
+        "            \"norm\": %.6f\n",
+        result->nhc_innovation_max.norm_mps);
+    std::fprintf(fp, "          }\n");
+    std::fprintf(fp, "        }");
+}
+
 bool export_regression_report_json()
 {
     FILE *fp = std::fopen(kRegressionReportPath, "w");
@@ -460,6 +555,11 @@ bool export_regression_report_json()
             write_constant_slope_case_json(fp, &report->constant_slope_case);
         }
 
+        if (report->has_slalom_case) {
+            std::fprintf(fp, ",\n      \"case\": ");
+            write_slalom_case_json(fp, &report->slalom_case);
+        }
+
         std::fprintf(fp, "\n    }%s\n", (i + 1 < g_report_count) ? "," : "");
     }
 
@@ -484,6 +584,7 @@ int run_regression_suite()
     run_test("nhc_predict_counter", test_nhc_enabled_predict_increments_counter);
     run_test("super_tunnel_nhc_regression", test_super_tunnel_nhc_regression);
     run_test("TC_03_Constant_Slope", test_tc_03_constant_slope);
+    run_test("TC_04_Aggressive_Slalom", test_tc_04_aggressive_slalom);
 
     std::printf("============================\n");
     (void)export_regression_report_json();

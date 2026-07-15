@@ -47,8 +47,11 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/inertial_replay.cpp
     ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
     ${NAVICORE_PC_DIR}/constant_slope_benchmark.cpp
+    ${NAVICORE_PC_DIR}/slalom_benchmark.cpp
     ${NAVICORE_PC_DIR}/regression_suite.cpp
     ${NAVICORE_PC_DIR}/power_state_machine.cpp
+    ${NAVICORE_PC_DIR}/telemetry_udp.cpp
+    ${NAVICORE_PC_DIR}/telemetry_file_logger.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 if(WIN32)
@@ -60,6 +63,7 @@ add_executable(navicore_regression_test
     ${NAVICORE_PC_DIR}/regression_suite.cpp
     ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
     ${NAVICORE_PC_DIR}/constant_slope_benchmark.cpp
+    ${NAVICORE_PC_DIR}/slalom_benchmark.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_CORE_DIR}/NavState.cpp
     ${NAVICORE_CORE_DIR}/vector3d.cpp

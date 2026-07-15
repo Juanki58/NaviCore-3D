@@ -1,5 +1,5 @@
 #include "telemetry_udp_sender.hpp"
-#include "telemetry_udp.hpp"
+#include "telemetry_udp_legacy.hpp"
 
 #include <cmath>
 #include <cstring>

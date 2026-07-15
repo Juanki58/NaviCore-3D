@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -14,8 +15,37 @@
 namespace {
 
 constexpr int kRegressionTestCount = 3;
+constexpr int kMaxRegressionReports = 8;
+constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
 int g_failures = 0;
+int g_report_count = 0;
+
+struct SimpleTestMetrics {
+    bool valid;
+    float value;
+    const char *unit;
+    const char *label;
+};
+
+struct SuperTunnelCaseMetrics {
+    bool valid;
+    bool nhc_enabled;
+    SuperTunnelPassResult result;
+};
+
+struct RegressionTestReport {
+    char name[64];
+    bool passed;
+    bool has_simple_metrics;
+    SimpleTestMetrics simple_metrics[4];
+    int simple_metric_count;
+    bool has_super_tunnel_cases;
+    SuperTunnelCaseMetrics super_tunnel_cases[2];
+    int super_tunnel_case_count;
+};
+
+RegressionTestReport g_reports[kMaxRegressionReports];
 
 void expect_true(bool condition, const char *message)
 {
@@ -63,17 +93,71 @@ ImuSample make_ideal_stationary_imu(uint32_t timestamp_ms)
     return imu;
 }
 
-void run_test(const char *name, void (*body)())
+RegressionTestReport *begin_test_report(const char *name)
+{
+    if (g_report_count >= kMaxRegressionReports) {
+        return NULL;
+    }
+
+    RegressionTestReport *report = &g_reports[g_report_count++];
+    std::snprintf(report->name, sizeof(report->name), "%s", name);
+    report->passed = true;
+    report->has_simple_metrics = false;
+    report->simple_metric_count = 0;
+    report->has_super_tunnel_cases = false;
+    report->super_tunnel_case_count = 0;
+    return report;
+}
+
+void add_simple_metric(
+    RegressionTestReport *report,
+    const char *label,
+    float value,
+    const char *unit)
+{
+    if (report == NULL || report->simple_metric_count >= 4) {
+        return;
+    }
+
+    SimpleTestMetrics *metric = &report->simple_metrics[report->simple_metric_count++];
+    metric->valid = true;
+    metric->label = label;
+    metric->value = value;
+    metric->unit = unit;
+    report->has_simple_metrics = true;
+}
+
+void add_super_tunnel_case(
+    RegressionTestReport *report,
+    bool nhc_enabled,
+    const SuperTunnelPassResult *result)
+{
+    if (report == NULL || result == NULL || report->super_tunnel_case_count >= 2) {
+        return;
+    }
+
+    SuperTunnelCaseMetrics *entry = &report->super_tunnel_cases[report->super_tunnel_case_count++];
+    entry->valid = true;
+    entry->nhc_enabled = nhc_enabled;
+    entry->result = *result;
+    report->has_super_tunnel_cases = true;
+}
+
+void run_test(const char *name, void (*body)(RegressionTestReport *report))
 {
     const int before = g_failures;
     std::printf("[TEST] %s\n", name);
-    body();
+    RegressionTestReport *report = begin_test_report(name);
+    body(report);
+    if (report != NULL) {
+        report->passed = (g_failures == before);
+    }
     if (g_failures == before) {
         std::printf("  PASS\n");
     }
 }
 
-void test_ins_ekf_gravity_compensation()
+void test_ins_ekf_gravity_compensation(RegressionTestReport *report)
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     InsEkfFilter ekf{};
@@ -89,9 +173,10 @@ void test_ins_ekf_gravity_compensation()
     const float speed_mps = std::sqrt(
         (vel_ned[0] * vel_ned[0]) + (vel_ned[1] * vel_ned[1]) + (vel_ned[2] * vel_ned[2]));
     expect_less(speed_mps, 0.5f, "velocidad tras 1 s en reposo con IMU ideal");
+    add_simple_metric(report, "final_speed_mps", speed_mps, "m/s");
 }
 
-void test_nhc_enabled_predict_increments_counter()
+void test_nhc_enabled_predict_increments_counter(RegressionTestReport *report)
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
     InsEkfFilter ekf{};
@@ -106,24 +191,40 @@ void test_nhc_enabled_predict_increments_counter()
         (void)ins_ekf_predict(&ekf, &imu);
     }
 
+    const uint32_t nhc_updates = ins_ekf_nhc_update_count(&ekf);
+    float innov_lat = 0.0f;
+    float innov_vert = 0.0f;
+    float innov_norm = 0.0f;
+    ins_ekf_get_nhc_innovation_max(&ekf, &innov_lat, &innov_vert, &innov_norm);
+
     expect_greater(
-        static_cast<float>(ins_ekf_nhc_update_count(&ekf)),
+        static_cast<float>(nhc_updates),
         5.0f,
         "contador NHC incrementa con prediccion IMU");
+    add_simple_metric(report, "nhc_updates", static_cast<float>(nhc_updates), "count");
+    add_simple_metric(report, "nhc_innovation_max_lateral_mps", innov_lat, "m/s");
+    add_simple_metric(report, "nhc_innovation_max_vertical_mps", innov_vert, "m/s");
+    add_simple_metric(report, "nhc_innovation_max_norm_mps", innov_norm, "m/s");
 }
 
-void test_super_tunnel_nhc_regression()
+void test_super_tunnel_nhc_regression(RegressionTestReport *report)
 {
     const SuperTunnelPassResult without_nhc = super_tunnel_run_pass(false, false);
     const SuperTunnelPassResult with_nhc = super_tunnel_run_pass(true, false);
 
+    add_super_tunnel_case(report, false, &without_nhc);
+    add_super_tunnel_case(report, true, &with_nhc);
+
     std::printf(
-        "  metricas: sin_nhc_exit=%.2f con_nhc_exit=%.2f sin_nhc_final=%.2f con_nhc_final=%.2f nhc_updates=%u\n",
+        "  metricas: sin_nhc_exit=%.2f con_nhc_exit=%.2f rms_pos=%.2f/%.2f rms_vel=%.2f/%.2f rms_yaw=%.2f/%.2f\n",
         without_nhc.drift_exit_tunnel_m,
         with_nhc.drift_exit_tunnel_m,
-        without_nhc.drift_final_m,
-        with_nhc.drift_final_m,
-        with_nhc.nhc_updates);
+        without_nhc.outage_rms.position_m,
+        with_nhc.outage_rms.position_m,
+        without_nhc.outage_rms.velocity_mps,
+        with_nhc.outage_rms.velocity_mps,
+        without_nhc.outage_rms.yaw_deg,
+        with_nhc.outage_rms.yaw_deg);
 
     expect_less(without_nhc.drift_exit_tunnel_m, 400.0f, "deriva baseline sin NHC acotada");
     expect_less(with_nhc.drift_exit_tunnel_m, 50.0f, "deriva con NHC al salir del tunel");
@@ -138,11 +239,142 @@ void test_super_tunnel_nhc_regression()
         "updates NHC durante trayecto completo");
 }
 
+void write_json_string(FILE *fp, const char *value)
+{
+    std::fprintf(fp, "\"");
+    for (const char *ch = value; ch != NULL && *ch != '\0'; ++ch) {
+        if (*ch == '"' || *ch == '\\') {
+            std::fputc('\\', fp);
+        }
+        std::fputc(*ch, fp);
+    }
+    std::fprintf(fp, "\"");
+}
+
+void write_super_tunnel_case_json(FILE *fp, const SuperTunnelCaseMetrics *entry)
+{
+    const SuperTunnelPassResult *result = &entry->result;
+    std::fprintf(fp, "        {\n");
+    std::fprintf(fp, "          \"nhc_enabled\": %s,\n", entry->nhc_enabled ? "true" : "false");
+    std::fprintf(fp, "          \"gps_outage\": {\n");
+    std::fprintf(
+        fp,
+        "            \"start_s\": %.1f,\n",
+        static_cast<float>(SUPER_TUNNEL_GPS_OFF_START_MS) * 0.001f);
+    std::fprintf(
+        fp,
+        "            \"end_s\": %.1f\n",
+        static_cast<float>(SUPER_TUNNEL_GPS_OFF_END_MS) * 0.001f);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"drift_exit_tunnel_m\": %.6f,\n", result->drift_exit_tunnel_m);
+    std::fprintf(fp, "          \"drift_final_m\": %.6f,\n", result->drift_final_m);
+    std::fprintf(fp, "          \"nhc_updates\": %u,\n", result->nhc_updates);
+    std::fprintf(fp, "          \"outage_rms\": {\n");
+    std::fprintf(fp, "            \"position_m\": %.6f,\n", result->outage_rms.position_m);
+    std::fprintf(fp, "            \"velocity_mps\": %.6f,\n", result->outage_rms.velocity_mps);
+    std::fprintf(fp, "            \"yaw_deg\": %.6f,\n", result->outage_rms.yaw_deg);
+    std::fprintf(fp, "            \"sample_count\": %u\n", result->outage_rms.sample_count);
+    std::fprintf(fp, "          },\n");
+    std::fprintf(fp, "          \"nhc_innovation_max_mps\": {\n");
+    std::fprintf(
+        fp,
+        "            \"lateral\": %.6f,\n",
+        result->nhc_innovation_max.lateral_mps);
+    std::fprintf(
+        fp,
+        "            \"vertical\": %.6f,\n",
+        result->nhc_innovation_max.vertical_mps);
+    std::fprintf(
+        fp,
+        "            \"norm\": %.6f\n",
+        result->nhc_innovation_max.norm_mps);
+    std::fprintf(fp, "          }\n");
+    std::fprintf(fp, "        }");
+}
+
+bool export_regression_report_json()
+{
+    FILE *fp = std::fopen(kRegressionReportPath, "w");
+    if (fp == NULL) {
+        std::printf("WARN: no se pudo escribir %s\n", kRegressionReportPath);
+        return false;
+    }
+
+    char timestamp_iso[32] = "unknown";
+    const std::time_t now = std::time(NULL);
+    if (now != static_cast<std::time_t>(-1)) {
+        std::tm tm_local{};
+#if defined(_WIN32)
+        if (localtime_s(&tm_local, &now) == 0) {
+#else
+        if (localtime_r(&now, &tm_local) != NULL) {
+#endif
+            (void)std::strftime(
+                timestamp_iso,
+                sizeof(timestamp_iso),
+                "%Y-%m-%dT%H:%M:%S",
+                &tm_local);
+        }
+    }
+
+    std::fprintf(fp, "{\n");
+    std::fprintf(fp, "  \"suite\": \"NaviCore-3D\",\n");
+    std::fprintf(fp, "  \"generated_at\": ");
+    write_json_string(fp, timestamp_iso);
+    std::fprintf(fp, ",\n");
+    std::fprintf(fp, "  \"result\": %s,\n", (g_failures == 0) ? "\"OK\"" : "\"FAIL\"");
+    std::fprintf(fp, "  \"failure_count\": %d,\n", g_failures);
+    std::fprintf(fp, "  \"tests\": [\n");
+
+    for (int i = 0; i < g_report_count; ++i) {
+        const RegressionTestReport *report = &g_reports[i];
+        std::fprintf(fp, "    {\n");
+        std::fprintf(fp, "      \"name\": ");
+        write_json_string(fp, report->name);
+        std::fprintf(fp, ",\n");
+        std::fprintf(fp, "      \"passed\": %s", report->passed ? "true" : "false");
+
+        if (report->has_simple_metrics) {
+            std::fprintf(fp, ",\n      \"metrics\": {\n");
+            for (int m = 0; m < report->simple_metric_count; ++m) {
+                const SimpleTestMetrics *metric = &report->simple_metrics[m];
+                std::fprintf(fp, "        ");
+                write_json_string(fp, metric->label);
+                std::fprintf(
+                    fp,
+                    ": { \"value\": %.6f, \"unit\": ",
+                    metric->value);
+                write_json_string(fp, metric->unit);
+                std::fprintf(fp, " }%s\n", (m + 1 < report->simple_metric_count) ? "," : "");
+            }
+            std::fprintf(fp, "      }");
+        }
+
+        if (report->has_super_tunnel_cases) {
+            std::fprintf(fp, ",\n      \"cases\": [\n");
+            for (int c = 0; c < report->super_tunnel_case_count; ++c) {
+                write_super_tunnel_case_json(fp, &report->super_tunnel_cases[c]);
+                std::fprintf(fp, "%s\n", (c + 1 < report->super_tunnel_case_count) ? "," : "");
+            }
+            std::fprintf(fp, "      ]");
+        }
+
+        std::fprintf(fp, "\n    }%s\n", (i + 1 < g_report_count) ? "," : "");
+    }
+
+    std::fprintf(fp, "  ]\n");
+    std::fprintf(fp, "}\n");
+    std::fclose(fp);
+    std::printf("Regression report: %s\n", kRegressionReportPath);
+    return true;
+}
+
 } /* namespace */
 
 int run_regression_suite()
 {
     g_failures = 0;
+    g_report_count = 0;
 
     std::printf("NaviCore-3D regression suite\n");
     std::printf("============================\n");
@@ -152,6 +384,8 @@ int run_regression_suite()
     run_test("super_tunnel_nhc_regression", test_super_tunnel_nhc_regression);
 
     std::printf("============================\n");
+    (void)export_regression_report_json();
+
     if (g_failures == 0) {
         std::printf("RESULT: OK (%d tests)\n", kRegressionTestCount);
         return EXIT_SUCCESS;

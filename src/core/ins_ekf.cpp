@@ -836,6 +836,21 @@ bool InsEkfFilter::update_nhc()
         -v_body[2],
     };
 
+    nhc_innovation_last[0] = y[0];
+    nhc_innovation_last[1] = y[1];
+    const float abs_lateral = fabsf(y[0]);
+    const float abs_vertical = fabsf(y[1]);
+    const float innov_norm = sqrtf((y[0] * y[0]) + (y[1] * y[1]));
+    if (abs_lateral > nhc_innovation_max_lateral_mps) {
+        nhc_innovation_max_lateral_mps = abs_lateral;
+    }
+    if (abs_vertical > nhc_innovation_max_vertical_mps) {
+        nhc_innovation_max_vertical_mps = abs_vertical;
+    }
+    if (innov_norm > nhc_innovation_max_norm_mps) {
+        nhc_innovation_max_norm_mps = innov_norm;
+    }
+
     float h_rows[2][INS_EKF_STATE_DIM]{};
     h_rows[0][INS_ERR_VEL_N + 0] = dcm_bn[0][1];
     h_rows[0][INS_ERR_VEL_N + 1] = dcm_bn[1][1];
@@ -946,6 +961,11 @@ void ins_ekf_init(
     filter->nhc_vertical_var_m2 =
         NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS * NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS;
     filter->nhc_update_count = 0U;
+    filter->nhc_innovation_last[0] = 0.0f;
+    filter->nhc_innovation_last[1] = 0.0f;
+    filter->nhc_innovation_max_lateral_mps = 0.0f;
+    filter->nhc_innovation_max_vertical_mps = 0.0f;
+    filter->nhc_innovation_max_norm_mps = 0.0f;
 
     filter->initialized = true;
     filter->outlier_detected = false;
@@ -1000,6 +1020,44 @@ uint32_t ins_ekf_nhc_update_count(const InsEkfFilter *filter)
     }
 
     return filter->nhc_update_count;
+}
+
+void ins_ekf_get_nhc_innovation_last(
+    const InsEkfFilter *filter,
+    float *out_lateral_mps,
+    float *out_vertical_mps)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    if (out_lateral_mps != NULL) {
+        *out_lateral_mps = filter->nhc_innovation_last[0];
+    }
+    if (out_vertical_mps != NULL) {
+        *out_vertical_mps = filter->nhc_innovation_last[1];
+    }
+}
+
+void ins_ekf_get_nhc_innovation_max(
+    const InsEkfFilter *filter,
+    float *out_lateral_mps,
+    float *out_vertical_mps,
+    float *out_norm_mps)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    if (out_lateral_mps != NULL) {
+        *out_lateral_mps = filter->nhc_innovation_max_lateral_mps;
+    }
+    if (out_vertical_mps != NULL) {
+        *out_vertical_mps = filter->nhc_innovation_max_vertical_mps;
+    }
+    if (out_norm_mps != NULL) {
+        *out_norm_mps = filter->nhc_innovation_max_norm_mps;
+    }
 }
 
 bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps)

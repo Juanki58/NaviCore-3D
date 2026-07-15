@@ -1,0 +1,73 @@
+{
+  "suite": "NaviCore-3D",
+  "generated_at": "2026-07-15T11:53:21",
+  "result": "OK",
+  "failure_count": 0,
+  "tests": [
+    {
+      "name": "ins_ekf_gravity_compensation",
+      "passed": true,
+      "metrics": {
+        "final_speed_mps": { "value": 0.000000, "unit": "m/s" }
+      }
+    },
+    {
+      "name": "nhc_predict_counter",
+      "passed": true,
+      "metrics": {
+        "nhc_updates": { "value": 10.000000, "unit": "count" },
+        "nhc_innovation_max_lateral_mps": { "value": 0.000000, "unit": "m/s" },
+        "nhc_innovation_max_vertical_mps": { "value": 0.000000, "unit": "m/s" },
+        "nhc_innovation_max_norm_mps": { "value": 0.000000, "unit": "m/s" }
+      }
+    },
+    {
+      "name": "super_tunnel_nhc_regression",
+      "passed": true,
+      "cases": [
+        {
+          "nhc_enabled": false,
+          "gps_outage": {
+            "start_s": 10.0,
+            "end_s": 55.0
+          },
+          "drift_exit_tunnel_m": 249.249634,
+          "drift_final_m": 0.016357,
+          "nhc_updates": 0,
+          "outage_rms": {
+            "position_m": 96.287491,
+            "velocity_mps": 6.643087,
+            "yaw_deg": 0.000009,
+            "sample_count": 4500
+          },
+          "nhc_innovation_max_mps": {
+            "lateral": 0.000000,
+            "vertical": 0.000000,
+            "norm": 0.000000
+          }
+        },
+        {
+          "nhc_enabled": true,
+          "gps_outage": {
+            "start_s": 10.0,
+            "end_s": 55.0
+          },
+          "drift_exit_tunnel_m": 6.922852,
+          "drift_final_m": 0.017212,
+          "nhc_updates": 6001,
+          "outage_rms": {
+            "position_m": 2.504178,
+            "velocity_mps": 0.718582,
+            "yaw_deg": 0.000006,
+            "sample_count": 4500
+          },
+          "nhc_innovation_max_mps": {
+            "lateral": 0.000003,
+            "vertical": 0.004042,
+            "norm": 0.004042
+          }
+        }
+      ]
+    }
+  ]
+}

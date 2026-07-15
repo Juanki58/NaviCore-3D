@@ -72,54 +72,57 @@ void mat15_transpose(const InsEkfMat15 in, InsEkfMat15 out)
     }
 }
 
+void mat15_transpose_inplace(InsEkfMat15 m)
+{
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = r + 1U; c < kDim; ++c) {
+            const float tmp = m[r][c];
+            m[r][c] = m[c][r];
+            m[c][r] = tmp;
+        }
+    }
+}
+
 void mat15_mul(const InsEkfMat15 a, const InsEkfMat15 b, InsEkfMat15 out)
 {
-    InsEkfMat15 acc{};
-
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = 0U; c < kDim; ++c) {
             float sum = 0.0f;
             for (uint8_t k = 0U; k < kDim; ++k) {
                 sum += a[r][k] * b[k][c];
             }
-            acc[r][c] = sum;
+            out[r][c] = sum;
         }
     }
-
-    mat_copy(acc, out);
 }
 
 /*
  * Joseph: P = (I - KH) P (I - KH)^T + K R K^T
- * H observa solo posicion (3 primeros estados de error). R diagonal.
+ * scratch_a / scratch_b: buffers 15x15 del filtro (zero extra stack).
  */
 void ins_ekf_covariance_joseph_update(
     InsEkfMat15 p_in,
     const float k_gain[INS_EKF_STATE_DIM][3],
     float meas_var_m2,
-    InsEkfMat15 p_out)
+    InsEkfMat15 p_out,
+    InsEkfMat15 scratch_a,
+    InsEkfMat15 scratch_b)
 {
-    InsEkfMat15 a_mat{};
-    InsEkfMat15 ap_mat{};
-    InsEkfMat15 a_transpose{};
-    InsEkfMat15 apa_mat{};
-
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = 0U; c < kDim; ++c) {
-            a_mat[r][c] = (r == c) ? 1.0f : 0.0f;
+            scratch_a[r][c] = (r == c) ? 1.0f : 0.0f;
         }
     }
 
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t i = 0U; i < 3U; ++i) {
-            a_mat[r][INS_ERR_POS_N + i] -= k_gain[r][i];
+            scratch_a[r][INS_ERR_POS_N + i] -= k_gain[r][i];
         }
     }
 
-    mat15_mul(a_mat, p_in, ap_mat);
-    mat15_transpose(a_mat, a_transpose);
-    mat15_mul(ap_mat, a_transpose, apa_mat);
-    mat_copy(apa_mat, p_out);
+    mat15_mul(scratch_a, p_in, scratch_b);
+    mat15_transpose_inplace(scratch_a);
+    mat15_mul(scratch_b, scratch_a, p_out);
 
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = r; c < kDim; ++c) {
@@ -142,26 +145,22 @@ void ins_ekf_covariance_joseph_update2(
     const float k_gain[INS_EKF_STATE_DIM][2],
     const float h_rows[2][INS_EKF_STATE_DIM],
     const float meas_var[2],
-    InsEkfMat15 p_out)
+    InsEkfMat15 p_out,
+    InsEkfMat15 scratch_a,
+    InsEkfMat15 scratch_b)
 {
-    InsEkfMat15 a_mat{};
-    InsEkfMat15 ap_mat{};
-    InsEkfMat15 a_transpose{};
-    InsEkfMat15 apa_mat{};
-
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = 0U; c < kDim; ++c) {
-            a_mat[r][c] = (r == c) ? 1.0f : 0.0f;
+            scratch_a[r][c] = (r == c) ? 1.0f : 0.0f;
             for (uint8_t i = 0U; i < 2U; ++i) {
-                a_mat[r][c] -= k_gain[r][i] * h_rows[i][c];
+                scratch_a[r][c] -= k_gain[r][i] * h_rows[i][c];
             }
         }
     }
 
-    mat15_mul(a_mat, p_in, ap_mat);
-    mat15_transpose(a_mat, a_transpose);
-    mat15_mul(ap_mat, a_transpose, apa_mat);
-    mat_copy(apa_mat, p_out);
+    mat15_mul(scratch_a, p_in, scratch_b);
+    mat15_transpose_inplace(scratch_a);
+    mat15_mul(scratch_b, scratch_a, p_out);
 
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = r; c < kDim; ++c) {
@@ -562,9 +561,9 @@ void ins_ekf_propagate_covariance_sparse(
     const InsEkfMat3 f_bg,
     float dt_s,
     const InsEkfMat15 q,
-    InsEkfMat15 p_out)
+    InsEkfMat15 p_out,
+    InsEkfMat15 temp_scratch)
 {
-    InsEkfMat15 temp{};
     InsEkfMat3 f_va_t{};
     InsEkfMat3 f_vba_t{};
     InsEkfMat3 f_aa_t{};
@@ -587,24 +586,24 @@ void ins_ekf_propagate_covariance_sparse(
             const uint8_t ba_i = static_cast<uint8_t>(INS_ERR_BIAS_AX + i);
             const uint8_t bg_i = static_cast<uint8_t>(INS_ERR_BIAS_GX + i);
 
-            temp[pos_i][c] = p_in[pos_i][c] + (dt_s * p_in[vel_i][c]);
+            temp_scratch[pos_i][c] = p_in[pos_i][c] + (dt_s * p_in[vel_i][c]);
 
             float vel_row = p_in[vel_i][c];
             for (uint8_t j = 0U; j < 3U; ++j) {
                 vel_row += f_va[i][j] * p_in[INS_ERR_ATT_X + j][c];
                 vel_row += f_vba[i][j] * p_in[INS_ERR_BIAS_AX + j][c];
             }
-            temp[vel_i][c] = vel_row;
+            temp_scratch[vel_i][c] = vel_row;
 
             float att_row = 0.0f;
             for (uint8_t j = 0U; j < 3U; ++j) {
                 att_row += f_aa[i][j] * p_in[INS_ERR_ATT_X + j][c];
                 att_row += f_bg[i][j] * p_in[INS_ERR_BIAS_GX + j][c];
             }
-            temp[att_i][c] = att_row;
+            temp_scratch[att_i][c] = att_row;
 
-            temp[ba_i][c] = p_in[ba_i][c];
-            temp[bg_i][c] = p_in[bg_i][c];
+            temp_scratch[ba_i][c] = p_in[ba_i][c];
+            temp_scratch[bg_i][c] = p_in[bg_i][c];
         }
     }
 
@@ -613,7 +612,7 @@ void ins_ekf_propagate_covariance_sparse(
             float sum = 0.0f;
             for (uint8_t k = 0U; k < kDim; ++k) {
                 const float f_kc = f_state_jacobian_entry(k, c, dt_s, f_va_t, f_vba_t, f_aa_t, f_bg_t);
-                sum += temp[r][k] * f_kc;
+                sum += temp_scratch[r][k] * f_kc;
             }
             p_out[r][c] = sum + q[r][c];
         }
@@ -704,10 +703,7 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
         f_bg[i][i] = -dt_s;
     }
 
-    InsEkfMat15 q_mat{};
-    ins_ekf_build_process_noise(this, dt_s, q_mat);
-
-    InsEkfMat15 p_new{};
+    ins_ekf_build_process_noise(this, dt_s, scratch_a_);
     ins_ekf_propagate_covariance_sparse(
         cov.P,
         f_va,
@@ -715,9 +711,9 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
         f_aa,
         f_bg,
         dt_s,
-        q_mat,
-        p_new);
-    mat_copy(p_new, cov.P);
+        scratch_a_,
+        cov.P,
+        scratch_b_);
 
     last_imu_timestamp_ms = imu_sample.timestamp_ms;
 }
@@ -810,9 +806,13 @@ bool InsEkfFilter::update_gnss(const GpsSample &gps_sample, float *out_nis)
 
     ins_ekf_inject_error_into_nominal(this);
 
-    InsEkfMat15 p_joseph{};
-    ins_ekf_covariance_joseph_update(cov.P, k_gain, gnss_pos_var_m2, p_joseph);
-    mat_copy(p_joseph, cov.P);
+    ins_ekf_covariance_joseph_update(
+        cov.P,
+        k_gain,
+        gnss_pos_var_m2,
+        cov.P,
+        scratch_a_,
+        scratch_b_);
 
     outlier_detected = false;
     return true;
@@ -904,9 +904,14 @@ bool InsEkfFilter::update_nhc()
     ins_ekf_inject_error_into_nominal(this);
 
     const float meas_var[2] = {nhc_lateral_var_m2, nhc_vertical_var_m2};
-    InsEkfMat15 p_joseph{};
-    ins_ekf_covariance_joseph_update2(cov.P, k_gain, h_rows, meas_var, p_joseph);
-    mat_copy(p_joseph, cov.P);
+    ins_ekf_covariance_joseph_update2(
+        cov.P,
+        k_gain,
+        h_rows,
+        meas_var,
+        cov.P,
+        scratch_a_,
+        scratch_b_);
 
     ++nhc_update_count;
     return true;
@@ -961,6 +966,7 @@ void ins_ekf_init(
     filter->nhc_vertical_var_m2 =
         NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS * NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS;
     filter->nhc_update_count = 0U;
+    filter->nhc_tick_counter = 0U;
     filter->nhc_innovation_last[0] = 0.0f;
     filter->nhc_innovation_last[1] = 0.0f;
     filter->nhc_innovation_max_lateral_mps = 0.0f;
@@ -981,7 +987,10 @@ bool ins_ekf_predict(InsEkfFilter *filter, const ImuSample *imu)
     const float dt_s = ins_ekf_predict_dt_s(filter, imu->timestamp_ms);
     filter->predict(*imu, dt_s);
     if (filter->nhc_enabled) {
-        filter->update_nhc();
+        filter->nhc_tick_counter++;
+        if ((filter->nhc_tick_counter % NAVICORE_INS_EKF_NHC_EVERY_N_TICKS) == 0U) {
+            filter->update_nhc();
+        }
     }
     return true;
 }
@@ -1271,4 +1280,63 @@ void ins_ekf_export_nav_state(
         out_state->mode = NAV_MODE_DEAD_RECKONING;
         out_state->confidence = nav_confidence_make(false, 0U, fix_age_ms, quality);
     }
+}
+
+bool ins_ekf_pack_navigation_state(
+    const InsEkfFilter *filter,
+    uint32_t timestamp_ms,
+    uint32_t health_flags,
+    NavigationState *out_state)
+{
+    if (filter == NULL || out_state == NULL || !filter->initialized) {
+        return false;
+    }
+
+    float lat_deg = 0.0f;
+    float lon_deg = 0.0f;
+    float alt_m = 0.0f;
+    ned_to_latlonalt(
+        filter->ref_lat_deg,
+        filter->ref_lon_deg,
+        filter->ref_alt_m,
+        filter->pos_[0],
+        filter->pos_[1],
+        filter->pos_[2],
+        &lat_deg,
+        &lon_deg,
+        &alt_m);
+
+    float roll_rad = 0.0f;
+    float pitch_rad = 0.0f;
+    float yaw_rad = 0.0f;
+    quat_to_euler321(filter->q_att_, &roll_rad, &pitch_rad, &yaw_rad);
+
+    const float pos_std_n = sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_N][INS_ERR_POS_N], 0.0f));
+    const float pos_std_e = sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_E][INS_ERR_POS_E], 0.0f));
+    const float pos_std_d = sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_D][INS_ERR_POS_D], 0.0f));
+    const float att_std_roll = sqrtf(fmaxf(filter->cov.P[INS_ERR_ATT_X][INS_ERR_ATT_X], 0.0f));
+    const float att_std_pitch = sqrtf(fmaxf(filter->cov.P[INS_ERR_ATT_Y][INS_ERR_ATT_Y], 0.0f));
+    const float att_std_yaw = sqrtf(fmaxf(filter->cov.P[INS_ERR_ATT_Z][INS_ERR_ATT_Z], 0.0f));
+
+    NavigationState packed{};
+    packed.timestamp_us = static_cast<uint64_t>(timestamp_ms) * 1000ULL;
+    packed.lat_rad = static_cast<double>(deg_to_rad(lat_deg));
+    packed.lon_rad = static_cast<double>(deg_to_rad(lon_deg));
+    packed.alt_m = alt_m;
+    packed.vn_mps = filter->vel_[0];
+    packed.ve_mps = filter->vel_[1];
+    packed.vd_mps = filter->vel_[2];
+    packed.roll_rad = roll_rad;
+    packed.pitch_rad = pitch_rad;
+    packed.yaw_rad = yaw_rad;
+    packed.health_flags = health_flags;
+    packed.pos_uncertainty_m = sqrtf(
+        (pos_std_n * pos_std_n) + (pos_std_e * pos_std_e) + (pos_std_d * pos_std_d));
+    packed.att_uncertainty_rad = sqrtf(
+        (att_std_roll * att_std_roll)
+        + (att_std_pitch * att_std_pitch)
+        + (att_std_yaw * att_std_yaw));
+
+    *out_state = packed;
+    return true;
 }

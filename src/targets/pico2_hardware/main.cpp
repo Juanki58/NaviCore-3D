@@ -7,10 +7,12 @@
 #include "health_monitor.hpp"
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
+#include "nav_state_udp.hpp"
 #include "safe_log.hpp"
 #include "task_monitor.hpp"
 
 #include "core/ins_ekf.hpp"
+#include "core/navigation_state.hpp"
 #include "core/NavState.h"
 #include "core/navigation_cortex.hpp"
 #include "core/vector3d.h"
@@ -80,6 +82,12 @@ int main()
     printf(
         "Conectado. IP local: %s\n",
         ip4addr_ntoa(netif_ip4_addr(cyw43_state.netif[0])));
+
+    if (!pico2_nav_state_udp_init(HOST_IP, UDP_PORT)) {
+        printf("Aviso: NavigationState UDP no disponible (%s:%u)\n", HOST_IP, UDP_PORT);
+    } else {
+        printf("NavigationState UDP -> %s:%u (64 B)\n", HOST_IP, UDP_PORT);
+    }
 
     if (!pico2_bsp_sensors_init()) {
         printf("Error: BSP sensores Comarruga\n");
@@ -153,9 +161,27 @@ int main()
                 gpio_put(PICO2_GPIO_BENCHMARK, 0);
                 task_monitor_record(TaskId::NavTick, tick_count);
 
-                (void)HOST_IP;
-                (void)UDP_PORT;
-                (void)gps_fix_valid;
+                if (ins_filter.initialized && pico2_nav_state_udp_is_ready()) {
+                    uint32_t nav_flags = NAV_STATE_FLAG_EKF_VALID;
+                    if (gps_fix_valid) {
+                        nav_flags |= NAV_STATE_FLAG_GPS_FIX;
+                    }
+                    if (ins_ekf_nhc_enabled(&ins_filter)) {
+                        nav_flags |= NAV_STATE_FLAG_NHC_ENABLED;
+                    }
+                    if (ins_ekf_outlier_detected(&ins_filter)) {
+                        nav_flags |= NAV_STATE_FLAG_GNSS_OUTLIER;
+                    }
+
+                    NavigationState nav_packet{};
+                    if (ins_ekf_pack_navigation_state(
+                            &ins_filter,
+                            timestamp_ms,
+                            nav_flags,
+                            &nav_packet)) {
+                        (void)pico2_nav_state_udp_send(&nav_packet);
+                    }
+                }
             }
 
             loop_metrics_record_tick_us(static_cast<uint32_t>(time_us_64() - phase_start_us));

@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "NavState.h"
+#include "navigation_state.hpp"
 #include "sensor_types.hpp"
 
 /*
@@ -63,6 +64,10 @@ typedef float InsEkfVec3[3];
 #define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 0.05f
 #endif
 
+#ifndef NAVICORE_INS_EKF_NHC_EVERY_N_TICKS
+#define NAVICORE_INS_EKF_NHC_EVERY_N_TICKS 1U
+#endif
+
 enum InsEkfErrorIdx : uint8_t {
     INS_ERR_POS_N = 0,
     INS_ERR_POS_E = 1,
@@ -118,6 +123,10 @@ struct InsEkfFilter {
     /* --- Covarianza del error (15x15) --- */
     InsEkfCovariance cov;
 
+    /* --- Scratch 15x15 (Joseph / propagate) — evita ~4 KB en pila --- */
+    InsEkfMat15 scratch_a_;
+    InsEkfMat15 scratch_b_;
+
     /* --- Marco de referencia geodesico --- */
     float ref_lat_deg;
     float ref_lon_deg;
@@ -141,6 +150,7 @@ struct InsEkfFilter {
     uint32_t gnss_accept_count;
     uint32_t gnss_reject_count;
     uint32_t nhc_update_count;
+    uint8_t nhc_tick_counter;
     float nhc_innovation_last[2];
     float nhc_innovation_max_lateral_mps;
     float nhc_innovation_max_vertical_mps;
@@ -206,3 +216,9 @@ void ins_ekf_export_nav_state(
     NavState *out_state,
     uint32_t timestamp_ms,
     const GpsSample *last_gps);
+
+bool ins_ekf_pack_navigation_state(
+    const InsEkfFilter *filter,
+    uint32_t timestamp_ms,
+    uint32_t health_flags,
+    NavigationState *out_state);

@@ -50,6 +50,7 @@ add_executable(NaviCore3D_Pico2
     ${NAVICORE_PICO2_DIR}/bsp_wt61c.cpp
     ${NAVICORE_PICO2_DIR}/bsp_gnss.cpp
     ${NAVICORE_PICO2_DIR}/bsp_power.cpp
+    ${NAVICORE_PICO2_DIR}/nav_state_udp.cpp
     ${NAVICORE_CORE_SOURCES}
 )
 
@@ -60,6 +61,7 @@ target_include_directories(NaviCore3D_Pico2 PRIVATE
 
 target_compile_definitions(NaviCore3D_Pico2 PRIVATE
     NAVICORE_TARGET_PICO2
+    NAVICORE_INS_EKF_NHC_EVERY_N_TICKS=2U
     PICO_CYW43_ARCH_POLL=1
     PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=0
 )

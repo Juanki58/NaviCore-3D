@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -18,9 +19,16 @@ namespace {
 
 constexpr float kGravityMps2 = 9.80665f;
 constexpr float kDegToRad = static_cast<float>(M_PI / 180.0);
-constexpr uint32_t kSimStepMs = 10U;
 constexpr uint32_t kStaticCalibrationMs = 5000U;
 constexpr size_t kMaxLineBytes = 8192U;
+constexpr size_t kMaxReplayRows = 5000000U;
+
+struct ReplayPaceState {
+    std::chrono::steady_clock::time_point epoch;
+    bool epoch_valid;
+};
+
+ReplayPaceState g_replay_pace{};
 
 struct StaticCalibrationAccumulator {
     float accel_sum[3];
@@ -408,21 +416,39 @@ bool parse_bool_field(const std::vector<std::string> &fields, int16_t index, boo
     return numeric >= 0.5f;
 }
 
-uint32_t parse_time_ms(const ParsedHeader &header, const std::vector<std::string> &fields)
+bool parse_time_ms_u64(const ParsedHeader &header, const std::vector<std::string> &fields, uint64_t *out_ms)
 {
-    bool present = false;
-    const float raw = parse_float_field(fields, header.indices[COL_TIME], &present);
-    if (!present) {
-        return 0U;
+    if (out_ms == NULL) {
+        return false;
     }
 
+    bool present = false;
+    const float raw = parse_float_field(fields, header.indices[COL_TIME], &present);
+    if (!present || raw < 0.0f) {
+        return false;
+    }
+
+    double ms_value = static_cast<double>(raw);
     if (header.time_in_us) {
-        return static_cast<uint32_t>(raw / 1000.0f);
+        ms_value = static_cast<double>(raw) / 1000.0;
+    } else if (header.time_in_s) {
+        ms_value = static_cast<double>(raw) * 1000.0;
     }
-    if (header.time_in_s) {
-        return static_cast<uint32_t>(raw * 1000.0f);
+
+    if (ms_value < 0.0 || ms_value > static_cast<double>(UINT64_MAX)) {
+        return false;
     }
-    return static_cast<uint32_t>(raw);
+
+    *out_ms = static_cast<uint64_t>(ms_value);
+    return true;
+}
+
+uint32_t clamp_u32_ms(uint64_t ms_value)
+{
+    if (ms_value > static_cast<uint64_t>(UINT32_MAX)) {
+        return UINT32_MAX;
+    }
+    return static_cast<uint32_t>(ms_value);
 }
 
 bool parse_row(
@@ -523,8 +549,16 @@ bool parse_row(
     row_out->gps.timestamp_ms = time_ms;
     row_out->gps.speed_mps = parse_float_field(fields, header.indices[COL_SPEED], NULL);
     row_out->gps.course_deg = parse_float_field(fields, header.indices[COL_COURSE], NULL);
-    row_out->gps.satellites = static_cast<uint8_t>(
-        parse_float_field(fields, header.indices[COL_SATELLITES], NULL));
+    {
+        const float sat_count = parse_float_field(fields, header.indices[COL_SATELLITES], NULL);
+        if (sat_count <= 0.0f) {
+            row_out->gps.satellites = 0U;
+        } else if (sat_count >= 255.0f) {
+            row_out->gps.satellites = 255U;
+        } else {
+            row_out->gps.satellites = static_cast<uint8_t>(sat_count);
+        }
+    }
 
     bool fix_present = false;
     const bool fix_valid = parse_bool_field(fields, header.indices[COL_FIX_VALID], &fix_present);
@@ -555,9 +589,20 @@ bool replay_rows_reserve(InertialReplayLog *log, size_t extra)
         return true;
     }
 
+    if (needed > kMaxReplayRows) {
+        return false;
+    }
+
     size_t new_capacity = (log->row_capacity == 0U) ? 256U : log->row_capacity;
     while (new_capacity < needed) {
+        if (new_capacity > (kMaxReplayRows / 2U)) {
+            new_capacity = kMaxReplayRows;
+            break;
+        }
         new_capacity *= 2U;
+    }
+    if (new_capacity < needed) {
+        return false;
     }
 
     InertialReplayRow *new_rows = static_cast<InertialReplayRow *>(
@@ -633,7 +678,7 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
     log->accel_in_g = header.accel_in_g;
     log->gyro_in_degps = header.gyro_in_degps;
 
-    uint32_t first_time_ms = 0U;
+    uint64_t first_time_ms = 0U;
     bool first_time_set = false;
     StaticCalibrationAccumulator calib_acc{};
     static_calibration_reset(&calib_acc);
@@ -650,15 +695,19 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
             continue;
         }
 
-        const uint32_t raw_time_ms = parse_time_ms(header, fields);
+        uint64_t raw_time_ms = 0U;
+        if (!parse_time_ms_u64(header, fields, &raw_time_ms)) {
+            continue;
+        }
+
         if (!first_time_set) {
             first_time_ms = raw_time_ms;
             first_time_set = true;
         }
 
-        uint32_t time_ms = raw_time_ms;
+        uint32_t time_ms = clamp_u32_ms(raw_time_ms);
         if (raw_time_ms >= first_time_ms) {
-            time_ms = raw_time_ms - first_time_ms;
+            time_ms = clamp_u32_ms(raw_time_ms - first_time_ms);
             log->time_is_relative = true;
         }
 
@@ -667,7 +716,7 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
             continue;
         }
 
-        if (raw_time_ms <= kStaticCalibrationMs) {
+        if (time_ms <= kStaticCalibrationMs) {
             static_calibration_accumulate(&calib_acc, row.imu);
         }
 
@@ -678,7 +727,7 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
             return false;
         }
 
-        if (raw_time_ms > kStaticCalibrationMs) {
+        if (time_ms > kStaticCalibrationMs) {
             post_calib_row_indices.push_back(log->row_count - 1U);
         }
     }
@@ -698,7 +747,7 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
     if (static_calibration_finalize(calib_acc, accel_bias, gyro_bias, gravity_body)) {
         static_calibration_apply_to_log(log, post_calib_row_indices, accel_bias, gyro_bias);
         std::printf(
-            "REPLAY: calibracion estatica %zu muestras (raw_time<=%u ms)\n",
+            "REPLAY: calibracion estatica %zu muestras (t_rel<=%u ms)\n",
             calib_acc.sample_count,
             kStaticCalibrationMs);
         std::printf(
@@ -716,7 +765,7 @@ bool inertial_replay_load(InertialReplayLog *log, const char *csv_path)
             gyro_bias[2]);
     } else {
         std::printf(
-            "REPLAY: sin muestras en ventana de calibracion (raw_time<=%u ms)\n",
+            "REPLAY: sin muestras en ventana de calibracion (t_rel<=%u ms)\n",
             kStaticCalibrationMs);
     }
 
@@ -759,6 +808,31 @@ size_t inertial_replay_row_count(const InertialReplayLog *log)
     return log->row_count;
 }
 
+void inertial_replay_pace_reset(void)
+{
+    g_replay_pace.epoch_valid = false;
+}
+
+void inertial_replay_pace_until(uint32_t sim_time_ms)
+{
+    if (sim_time_ms == 0U) {
+        g_replay_pace.epoch = std::chrono::steady_clock::now();
+        g_replay_pace.epoch_valid = true;
+        return;
+    }
+
+    if (!g_replay_pace.epoch_valid) {
+        return;
+    }
+
+    const auto target = g_replay_pace.epoch
+        + std::chrono::milliseconds(static_cast<int64_t>(sim_time_ms));
+    const auto now = std::chrono::steady_clock::now();
+    if (target > now) {
+        std::this_thread::sleep_for(target - now);
+    }
+}
+
 bool inertial_replay_sample_at(
     const InertialReplayLog *log,
     uint32_t sim_time_ms,
@@ -780,23 +854,6 @@ bool inertial_replay_sample_at(
 
     if (sim_time_ms > log->duration_ms) {
         return false;
-    }
-
-    {
-        static std::chrono::steady_clock::time_point replay_epoch;
-        static bool replay_epoch_valid = false;
-
-        if (sim_time_ms == 0U) {
-            replay_epoch = std::chrono::steady_clock::now();
-            replay_epoch_valid = true;
-        } else if (replay_epoch_valid) {
-            const auto target =
-                replay_epoch + std::chrono::milliseconds(static_cast<int64_t>(sim_time_ms));
-            const auto now = std::chrono::steady_clock::now();
-            if (target > now) {
-                std::this_thread::sleep_for(target - now);
-            }
-        }
     }
 
     size_t exact_index = log->row_count;
@@ -836,7 +893,12 @@ bool inertial_replay_sample_at(
 
     if (gps_out != NULL) {
         *gps_out = selected->gps;
-        gps_out->timestamp_ms = sim_time_ms;
+        if (gnss_from_exact_row) {
+            gps_out->timestamp_ms = sim_time_ms;
+        }
+        if (!gnss_from_exact_row) {
+            gps_out->fix_valid = false;
+        }
     }
 
     if (has_imu_sample != NULL) {

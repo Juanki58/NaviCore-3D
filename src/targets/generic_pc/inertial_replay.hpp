@@ -42,6 +42,12 @@ void inertial_replay_free(InertialReplayLog *log);
 uint32_t inertial_replay_duration_ms(const InertialReplayLog *log);
 size_t inertial_replay_row_count(const InertialReplayLog *log);
 
+/** Reinicia el reloj de pacing en tiempo real (llamar al inicio de cada replay). */
+void inertial_replay_pace_reset(void);
+
+/** Duerme hasta alcanzar sim_time_ms respecto al epoch del replay (no bloqueante si ya pasó). */
+void inertial_replay_pace_until(uint32_t sim_time_ms);
+
 /*
  * Obtiene la muestra para el instante de simulación sim_time_ms (paso nominal 10 ms).
  *

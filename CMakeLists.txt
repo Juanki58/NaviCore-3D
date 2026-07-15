@@ -46,6 +46,7 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_PC_DIR}/inertial_replay.cpp
     ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
+    ${NAVICORE_PC_DIR}/regression_suite.cpp
     ${NAVICORE_PC_DIR}/power_state_machine.cpp
     ${NAVICORE_CORE_SOURCES}
 )
@@ -55,6 +56,7 @@ endif()
 
 add_executable(navicore_regression_test
     ${NAVICORE_PC_DIR}/regression_tests.cpp
+    ${NAVICORE_PC_DIR}/regression_suite.cpp
     ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_CORE_DIR}/NavState.cpp

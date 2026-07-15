@@ -29,6 +29,7 @@
 #include "time_guard.hpp"
 #include "telemetry_interface.hpp"
 #include "super_tunnel_benchmark.hpp"
+#include "regression_suite.hpp"
 #include "pid.hpp"
 
 #ifndef M_PI
@@ -2358,10 +2359,13 @@ int main(int argc, char *argv[])
     SimPrimaryScenario scenario = kCompileTimeSimScenario;
     const char *replay_csv_path = NULL;
     bool super_tunnel = false;
+    bool run_tests = false;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--no-udp") == 0) {
             enable_udp = false;
+        } else if (std::strcmp(argv[i], "--run-tests") == 0) {
+            run_tests = true;
         } else if (std::strcmp(argv[i], "--super-tunnel") == 0) {
             super_tunnel = true;
         } else if (std::strcmp(argv[i], "--stress") == 0
@@ -2378,6 +2382,10 @@ int main(int argc, char *argv[])
             replay_csv_path = argv[i + 1];
             ++i;
         }
+    }
+
+    if (run_tests) {
+        return run_regression_suite();
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");

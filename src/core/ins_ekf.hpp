@@ -141,6 +141,10 @@ struct InsEkfFilter {
     uint32_t gnss_accept_count;
     uint32_t gnss_reject_count;
     uint32_t nhc_update_count;
+    float nhc_innovation_last[2];
+    float nhc_innovation_max_lateral_mps;
+    float nhc_innovation_max_vertical_mps;
+    float nhc_innovation_max_norm_mps;
 
     NavDomain domain;
     bool initialized;
@@ -169,6 +173,15 @@ bool ins_ekf_update_nhc(InsEkfFilter *filter);
 void ins_ekf_set_nhc_enabled(InsEkfFilter *filter, bool enabled);
 bool ins_ekf_nhc_enabled(const InsEkfFilter *filter);
 uint32_t ins_ekf_nhc_update_count(const InsEkfFilter *filter);
+void ins_ekf_get_nhc_innovation_last(
+    const InsEkfFilter *filter,
+    float *out_lateral_mps,
+    float *out_vertical_mps);
+void ins_ekf_get_nhc_innovation_max(
+    const InsEkfFilter *filter,
+    float *out_lateral_mps,
+    float *out_vertical_mps,
+    float *out_norm_mps);
 
 bool ins_ekf_outlier_detected(const InsEkfFilter *filter);
 void ins_ekf_clear_outlier_flag(InsEkfFilter *filter);

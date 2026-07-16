@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source": "audit_imu_chain.py",
+  "method": "gravity_alignment_rodrigues",
+  "generated_at_utc": "2026-07-16T12:41:10.697236+00:00",
+  "replay_input": "docs\\benchmarks\\real_run_replay.csv",
+  "sensor": "Sensor Logger / Android accelerometer+gyroscope",
+  "vehicle": "real_run",
+  "static_phase_end_s": 30.0,
+  "static_samples": 2974,
+  "gravity_mps2": 9.80665,
+  "body_target": "body Z+ (EKF down)",
+  "sensor_median_accel_mps2": [
+    0.0400500037,
+    7.70295048,
+    6.05805016
+  ],
+  "alignment_error_mps2": 0.006801948055283447,
+  "euler321_deg": {
+    "roll": 51.81642187932147,
+    "pitch": -0.23415695396677158,
+    "yaw": -0.11374210020963928
+  },
+  "apply_mode": "matrix",
+  "rotation_matrix": [
+    [
+      0.9999896785633046,
+      -0.0019851562647212263,
+      -0.00408679843684437
+    ],
+    [
+      -0.0019851562647212263,
+      0.6181882898999738,
+      -0.7860275423833128
+    ],
+    [
+      0.00408679843684437,
+      0.7860275423833128,
+      0.6181779684632784
+    ]
+  ],
+  "notes": "Matriz sensor->body usada directamente en real_run_replay (v_body = rotation_matrix * v_sensor). Regenerar al cambiar soporte/movil."
+}

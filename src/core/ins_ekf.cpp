@@ -1,5 +1,6 @@
 #include "ins_ekf.hpp"
 
+#include "geodesy.hpp"
 #include "math_utils.hpp"
 
 #include <math.h>
@@ -7,10 +8,6 @@
 
 #ifndef NAVICORE_INS_EKF_PI_F
 #define NAVICORE_INS_EKF_PI_F 3.14159265358979323846f
-#endif
-
-#ifndef NAVICORE_METERS_PER_DEG_LAT
-#define NAVICORE_METERS_PER_DEG_LAT 111132.954f
 #endif
 
 namespace {
@@ -236,6 +233,22 @@ void yaw_rad_to_quat(float yaw_rad, float q[4])
     q[1] = 0.0f;
     q[2] = 0.0f;
     q[3] = sinf(half_yaw);
+}
+
+void euler321_to_quat(float roll_rad, float pitch_rad, float yaw_rad, float q[4])
+{
+    const float cr = cosf(roll_rad * 0.5f);
+    const float sr = sinf(roll_rad * 0.5f);
+    const float cp = cosf(pitch_rad * 0.5f);
+    const float sp = sinf(pitch_rad * 0.5f);
+    const float cy = cosf(yaw_rad * 0.5f);
+    const float sy = sinf(yaw_rad * 0.5f);
+
+    q[0] = (cr * cp * cy) + (sr * sp * sy);
+    q[1] = (sr * cp * cy) - (cr * sp * sy);
+    q[2] = (cr * sp * cy) + (sr * cp * sy);
+    q[3] = (cr * cp * sy) - (sr * sp * cy);
+    quat_normalize(q);
 }
 
 void quat_integrate_first_order(float q[4], const float w_corr[3], float dt_s)
@@ -492,49 +505,6 @@ float f_state_jacobian_entry(
     return 0.0f;
 }
 
-void latlonalt_to_ned(
-    float ref_lat_deg,
-    float ref_lon_deg,
-    float ref_alt_m,
-    float lat_deg,
-    float lon_deg,
-    float alt_m,
-    float *north_m,
-    float *east_m,
-    float *down_m)
-{
-    const float dlat_m = (lat_deg - ref_lat_deg) * NAVICORE_METERS_PER_DEG_LAT;
-    const float lat_rad = deg_to_rad((ref_lat_deg + lat_deg) * 0.5f);
-    const float dlon_m = (lon_deg - ref_lon_deg) * NAVICORE_METERS_PER_DEG_LAT * cosf(lat_rad);
-
-    *north_m = dlat_m;
-    *east_m = dlon_m;
-    *down_m = ref_alt_m - alt_m;
-}
-
-void ned_to_latlonalt(
-    float ref_lat_deg,
-    float ref_lon_deg,
-    float ref_alt_m,
-    float north_m,
-    float east_m,
-    float down_m,
-    float *lat_deg,
-    float *lon_deg,
-    float *alt_m)
-{
-    const float lat_rad = deg_to_rad(ref_lat_deg);
-    const float cos_lat = cosf(lat_rad);
-
-    *lat_deg = ref_lat_deg + (north_m / NAVICORE_METERS_PER_DEG_LAT);
-    if (fabsf(cos_lat) > 1.0e-6f) {
-        *lon_deg = ref_lon_deg + (east_m / (NAVICORE_METERS_PER_DEG_LAT * cos_lat));
-    } else {
-        *lon_deg = ref_lon_deg;
-    }
-    *alt_m = ref_alt_m - down_m;
-}
-
 float ins_ekf_predict_dt_s(const InsEkfFilter *filter, uint32_t timestamp_ms)
 {
     if (filter == NULL || filter->last_imu_timestamp_ms == 0U) {
@@ -673,26 +643,105 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
         return;
     }
 
+    predict_audit_last_.valid = false;
+    predict_audit_last_.dt_s = dt_s;
+    predict_audit_last_.imu_body_mps2[0] = imu_sample.accel_mps2[0];
+    predict_audit_last_.imu_body_mps2[1] = imu_sample.accel_mps2[1];
+    predict_audit_last_.imu_body_mps2[2] = imu_sample.accel_mps2[2];
+
     float w_corr[3]{};
     float a_corr[3]{};
     vec3_sub(imu_sample.gyro_radps, bias_g_, w_corr);
     vec3_sub(imu_sample.accel_mps2, bias_a_, a_corr);
+    predict_audit_last_.w_corr_radps[0] = w_corr[0];
+    predict_audit_last_.w_corr_radps[1] = w_corr[1];
+    predict_audit_last_.w_corr_radps[2] = w_corr[2];
+    predict_audit_last_.a_corr_mps2[0] = a_corr[0];
+    predict_audit_last_.a_corr_mps2[1] = a_corr[1];
+    predict_audit_last_.a_corr_mps2[2] = a_corr[2];
+    predict_audit_last_.bias_a_mps2[0] = bias_a_[0];
+    predict_audit_last_.bias_a_mps2[1] = bias_a_[1];
+    predict_audit_last_.bias_a_mps2[2] = bias_a_[2];
+    predict_audit_last_.bias_g_radps[0] = bias_g_[0];
+    predict_audit_last_.bias_g_radps[1] = bias_g_[1];
+    predict_audit_last_.bias_g_radps[2] = bias_g_[2];
+
+    attitude_prop_audit_last_.valid = false;
+    attitude_prop_audit_last_.dt_s = dt_s;
+    attitude_prop_audit_last_.gyro_raw_radps[0] = imu_sample.gyro_radps[0];
+    attitude_prop_audit_last_.gyro_raw_radps[1] = imu_sample.gyro_radps[1];
+    attitude_prop_audit_last_.gyro_raw_radps[2] = imu_sample.gyro_radps[2];
+    attitude_prop_audit_last_.gyro_bias_radps[0] = bias_g_[0];
+    attitude_prop_audit_last_.gyro_bias_radps[1] = bias_g_[1];
+    attitude_prop_audit_last_.gyro_bias_radps[2] = bias_g_[2];
+    attitude_prop_audit_last_.gyro_corr_radps[0] = w_corr[0];
+    attitude_prop_audit_last_.gyro_corr_radps[1] = w_corr[1];
+    attitude_prop_audit_last_.gyro_corr_radps[2] = w_corr[2];
+    attitude_prop_audit_last_.delta_theta_integrated_rad[0] = w_corr[0] * dt_s;
+    attitude_prop_audit_last_.delta_theta_integrated_rad[1] = w_corr[1] * dt_s;
+    attitude_prop_audit_last_.delta_theta_integrated_rad[2] = w_corr[2] * dt_s;
+    attitude_prop_audit_last_.delta_theta_integrated_mag_rad = std::sqrt(
+        (attitude_prop_audit_last_.delta_theta_integrated_rad[0]
+         * attitude_prop_audit_last_.delta_theta_integrated_rad[0])
+        + (attitude_prop_audit_last_.delta_theta_integrated_rad[1]
+           * attitude_prop_audit_last_.delta_theta_integrated_rad[1])
+        + (attitude_prop_audit_last_.delta_theta_integrated_rad[2]
+           * attitude_prop_audit_last_.delta_theta_integrated_rad[2]));
+
+    attitude_prop_audit_last_.q_before[0] = q_att_[0];
+    attitude_prop_audit_last_.q_before[1] = q_att_[1];
+    attitude_prop_audit_last_.q_before[2] = q_att_[2];
+    attitude_prop_audit_last_.q_before[3] = q_att_[3];
+    quat_to_euler321(
+        attitude_prop_audit_last_.q_before,
+        &attitude_prop_audit_last_.roll_before_rad,
+        &attitude_prop_audit_last_.pitch_before_rad,
+        &attitude_prop_audit_last_.yaw_before_rad);
 
     quat_integrate_first_order(q_att_, w_corr, dt_s);
 
+    attitude_prop_audit_last_.q_after[0] = q_att_[0];
+    attitude_prop_audit_last_.q_after[1] = q_att_[1];
+    attitude_prop_audit_last_.q_after[2] = q_att_[2];
+    attitude_prop_audit_last_.q_after[3] = q_att_[3];
+    quat_to_euler321(
+        attitude_prop_audit_last_.q_after,
+        &attitude_prop_audit_last_.roll_after_rad,
+        &attitude_prop_audit_last_.pitch_after_rad,
+        &attitude_prop_audit_last_.yaw_after_rad);
+    attitude_prop_audit_last_.valid = true;
+
     InsEkfMat3 dcm_bn{};
     quat_to_dcm_bn(q_att_, dcm_bn);
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            predict_audit_last_.dcm_bn[r][c] = dcm_bn[r][c];
+        }
+    }
 
     float a_n[3]{};
     body_to_ned(dcm_bn, a_corr, a_n);
+    predict_audit_last_.a_nav_mps2[0] = a_n[0];
+    predict_audit_last_.a_nav_mps2[1] = a_n[1];
+    predict_audit_last_.a_nav_mps2[2] = a_n[2];
     a_n[0] -= kGravityNed[0];
     a_n[1] -= kGravityNed[1];
     a_n[2] -= kGravityNed[2];
+    predict_audit_last_.a_lin_mps2[0] = a_n[0];
+    predict_audit_last_.a_lin_mps2[1] = a_n[1];
+    predict_audit_last_.a_lin_mps2[2] = a_n[2];
 
     for (uint8_t i = 0U; i < 3U; ++i) {
         vel_[i] += a_n[i] * dt_s;
         pos_[i] += vel_[i] * dt_s;
     }
+    predict_audit_last_.vel_ned_mps[0] = vel_[0];
+    predict_audit_last_.vel_ned_mps[1] = vel_[1];
+    predict_audit_last_.vel_ned_mps[2] = vel_[2];
+    predict_audit_last_.pos_ned_m[0] = pos_[0];
+    predict_audit_last_.pos_ned_m[1] = pos_[1];
+    predict_audit_last_.pos_ned_m[2] = pos_[2];
+    predict_audit_last_.valid = true;
 
     InsEkfMat3 accel_skew{};
     skew_symmetric(a_corr, accel_skew);
@@ -743,7 +792,7 @@ bool InsEkfFilter::update_gnss(const GpsSample &gps_sample, float *out_nis)
     float z_n = 0.0f;
     float z_e = 0.0f;
     float z_d = 0.0f;
-    latlonalt_to_ned(
+    geodesy::lla_to_ned(
         ref_lat_deg,
         ref_lon_deg,
         ref_alt_m,
@@ -1202,6 +1251,7 @@ void ins_ekf_init(
     filter->zupt_update_count = 0U;
     filter->zupt_vel_var_m2 =
         NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS * NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS;
+    filter->predict_audit_last_.valid = false;
 
     filter->initialized = true;
     filter->outlier_detected = false;
@@ -1511,6 +1561,102 @@ void ins_ekf_get_attitude_rad(
     quat_to_euler321(filter->q_att_, roll_rad, pitch_rad, yaw_rad);
 }
 
+bool ins_ekf_compute_roll_pitch_from_gravity_body(
+    const float accel_body_mps2[3],
+    float *roll_rad,
+    float *pitch_rad)
+{
+    if (accel_body_mps2 == NULL) {
+        return false;
+    }
+
+    const float ax = accel_body_mps2[0];
+    const float ay = accel_body_mps2[1];
+    const float az = accel_body_mps2[2];
+    const float horiz_sq = (ay * ay) + (az * az);
+    if (horiz_sq < 1.0e-6f) {
+        return false;
+    }
+
+    const float roll = atan2f(ay, az);
+    const float pitch = atan2f(-ax, sqrtf(horiz_sq));
+    if (roll_rad != NULL) {
+        *roll_rad = roll;
+    }
+    if (pitch_rad != NULL) {
+        *pitch_rad = pitch;
+    }
+    return true;
+}
+
+bool ins_ekf_apply_gravity_tilt_init(
+    InsEkfFilter *filter,
+    const float mean_accel_body_mps2[3],
+    const float mean_gyro_body_radps[3])
+{
+    if (filter == NULL || mean_accel_body_mps2 == NULL || !filter->initialized) {
+        return false;
+    }
+
+    float roll_rad = 0.0f;
+    float pitch_rad = 0.0f;
+    if (!ins_ekf_compute_roll_pitch_from_gravity_body(
+            mean_accel_body_mps2,
+            &roll_rad,
+            &pitch_rad)) {
+        return false;
+    }
+
+    float yaw_rad = 0.0f;
+    quat_to_euler321(filter->q_att_, NULL, NULL, &yaw_rad);
+    euler321_to_quat(roll_rad, pitch_rad, yaw_rad, filter->q_att_);
+    quat_normalize(filter->q_att_);
+
+    InsEkfMat3 dcm_bn{};
+    quat_to_dcm_bn(filter->q_att_, dcm_bn);
+    const float g_ned[3] = {
+        0.0f,
+        0.0f,
+        NAVICORE_INS_EKF_GRAVITY_MPS2,
+    };
+    float g_body[3] = {0.0f, 0.0f, 0.0f};
+    ned_to_body(dcm_bn, g_ned, g_body);
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        filter->bias_a_[i] = mean_accel_body_mps2[i] - g_body[i];
+        if (mean_gyro_body_radps != NULL) {
+            filter->bias_g_[i] = mean_gyro_body_radps[i];
+        }
+    }
+
+    filter->cov.P[INS_ERR_ATT_X][INS_ERR_ATT_X] = NAVICORE_INS_EKF_INIT_ATT_ROLL_PITCH_VAR_RAD2;
+    filter->cov.P[INS_ERR_ATT_Y][INS_ERR_ATT_Y] = NAVICORE_INS_EKF_INIT_ATT_ROLL_PITCH_VAR_RAD2;
+    return true;
+}
+
+bool ins_ekf_get_last_predict_audit(
+    const InsEkfFilter *filter,
+    InsEkfPredictAudit *out_audit)
+{
+    if (filter == NULL || out_audit == NULL || !filter->predict_audit_last_.valid) {
+        return false;
+    }
+
+    *out_audit = filter->predict_audit_last_;
+    return true;
+}
+
+bool ins_ekf_get_last_attitude_prop_audit(
+    const InsEkfFilter *filter,
+    InsEkfAttitudePropAudit *out_audit)
+{
+    if (filter == NULL || out_audit == NULL || !filter->attitude_prop_audit_last_.valid) {
+        return false;
+    }
+
+    *out_audit = filter->attitude_prop_audit_last_;
+    return true;
+}
+
 uint32_t ins_ekf_gnss_accept_count(const InsEkfFilter *filter)
 {
     if (filter == NULL) {
@@ -1543,7 +1689,7 @@ void ins_ekf_export_nav_state(
     float lon_deg = 0.0f;
     float alt_m = 0.0f;
 
-    ned_to_latlonalt(
+    geodesy::ned_to_lla(
         filter->ref_lat_deg,
         filter->ref_lon_deg,
         filter->ref_alt_m,
@@ -1611,7 +1757,7 @@ bool ins_ekf_pack_navigation_state(
     float lat_deg = 0.0f;
     float lon_deg = 0.0f;
     float alt_m = 0.0f;
-    ned_to_latlonalt(
+    geodesy::ned_to_lla(
         filter->ref_lat_deg,
         filter->ref_lon_deg,
         filter->ref_alt_m,

@@ -40,12 +40,34 @@ typedef float InsEkfVec3[3];
 #define NAVICORE_INS_EKF_GNSS_POS_VAR_M2 6.0f
 #endif
 
+#ifndef NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2
+/* Ruido blanco IMU real (log coche): sigma_a = 0.05 m/s^2 -> Q_vel = sigma_a^2 * dt. */
+#define NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2 0.05f
+#endif
+
 #ifndef NAVICORE_INS_EKF_ACCEL_NOISE_VAR
-#define NAVICORE_INS_EKF_ACCEL_NOISE_VAR 0.05f
+#define NAVICORE_INS_EKF_ACCEL_NOISE_VAR \
+    (NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2 * NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2)
+#endif
+
+#ifndef NAVICORE_INS_EKF_GYRO_NOISE_STD_RADPS
+/* Vibracion de soporte: sigma_g = 0.002 rad/s -> Q_att = sigma_g^2 * dt. */
+#define NAVICORE_INS_EKF_GYRO_NOISE_STD_RADPS 0.002f
 #endif
 
 #ifndef NAVICORE_INS_EKF_GYRO_NOISE_VAR
-#define NAVICORE_INS_EKF_GYRO_NOISE_VAR 0.001f
+#define NAVICORE_INS_EKF_GYRO_NOISE_VAR \
+    (NAVICORE_INS_EKF_GYRO_NOISE_STD_RADPS * NAVICORE_INS_EKF_GYRO_NOISE_STD_RADPS)
+#endif
+
+#ifndef NAVICORE_INS_EKF_INIT_ATT_ROLL_PITCH_VAR_RAD2
+/* Actitud inicial moderada cuando no hay referencia de inclinacion (0.1 rad). */
+#define NAVICORE_INS_EKF_INIT_ATT_ROLL_PITCH_VAR_RAD2 0.01f
+#endif
+
+#ifndef NAVICORE_INS_EKF_INIT_ATT_YAW_VAR_RAD2
+/* Yaw desconocido al arrancar parado sin brujula (0.8 rad ~ 46 deg). */
+#define NAVICORE_INS_EKF_INIT_ATT_YAW_VAR_RAD2 0.64f
 #endif
 
 #ifndef NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR
@@ -59,13 +81,13 @@ typedef float InsEkfVec3[3];
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS
-/* Deslizamiento lateral: confianza moderada (sigma -> var en update_nhc). */
-#define NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS 0.1f
+/* Log real coche: tolerancia alta a vibracion lateral del soporte movil. */
+#define NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS 0.5f
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS
-/* Suspension / pitch: mucho mas tolerante que lateral para no forzar vz->0. */
-#define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 0.5f
+/* Suspension / pitch: aun mas tolerante que lateral. */
+#define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 1.0f
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_EVERY_N_TICKS
@@ -121,6 +143,39 @@ enum InsEkfStateIdx : uint8_t {
 struct InsEkfCovariance {
     float P[INS_EKF_STATE_DIM][INS_EKF_STATE_DIM];
 };
+
+typedef struct {
+    float dt_s;
+    float imu_body_mps2[3];
+    float a_corr_mps2[3];
+    float a_nav_mps2[3];
+    float a_lin_mps2[3];
+    float w_corr_radps[3];
+    float vel_ned_mps[3];
+    float pos_ned_m[3];
+    float bias_a_mps2[3];
+    float bias_g_radps[3];
+    float dcm_bn[3][3];
+    bool valid;
+} InsEkfPredictAudit;
+
+typedef struct {
+    float dt_s;
+    float gyro_raw_radps[3];
+    float gyro_bias_radps[3];
+    float gyro_corr_radps[3];
+    float delta_theta_integrated_rad[3];
+    float delta_theta_integrated_mag_rad;
+    float q_before[4];
+    float q_after[4];
+    float roll_before_rad;
+    float pitch_before_rad;
+    float yaw_before_rad;
+    float roll_after_rad;
+    float pitch_after_rad;
+    float yaw_after_rad;
+    bool valid;
+} InsEkfAttitudePropAudit;
 
 struct InsEkfFilter {
     /* --- Estado nominal absoluto (ESKF) --- */
@@ -214,6 +269,9 @@ struct InsEkfFilter {
     float nhc_lateral_var_m2;
     float nhc_vertical_var_m2;
     float zupt_vel_var_m2;
+
+    InsEkfPredictAudit predict_audit_last_;
+    InsEkfAttitudePropAudit attitude_prop_audit_last_;
 
     void predict(const ImuSample &imu_sample, float dt_s);
     bool update_gnss(const GpsSample &gps_sample, float *out_nis);
@@ -315,6 +373,20 @@ void ins_ekf_get_attitude_rad(
     float *roll_rad,
     float *pitch_rad,
     float *yaw_rad);
+bool ins_ekf_compute_roll_pitch_from_gravity_body(
+    const float accel_body_mps2[3],
+    float *roll_rad,
+    float *pitch_rad);
+bool ins_ekf_apply_gravity_tilt_init(
+    InsEkfFilter *filter,
+    const float mean_accel_body_mps2[3],
+    const float mean_gyro_body_radps[3]);
+bool ins_ekf_get_last_predict_audit(
+    const InsEkfFilter *filter,
+    InsEkfPredictAudit *out_audit);
+bool ins_ekf_get_last_attitude_prop_audit(
+    const InsEkfFilter *filter,
+    InsEkfAttitudePropAudit *out_audit);
 uint32_t ins_ekf_gnss_accept_count(const InsEkfFilter *filter);
 uint32_t ins_ekf_gnss_reject_count(const InsEkfFilter *filter);
 void ins_ekf_export_nav_state(

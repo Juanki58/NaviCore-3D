@@ -180,11 +180,20 @@ void super_tunnel_seed_velocity_from_gps(InsEkfFilter *ekf, const GpsSample *gps
 
 } /* namespace */
 
-SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
+SuperTunnelPassResult super_tunnel_run_pass(
+    bool nhc_enabled,
+    bool verbose,
+    SuperTunnelImuMode imu_mode,
+    uint32_t rng_seed,
+    float nhc_lateral_std_mps,
+    float nhc_vertical_std_mps)
 {
     SuperTunnelPassResult result{};
 
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    const uint32_t seed = (rng_seed != 0U)
+        ? rng_seed
+        : sensors_simulation_get_default_seed();
 
     SensorsSimulation sensors{};
     sensors_simulation_init(
@@ -193,9 +202,12 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
         origin,
         kSuperTunnelSpeedMps,
         kSuperTunnelCourseDeg,
-        sensors_simulation_get_default_seed());
+        seed);
     sensors.imu.commanded_forward_accel_mps2 = 0.0f;
     sensors.imu.commanded_yaw_rate_radps = 0.0f;
+    imu_simulator_set_scale_misalign_enabled(
+        &sensors.imu,
+        imu_mode == SUPER_TUNNEL_IMU_DIRTY_FULL);
 
     InsEkfFilter ekf{};
     bool ekf_seeded = false;
@@ -208,16 +220,27 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
 
     for (uint32_t t_ms = 0U; t_ms <= kSuperTunnelDurationMs; t_ms += kEkfStepMs) {
         ImuSample imu{};
+        GpsSample gps_meas{};
         GpsSample gps_truth{};
-        GpsSample gps{};
 
-        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps_truth)) {
+        if (!gps_simulator_read(&sensors.gps, t_ms, &gps_meas)) {
             continue;
         }
 
+        if (imu_mode != SUPER_TUNNEL_IMU_IDEAL) {
+            imu_simulator_step_bias_random_walk(&sensors.imu);
+        }
         super_tunnel_sanitize_imu(&imu);
+        if (imu_mode == SUPER_TUNNEL_IMU_IDEAL) {
+            imu.timestamp_ms = t_ms;
+        } else {
+            imu_simulator_apply_measurement_model(&sensors.imu, &imu, t_ms);
+        }
+        sensors_simulation_apply_step_faults(&sensors, &imu, &gps_meas);
 
-        gps = gps_truth;
+        (void)gps_simulator_get_truth(&sensors.gps, &gps_truth);
+
+        GpsSample gps = gps_meas;
         const bool gps_outage =
             (t_ms >= SUPER_TUNNEL_GPS_OFF_START_MS) && (t_ms < SUPER_TUNNEL_GPS_OFF_END_MS);
         if (gps_outage) {
@@ -229,6 +252,12 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
             const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
             ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
             ins_ekf_set_nhc_enabled(&ekf, nhc_enabled);
+            if (nhc_lateral_std_mps > 0.0f) {
+                ekf.nhc_lateral_var_m2 = nhc_lateral_std_mps * nhc_lateral_std_mps;
+            }
+            if (nhc_vertical_std_mps > 0.0f) {
+                ekf.nhc_vertical_var_m2 = nhc_vertical_std_mps * nhc_vertical_std_mps;
+            }
             super_tunnel_seed_velocity_from_gps(&ekf, &gps);
             ref_lat_deg = gps.position.x;
             ref_lon_deg = gps.position.y;
@@ -327,8 +356,10 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
 
     if (ekf_seeded) {
         ImuSample imu{};
+        GpsSample final_meas{};
         GpsSample final_truth{};
-        (void)sensors_simulation_tick(&sensors, kSuperTunnelDurationMs, &imu, &final_truth);
+        (void)sensors_simulation_tick(&sensors, kSuperTunnelDurationMs, &imu, &final_meas);
+        (void)gps_simulator_get_truth(&sensors.gps, &final_truth);
 
         float truth_n = 0.0f;
         float truth_e = 0.0f;

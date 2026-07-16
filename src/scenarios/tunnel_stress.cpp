@@ -93,7 +93,7 @@ const char *nav_mode_name(NavMode mode)
     }
 }
 
-void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu)
+void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu, uint32_t sim_clock_ms)
 {
     if (sensors == NULL || imu == NULL) {
         return;
@@ -112,7 +112,7 @@ void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu)
     imu->gyro_radps[0] = 0.0f;
     imu->gyro_radps[1] = 0.0f;
     imu->gyro_radps[2] = 0.0f;
-    imu_simulator_apply_measurement_model(&sensors->imu, imu);
+    imu_simulator_apply_measurement_model(&sensors->imu, imu, sim_clock_ms);
     imu->valid = true;
 }
 
@@ -284,16 +284,20 @@ void TunnelStressScenario::run(
         apply_vehicle_profile(&sensors, phase);
 
         ImuSample imu{};
+        GpsSample gps_meas{};
         GpsSample gps_truth{};
-        GpsSample gps{};
 
-        if (!sensors_simulation_tick(&sensors, t_ms, &imu, &gps_truth)) {
+        if (!gps_simulator_read(&sensors.gps, t_ms, &gps_meas)) {
             continue;
         }
 
-        prepare_imu_sample(&sensors, &imu);
+        imu_simulator_step_bias_random_walk(&sensors.imu);
+        prepare_imu_sample(&sensors, &imu, t_ms);
+        sensors_simulation_apply_step_faults(&sensors, &imu, &gps_meas);
 
-        gps = gps_truth;
+        (void)gps_simulator_get_truth(&sensors.gps, &gps_truth);
+
+        GpsSample gps = gps_meas;
         const bool gps_outage = tunnel_stress_gps_outage_at_ms(t_ms);
         if (gps_outage) {
             gps.fix_valid = false;

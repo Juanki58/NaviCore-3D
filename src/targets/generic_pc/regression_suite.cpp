@@ -16,7 +16,7 @@
 
 namespace {
 
-constexpr int kRegressionTestCount = 5;
+constexpr int kRegressionTestCount = 7;
 constexpr int kMaxRegressionReports = 8;
 constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
@@ -93,6 +93,21 @@ void expect_greater(float actual, float limit, const char *message)
             message,
             actual,
             limit);
+        ++g_failures;
+    }
+}
+
+void expect_near(float actual, float expected, float tolerance, const char *message)
+{
+    const float err = std::fabs(actual - expected);
+    if (err > tolerance) {
+        std::printf(
+            "  FAIL: %s (actual=%.6f expected=%.6f |err|=%.6f tol=%.6f)\n",
+            message,
+            actual,
+            expected,
+            err,
+            tolerance);
         ++g_failures;
     }
 }
@@ -257,6 +272,147 @@ void test_nhc_enabled_predict_increments_counter(RegressionTestReport *report)
     add_simple_metric(report, "nhc_innovation_max_lateral_mps", innov_lat, "m/s");
     add_simple_metric(report, "nhc_innovation_max_vertical_mps", innov_vert, "m/s");
     add_simple_metric(report, "nhc_innovation_max_norm_mps", innov_norm, "m/s");
+}
+
+void test_nhc_jacobian_fd(RegressionTestReport *report)
+{
+    const float yaw_rad = static_cast<float>(M_PI * 0.5);
+    const float vel_ned[3] = {12.0f, 25.0f, -0.5f};
+
+    float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    q[0] = std::cos(yaw_rad * 0.5f);
+    q[3] = std::sin(yaw_rad * 0.5f);
+
+    float dcm[3][3]{};
+    ins_ekf_kinematics_quat_to_dcm_bn(q, dcm);
+
+    float v_body[3]{};
+    ins_ekf_kinematics_ned_to_body(dcm, vel_ned, v_body);
+
+    float h_analytic[2][3]{};
+    ins_ekf_fill_nhc_attitude_coupling(v_body, h_analytic);
+
+    constexpr float eps = 1.0e-4f;
+    constexpr float tol = 5.0e-3f;
+    float max_abs_err = 0.0f;
+
+    for (uint8_t axis = 0U; axis < 3U; ++axis) {
+        float dtheta_p[3] = {0.0f, 0.0f, 0.0f};
+        float dtheta_m[3] = {0.0f, 0.0f, 0.0f};
+        dtheta_p[axis] = eps;
+        dtheta_m[axis] = -eps;
+
+        float q_p[4] = {q[0], q[1], q[2], q[3]};
+        float q_m[4] = {q[0], q[1], q[2], q[3]};
+        ins_ekf_kinematics_quat_apply_small_angle_error(q_p, dtheta_p);
+        ins_ekf_kinematics_quat_apply_small_angle_error(q_m, dtheta_m);
+
+        float dcm_p[3][3]{};
+        float dcm_m[3][3]{};
+        float vb_p[3]{};
+        float vb_m[3]{};
+        ins_ekf_kinematics_quat_to_dcm_bn(q_p, dcm_p);
+        ins_ekf_kinematics_quat_to_dcm_bn(q_m, dcm_m);
+        ins_ekf_kinematics_ned_to_body(dcm_p, vel_ned, vb_p);
+        ins_ekf_kinematics_ned_to_body(dcm_m, vel_ned, vb_m);
+
+        const float y_nom[2] = {-v_body[1], -v_body[2]};
+        const float y_p[2] = {-vb_p[1], -vb_p[2]};
+        const float y_m[2] = {-vb_m[1], -vb_m[2]};
+
+        for (uint8_t meas = 0U; meas < 2U; ++meas) {
+            const float fd = (y_p[meas] - y_m[meas]) / (2.0f * eps);
+            const float analytic = h_analytic[meas][axis];
+            const float abs_err = std::fabs(fd - analytic);
+            if (abs_err > max_abs_err) {
+                max_abs_err = abs_err;
+            }
+            expect_near(fd, analytic, tol, "NHC Jacobian FD vs analitico");
+        }
+    }
+
+    add_simple_metric(report, "nhc_jacobian_max_abs_err", max_abs_err, "1");
+    expect_less(max_abs_err, tol, "max error Jacobian NHC acoplamiento actitud");
+}
+
+void test_super_tunnel_nhc_isolation(RegressionTestReport *report)
+{
+    constexpr uint32_t kDiagSeed = 424242U;
+
+    const SuperTunnelPassResult dirty_off = super_tunnel_run_pass(
+        false, false, SUPER_TUNNEL_IMU_DIRTY_FULL, kDiagSeed);
+    const SuperTunnelPassResult dirty_on = super_tunnel_run_pass(
+        true, false, SUPER_TUNNEL_IMU_DIRTY_FULL, kDiagSeed);
+    const SuperTunnelPassResult no_sm_off = super_tunnel_run_pass(
+        false, false, SUPER_TUNNEL_IMU_NO_SCALE_MISALIGN, kDiagSeed);
+    const SuperTunnelPassResult no_sm_on = super_tunnel_run_pass(
+        true, false, SUPER_TUNNEL_IMU_NO_SCALE_MISALIGN, kDiagSeed);
+    const SuperTunnelPassResult ideal_off = super_tunnel_run_pass(
+        false, false, SUPER_TUNNEL_IMU_IDEAL, kDiagSeed);
+    const SuperTunnelPassResult ideal_on = super_tunnel_run_pass(
+        true, false, SUPER_TUNNEL_IMU_IDEAL, kDiagSeed);
+    const SuperTunnelPassResult ideal_on_loose_r = super_tunnel_run_pass(
+        true,
+        false,
+        SUPER_TUNNEL_IMU_IDEAL,
+        kDiagSeed,
+        5.0f,
+        1.0f);
+
+    std::printf(
+        "  aislamiento super_tunnel (seed=%u, Jacobiano NHC corregido):\n"
+        "    dirty      sin NHC exit=%.2f m | con NHC exit=%.2f m | innov_max=%.3f m/s\n"
+        "    no_scale   sin NHC exit=%.2f m | con NHC exit=%.2f m | innov_max=%.3f m/s\n"
+        "    ideal      sin NHC exit=%.2f m | con NHC exit=%.2f m | innov_max=%.3f m/s\n",
+        kDiagSeed,
+        dirty_off.drift_exit_tunnel_m,
+        dirty_on.drift_exit_tunnel_m,
+        dirty_on.nhc_innovation_max.norm_mps,
+        no_sm_off.drift_exit_tunnel_m,
+        no_sm_on.drift_exit_tunnel_m,
+        no_sm_on.nhc_innovation_max.norm_mps,
+        ideal_off.drift_exit_tunnel_m,
+        ideal_on.drift_exit_tunnel_m,
+        ideal_on.nhc_innovation_max.norm_mps);
+    std::printf(
+        "    ideal+R5    con NHC exit=%.2f m | innov_max=%.3f m/s (R_lat=5 m/s)\n",
+        ideal_on_loose_r.drift_exit_tunnel_m,
+        ideal_on_loose_r.nhc_innovation_max.norm_mps);
+
+    add_simple_metric(report, "dirty_nhc_off_exit_m", dirty_off.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "dirty_nhc_on_exit_m", dirty_on.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "no_scale_nhc_off_exit_m", no_sm_off.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "no_scale_nhc_on_exit_m", no_sm_on.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "ideal_nhc_off_exit_m", ideal_off.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "ideal_nhc_on_exit_m", ideal_on.drift_exit_tunnel_m, "m");
+    add_simple_metric(report, "ideal_loose_r_exit_m", ideal_on_loose_r.drift_exit_tunnel_m, "m");
+
+    expect_less(
+        ideal_on.drift_exit_tunnel_m,
+        dirty_on.drift_exit_tunnel_m,
+        "IMU ideal: NHC no debe empeorar vs dirty+NHC");
+
+    const float nhc_penalty_dirty = dirty_on.drift_exit_tunnel_m - dirty_off.drift_exit_tunnel_m;
+    const float nhc_penalty_ideal = ideal_on.drift_exit_tunnel_m - ideal_off.drift_exit_tunnel_m;
+    const float nhc_penalty_no_sm = no_sm_on.drift_exit_tunnel_m - no_sm_off.drift_exit_tunnel_m;
+    add_simple_metric(report, "nhc_penalty_dirty_m", nhc_penalty_dirty, "m");
+    add_simple_metric(report, "nhc_penalty_ideal_m", nhc_penalty_ideal, "m");
+
+    std::printf(
+        "  penalidad NHC (con - sin): dirty=%.2f m | ideal=%.2f m | no_scale=%.2f m\n",
+        nhc_penalty_dirty,
+        nhc_penalty_ideal,
+        nhc_penalty_no_sm);
+
+    /* Refutacion hipotesis escala/desalineacion: penalidad similar en los tres modos. */
+    expect_less(
+        std::fabs(nhc_penalty_ideal - nhc_penalty_dirty),
+        nhc_penalty_dirty * 0.15f,
+        "penalidad NHC casi igual dirty vs ideal (no es escala/desalineacion)");
+    expect_less(
+        std::fabs(nhc_penalty_no_sm - nhc_penalty_dirty),
+        nhc_penalty_dirty * 0.15f,
+        "penalidad NHC casi igual dirty vs no_scale");
 }
 
 void test_super_tunnel_nhc_regression(RegressionTestReport *report)
@@ -582,6 +738,8 @@ int run_regression_suite()
 
     run_test("ins_ekf_gravity_compensation", test_ins_ekf_gravity_compensation);
     run_test("nhc_predict_counter", test_nhc_enabled_predict_increments_counter);
+    run_test("nhc_jacobian_fd", test_nhc_jacobian_fd);
+    run_test("super_tunnel_nhc_isolation", test_super_tunnel_nhc_isolation);
     run_test("super_tunnel_nhc_regression", test_super_tunnel_nhc_regression);
     run_test("TC_03_Constant_Slope", test_tc_03_constant_slope);
     run_test("TC_04_Aggressive_Slalom", test_tc_04_aggressive_slalom);

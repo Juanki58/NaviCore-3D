@@ -348,6 +348,21 @@ void skew_symmetric(const float v[3], InsEkfMat3 m)
     m[2][2] = 0.0f;
 }
 
+/*
+ * Perturbacion derecha (q' = q * dq): v_body(true) = v_body + [v_body]x * dtheta.
+ * NHC observa y = [-v_y, -v_z] => filas de H respecto a delta_theta son -[v_body]x.
+ */
+void fill_nhc_attitude_coupling_rows(const float v_body[3], float h_rows_att[2][3])
+{
+    h_rows_att[0][0] = -v_body[2];
+    h_rows_att[0][1] = 0.0f;
+    h_rows_att[0][2] = v_body[0];
+
+    h_rows_att[1][0] = v_body[1];
+    h_rows_att[1][1] = -v_body[0];
+    h_rows_att[1][2] = 0.0f;
+}
+
 void mat3_mul(const InsEkfMat3 a, const InsEkfMat3 b, InsEkfMat3 out)
 {
     for (uint8_t r = 0U; r < 3U; ++r) {
@@ -541,6 +556,7 @@ void ins_ekf_build_process_noise(const InsEkfFilter *filter, float dt_s, InsEkfM
     const float pos_q = filter->accel_noise_var * dt_s * dt_s;
     const float vel_q = filter->accel_noise_var * dt_s;
     const float att_q = filter->gyro_noise_var * dt_s;
+    /* Bias random walk: Q_b = PSD_rw * dt (Velocity/Angle RW del bias). */
     const float ba_q = filter->bias_accel_rw_var * dt_s;
     const float bg_q = filter->bias_gyro_rw_var * dt_s;
 
@@ -859,11 +875,15 @@ bool InsEkfFilter::update_nhc()
     h_rows[1][INS_ERR_VEL_N + 1] = dcm_bn[1][2];
     h_rows[1][INS_ERR_VEL_N + 2] = dcm_bn[2][2];
 
-    /* Acoplamiento actitud (perturbacion derecha q' = q * dq): d(v_b) = -[v_b]x dtheta. */
-    h_rows[0][INS_ERR_ATT_X] = v_body[2];
-    h_rows[0][INS_ERR_ATT_Z] = -v_body[0];
-    h_rows[1][INS_ERR_ATT_X] = -v_body[1];
-    h_rows[1][INS_ERR_ATT_Y] = v_body[0];
+    /* Acoplamiento actitud: ver fill_nhc_attitude_coupling_rows / ins_ekf_fill_nhc_attitude_coupling. */
+    float h_att[2][3]{};
+    fill_nhc_attitude_coupling_rows(v_body, h_att);
+    h_rows[0][INS_ERR_ATT_X] = h_att[0][0];
+    h_rows[0][INS_ERR_ATT_Y] = h_att[0][1];
+    h_rows[0][INS_ERR_ATT_Z] = h_att[0][2];
+    h_rows[1][INS_ERR_ATT_X] = h_att[1][0];
+    h_rows[1][INS_ERR_ATT_Y] = h_att[1][1];
+    h_rows[1][INS_ERR_ATT_Z] = h_att[1][2];
 
     float s_mat[2][2]{};
     for (uint8_t i = 0U; i < 2U; ++i) {
@@ -974,6 +994,11 @@ bool InsEkfFilter::update_zupt()
     h_rows[2][INS_ERR_VEL_D] = 1.0f;
 
     float s_mat[3][3]{};
+    float zupt_r_used[3] = {
+        zupt_vel_var_m2,
+        zupt_vel_var_m2,
+        zupt_vel_var_m2,
+    };
     for (uint8_t i = 0U; i < 3U; ++i) {
         for (uint8_t j = 0U; j < 3U; ++j) {
             float sum = 0.0f;
@@ -984,7 +1009,13 @@ bool InsEkfFilter::update_zupt()
             }
             s_mat[i][j] = sum;
         }
-        s_mat[i][i] += zupt_vel_var_m2;
+        const float p_ii = s_mat[i][i];
+        const float g_max = NAVICORE_INS_EKF_ZUPT_MAX_GAIN;
+        const float r_min = p_ii * (1.0f - g_max) / g_max;
+        if (zupt_r_used[i] < r_min) {
+            zupt_r_used[i] = r_min;
+        }
+        s_mat[i][i] += zupt_r_used[i];
     }
 
     InsEkfMat3 s_inv{};
@@ -1013,7 +1044,7 @@ bool InsEkfFilter::update_zupt()
 
     ins_ekf_inject_error_into_nominal(this);
 
-    const float meas_var[3] = {zupt_vel_var_m2, zupt_vel_var_m2, zupt_vel_var_m2};
+    const float meas_var[3] = {zupt_r_used[0], zupt_r_used[1], zupt_r_used[2]};
     ins_ekf_covariance_joseph_update3(
         cov.P,
         k_gain,
@@ -1470,4 +1501,48 @@ bool ins_ekf_pack_navigation_state(
 
     *out_state = packed;
     return true;
+}
+
+void ins_ekf_fill_nhc_attitude_coupling(const float v_body[3], float h_rows_att[2][3])
+{
+    if (v_body == NULL || h_rows_att == NULL) {
+        return;
+    }
+    fill_nhc_attitude_coupling_rows(v_body, h_rows_att);
+}
+
+void ins_ekf_kinematics_quat_to_dcm_bn(const float q[4], float dcm[3][3])
+{
+    if (q == NULL || dcm == NULL) {
+        return;
+    }
+    InsEkfMat3 dcm_local{};
+    quat_to_dcm_bn(q, dcm_local);
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            dcm[r][c] = dcm_local[r][c];
+        }
+    }
+}
+
+void ins_ekf_kinematics_ned_to_body(const float dcm[3][3], const float ned[3], float body[3])
+{
+    if (dcm == NULL || ned == NULL || body == NULL) {
+        return;
+    }
+    InsEkfMat3 dcm_local{};
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            dcm_local[r][c] = dcm[r][c];
+        }
+    }
+    ned_to_body(dcm_local, ned, body);
+}
+
+void ins_ekf_kinematics_quat_apply_small_angle_error(float q[4], const float dtheta[3])
+{
+    if (q == NULL || dtheta == NULL) {
+        return;
+    }
+    quat_apply_small_angle_error(q, dtheta);
 }

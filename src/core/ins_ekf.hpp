@@ -49,11 +49,13 @@ typedef float InsEkfVec3[3];
 #endif
 
 #ifndef NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR
-#define NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR 1.0e-5f
+/* PSD alineada con IMU sim: (sigma_tick^2) / dt, sigma=1e-4 m/s^2/tick @100Hz */
+#define NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR 1.0e-6f
 #endif
 
 #ifndef NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR
-#define NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR 1.0e-6f
+/* PSD alineada con IMU sim: (sigma_tick^2) / dt, sigma=1e-6 rad/s/tick @100Hz */
+#define NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR 1.0e-10f
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS
@@ -70,6 +72,11 @@ typedef float InsEkfVec3[3];
 
 #ifndef NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS
 #define NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS 0.05f
+#endif
+
+#ifndef NAVICORE_INS_EKF_ZUPT_MAX_GAIN
+/* Limita ganancia por eje en ZUPT para evitar correccion de un solo tick ~100%. */
+#define NAVICORE_INS_EKF_ZUPT_MAX_GAIN 0.85f
 #endif
 
 enum InsEkfErrorIdx : uint8_t {
@@ -232,3 +239,13 @@ bool ins_ekf_pack_navigation_state(
     uint32_t timestamp_ms,
     uint32_t health_flags,
     NavigationState *out_state);
+
+/*
+ * Acoplamiento actitud-velocidad para NHC (perturbacion derecha q' = q * dq).
+ * d(v_body)/d(delta_theta) = +[v_body]x; filas de H para y = [-v_y, -v_z].
+ */
+void ins_ekf_fill_nhc_attitude_coupling(const float v_body[3], float h_rows_att[2][3]);
+
+void ins_ekf_kinematics_quat_to_dcm_bn(const float q[4], float dcm[3][3]);
+void ins_ekf_kinematics_ned_to_body(const float dcm[3][3], const float ned[3], float body[3]);
+void ins_ekf_kinematics_quat_apply_small_angle_error(float q[4], const float dtheta[3]);

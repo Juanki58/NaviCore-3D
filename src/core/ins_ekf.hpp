@@ -59,11 +59,13 @@ typedef float InsEkfVec3[3];
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS
+/* Deslizamiento lateral: confianza moderada (sigma -> var en update_nhc). */
 #define NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS 0.1f
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS
-#define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 0.05f
+/* Suspension / pitch: mucho mas tolerante que lateral para no forzar vz->0. */
+#define NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS 0.5f
 #endif
 
 #ifndef NAVICORE_INS_EKF_NHC_EVERY_N_TICKS
@@ -168,6 +170,43 @@ struct InsEkfFilter {
     float nhc_innovation_max_vertical_mps;
     float nhc_innovation_max_norm_mps;
 
+    uint32_t nhc_last_update_timestamp_ms;
+    float nhc_last_innov_y_mps;
+    float nhc_last_innov_z_mps;
+    float nhc_last_innov_norm_mps;
+    float nhc_last_k_max;
+    float nhc_last_dx_vel_norm_mps;
+    float nhc_last_dx_att_norm_rad;
+    float nhc_last_dx_pos_norm_m;
+    float nhc_last_v_body_x_mps;
+    float nhc_last_v_body_y_mps;
+    float nhc_last_v_body_z_mps;
+    float nhc_last_vel_n_mps;
+    float nhc_last_vel_e_mps;
+    float nhc_last_vel_d_mps;
+    float nhc_last_yaw_rad;
+    float nhc_last_dx_vel_n_mps;
+    float nhc_last_dx_vel_e_mps;
+    float nhc_last_dx_vel_d_mps;
+    float nhc_last_dx_att_x_rad;
+    float nhc_last_dx_att_y_rad;
+    float nhc_last_dx_att_z_rad;
+    float nhc_last_k_y;
+    float nhc_last_k_z;
+    float nhc_last_nis;
+
+    double nhc_stat_sum_innov_y;
+    double nhc_stat_sum_innov_z;
+    double nhc_stat_sum_innov_y_sq;
+    double nhc_stat_sum_innov_z_sq;
+    double nhc_stat_sum_k_y;
+    double nhc_stat_sum_k_z;
+    double nhc_stat_sum_nis;
+    double nhc_stat_sum_v_body_y;
+    double nhc_stat_sum_v_body_z;
+    float nhc_stat_max_nis;
+    uint32_t nhc_stat_same_sign_count;
+
     NavDomain domain;
     bool initialized;
     bool outlier_detected;
@@ -206,6 +245,56 @@ void ins_ekf_get_nhc_innovation_max(
     float *out_lateral_mps,
     float *out_vertical_mps,
     float *out_norm_mps);
+
+typedef struct {
+    uint32_t timestamp_ms;
+    float innov_y_mps;
+    float innov_z_mps;
+    float innov_norm_mps;
+    float k_max;
+    float k_y;
+    float k_z;
+    float nis;
+    float dx_vel_norm_mps;
+    float dx_att_norm_rad;
+    float dx_pos_norm_m;
+    float v_body_x_mps;
+    float v_body_y_mps;
+    float v_body_z_mps;
+    float vel_n_mps;
+    float vel_e_mps;
+    float vel_d_mps;
+    float yaw_rad;
+    float dx_vel_n_mps;
+    float dx_vel_e_mps;
+    float dx_vel_d_mps;
+    float dx_att_x_rad;
+    float dx_att_y_rad;
+    float dx_att_z_rad;
+} InsEkfNhcUpdateDetail;
+
+bool ins_ekf_get_nhc_last_update_detail(
+    const InsEkfFilter *filter,
+    InsEkfNhcUpdateDetail *out_detail);
+
+typedef struct {
+    uint32_t sample_count;
+    float mean_innov_y_mps;
+    float mean_innov_z_mps;
+    float std_innov_y_mps;
+    float std_innov_z_mps;
+    float mean_k_y;
+    float mean_k_z;
+    float frac_same_sign_corr;
+    float mean_nis;
+    float max_nis;
+    float mean_v_body_y_mps;
+    float mean_v_body_z_mps;
+} InsEkfNhcRunSummary;
+
+bool ins_ekf_get_nhc_run_summary(
+    const InsEkfFilter *filter,
+    InsEkfNhcRunSummary *out_summary);
 
 bool ins_ekf_update_zupt(InsEkfFilter *filter);
 uint32_t ins_ekf_zupt_update_count(const InsEkfFilter *filter);

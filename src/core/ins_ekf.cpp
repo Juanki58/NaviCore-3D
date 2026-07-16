@@ -846,6 +846,9 @@ bool InsEkfFilter::update_nhc()
     float v_body[3]{};
     ned_to_body(dcm_bn, vel_, v_body);
 
+    float yaw_rad = 0.0f;
+    quat_to_euler321(q_att_, NULL, NULL, &yaw_rad);
+
     /* Pseudo-medicion: v_lateral (Y) y v_vertical (Z) cuerpo ≈ 0 m/s. */
     const float y[2] = {
         -v_body[1],
@@ -919,6 +922,78 @@ bool InsEkfFilter::update_nhc()
 
     for (uint8_t r = 0U; r < kDim; ++r) {
         delta_x_[r] = (k_gain[r][0] * y[0]) + (k_gain[r][1] * y[1]);
+    }
+
+    float k_max = 0.0f;
+    float k_y = 0.0f;
+    float k_z = 0.0f;
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        k_y = fmaxf(k_y, fabsf(k_gain[r][0]));
+        k_z = fmaxf(k_z, fabsf(k_gain[r][1]));
+        for (uint8_t c = 0U; c < 2U; ++c) {
+            k_max = fmaxf(k_max, fabsf(k_gain[r][c]));
+        }
+    }
+
+    float nis = 0.0f;
+    for (uint8_t i = 0U; i < 2U; ++i) {
+        for (uint8_t j = 0U; j < 2U; ++j) {
+            nis += y[i] * s_inv[i][j] * y[j];
+        }
+    }
+
+    float dx_vel_sq = 0.0f;
+    float dx_att_sq = 0.0f;
+    float dx_pos_sq = 0.0f;
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        const float dv = delta_x_[INS_ERR_VEL_N + i];
+        const float da = delta_x_[INS_ERR_ATT_X + i];
+        const float dp = delta_x_[INS_ERR_POS_N + i];
+        dx_vel_sq += dv * dv;
+        dx_att_sq += da * da;
+        dx_pos_sq += dp * dp;
+    }
+
+    nhc_last_dx_vel_n_mps = delta_x_[INS_ERR_VEL_N];
+    nhc_last_dx_vel_e_mps = delta_x_[INS_ERR_VEL_E];
+    nhc_last_dx_vel_d_mps = delta_x_[INS_ERR_VEL_D];
+    nhc_last_dx_att_x_rad = delta_x_[INS_ERR_ATT_X];
+    nhc_last_dx_att_y_rad = delta_x_[INS_ERR_ATT_Y];
+    nhc_last_dx_att_z_rad = delta_x_[INS_ERR_ATT_Z];
+
+    nhc_last_update_timestamp_ms = last_imu_timestamp_ms;
+    nhc_last_innov_y_mps = y[0];
+    nhc_last_innov_z_mps = y[1];
+    nhc_last_innov_norm_mps = innov_norm;
+    nhc_last_k_max = k_max;
+    nhc_last_k_y = k_y;
+    nhc_last_k_z = k_z;
+    nhc_last_nis = nis;
+    nhc_last_dx_vel_norm_mps = sqrtf(dx_vel_sq);
+    nhc_last_dx_att_norm_rad = sqrtf(dx_att_sq);
+    nhc_last_dx_pos_norm_m = sqrtf(dx_pos_sq);
+    nhc_last_v_body_x_mps = v_body[0];
+    nhc_last_v_body_y_mps = v_body[1];
+    nhc_last_v_body_z_mps = v_body[2];
+    nhc_last_vel_n_mps = vel_[0];
+    nhc_last_vel_e_mps = vel_[1];
+    nhc_last_vel_d_mps = vel_[2];
+    nhc_last_yaw_rad = yaw_rad;
+
+    nhc_stat_sum_innov_y += static_cast<double>(y[0]);
+    nhc_stat_sum_innov_z += static_cast<double>(y[1]);
+    nhc_stat_sum_innov_y_sq += static_cast<double>(y[0]) * static_cast<double>(y[0]);
+    nhc_stat_sum_innov_z_sq += static_cast<double>(y[1]) * static_cast<double>(y[1]);
+    nhc_stat_sum_k_y += static_cast<double>(k_y);
+    nhc_stat_sum_k_z += static_cast<double>(k_z);
+    nhc_stat_sum_nis += static_cast<double>(nis);
+    nhc_stat_sum_v_body_y += static_cast<double>(v_body[1]);
+    nhc_stat_sum_v_body_z += static_cast<double>(v_body[2]);
+    if (nis > nhc_stat_max_nis) {
+        nhc_stat_max_nis = nis;
+    }
+    if ((y[0] * delta_x_[INS_ERR_ATT_Y]) > 0.0f) {
+        ++nhc_stat_same_sign_count;
     }
 
     ins_ekf_inject_error_into_nominal(this);
@@ -1113,6 +1188,17 @@ void ins_ekf_init(
     filter->nhc_innovation_max_lateral_mps = 0.0f;
     filter->nhc_innovation_max_vertical_mps = 0.0f;
     filter->nhc_innovation_max_norm_mps = 0.0f;
+    filter->nhc_stat_sum_innov_y = 0.0;
+    filter->nhc_stat_sum_innov_z = 0.0;
+    filter->nhc_stat_sum_innov_y_sq = 0.0;
+    filter->nhc_stat_sum_innov_z_sq = 0.0;
+    filter->nhc_stat_sum_k_y = 0.0;
+    filter->nhc_stat_sum_k_z = 0.0;
+    filter->nhc_stat_sum_nis = 0.0;
+    filter->nhc_stat_sum_v_body_y = 0.0;
+    filter->nhc_stat_sum_v_body_z = 0.0;
+    filter->nhc_stat_max_nis = 0.0f;
+    filter->nhc_stat_same_sign_count = 0U;
     filter->zupt_update_count = 0U;
     filter->zupt_vel_var_m2 =
         NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS * NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS;
@@ -1211,6 +1297,74 @@ void ins_ekf_get_nhc_innovation_max(
     if (out_norm_mps != NULL) {
         *out_norm_mps = filter->nhc_innovation_max_norm_mps;
     }
+}
+
+bool ins_ekf_get_nhc_last_update_detail(
+    const InsEkfFilter *filter,
+    InsEkfNhcUpdateDetail *out_detail)
+{
+    if (filter == NULL || out_detail == NULL || filter->nhc_update_count == 0U) {
+        return false;
+    }
+
+    out_detail->timestamp_ms = filter->nhc_last_update_timestamp_ms;
+    out_detail->innov_y_mps = filter->nhc_last_innov_y_mps;
+    out_detail->innov_z_mps = filter->nhc_last_innov_z_mps;
+    out_detail->innov_norm_mps = filter->nhc_last_innov_norm_mps;
+    out_detail->k_max = filter->nhc_last_k_max;
+    out_detail->k_y = filter->nhc_last_k_y;
+    out_detail->k_z = filter->nhc_last_k_z;
+    out_detail->nis = filter->nhc_last_nis;
+    out_detail->dx_vel_norm_mps = filter->nhc_last_dx_vel_norm_mps;
+    out_detail->dx_att_norm_rad = filter->nhc_last_dx_att_norm_rad;
+    out_detail->dx_pos_norm_m = filter->nhc_last_dx_pos_norm_m;
+    out_detail->v_body_x_mps = filter->nhc_last_v_body_x_mps;
+    out_detail->v_body_y_mps = filter->nhc_last_v_body_y_mps;
+    out_detail->v_body_z_mps = filter->nhc_last_v_body_z_mps;
+    out_detail->vel_n_mps = filter->nhc_last_vel_n_mps;
+    out_detail->vel_e_mps = filter->nhc_last_vel_e_mps;
+    out_detail->vel_d_mps = filter->nhc_last_vel_d_mps;
+    out_detail->yaw_rad = filter->nhc_last_yaw_rad;
+    out_detail->dx_vel_n_mps = filter->nhc_last_dx_vel_n_mps;
+    out_detail->dx_vel_e_mps = filter->nhc_last_dx_vel_e_mps;
+    out_detail->dx_vel_d_mps = filter->nhc_last_dx_vel_d_mps;
+    out_detail->dx_att_x_rad = filter->nhc_last_dx_att_x_rad;
+    out_detail->dx_att_y_rad = filter->nhc_last_dx_att_y_rad;
+    out_detail->dx_att_z_rad = filter->nhc_last_dx_att_z_rad;
+    return true;
+}
+
+bool ins_ekf_get_nhc_run_summary(
+    const InsEkfFilter *filter,
+    InsEkfNhcRunSummary *out_summary)
+{
+    if (filter == NULL || out_summary == NULL || filter->nhc_update_count == 0U) {
+        return false;
+    }
+
+    const uint32_t n = filter->nhc_update_count;
+    const double inv_n = 1.0 / static_cast<double>(n);
+    const double mean_y = filter->nhc_stat_sum_innov_y * inv_n;
+    const double mean_z = filter->nhc_stat_sum_innov_z * inv_n;
+    const double var_y = (filter->nhc_stat_sum_innov_y_sq * inv_n) - (mean_y * mean_y);
+    const double var_z = (filter->nhc_stat_sum_innov_z_sq * inv_n) - (mean_z * mean_z);
+
+    out_summary->sample_count = n;
+    out_summary->mean_innov_y_mps = static_cast<float>(mean_y);
+    out_summary->mean_innov_z_mps = static_cast<float>(mean_z);
+    out_summary->std_innov_y_mps = static_cast<float>(sqrt(fmax(0.0, var_y)));
+    out_summary->std_innov_z_mps = static_cast<float>(sqrt(fmax(0.0, var_z)));
+    out_summary->mean_k_y = static_cast<float>(filter->nhc_stat_sum_k_y * inv_n);
+    out_summary->mean_k_z = static_cast<float>(filter->nhc_stat_sum_k_z * inv_n);
+    out_summary->frac_same_sign_corr =
+        static_cast<float>(filter->nhc_stat_same_sign_count) * static_cast<float>(inv_n);
+    out_summary->mean_nis = static_cast<float>(filter->nhc_stat_sum_nis * inv_n);
+    out_summary->max_nis = filter->nhc_stat_max_nis;
+    out_summary->mean_v_body_y_mps =
+        static_cast<float>(filter->nhc_stat_sum_v_body_y * inv_n);
+    out_summary->mean_v_body_z_mps =
+        static_cast<float>(filter->nhc_stat_sum_v_body_z * inv_n);
+    return true;
 }
 
 bool ins_ekf_update_zupt(InsEkfFilter *filter)

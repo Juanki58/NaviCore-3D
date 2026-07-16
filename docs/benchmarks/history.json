@@ -23,5 +23,17 @@
       "tunnel_nis_peak": 47.66,
       "tunnel_gps_recovery_time_s": 0.019999999999999574
     }
+  },
+  {
+    "commit_hash": "cf4ff61",
+    "commit_message": "[B Intelligent] AÃ±adida mÃ©trica de Recovery Time (tiempo de convergencia < 1m)",
+    "timestamp": "2026-07-16T09:53:40+02:00",
+    "metrics": {
+      "slalom_max_lateral_drift_m": 0.123071,
+      "tunnel_exit_drift_m": 10.84,
+      "tunnel_zupt_max_speed_mps": 0.005,
+      "tunnel_gps_rejections": 1,
+      "tunnel_nis_peak": 49.12
+    }
   }
 ]

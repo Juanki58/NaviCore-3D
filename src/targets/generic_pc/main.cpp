@@ -2466,6 +2466,7 @@ int main(int argc, char *argv[])
     bool tunnel_stress = false;
     bool slalom = false;
     bool run_tests = false;
+    bool nhc_experiments = false;
     bool has_cli_seed = false;
     uint32_t simulation_seed = 0U;
 
@@ -2474,6 +2475,8 @@ int main(int argc, char *argv[])
             enable_udp = false;
         } else if (std::strcmp(argv[i], "--run-tests") == 0) {
             run_tests = true;
+        } else if (std::strcmp(argv[i], "--nhc-experiments") == 0) {
+            nhc_experiments = true;
         } else if (std::strcmp(argv[i], "--super-tunnel") == 0) {
             super_tunnel = true;
         } else if (std::strcmp(argv[i], "--scenario") == 0) {
@@ -2538,6 +2541,10 @@ int main(int argc, char *argv[])
 
     if (run_tests) {
         return run_regression_suite();
+    }
+
+    if (nhc_experiments) {
+        return run_super_tunnel_nhc_experiments();
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");

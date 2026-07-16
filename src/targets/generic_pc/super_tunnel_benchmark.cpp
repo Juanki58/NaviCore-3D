@@ -193,7 +193,7 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
         origin,
         kSuperTunnelSpeedMps,
         kSuperTunnelCourseDeg,
-        71U);
+        sensors_simulation_get_default_seed());
     sensors.imu.commanded_forward_accel_mps2 = 0.0f;
     sensors.imu.commanded_yaw_rate_radps = 0.0f;
 

@@ -15,24 +15,39 @@
 #define GRAVITY_MPS2 9.80665f
 #endif
 
-static uint32_t lcg_next(uint32_t *state)
+namespace {
+
+constexpr float kImuAccelNoiseHalfRangeMps2 = 0.01f;
+constexpr float kImuAccelZNoiseHalfRangeMps2 = 0.02f;
+constexpr float kImuMagNoiseHalfRangeUt = 0.5f;
+constexpr float kImuAccelBiasStdMps2 = 0.05f;
+constexpr float kImuGyroBiasStdRadps = 0.001f;
+
+uint32_t g_default_simulation_seed = 71U;
+
+uint32_t normalize_seed(uint32_t seed)
 {
-    *state = (*state * 1664525U) + 1013904223U;
-    return *state;
+    return (seed == 0U) ? 1U : seed;
 }
 
-static float lcg_float(uint32_t *state, float min_value, float max_value)
+float uniform_float(std::mt19937 &rng, float min_value, float max_value)
 {
-    const float t = (float)(lcg_next(state) & 0x00FFFFFFU) / (float)0x01000000U;
-    return min_value + (t * (max_value - min_value));
+    std::uniform_real_distribution<float> dist(min_value, max_value);
+    return dist(rng);
 }
 
-static float deg_to_rad(float deg)
+float gaussian_float(std::mt19937 &rng, float mean, float stddev)
+{
+    std::normal_distribution<float> dist(mean, stddev);
+    return dist(rng);
+}
+
+float deg_to_rad(float deg)
 {
     return deg * (M_PI / 180.0f);
 }
 
-static void sensor_fault_apply_defaults(SensorFaultInjection *inj, SensorScenario scenario)
+void sensor_fault_apply_defaults(SensorFaultInjection *inj, SensorScenario scenario)
 {
     inj->scenario = scenario;
     inj->tick_index = 0U;
@@ -55,7 +70,7 @@ static void sensor_fault_apply_defaults(SensorFaultInjection *inj, SensorScenari
     }
 }
 
-static void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
+void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
 {
     if (inj == NULL || sample == NULL || inj->scenario != SCENARIO_IMU_DRIFT) {
         return;
@@ -70,7 +85,7 @@ static void sensor_fault_apply_imu(SensorFaultInjection *inj, ImuSample *sample)
     }
 }
 
-static void sensor_fault_apply_gps(SensorFaultInjection *inj, GpsSample *sample)
+void sensor_fault_apply_gps(SensorFaultInjection *inj, GpsSample *sample)
 {
     if (inj == NULL || sample == NULL) {
         return;
@@ -86,16 +101,66 @@ static void sensor_fault_apply_gps(SensorFaultInjection *inj, GpsSample *sample)
     }
 }
 
+void init_imu_biases(ImuSimulator *sim)
+{
+    if (sim == NULL) {
+        return;
+    }
+
+    for (int axis = 0; axis < 3; ++axis) {
+        sim->accel_bias[axis] = gaussian_float(sim->rng, 0.0f, kImuAccelBiasStdMps2);
+        sim->gyro_bias[axis] = gaussian_float(sim->rng, 0.0f, kImuGyroBiasStdRadps);
+    }
+}
+
+} /* namespace */
+
+void sensors_simulation_set_default_seed(uint32_t seed)
+{
+    g_default_simulation_seed = normalize_seed(seed);
+}
+
+uint32_t sensors_simulation_get_default_seed(void)
+{
+    return g_default_simulation_seed;
+}
+
 void imu_simulator_init(ImuSimulator *sim, uint32_t seed)
 {
     if (sim == NULL) {
         return;
     }
 
-    memset(sim, 0, sizeof(*sim));
-    sim->seed = (seed == 0U) ? 1U : seed;
     sim->commanded_yaw_rate_radps = 0.0f;
     sim->commanded_forward_accel_mps2 = 0.0f;
+    memset(sim->accel_bias, 0, sizeof(sim->accel_bias));
+    memset(sim->gyro_bias, 0, sizeof(sim->gyro_bias));
+    sim->rng = std::mt19937(normalize_seed(seed));
+    init_imu_biases(sim);
+}
+
+void imu_simulator_apply_measurement_model(ImuSimulator *sim, ImuSample *sample)
+{
+    if (sim == NULL || sample == NULL) {
+        return;
+    }
+
+    for (int axis = 0; axis < 3; ++axis) {
+        sample->accel_mps2[axis] += sim->accel_bias[axis];
+        sample->gyro_radps[axis] += sim->gyro_bias[axis];
+    }
+
+    sample->accel_mps2[0] += uniform_float(sim->rng, -kImuAccelNoiseHalfRangeMps2, kImuAccelNoiseHalfRangeMps2);
+    sample->accel_mps2[1] += uniform_float(sim->rng, -kImuAccelNoiseHalfRangeMps2, kImuAccelNoiseHalfRangeMps2);
+    sample->accel_mps2[2] += uniform_float(sim->rng, -kImuAccelZNoiseHalfRangeMps2, kImuAccelZNoiseHalfRangeMps2);
+
+    sample->gyro_radps[0] += uniform_float(sim->rng, -kImuGyroBiasStdRadps, kImuGyroBiasStdRadps);
+    sample->gyro_radps[1] += uniform_float(sim->rng, -kImuGyroBiasStdRadps, kImuGyroBiasStdRadps);
+    sample->gyro_radps[2] += uniform_float(sim->rng, -kImuGyroBiasStdRadps, kImuGyroBiasStdRadps);
+
+    sample->mag_ut[0] = 22.0f + uniform_float(sim->rng, -kImuMagNoiseHalfRangeUt, kImuMagNoiseHalfRangeUt);
+    sample->mag_ut[1] = 5.0f + uniform_float(sim->rng, -0.3f, 0.3f);
+    sample->mag_ut[2] = 42.0f + uniform_float(sim->rng, -0.4f, 0.4f);
 }
 
 bool imu_simulator_read(ImuSimulator *sim, uint32_t timestamp_ms, ImuSample *out)
@@ -106,19 +171,15 @@ bool imu_simulator_read(ImuSimulator *sim, uint32_t timestamp_ms, ImuSample *out
 
     const float t = (float)timestamp_ms * 0.001f;
 
-    out->accel_mps2[0] = sim->commanded_forward_accel_mps2
-        + (0.05f * sinf(t * 0.7f))
-        + lcg_float(&sim->seed, -0.01f, 0.01f);
-    out->accel_mps2[1] = 0.03f * cosf(t * 0.5f) + lcg_float(&sim->seed, -0.01f, 0.01f);
-    out->accel_mps2[2] = 9.80665f + lcg_float(&sim->seed, -0.02f, 0.02f);
+    out->accel_mps2[0] = sim->commanded_forward_accel_mps2 + (0.05f * sinf(t * 0.7f));
+    out->accel_mps2[1] = 0.03f * cosf(t * 0.5f);
+    out->accel_mps2[2] = 9.80665f;
 
     out->gyro_radps[0] = 0.002f * sinf(t * 1.1f);
     out->gyro_radps[1] = 0.0015f * cosf(t * 0.9f);
     out->gyro_radps[2] = sim->commanded_yaw_rate_radps + (0.001f * sinf(t * 0.3f));
 
-    out->mag_ut[0] = 22.0f + lcg_float(&sim->seed, -0.5f, 0.5f);
-    out->mag_ut[1] = 5.0f + lcg_float(&sim->seed, -0.3f, 0.3f);
-    out->mag_ut[2] = 42.0f + lcg_float(&sim->seed, -0.4f, 0.4f);
+    imu_simulator_apply_measurement_model(sim, out);
 
     out->timestamp_ms = timestamp_ms;
     out->valid = true;
@@ -137,7 +198,7 @@ void gps_simulator_init(GpsSimulator *sim, Vector3D origin, float speed_mps, flo
     sim->vertical_speed_mps = 0.0f;
     sim->course_deg = course_deg;
     sim->yaw_rate_radps = 0.0f;
-    sim->seed = (seed == 0U) ? 1U : seed;
+    sim->rng = std::mt19937(normalize_seed(seed));
     sim->last_timestamp_ms = 0U;
 }
 
@@ -167,9 +228,9 @@ bool gps_simulator_read(GpsSimulator *sim, uint32_t timestamp_ms, GpsSample *out
     sim->last_timestamp_ms = timestamp_ms;
 
     out->position = vector3d_make(
-        sim->position.x + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
-        sim->position.y + lcg_float(&sim->seed, -1.0e-6f, 1.0e-6f),
-        sim->position.z + lcg_float(&sim->seed, -0.05f, 0.05f));
+        sim->position.x + uniform_float(sim->rng, -1.0e-6f, 1.0e-6f),
+        sim->position.y + uniform_float(sim->rng, -1.0e-6f, 1.0e-6f),
+        sim->position.z + uniform_float(sim->rng, -0.05f, 0.05f));
     out->speed_mps = sim->speed_mps;
     out->course_deg = sim->course_deg;
     out->satellites = 10U;
@@ -186,7 +247,7 @@ void pressure_simulator_init(PressureSimulator *sim, float surface_pressure_pa, 
 
     sim->surface_pressure_pa = surface_pressure_pa;
     sim->depth_m = depth_m;
-    sim->seed = (seed == 0U) ? 1U : seed;
+    sim->rng = std::mt19937(normalize_seed(seed));
 }
 
 bool pressure_simulator_read(PressureSimulator *sim, uint32_t timestamp_ms, PressureSample *out)
@@ -196,10 +257,10 @@ bool pressure_simulator_read(PressureSimulator *sim, uint32_t timestamp_ms, Pres
     }
 
     const float hydrostatic_pa = SEAWATER_DENSITY_KG_M3 * GRAVITY_MPS2 * sim->depth_m;
-    const float noise_pa = lcg_float(&sim->seed, -15.0f, 15.0f);
+    const float noise_pa = uniform_float(sim->rng, -15.0f, 15.0f);
 
     out->pressure_pa = sim->surface_pressure_pa + hydrostatic_pa + noise_pa;
-    out->temperature_c = 12.0f + lcg_float(&sim->seed, -0.2f, 0.2f);
+    out->temperature_c = 12.0f + uniform_float(sim->rng, -0.2f, 0.2f);
     out->timestamp_ms = timestamp_ms;
     out->valid = true;
     return true;
@@ -262,7 +323,7 @@ void sensors_simulation_init(
         return;
     }
 
-    memset(ctx, 0, sizeof(*ctx));
+    memset(&ctx->faults, 0, sizeof(ctx->faults));
     imu_simulator_init(&ctx->imu, seed);
     gps_simulator_init(&ctx->gps, origin, speed_mps, course_deg, seed + 1U);
     sensor_fault_injection_init(&ctx->faults, scenario);

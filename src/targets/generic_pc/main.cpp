@@ -1206,7 +1206,7 @@ void run_high_demand_stress_test_scenario(TelemetryInterface *telemetry)
     const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
-    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, sensors_simulation_get_default_seed());
 
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
@@ -1458,7 +1458,7 @@ void run_fault_injection_scenario(TelemetryInterface *telemetry)
     const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
-    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, 17U);
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, origin, kCruiseSpeedMps, kCruiseCourseDeg, sensors_simulation_get_default_seed());
 
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
@@ -1689,7 +1689,7 @@ void run_sensor_scenario(TelemetryInterface *telemetry, SensorScenario scenario)
     const Vector3D origin = square_vehicle_start(corner_origin);
 
     SensorsSimulation sensors;
-    sensors_simulation_init(&sensors, scenario, origin, kCruiseSpeedMps, kCruiseCourseDeg, 11U);
+    sensors_simulation_init(&sensors, scenario, origin, kCruiseSpeedMps, kCruiseCourseDeg, sensors_simulation_get_default_seed());
 
     DeadReckoningFilter nav;
     dead_reckoning_init(&nav, origin, NAVICORE_DOMAIN_AIR);
@@ -2071,7 +2071,7 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
      * inyectados ni ráfagas de ruido/fallo GPS (sensor SCENARIO_CLEAN).
      */
     SensorsSimulation sensors{};
-    sensors_simulation_init(&sensors, SCENARIO_CLEAN, start_pos, kCruiseSpeedMps, 90.0f, 23U);
+    sensors_simulation_init(&sensors, SCENARIO_CLEAN, start_pos, kCruiseSpeedMps, 90.0f, sensors_simulation_get_default_seed());
 
     ClosedLoopPidPlant pid_plant{};
     closed_loop_pid_plant_init(&pid_plant);
@@ -2461,10 +2461,13 @@ int main(int argc, char *argv[])
     SimPrimaryScenario scenario = kCompileTimeSimScenario;
     const char *scenario_name = NULL;
     const char *replay_csv_path = NULL;
+    const char *csv_out_path = NULL;
     bool super_tunnel = false;
     bool tunnel_stress = false;
     bool slalom = false;
     bool run_tests = false;
+    bool has_cli_seed = false;
+    uint32_t simulation_seed = 0U;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--no-udp") == 0) {
@@ -2476,10 +2479,25 @@ int main(int argc, char *argv[])
         } else if (std::strcmp(argv[i], "--scenario") == 0) {
             if (i + 1 >= argc) {
                 std::printf("ERROR: --scenario requiere un nombre (p. ej. TUNNEL_STRESS)\n");
-                std::printf("Uso: NaviCore3D_Sim --scenario TUNNEL_STRESS [--no-udp]\n");
+                std::printf("Uso: NaviCore3D_Sim --scenario TUNNEL_STRESS [--no-udp] [--seed N]\n");
                 return 1;
             }
             scenario_name = argv[i + 1];
+            ++i;
+        } else if (std::strcmp(argv[i], "--seed") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --seed requiere un entero (p. ej. --seed 42)\n");
+                return 1;
+            }
+            simulation_seed = static_cast<uint32_t>(std::strtoul(argv[i + 1], nullptr, 10));
+            has_cli_seed = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--csv-out") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --csv-out requiere la ruta del archivo CSV\n");
+                return 1;
+            }
+            csv_out_path = argv[i + 1];
             ++i;
         } else if (std::strcmp(argv[i], "--stress") == 0
                    || std::strcmp(argv[i], "--high-stress") == 0) {
@@ -2496,6 +2514,15 @@ int main(int argc, char *argv[])
             ++i;
         }
     }
+
+    if (!has_cli_seed) {
+        const auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        simulation_seed = static_cast<uint32_t>(now ^ (now >> 32));
+        if (simulation_seed == 0U) {
+            simulation_seed = 1U;
+        }
+    }
+    sensors_simulation_set_default_seed(simulation_seed);
 
     if (scenario_name != NULL) {
         if (std::strcmp(scenario_name, "TUNNEL_STRESS") == 0) {
@@ -2514,6 +2541,7 @@ int main(int argc, char *argv[])
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");
+    std::printf("Semilla RNG: %u%s\n", simulation_seed, has_cli_seed ? "" : " (reloj del sistema)");
     if (tunnel_stress) {
         std::printf("Modo: TUNNEL_STRESS (perfil multi-fase reproducible)\n");
     } else if (slalom) {
@@ -2532,7 +2560,7 @@ int main(int argc, char *argv[])
     telemetry_config.enable_simulator_channel = true;
     telemetry_config.enable_unity_channel = enable_udp;
     telemetry_config.enable_logger_channel = !super_tunnel;
-    telemetry_config.logger_csv_path = kTelemetryCsvPath;
+    telemetry_config.logger_csv_path = (csv_out_path != NULL) ? csv_out_path : kTelemetryCsvPath;
     telemetry_config.unity_host = kTelemetryUnityHost;
     telemetry_config.unity_port = UNITY_TELEMETRY_DEFAULT_PORT;
     telemetry_config.sim_console_interval_ms = TELEMETRY_SIM_CONSOLE_INTERVAL_MS;
@@ -2563,7 +2591,7 @@ int main(int argc, char *argv[])
     }
 
     if (tunnel_stress) {
-        run_tunnel_stress_scenario(&telemetry, emit_ekf_navigation_state);
+        run_tunnel_stress_scenario(&telemetry, emit_ekf_navigation_state, simulation_seed);
     } else if (slalom) {
         run_slalom_scenario(&telemetry, emit_ekf_navigation_state);
     } else if (super_tunnel) {

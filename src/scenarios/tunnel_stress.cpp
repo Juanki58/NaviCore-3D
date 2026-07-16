@@ -93,7 +93,7 @@ const char *nav_mode_name(NavMode mode)
     }
 }
 
-void prepare_imu_sample(const SensorsSimulation *sensors, ImuSample *imu)
+void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu)
 {
     if (sensors == NULL || imu == NULL) {
         return;
@@ -112,6 +112,7 @@ void prepare_imu_sample(const SensorsSimulation *sensors, ImuSample *imu)
     imu->gyro_radps[0] = 0.0f;
     imu->gyro_radps[1] = 0.0f;
     imu->gyro_radps[2] = 0.0f;
+    imu_simulator_apply_measurement_model(&sensors->imu, imu);
     imu->valid = true;
 }
 
@@ -222,7 +223,10 @@ bool tunnel_stress_gps_outage_at_ms(uint32_t t_ms)
     return (t_ms >= TUNNEL_STRESS_GPS_OFF_START_MS) && (t_ms < TUNNEL_STRESS_GPS_OFF_END_MS);
 }
 
-void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmitFn emit_nav)
+void TunnelStressScenario::run(
+    TelemetryInterface *telemetry,
+    TunnelStressNavEmitFn emit_nav,
+    uint32_t seed)
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
 
@@ -233,7 +237,7 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
         origin,
         TUNNEL_STRESS_CRUISE_SPEED_MPS,
         TUNNEL_STRESS_COURSE_DEG,
-        71U);
+        seed);
     sensors.imu.commanded_forward_accel_mps2 = 0.0f;
     sensors.imu.commanded_yaw_rate_radps = 0.0f;
 
@@ -244,6 +248,8 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
     bool logged_glitch = false;
 
     TunnelStressResult result{};
+    result.gps_recovery_time_s = -1.0f;
+    result.gps_recovered = false;
 
     float ref_lat_deg = origin.x;
     float ref_lon_deg = origin.y;
@@ -260,6 +266,7 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
     std::printf("\n");
     std::printf("================================================================\n");
     std::printf(" ESCENARIO: TUNNEL_STRESS — perfil reproducible (5 fases)\n");
+    std::printf("  Semilla RNG: %u\n", seed);
     std::printf("  Duracion: %.0f s | Crucero: %.0f km/h (%.1f m/s)\n",
                 static_cast<float>(TUNNEL_STRESS_DURATION_MS) * 0.001f,
                 TUNNEL_STRESS_CRUISE_SPEED_MPS * 3.6f,
@@ -471,6 +478,15 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
                 const float drift_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
                 bindings.drift_m = drift_m;
                 bindings.drift_valid = true;
+
+                if (!result.gps_recovered
+                    && t_ms >= TUNNEL_STRESS_GPS_OFF_END_MS
+                    && drift_m < TUNNEL_STRESS_GPS_RECOVERY_DRIFT_M) {
+                    result.gps_recovered = true;
+                    result.gps_recovery_time_s =
+                        (static_cast<float>(t_ms - TUNNEL_STRESS_GPS_OFF_END_MS)) * 0.001f;
+                }
+
                 telemetry->broadcast(nav_state, MISSION_STATE_INIT);
             }
 
@@ -522,6 +538,16 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
     std::printf("  Deriva al reanudar (25 s):        %8.2f m\n", result.drift_at_resume_m);
     std::printf("  Max |v| durante ZUPT (20-25 s):   %7.3f m/s\n", result.max_vel_during_zupt_mps);
     std::printf("  Deriva al salir tunel (30 s):     %8.2f m\n", result.drift_at_gps_return_m);
+    if (result.gps_recovered) {
+        std::printf(
+            "  Recovery Time (GPS < %.1f m):      %8.2f s\n",
+            TUNNEL_STRESS_GPS_RECOVERY_DRIFT_M,
+            result.gps_recovery_time_s);
+    } else {
+        std::printf(
+            "  Recovery Time (GPS < %.1f m):          TIMEOUT\n",
+            TUNNEL_STRESS_GPS_RECOVERY_DRIFT_M);
+    }
     std::printf("  Glitch 50 m — NIS:                 %8.2f | %s\n",
                 result.glitch_nis,
                 result.glitch_rejected ? "RECHAZADO" : "ACEPTADO");
@@ -536,8 +562,9 @@ void TunnelStressScenario::run(TelemetryInterface *telemetry, TunnelStressNavEmi
 
 void run_tunnel_stress_scenario(
     TelemetryInterface *telemetry,
-    TunnelStressNavEmitFn emit_nav)
+    TunnelStressNavEmitFn emit_nav,
+    uint32_t seed)
 {
     TunnelStressScenario scenario{};
-    scenario.run(telemetry, emit_nav);
+    scenario.run(telemetry, emit_nav, seed);
 }

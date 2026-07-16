@@ -11,7 +11,11 @@ set(NAVICORE_CORE_DIR ${CMAKE_SOURCE_DIR}/src/core)
 set(NAVICORE_PC_DIR ${CMAKE_SOURCE_DIR}/src/targets/generic_pc)
 set(NAVICORE_SCENARIOS_DIR ${CMAKE_SOURCE_DIR}/src/scenarios)
 
-include_directories(${NAVICORE_CORE_DIR} ${NAVICORE_PC_DIR} ${NAVICORE_SCENARIOS_DIR})
+include_directories(
+    ${NAVICORE_CORE_DIR}
+    ${NAVICORE_CORE_DIR}/interfaces
+    ${NAVICORE_PC_DIR}
+    ${NAVICORE_SCENARIOS_DIR})
 
 set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/NavState.cpp
@@ -20,7 +24,9 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/fusion.cpp
     ${NAVICORE_CORE_DIR}/guidance.cpp
     ${NAVICORE_CORE_DIR}/mission.cpp
+    ${NAVICORE_CORE_DIR}/geodesy.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
     ${NAVICORE_CORE_DIR}/flight_recorder.cpp
     ${NAVICORE_CORE_DIR}/diagnostic.cpp
     ${NAVICORE_CORE_DIR}/api_ingest.cpp
@@ -61,6 +67,20 @@ if(WIN32)
     target_link_libraries(NaviCore3D_Sim PRIVATE ws2_32)
 endif()
 
+set(NAVICORE_REPLAY_SOURCES
+    ${NAVICORE_CORE_DIR}/NavState.cpp
+    ${NAVICORE_CORE_DIR}/vector3d.cpp
+    ${NAVICORE_CORE_DIR}/geodesy.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
+)
+
+add_executable(NaviCore3D_Replay
+    ${NAVICORE_PC_DIR}/replay_main.cpp
+    ${NAVICORE_PC_DIR}/real_run_replay.cpp
+    ${NAVICORE_REPLAY_SOURCES}
+)
+
 add_executable(navicore_regression_test
     ${NAVICORE_PC_DIR}/regression_tests.cpp
     ${NAVICORE_PC_DIR}/regression_suite.cpp
@@ -70,7 +90,9 @@ add_executable(navicore_regression_test
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_CORE_DIR}/NavState.cpp
     ${NAVICORE_CORE_DIR}/vector3d.cpp
+    ${NAVICORE_CORE_DIR}/geodesy.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
 )
 
 # Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)

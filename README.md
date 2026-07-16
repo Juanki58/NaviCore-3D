@@ -183,6 +183,24 @@ Copia `wifi_config.h.example` → `wifi_config.h`. Validación en banco: [`docs/
 
 ---
 
+## EKF diagnostics (real-run) / Diagnóstico EKF
+
+Pipeline experimental **H0–H9d** sobre grabaciones reales de vehículo: consistencia NEES/NIS, geodesia WGS84, sincronización, propagación inertial y auditoría de actitud.
+
+**Documentación:** [`docs/diagnostics/README.md`](docs/diagnostics/README.md)
+
+| Doc | Contenido |
+|-----|-----------|
+| [Overview](docs/diagnostics/01-overview.md) | Metodología y cadena lógica |
+| [Experiments](docs/diagnostics/03-experiments.md) | Catálogo H0–H9d + scripts |
+| [Findings](docs/diagnostics/04-findings.md) | Resultados consolidados |
+| [Attitude](docs/diagnostics/05-attitude-investigation.md) | Bloque H9 y triada gravitatoria |
+| [Reproduction](docs/diagnostics/06-reproduction.md) | Compilar y reproducir |
+
+Target de replay: `NaviCore3D_Replay`. Scripts Python en la raíz del repo.
+
+---
+
 ## Roadmap
 
 | Phase | Target |

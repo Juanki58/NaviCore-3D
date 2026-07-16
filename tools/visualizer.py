@@ -61,6 +61,10 @@ DEFAULT_TRAIL_STEP = 100
 DEFAULT_TRAIL_ALPHA = 0.08
 TRAIL_FACE_COLOR = "#3498db"
 TRAIL_EDGE_COLOR = "#2980b9"
+TUNNEL_GPS_LOSS_COLOR = "#e74c3c"
+TUNNEL_GPS_LOSS_T0_S = 10.0
+TUNNEL_GPS_LOSS_T1_S = 30.0
+NAV_MODE_DEAD_RECKONING = 2
 
 COLUMNAS_REQUERIDAS = frozenset(
     {
@@ -178,6 +182,7 @@ class DashboardCajaNegra:
         titulo: str,
         trail_step: int = DEFAULT_TRAIL_STEP,
         trail_alpha: float = DEFAULT_TRAIL_ALPHA,
+        tunnel_stress_mode: bool = False,
     ) -> None:
         self.df = df
         self.titulo = titulo
@@ -197,6 +202,13 @@ class DashboardCajaNegra:
         self.nis = df["nis"].to_numpy(dtype=float)
         self.cov_pos = df[["cov_pos_x", "cov_pos_y", "cov_pos_z"]].to_numpy(dtype=float)
         self.cov_yaw = df["cov_yaw"].to_numpy(dtype=float)
+        self.has_nav_mode = "nav_mode" in df.columns
+        self.nav_mode = (
+            df["nav_mode"].to_numpy(dtype=float)
+            if self.has_nav_mode
+            else np.zeros(len(df), dtype=float)
+        )
+        self.tunnel_stress_mode = tunnel_stress_mode
 
         self.fig, self.axes = plt.subplots(2, 2, figsize=(14, 10))
         self.fig.suptitle(titulo, fontsize=13, fontweight="bold")
@@ -234,6 +246,11 @@ class DashboardCajaNegra:
 
         self.trayectoria = LineCollection([], linewidths=1.5, colors="#2980b9", alpha=0.85)
         ax_map.add_collection(self.trayectoria)
+
+        self.trayectoria_tunel = LineCollection(
+            [], linewidths=2.2, colors=TUNNEL_GPS_LOSS_COLOR, alpha=0.95, zorder=6
+        )
+        ax_map.add_collection(self.trayectoria_tunel)
 
         (self.pos_actual,) = ax_map.plot([], [], "ko", markersize=5, zorder=5)
 
@@ -335,17 +352,43 @@ class DashboardCajaNegra:
         self.elipse_incertidumbre.height = alto
         self.elipse_incertidumbre.set_visible(True)
 
+    def _segmento_en_tunel_sin_gps(self, idx: int) -> bool:
+        """True si la muestra idx está en apagón GPS del escenario TUNNEL_STRESS."""
+        t = self.tiempo_s[idx]
+        if self.has_nav_mode and int(self.nav_mode[idx]) == NAV_MODE_DEAD_RECKONING:
+            return True
+        if self.tunnel_stress_mode and TUNNEL_GPS_LOSS_T0_S <= t < TUNNEL_GPS_LOSS_T1_S:
+            return True
+        return False
+
+    def _actualizar_trayectorias_coloreadas(self, idx: int) -> None:
+        if idx < 2:
+            self.trayectoria.set_segments([])
+            self.trayectoria_tunel.set_segments([])
+            return
+
+        sl = slice(0, idx)
+        puntos = np.column_stack([self.pos_n[sl], self.pos_e[sl]])
+        segmentos = np.stack([puntos[:-1], puntos[1:]], axis=1)
+
+        normal: list = []
+        tunel: list = []
+        for seg_i in range(segmentos.shape[0]):
+            en_tunel = self._segmento_en_tunel_sin_gps(seg_i + 1)
+            if en_tunel:
+                tunel.append(segmentos[seg_i])
+            else:
+                normal.append(segmentos[seg_i])
+
+        self.trayectoria.set_segments(normal if normal else [])
+        self.trayectoria_tunel.set_segments(tunel if tunel else [])
+
     def _actualizar_marco(self, frame: int) -> list:
         idx = min(frame + 1, self.num_frames)
         sl = slice(0, idx)
         t = self.tiempo_s[sl]
 
-        if idx >= 2:
-            puntos = np.column_stack([self.pos_n[sl], self.pos_e[sl]])
-            segmentos = np.stack([puntos[:-1], puntos[1:]], axis=1)
-            self.trayectoria.set_segments(segmentos)
-        else:
-            self.trayectoria.set_segments([])
+        self._actualizar_trayectorias_coloreadas(idx)
 
         if idx > 0:
             self.pos_actual.set_data([self.pos_n[idx - 1]], [self.pos_e[idx - 1]])
@@ -393,6 +436,7 @@ class DashboardCajaNegra:
 
         artistas: list = [
             self.trayectoria,
+            self.trayectoria_tunel,
             self.pos_actual,
             self.elipse_incertidumbre,
             self.linea_bias_ax,
@@ -477,6 +521,14 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_TRAIL_ALPHA,
         help=f"Transparencia del rastro histórico (default: {DEFAULT_TRAIL_ALPHA}).",
     )
+    parser.add_argument(
+        "--tunnel-stress",
+        action="store_true",
+        help=(
+            "Resaltar en rojo el tramo sin GPS del escenario TUNNEL_STRESS "
+            f"([{TUNNEL_GPS_LOSS_T0_S}, {TUNNEL_GPS_LOSS_T1_S}) s) o nav_mode=DEAD_RECKONING."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -503,16 +555,23 @@ def main() -> int:
         return 1
 
     duracion_s = float(df["time_us"].iloc[-1]) * 1e-6
+    auto_tunnel = (
+        args.tunnel_stress
+        or ("nav_mode" in df.columns and (df["nav_mode"] == NAV_MODE_DEAD_RECKONING).any())
+    )
     titulo = (
         f"NaviCore-3D · Caja Negra EKF "
         f"({len(df)} muestras @ 100 Hz, {duracion_s:.1f} s)"
     )
+    if auto_tunnel:
+        titulo += " · TUNNEL_STRESS (rojo = sin GPS en tunel)"
 
     dashboard = DashboardCajaNegra(
         df,
         titulo,
         trail_step=args.trail_step,
         trail_alpha=args.trail_alpha,
+        tunnel_stress_mode=auto_tunnel,
     )
 
     if args.estatico:

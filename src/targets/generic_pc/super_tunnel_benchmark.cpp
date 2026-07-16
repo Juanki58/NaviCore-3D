@@ -2,7 +2,6 @@
 
 #include "ins_ekf.hpp"
 #include "sensors_sim.hpp"
-#include "telemetry_interface.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -356,13 +355,11 @@ SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose)
     return result;
 }
 
-void run_super_tunnel_scenario(TelemetryInterface *telemetry)
+void run_super_tunnel_nhc_benchmark()
 {
-    (void)telemetry;
-
     std::printf("\n");
     std::printf("================================================================\n");
-    std::printf(" ESCENARIO: SUPER_TUNNEL — recta 90 km/h, apagon GPS 10-55 s\n");
+    std::printf(" BENCHMARK: SUPER_TUNNEL — recta 90 km/h, apagon GPS 10-55 s\n");
     std::printf("  Duracion: %.0f s | Velocidad: %.0f km/h (%.1f m/s)\n",
                 static_cast<float>(kSuperTunnelDurationMs) * 0.001f,
                 kSuperTunnelSpeedMps * 3.6f,

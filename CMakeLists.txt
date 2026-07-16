@@ -9,8 +9,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 set(NAVICORE_CORE_DIR ${CMAKE_SOURCE_DIR}/src/core)
 set(NAVICORE_PC_DIR ${CMAKE_SOURCE_DIR}/src/targets/generic_pc)
+set(NAVICORE_SCENARIOS_DIR ${CMAKE_SOURCE_DIR}/src/scenarios)
 
-include_directories(${NAVICORE_CORE_DIR} ${NAVICORE_PC_DIR})
+include_directories(${NAVICORE_CORE_DIR} ${NAVICORE_PC_DIR} ${NAVICORE_SCENARIOS_DIR})
 
 set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/NavState.cpp
@@ -46,6 +47,8 @@ add_executable(NaviCore3D_Sim
     ${NAVICORE_PC_DIR}/sensors_sim.cpp
     ${NAVICORE_PC_DIR}/inertial_replay.cpp
     ${NAVICORE_PC_DIR}/super_tunnel_benchmark.cpp
+    ${NAVICORE_SCENARIOS_DIR}/tunnel_stress.cpp
+    ${NAVICORE_SCENARIOS_DIR}/slalom_scenario.cpp
     ${NAVICORE_PC_DIR}/constant_slope_benchmark.cpp
     ${NAVICORE_PC_DIR}/slalom_benchmark.cpp
     ${NAVICORE_PC_DIR}/regression_suite.cpp

@@ -2,8 +2,7 @@
 
 #include <cstdint>
 
-struct TelemetryInterface;
-
+/* Benchmark NHC (regresion): apagon GPS 10-55 s en recta 90 km/h. */
 constexpr uint32_t SUPER_TUNNEL_GPS_OFF_START_MS = 10000U;
 constexpr uint32_t SUPER_TUNNEL_GPS_OFF_END_MS = 55000U;
 
@@ -29,4 +28,4 @@ struct SuperTunnelPassResult {
 };
 
 SuperTunnelPassResult super_tunnel_run_pass(bool nhc_enabled, bool verbose = false);
-void run_super_tunnel_scenario(TelemetryInterface *telemetry);
+void run_super_tunnel_nhc_benchmark();

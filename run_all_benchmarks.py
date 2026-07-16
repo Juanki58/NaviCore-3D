@@ -8,19 +8,23 @@ evalúa métricas desde los CSV de telemetría y emite un reporte PASS/FAIL.
 from __future__ import annotations
 
 import csv
+import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = REPO_ROOT / "build"
 DOCS_DIR = REPO_ROOT / "docs"
 BENCHMARKS_DIR = DOCS_DIR / "benchmarks"
+HISTORY_PATH = BENCHMARKS_DIR / "history.json"
 
 CSV_CANDIDATES = (
     DOCS_DIR / "telemetria_navicore.csv",
@@ -42,6 +46,21 @@ ANSI_BOLD = "\033[1m"
 ANSI_RESET = "\033[0m"
 
 
+def stdout_supports_unicode() -> bool:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "▲▼Δ".encode(encoding)
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+TREND_UP = "▲" if stdout_supports_unicode() else "^"
+TREND_DOWN = "▼" if stdout_supports_unicode() else "v"
+TREND_FLAT = "="
+TREND_HEADER = "d" if stdout_supports_unicode() else "Tr"
+
+
 @dataclass
 class MetricResult:
     name: str
@@ -50,6 +69,13 @@ class MetricResult:
     limit: float | str
     unit: str = ""
     detail: str = ""
+
+
+@dataclass
+class GitMetadata:
+    commit_hash: str
+    commit_message: str
+    timestamp: str
 
 
 @dataclass
@@ -137,6 +163,184 @@ def nearest_row_at(rows: Iterable[dict[str, str]], target_t_s: float) -> dict[st
             best_dt = dt
             best_row = row
     return best_row
+
+
+def run_git_command(args: list[str]) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode == 0:
+            return (completed.stdout or "").strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def read_git_metadata() -> GitMetadata:
+    commit_hash = run_git_command(["rev-parse", "--short", "HEAD"]) or "N/A"
+    commit_message = run_git_command(["log", "-1", "--format=%s"]) or "N/A"
+    timestamp = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    return GitMetadata(
+        commit_hash=commit_hash,
+        commit_message=commit_message,
+        timestamp=timestamp,
+    )
+
+
+def load_history() -> list[dict[str, Any]]:
+    if not HISTORY_PATH.is_file():
+        return []
+    try:
+        with HISTORY_PATH.open(encoding="utf-8") as handle:
+            data = json.load(handle)
+        if isinstance(data, list):
+            return data
+    except (OSError, json.JSONDecodeError):
+        pass
+    return []
+
+
+def save_history(records: list[dict[str, Any]]) -> None:
+    BENCHMARKS_DIR.mkdir(parents=True, exist_ok=True)
+    with HISTORY_PATH.open("w", encoding="utf-8") as handle:
+        json.dump(records, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+
+def metric_by_name(benchmark: BenchmarkResult, name: str) -> MetricResult | None:
+    for metric in benchmark.metrics:
+        if metric.name == name:
+            return metric
+    return None
+
+
+def parse_glitch_measured(measured: float | str) -> tuple[int, float]:
+    if isinstance(measured, str):
+        rejections_match = re.search(r"rejections=(\d+)", measured)
+        nis_match = re.search(r"nis_peak=([0-9.+-eE]+)", measured)
+        rejections = int(rejections_match.group(1)) if rejections_match else 0
+        nis_peak = float(nis_match.group(1)) if nis_match else 0.0
+        return rejections, nis_peak
+    return 0, float(measured)
+
+
+def extract_history_metrics(results: list[BenchmarkResult]) -> dict[str, float | int] | None:
+    slalom = next((item for item in results if item.scenario == "SLALOM"), None)
+    tunnel = next((item for item in results if item.scenario == "TUNNEL_STRESS"), None)
+    if slalom is None or tunnel is None or slalom.error or tunnel.error:
+        return None
+
+    slalom_metric = metric_by_name(slalom, "max_lateral_drift")
+    exit_metric = metric_by_name(tunnel, "tunnel_exit_drift")
+    zupt_metric = metric_by_name(tunnel, "zupt_residual_speed")
+    glitch_metric = metric_by_name(tunnel, "gps_glitch_rejection")
+    if not all((slalom_metric, exit_metric, zupt_metric, glitch_metric)):
+        return None
+
+    if not all(
+        isinstance(metric.measured, (int, float))
+        for metric in (slalom_metric, exit_metric, zupt_metric)
+    ):
+        return None
+
+    rejections, nis_peak = parse_glitch_measured(glitch_metric.measured)
+    return {
+        "slalom_max_lateral_drift_m": float(slalom_metric.measured),
+        "tunnel_exit_drift_m": float(exit_metric.measured),
+        "tunnel_zupt_max_speed_mps": float(zupt_metric.measured),
+        "tunnel_gps_rejections": rejections,
+        "tunnel_nis_peak": nis_peak,
+    }
+
+
+def upsert_history_record(
+    git_meta: GitMetadata,
+    metrics: dict[str, float | int],
+) -> list[dict[str, Any]]:
+    record = {
+        "commit_hash": git_meta.commit_hash,
+        "commit_message": git_meta.commit_message,
+        "timestamp": git_meta.timestamp,
+        "metrics": metrics,
+    }
+    history = load_history()
+    for index, existing in enumerate(history):
+        if existing.get("commit_hash") == git_meta.commit_hash:
+            history[index] = record
+            save_history(history)
+            return history
+
+    history.append(record)
+    save_history(history)
+    return history
+
+
+def drift_trend_symbol(current: float, previous: float | None) -> str:
+    if previous is None:
+        return " "
+    if current > previous:
+        return TREND_UP
+    if current < previous:
+        return TREND_DOWN
+    return TREND_FLAT
+
+
+def print_evolution_report(history: list[dict[str, Any]]) -> None:
+    if not history:
+        return
+
+    sorted_history = sorted(history, key=lambda item: item.get("timestamp", ""))
+    recent = sorted_history[-5:]
+
+    print()
+    print(colorize("Evolución histórica (últimos 5 commits)", ANSI_BOLD))
+    print("-" * 88)
+    print(
+        f"{'Commit':<10} {'Slalom drift (m)':>16} {TREND_HEADER:>3} "
+        f"{'Tunnel drift (m)':>16} {TREND_HEADER:>3}  Mensaje"
+    )
+    print("-" * 88)
+
+    previous_metrics: dict[str, float | int] | None = None
+    start_index = len(sorted_history) - len(recent)
+    for offset, entry in enumerate(recent):
+        history_index = start_index + offset
+        if history_index > 0:
+            previous_metrics = sorted_history[history_index - 1].get("metrics")
+        else:
+            previous_metrics = None
+
+        metrics = entry.get("metrics", {})
+        slalom = float(metrics.get("slalom_max_lateral_drift_m", 0.0))
+        tunnel = float(metrics.get("tunnel_exit_drift_m", 0.0))
+        prev_slalom = (
+            float(previous_metrics["slalom_max_lateral_drift_m"])
+            if previous_metrics
+            else None
+        )
+        prev_tunnel = (
+            float(previous_metrics["tunnel_exit_drift_m"])
+            if previous_metrics
+            else None
+        )
+        commit_hash = str(entry.get("commit_hash", "N/A"))[:10]
+        message = str(entry.get("commit_message", ""))[:28]
+        print(
+            f"{commit_hash:<10} {slalom:>16.4f} {drift_trend_symbol(slalom, prev_slalom):>3} "
+            f"{tunnel:>16.4f} {drift_trend_symbol(tunnel, prev_tunnel):>3}  {message}"
+        )
+
+    print("-" * 88)
+    print(
+        f"  {TREND_UP} = deriva mayor (regresión)   "
+        f"{TREND_DOWN} = deriva menor (mejora)   {TREND_FLAT} = sin cambio"
+    )
+    print()
 
 
 def run_simulator(scenario: str) -> subprocess.CompletedProcess[str]:
@@ -372,9 +576,13 @@ def print_report(results: list[BenchmarkResult]) -> None:
 
 
 def main() -> int:
+    git_meta = read_git_metadata()
+
     print("Ejecutando suite autónoma de benchmarks...")
     print(f"Repositorio: {REPO_ROOT}")
     print(f"Simulador:   {sim_binary_path()}")
+    print(f"Commit:      {git_meta.commit_hash} — {git_meta.commit_message}")
+    print(f"Timestamp:   {git_meta.timestamp}")
 
     benchmarks = [
         ("Benchmark 1 — Slalom", "SLALOM"),
@@ -383,6 +591,25 @@ def main() -> int:
 
     results = [run_benchmark(name, scenario) for name, scenario in benchmarks]
     print_report(results)
+
+    history_metrics = extract_history_metrics(results)
+    if history_metrics is not None:
+        history = upsert_history_record(git_meta, history_metrics)
+        print(
+            colorize(
+                f"Histórico actualizado: {HISTORY_PATH.relative_to(REPO_ROOT)}",
+                ANSI_GREEN,
+            )
+        )
+        print_evolution_report(history)
+    else:
+        print(
+            colorize(
+                "Histórico no actualizado: no se pudieron extraer métricas de ambos benchmarks.",
+                ANSI_RED,
+            )
+        )
+
     return 0 if all(item.passed for item in results) else 1
 
 

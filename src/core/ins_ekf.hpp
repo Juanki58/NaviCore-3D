@@ -68,6 +68,10 @@ typedef float InsEkfVec3[3];
 #define NAVICORE_INS_EKF_NHC_EVERY_N_TICKS 1U
 #endif
 
+#ifndef NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS
+#define NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS 0.05f
+#endif
+
 enum InsEkfErrorIdx : uint8_t {
     INS_ERR_POS_N = 0,
     INS_ERR_POS_E = 1,
@@ -150,6 +154,7 @@ struct InsEkfFilter {
     uint32_t gnss_accept_count;
     uint32_t gnss_reject_count;
     uint32_t nhc_update_count;
+    uint32_t zupt_update_count;
     uint8_t nhc_tick_counter;
     float nhc_innovation_last[2];
     float nhc_innovation_max_lateral_mps;
@@ -162,10 +167,12 @@ struct InsEkfFilter {
     bool nhc_enabled;
     float nhc_lateral_var_m2;
     float nhc_vertical_var_m2;
+    float zupt_vel_var_m2;
 
     void predict(const ImuSample &imu_sample, float dt_s);
     bool update_gnss(const GpsSample &gps_sample, float *out_nis);
     bool update_nhc();
+    bool update_zupt();
 };
 
 NAVICORE_STATIC_ASSERT(sizeof(InsEkfCovariance) == (INS_EKF_STATE_DIM * INS_EKF_STATE_DIM * sizeof(float)),
@@ -192,6 +199,9 @@ void ins_ekf_get_nhc_innovation_max(
     float *out_lateral_mps,
     float *out_vertical_mps,
     float *out_norm_mps);
+
+bool ins_ekf_update_zupt(InsEkfFilter *filter);
+uint32_t ins_ekf_zupt_update_count(const InsEkfFilter *filter);
 
 bool ins_ekf_outlier_detected(const InsEkfFilter *filter);
 void ins_ekf_clear_outlier_flag(InsEkfFilter *filter);

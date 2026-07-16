@@ -917,6 +917,116 @@ bool InsEkfFilter::update_nhc()
     return true;
 }
 
+void ins_ekf_covariance_joseph_update3(
+    InsEkfMat15 p_in,
+    const float k_gain[INS_EKF_STATE_DIM][3],
+    const float h_rows[3][INS_EKF_STATE_DIM],
+    const float meas_var[3],
+    InsEkfMat15 p_out,
+    InsEkfMat15 scratch_a,
+    InsEkfMat15 scratch_b)
+{
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = 0U; c < kDim; ++c) {
+            scratch_a[r][c] = (r == c) ? 1.0f : 0.0f;
+            for (uint8_t i = 0U; i < 3U; ++i) {
+                scratch_a[r][c] -= k_gain[r][i] * h_rows[i][c];
+            }
+        }
+    }
+
+    mat15_mul(scratch_a, p_in, scratch_b);
+    mat15_transpose_inplace(scratch_a);
+    mat15_mul(scratch_b, scratch_a, p_out);
+
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = r; c < kDim; ++c) {
+            float krk_t = 0.0f;
+            for (uint8_t i = 0U; i < 3U; ++i) {
+                krk_t += k_gain[r][i] * meas_var[i] * k_gain[c][i];
+            }
+            p_out[r][c] += krk_t;
+            if (r != c) {
+                p_out[c][r] = p_out[r][c];
+            }
+        }
+    }
+
+    mat_symmetrize(p_out);
+}
+
+bool InsEkfFilter::update_zupt()
+{
+    if (!initialized) {
+        return false;
+    }
+
+    /* Pseudo-medicion: velocidad NED = 0 m/s. */
+    const float y[3] = {
+        -vel_[0],
+        -vel_[1],
+        -vel_[2],
+    };
+
+    float h_rows[3][INS_EKF_STATE_DIM]{};
+    h_rows[0][INS_ERR_VEL_N] = 1.0f;
+    h_rows[1][INS_ERR_VEL_E] = 1.0f;
+    h_rows[2][INS_ERR_VEL_D] = 1.0f;
+
+    float s_mat[3][3]{};
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            float sum = 0.0f;
+            for (uint8_t k = 0U; k < kDim; ++k) {
+                for (uint8_t l = 0U; l < kDim; ++l) {
+                    sum += h_rows[i][k] * cov.P[k][l] * h_rows[j][l];
+                }
+            }
+            s_mat[i][j] = sum;
+        }
+        s_mat[i][i] += zupt_vel_var_m2;
+    }
+
+    InsEkfMat3 s_inv{};
+    if (!ins_ekf_invert3x3(s_mat, s_inv)) {
+        return false;
+    }
+
+    float k_gain[INS_EKF_STATE_DIM][3]{};
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        float ph_t0 = 0.0f;
+        float ph_t1 = 0.0f;
+        float ph_t2 = 0.0f;
+        for (uint8_t k = 0U; k < kDim; ++k) {
+            ph_t0 += cov.P[r][k] * h_rows[0][k];
+            ph_t1 += cov.P[r][k] * h_rows[1][k];
+            ph_t2 += cov.P[r][k] * h_rows[2][k];
+        }
+        k_gain[r][0] = (ph_t0 * s_inv[0][0]) + (ph_t1 * s_inv[0][1]) + (ph_t2 * s_inv[0][2]);
+        k_gain[r][1] = (ph_t0 * s_inv[1][0]) + (ph_t1 * s_inv[1][1]) + (ph_t2 * s_inv[1][2]);
+        k_gain[r][2] = (ph_t0 * s_inv[2][0]) + (ph_t1 * s_inv[2][1]) + (ph_t2 * s_inv[2][2]);
+    }
+
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        delta_x_[r] = (k_gain[r][0] * y[0]) + (k_gain[r][1] * y[1]) + (k_gain[r][2] * y[2]);
+    }
+
+    ins_ekf_inject_error_into_nominal(this);
+
+    const float meas_var[3] = {zupt_vel_var_m2, zupt_vel_var_m2, zupt_vel_var_m2};
+    ins_ekf_covariance_joseph_update3(
+        cov.P,
+        k_gain,
+        h_rows,
+        meas_var,
+        cov.P,
+        scratch_a_,
+        scratch_b_);
+
+    ++zupt_update_count;
+    return true;
+}
+
 void ins_ekf_init(
     InsEkfFilter *filter,
     Vector3D initial_position,
@@ -972,6 +1082,9 @@ void ins_ekf_init(
     filter->nhc_innovation_max_lateral_mps = 0.0f;
     filter->nhc_innovation_max_vertical_mps = 0.0f;
     filter->nhc_innovation_max_norm_mps = 0.0f;
+    filter->zupt_update_count = 0U;
+    filter->zupt_vel_var_m2 =
+        NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS * NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS;
 
     filter->initialized = true;
     filter->outlier_detected = false;
@@ -1067,6 +1180,24 @@ void ins_ekf_get_nhc_innovation_max(
     if (out_norm_mps != NULL) {
         *out_norm_mps = filter->nhc_innovation_max_norm_mps;
     }
+}
+
+bool ins_ekf_update_zupt(InsEkfFilter *filter)
+{
+    if (filter == NULL || !filter->initialized) {
+        return false;
+    }
+
+    return filter->update_zupt();
+}
+
+uint32_t ins_ekf_zupt_update_count(const InsEkfFilter *filter)
+{
+    if (filter == NULL) {
+        return 0U;
+    }
+
+    return filter->zupt_update_count;
 }
 
 bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps)

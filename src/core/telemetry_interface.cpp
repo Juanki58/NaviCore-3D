@@ -134,7 +134,7 @@ bool TelemetryInterface::open_logger()
         "bias_ax,bias_ay,bias_az,bias_gx,bias_gy,bias_gz,"
         "nis,innov_x,innov_y,innov_z,cov_pos_x,cov_pos_y,cov_pos_z,cov_yaw,"
         "des_speed,des_heading,des_climb,pid_speed,pid_yaw,pid_alt,"
-        "speed_meas,yaw_meas,climb_meas,fwd_accel,yaw_rate,vert_accel,mission_state\n");
+        "speed_meas,yaw_meas,climb_meas,fwd_accel,yaw_rate,vert_accel,drift_m,nav_mode,mission_state\n");
     return true;
 }
 
@@ -370,6 +370,11 @@ void TelemetryInterface::broadcast_logger(const NavState &state, MissionState mi
     float fwd_accel = 0.0f;
     float yaw_rate = 0.0f;
     float vert_accel = 0.0f;
+    float drift_m = 0.0f;
+    bool drift_valid = (bindings_ != NULL) && bindings_->drift_valid;
+    if (drift_valid) {
+        drift_m = bindings_->drift_m;
+    }
 
     if (ekf != NULL && ekf->initialized) {
         ins_ekf_get_position_ned(ekf, pos_ned);
@@ -408,7 +413,7 @@ void TelemetryInterface::broadcast_logger(const NavState &state, MissionState mi
     fprintf(
         logger_file_,
         "%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,"
-        "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u\n",
+        "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u,%u\n",
         static_cast<unsigned long long>(time_us),
         pos_ned[0],
         pos_ned[1],
@@ -445,6 +450,8 @@ void TelemetryInterface::broadcast_logger(const NavState &state, MissionState mi
         fwd_accel,
         yaw_rate,
         vert_accel,
+        drift_valid ? drift_m : 0.0f,
+        static_cast<unsigned>(state.mode),
         static_cast<unsigned>(mission));
 }
 

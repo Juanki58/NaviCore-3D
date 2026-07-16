@@ -23,6 +23,11 @@ NAV_STATE_FLAG_DEAD_RECKONING = 1 << 4
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 9090
 
+ANSI_RESET = "\033[0m"
+ANSI_RED = "\033[91m"
+ANSI_YELLOW = "\033[93m"
+ANSI_DIM = "\033[2m"
+
 
 @dataclass(frozen=True, slots=True)
 class NavigationState:
@@ -114,7 +119,7 @@ def unpack_navigation_state(payload: bytes) -> NavigationState:
 
 def format_navigation_state(state: NavigationState, source: str) -> str:
     flags = ",".join(decode_health_flags(state.health_flags))
-    return (
+    line = (
         f"[{source}] t={state.timestamp_s:8.3f}s | "
         f"lat={state.lat_deg:+.6f} lon={state.lon_deg:+.6f} alt={state.alt_m:7.2f} m | "
         f"vel_ned=({state.vn_mps:+.2f},{state.ve_mps:+.2f},{state.vd_mps:+.2f}) m/s "
@@ -126,6 +131,12 @@ def format_navigation_state(state: NavigationState, source: str) -> str:
         f"sigma_pos={state.pos_uncertainty_m:.3f} m "
         f"sigma_att={math.degrees(state.att_uncertainty_rad):.3f} deg"
     )
+
+    if state.health_flags & NAV_STATE_FLAG_GNSS_OUTLIER:
+        return f"{ANSI_YELLOW}{line}  << GNSS OUTLIER (FDE){ANSI_RESET}"
+    if state.health_flags & NAV_STATE_FLAG_DEAD_RECKONING:
+        return f"{ANSI_RED}{line}  << TUNEL / DEAD RECKONING{ANSI_RESET}"
+    return line
 
 
 def listen(host: str, port: int) -> None:

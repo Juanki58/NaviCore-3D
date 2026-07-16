@@ -33,6 +33,8 @@
 #include "time_guard.hpp"
 #include "telemetry_interface.hpp"
 #include "super_tunnel_benchmark.hpp"
+#include "tunnel_stress.hpp"
+#include "slalom_scenario.hpp"
 #include "regression_suite.hpp"
 #include "pid.hpp"
 
@@ -2457,8 +2459,11 @@ int main(int argc, char *argv[])
 {
     bool enable_udp = true;
     SimPrimaryScenario scenario = kCompileTimeSimScenario;
+    const char *scenario_name = NULL;
     const char *replay_csv_path = NULL;
     bool super_tunnel = false;
+    bool tunnel_stress = false;
+    bool slalom = false;
     bool run_tests = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -2468,6 +2473,14 @@ int main(int argc, char *argv[])
             run_tests = true;
         } else if (std::strcmp(argv[i], "--super-tunnel") == 0) {
             super_tunnel = true;
+        } else if (std::strcmp(argv[i], "--scenario") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --scenario requiere un nombre (p. ej. TUNNEL_STRESS)\n");
+                std::printf("Uso: NaviCore3D_Sim --scenario TUNNEL_STRESS [--no-udp]\n");
+                return 1;
+            }
+            scenario_name = argv[i + 1];
+            ++i;
         } else if (std::strcmp(argv[i], "--stress") == 0
                    || std::strcmp(argv[i], "--high-stress") == 0) {
             scenario = SimPrimaryScenario::SCENARIO_HIGH_STRESS;
@@ -2484,12 +2497,28 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (scenario_name != NULL) {
+        if (std::strcmp(scenario_name, "TUNNEL_STRESS") == 0) {
+            tunnel_stress = true;
+        } else if (std::strcmp(scenario_name, "SLALOM") == 0) {
+            slalom = true;
+        } else {
+            std::printf("ERROR: escenario desconocido '%s'\n", scenario_name);
+            std::printf("Escenarios disponibles: SLALOM, TUNNEL_STRESS\n");
+            return 1;
+        }
+    }
+
     if (run_tests) {
         return run_regression_suite();
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");
-    if (super_tunnel) {
+    if (tunnel_stress) {
+        std::printf("Modo: TUNNEL_STRESS (perfil multi-fase reproducible)\n");
+    } else if (slalom) {
+        std::printf("Modo: SLALOM (seguimiento en curvas cerradas)\n");
+    } else if (super_tunnel) {
         std::printf("Modo: SUPER_TUNNEL (NHC vs sin NHC)\n");
     } else if (replay_csv_path != NULL) {
         std::printf("Modo: REPLAY SiL (%s)\n", replay_csv_path);
@@ -2533,8 +2562,12 @@ int main(int argc, char *argv[])
         std::printf("NavigationState UDP: deshabilitado (--no-udp)\n");
     }
 
-    if (super_tunnel) {
-        run_super_tunnel_scenario(&telemetry);
+    if (tunnel_stress) {
+        run_tunnel_stress_scenario(&telemetry, emit_ekf_navigation_state);
+    } else if (slalom) {
+        run_slalom_scenario(&telemetry, emit_ekf_navigation_state);
+    } else if (super_tunnel) {
+        run_super_tunnel_nhc_benchmark();
     } else if (replay_csv_path != NULL) {
         run_replay_scenario(&telemetry, replay_csv_path);
     } else if (scenario == SimPrimaryScenario::SCENARIO_CLEAN) {

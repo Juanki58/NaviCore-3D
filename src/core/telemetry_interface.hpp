@@ -37,6 +37,8 @@ enum TelemetryScenarioId : uint8_t {
     TELEM_SCENARIO_SUBMARINE = 6U,
     TELEM_SCENARIO_REPLAY = 7U,
     TELEM_SCENARIO_SUPER_TUNNEL = 8U,
+    TELEM_SCENARIO_TUNNEL_STRESS = 9U,
+    TELEM_SCENARIO_SLALOM = 10U,
     TELEM_SCENARIO_UNKNOWN = 255U,
 };
 
@@ -112,6 +114,9 @@ typedef struct {
     TelemetryEkfTick *ekf_tick;
     uint8_t scenario_id;
     float temperature_c;
+    /** Deriva horizontal/lateral vs verdad de escenario (m); NaN si no aplica. */
+    float drift_m;
+    bool drift_valid;
 } TelemetryBindings;
 
 typedef struct {

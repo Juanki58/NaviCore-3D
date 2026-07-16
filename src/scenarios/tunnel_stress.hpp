@@ -36,14 +36,19 @@ constexpr float TUNNEL_STRESS_GPS_GLITCH_OFFSET_M = 50.0f;
 constexpr float TUNNEL_STRESS_TUNNEL_GPS_LOSS_T0_S = 10.0f;
 constexpr float TUNNEL_STRESS_TUNNEL_GPS_LOSS_T1_S = 30.0f;
 
+/** Umbral de deriva horizontal para considerar convergencia GPS tras salida del túnel. */
+constexpr float TUNNEL_STRESS_GPS_RECOVERY_DRIFT_M = 1.0f;
+
 struct TunnelStressResult {
     float drift_at_gps_loss_m;
     float drift_at_zupt_start_m;
     float drift_at_resume_m;
     float max_vel_during_zupt_mps;
     float drift_at_gps_return_m;
+    float gps_recovery_time_s;
     float glitch_nis;
     bool glitch_rejected;
+    bool gps_recovered;
     uint32_t nhc_updates;
     uint32_t zupt_updates;
     uint32_t gnss_accepts;
@@ -62,10 +67,14 @@ bool tunnel_stress_gps_outage_at_ms(uint32_t t_ms);
 
 class TunnelStressScenario {
 public:
-    void run(TelemetryInterface *telemetry, TunnelStressNavEmitFn emit_nav = nullptr);
+    void run(
+        TelemetryInterface *telemetry,
+        TunnelStressNavEmitFn emit_nav = nullptr,
+        uint32_t seed = 71U);
 };
 
 /** Punto de entrada del simulador (--scenario TUNNEL_STRESS). */
 void run_tunnel_stress_scenario(
     TelemetryInterface *telemetry,
-    TunnelStressNavEmitFn emit_nav = nullptr);
+    TunnelStressNavEmitFn emit_nav = nullptr,
+    uint32_t seed = 71U);

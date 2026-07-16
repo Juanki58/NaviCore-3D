@@ -10,5 +10,18 @@
       "tunnel_gps_rejections": 1,
       "tunnel_nis_peak": 48.79
     }
+  },
+  {
+    "commit_hash": "47bb6ca",
+    "commit_message": "[B Intelligent] IntegraciÃ³n de histÃ³rico de rendimiento persistente en JSON",
+    "timestamp": "2026-07-16T09:29:02+02:00",
+    "metrics": {
+      "slalom_max_lateral_drift_m": 0.123074,
+      "tunnel_exit_drift_m": 12.89,
+      "tunnel_zupt_max_speed_mps": 0.004,
+      "tunnel_gps_rejections": 1,
+      "tunnel_nis_peak": 47.66,
+      "tunnel_gps_recovery_time_s": 0.019999999999999574
+    }
   }
 ]

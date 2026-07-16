@@ -39,6 +39,9 @@ TUNNEL_ZUPT_T0_S = 20.0
 TUNNEL_ZUPT_T1_S = 25.0
 TUNNEL_EXIT_T_S = 30.0
 TUNNEL_GLITCH_T0_S = 30.0
+TUNNEL_RECOVERY_T0_S = 30.0
+TUNNEL_DURATION_S = 45.0
+TUNNEL_RECOVERY_DRIFT_M = 1.0
 
 ANSI_GREEN = "\033[92m"
 ANSI_RED = "\033[91m"
@@ -239,7 +242,8 @@ def extract_history_metrics(results: list[BenchmarkResult]) -> dict[str, float |
     exit_metric = metric_by_name(tunnel, "tunnel_exit_drift")
     zupt_metric = metric_by_name(tunnel, "zupt_residual_speed")
     glitch_metric = metric_by_name(tunnel, "gps_glitch_rejection")
-    if not all((slalom_metric, exit_metric, zupt_metric, glitch_metric)):
+    recovery_metric = metric_by_name(tunnel, "gps_recovery_time")
+    if not all((slalom_metric, exit_metric, zupt_metric, glitch_metric, recovery_metric)):
         return None
 
     if not all(
@@ -249,13 +253,16 @@ def extract_history_metrics(results: list[BenchmarkResult]) -> dict[str, float |
         return None
 
     rejections, nis_peak = parse_glitch_measured(glitch_metric.measured)
-    return {
+    metrics: dict[str, float | int] = {
         "slalom_max_lateral_drift_m": float(slalom_metric.measured),
         "tunnel_exit_drift_m": float(exit_metric.measured),
         "tunnel_zupt_max_speed_mps": float(zupt_metric.measured),
         "tunnel_gps_rejections": rejections,
         "tunnel_nis_peak": nis_peak,
     }
+    if isinstance(recovery_metric.measured, (int, float)):
+        metrics["tunnel_gps_recovery_time_s"] = float(recovery_metric.measured)
+    return metrics
 
 
 def upsert_history_record(
@@ -280,6 +287,46 @@ def upsert_history_record(
     return history
 
 
+def recovery_trend_symbol(current: float, previous: float | None) -> str:
+    if previous is None:
+        return " "
+    if current < previous:
+        return TREND_DOWN
+    if current > previous:
+        return TREND_UP
+    return TREND_FLAT
+
+
+def compute_gps_recovery_time(rows: list[dict[str, str]], stdout: str) -> float | str:
+    for row in rows:
+        t_s = row_time_s(row)
+        if t_s < TUNNEL_RECOVERY_T0_S:
+            continue
+
+        drift = row_drift_m(row)
+        if drift is None:
+            continue
+        if drift < TUNNEL_RECOVERY_DRIFT_M:
+            return t_s - TUNNEL_RECOVERY_T0_S
+
+    for line in stdout.splitlines():
+        if "Recovery Time (GPS" in line:
+            if "TIMEOUT" in line:
+                return "TIMEOUT"
+            try:
+                return float(line.split(":")[-1].strip().split()[0])
+            except ValueError:
+                pass
+
+    return "TIMEOUT"
+
+
+def format_recovery_time(value: float | str) -> str:
+    if isinstance(value, str):
+        return value
+    return f"{value:.4f} s"
+
+
 def drift_trend_symbol(current: float, previous: float | None) -> str:
     if previous is None:
         return " "
@@ -299,12 +346,13 @@ def print_evolution_report(history: list[dict[str, Any]]) -> None:
 
     print()
     print(colorize("Evolución histórica (últimos 5 commits)", ANSI_BOLD))
-    print("-" * 88)
+    print("-" * 108)
     print(
         f"{'Commit':<10} {'Slalom drift (m)':>16} {TREND_HEADER:>3} "
-        f"{'Tunnel drift (m)':>16} {TREND_HEADER:>3}  Mensaje"
+        f"{'Tunnel drift (m)':>16} {TREND_HEADER:>3} "
+        f"{'Tunnel Rec (s)':>14} {TREND_HEADER:>3}  Mensaje"
     )
-    print("-" * 88)
+    print("-" * 108)
 
     previous_metrics: dict[str, float | int] | None = None
     start_index = len(sorted_history) - len(recent)
@@ -318,6 +366,7 @@ def print_evolution_report(history: list[dict[str, Any]]) -> None:
         metrics = entry.get("metrics", {})
         slalom = float(metrics.get("slalom_max_lateral_drift_m", 0.0))
         tunnel = float(metrics.get("tunnel_exit_drift_m", 0.0))
+        recovery_raw = metrics.get("tunnel_gps_recovery_time_s")
         prev_slalom = (
             float(previous_metrics["slalom_max_lateral_drift_m"])
             if previous_metrics
@@ -328,17 +377,31 @@ def print_evolution_report(history: list[dict[str, Any]]) -> None:
             if previous_metrics
             else None
         )
+        prev_recovery = (
+            float(previous_metrics["tunnel_gps_recovery_time_s"])
+            if previous_metrics and "tunnel_gps_recovery_time_s" in previous_metrics
+            else None
+        )
         commit_hash = str(entry.get("commit_hash", "N/A"))[:10]
-        message = str(entry.get("commit_message", ""))[:28]
+        message = str(entry.get("commit_message", ""))[:24]
+        if isinstance(recovery_raw, (int, float)):
+            recovery_text = f"{float(recovery_raw):>14.4f}"
+            recovery_trend = recovery_trend_symbol(float(recovery_raw), prev_recovery)
+        else:
+            recovery_text = f"{'N/A':>14}"
+            recovery_trend = " "
         print(
             f"{commit_hash:<10} {slalom:>16.4f} {drift_trend_symbol(slalom, prev_slalom):>3} "
-            f"{tunnel:>16.4f} {drift_trend_symbol(tunnel, prev_tunnel):>3}  {message}"
+            f"{tunnel:>16.4f} {drift_trend_symbol(tunnel, prev_tunnel):>3} "
+            f"{recovery_text} {recovery_trend:>3}  {message}"
         )
 
-    print("-" * 88)
+    print("-" * 108)
     print(
-        f"  {TREND_UP} = deriva mayor (regresión)   "
-        f"{TREND_DOWN} = deriva menor (mejora)   {TREND_FLAT} = sin cambio"
+        f"  Drift: {TREND_UP} = mayor (regresión)   {TREND_DOWN} = menor (mejora)   {TREND_FLAT} = sin cambio"
+    )
+    print(
+        f"  Recovery: {TREND_DOWN} = más rápido (mejora)   {TREND_UP} = más lento (regresión)   {TREND_FLAT} = sin cambio"
     )
     print()
 
@@ -470,6 +533,8 @@ def evaluate_tunnel(csv_path: Path, stdout: str) -> list[MetricResult]:
         "gnss=REJ" in line and "t= 30." in line for line in stdout.splitlines()
     )
     glitch_pass = rejections == 1 and nis_peak > NIS_THRESHOLD and gnss_rej_in_stdout
+    recovery_time = compute_gps_recovery_time(rows, stdout)
+    recovery_pass = isinstance(recovery_time, (int, float))
 
     return [
         MetricResult(
@@ -495,6 +560,17 @@ def evaluate_tunnel(csv_path: Path, stdout: str) -> list[MetricResult]:
             limit=f"rejections=1, nis>{NIS_THRESHOLD:.3f}, gnss=REJ",
             unit="",
             detail="Integridad FDE: 1 outlier rechazado tras glitch GPS",
+        ),
+        MetricResult(
+            name="gps_recovery_time",
+            passed=recovery_pass,
+            measured=recovery_time,
+            limit=f"convergencia < {TUNNEL_RECOVERY_DRIFT_M:.1f} m antes de t={TUNNEL_DURATION_S:.0f} s",
+            unit="s",
+            detail=(
+                f"Recovery Time: primer t >= {TUNNEL_RECOVERY_T0_S:.0f} s con "
+                f"drift_m < {TUNNEL_RECOVERY_DRIFT_M:.1f} m (t_rec - {TUNNEL_RECOVERY_T0_S:.0f} s)"
+            ),
         ),
     ]
 
@@ -537,6 +613,8 @@ def print_metric(metric: MetricResult) -> None:
     unit = f" {metric.unit}" if metric.unit else ""
     if isinstance(measured, float):
         measured_text = f"{measured:.4f}{unit}"
+    elif isinstance(measured, int):
+        measured_text = f"{measured}{unit}"
     else:
         measured_text = str(measured)
     if isinstance(limit, float):

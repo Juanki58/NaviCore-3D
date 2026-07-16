@@ -1,6 +1,7 @@
 #ifndef NAVICORE_SENSORS_SIM_HPP
 #define NAVICORE_SENSORS_SIM_HPP
 
+#include <random>
 #include <stdint.h>
 
 #include "sensor_types.hpp"
@@ -21,7 +22,7 @@ typedef struct {
     float gyro_bias[3];
     float commanded_yaw_rate_radps;
     float commanded_forward_accel_mps2;
-    uint32_t seed;
+    std::mt19937 rng;
 } ImuSimulator;
 
 typedef struct {
@@ -31,14 +32,14 @@ typedef struct {
     float vertical_speed_mps;
     float course_deg;
     float yaw_rate_radps;
-    uint32_t seed;
+    std::mt19937 rng;
     uint32_t last_timestamp_ms;
 } GpsSimulator;
 
 typedef struct {
     float surface_pressure_pa;
     float depth_m;
-    uint32_t seed;
+    std::mt19937 rng;
 } PressureSimulator;
 
 typedef struct {
@@ -58,8 +59,12 @@ typedef struct {
     SensorFaultInjection faults;
 } SensorsSimulation;
 
+void sensors_simulation_set_default_seed(uint32_t seed);
+uint32_t sensors_simulation_get_default_seed(void);
+
 void imu_simulator_init(ImuSimulator *sim, uint32_t seed);
 bool imu_simulator_read(ImuSimulator *sim, uint32_t timestamp_ms, ImuSample *out);
+void imu_simulator_apply_measurement_model(ImuSimulator *sim, ImuSample *sample);
 
 void gps_simulator_init(GpsSimulator *sim, Vector3D origin, float speed_mps, float course_deg, uint32_t seed);
 bool gps_simulator_read(GpsSimulator *sim, uint32_t timestamp_ms, GpsSample *out);

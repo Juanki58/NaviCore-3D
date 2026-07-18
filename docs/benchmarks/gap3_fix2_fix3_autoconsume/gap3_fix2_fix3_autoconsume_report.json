@@ -1,0 +1,130 @@
+{
+  "two_cell": {
+    "fix2_pre_P_vv": 89.59877777,
+    "fix2_post_P_vv": 61.99828339,
+    "fix3_pre_P_vv": 2.496057034,
+    "joseph_drop_abs": 27.60049438,
+    "joseph_drop_frac": 0.30804543395503065,
+    "inter_fix_drop_abs": 59.502226355999994,
+    "inter_fix_drop_frac": 0.9597399008888913,
+    "total_drop_pre2_to_pre3": 87.102720736,
+    "two_cell_post2_eq_pre3": false,
+    "post2_over_pre3_ratio": 24.838488281914792,
+    "gap_duration_s": 0.389245034,
+    "nhc_ticks_in_gap": 76,
+    "predict_post_in_gap": 38,
+    "first_event_after_fix2": {
+      "timestamp_s": 5.672372341,
+      "update_type": "predict",
+      "phase": "pre",
+      "P_vv_frob": 61.99828339
+    },
+    "P_vv_after_first_predict_post": 62.52542496,
+    "P_vv_max_predict_in_gap": 62.52542496,
+    "P_vv_min_nhc_post_in_gap": 2.496057034,
+    "last_nhc_post_P_vv": 2.496057034,
+    "last_nhc_post_eq_fix3_pre": true,
+    "sum_abs_nhc_delta_P_vv_in_gap": 62.69215893700001,
+    "verdict": "hybrid_joseph_then_nhc"
+  },
+  "k_vel_algebra": [
+    {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "innov_h_m": 29.260845,
+      "k_vel_max_csv": 0.197021,
+      "K_vel_pos_frob_obs": 0.19706700312694053,
+      "K_vel_pos_max_abs_obs": 0.19702071,
+      "K_vel_pos_frob_pred": 0.19706697218616842,
+      "K_vel_pos_max_abs_pred": 0.19702067951705282,
+      "K_vel_algebra_residual_frob": 7.498318034895056e-08,
+      "K_vel_algebra_residual_max": 6.22236281099946e-08,
+      "k_vel_csv_vs_max_abs_pred": 1.0000016266462382
+    },
+    {
+      "gps_index": 3,
+      "timestamp_s": 6.053678513,
+      "innov_h_m": 31.963375,
+      "k_vel_max_csv": 0.007793,
+      "K_vel_pos_frob_obs": 0.0078035246208272456,
+      "K_vel_pos_max_abs_obs": 0.007793083,
+      "K_vel_pos_frob_pred": 0.007803524248979299,
+      "K_vel_pos_max_abs_pred": 0.007793082616090002,
+      "K_vel_algebra_residual_frob": 1.9289516667082466e-09,
+      "K_vel_algebra_residual_max": 1.6870015299996167e-09,
+      "k_vel_csv_vs_max_abs_pred": 0.9999893987919708
+    },
+    {
+      "gps_index": 4,
+      "timestamp_s": 6.922794342,
+      "innov_h_m": 31.166613,
+      "k_vel_max_csv": 0.016704,
+      "K_vel_pos_frob_obs": 0.016916666391795634,
+      "K_vel_pos_max_abs_obs": 0.016704418,
+      "K_vel_pos_frob_pred": 0.01691666821506615,
+      "K_vel_pos_max_abs_pred": 0.01670441953418344,
+      "K_vel_algebra_residual_frob": 3.425390462025173e-09,
+      "K_vel_algebra_residual_max": 2.3029173696047928e-09,
+      "k_vel_csv_vs_max_abs_pred": 0.9999748848391541
+    },
+    {
+      "gps_index": 5,
+      "timestamp_s": 8.536244392,
+      "innov_h_m": 23.830481,
+      "k_vel_max_csv": 0.001305,
+      "K_vel_pos_frob_obs": 0.0013561194357769525,
+      "K_vel_pos_max_abs_obs": 0.001304531,
+      "K_vel_pos_frob_pred": 0.0013561197022999925,
+      "K_vel_pos_max_abs_pred": 0.0013045312849193189,
+      "K_vel_algebra_residual_frob": 7.501066793158644e-10,
+      "K_vel_algebra_residual_max": 4.059196070092287e-10,
+      "k_vel_csv_vs_max_abs_pred": 1.0003592976926652
+    },
+    {
+      "gps_index": 6,
+      "timestamp_s": 9.544651985,
+      "innov_h_m": 23.100847,
+      "k_vel_max_csv": 0.004936,
+      "K_vel_pos_frob_obs": 0.005444665022826106,
+      "K_vel_pos_max_abs_obs": 0.004936452,
+      "K_vel_pos_frob_pred": 0.005444664555301763,
+      "K_vel_pos_max_abs_pred": 0.004936451559512525,
+      "K_vel_algebra_residual_frob": 1.167386642051247e-09,
+      "K_vel_algebra_residual_max": 4.956252550297052e-10,
+      "k_vel_csv_vs_max_abs_pred": 0.9999085254849397
+    },
+    {
+      "gps_index": 7,
+      "timestamp_s": 10.553059578,
+      "innov_h_m": 20.092539,
+      "k_vel_max_csv": 0.023251,
+      "K_vel_pos_frob_obs": 0.024304371080987965,
+      "K_vel_pos_max_abs_obs": 0.023251304,
+      "K_vel_pos_frob_pred": 0.024304372316015163,
+      "K_vel_pos_max_abs_pred": 0.02325130573237352,
+      "K_vel_algebra_residual_frob": 2.5131197115977013e-09,
+      "K_vel_algebra_residual_max": 1.7323735189422873e-09,
+      "k_vel_csv_vs_max_abs_pred": 0.999986850958951
+    }
+  ],
+  "innov_h_flat": {
+    "n_accepts": 7,
+    "innov_h_by_gps_index": {
+      "1": 30.927515,
+      "2": 29.260845,
+      "3": 31.963375,
+      "4": 31.166613,
+      "5": 23.830481,
+      "6": 23.100847,
+      "7": 20.092539
+    },
+    "innov_h_mean_m": 27.191745,
+    "innov_h_std_m": 4.395410735427188,
+    "innov_h_min_m": 20.092539,
+    "innov_h_max_m": 31.963375,
+    "innov_h_range_m": 11.870836,
+    "linear_slope_m_per_fix": -1.8913506428571427,
+    "trend": "flat_no_convergence",
+    "interpretation": "innov_h stays ~20\u201332 m across 7 accepts in ~10 s \u2014 no convergence trend; position error re-accumulates between accepts (consistent with velocity never corrected)."
+  }
+}

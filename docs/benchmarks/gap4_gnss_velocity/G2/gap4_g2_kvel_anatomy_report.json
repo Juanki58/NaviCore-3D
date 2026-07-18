@@ -1,0 +1,208 @@
+{
+  "G2": {
+    "arm": "G2",
+    "n_accepts": 33,
+    "k_vel_stats": {
+      "min": 0.009751,
+      "p25": 0.050003,
+      "median": 0.09597,
+      "p75": 0.163123,
+      "p90": 0.2713604,
+      "p95": 0.42734959999999966,
+      "max": 0.975498,
+      "mean": 0.15152072727272725
+    },
+    "k_vel_histogram": {
+      "(-0.001, 0.1]": 17,
+      "(0.1, 0.2]": 8,
+      "(0.2, 0.3]": 5,
+      "(0.3, 0.5]": 1,
+      "(0.5, 0.7]": 1,
+      "(0.7, 0.9]": 0,
+      "(0.9, 1.01]": 1
+    },
+    "truth_terrain_all_accepts": {
+      "vel_error_improves": 32,
+      "vel_error_worsens": 0,
+      "vel_error_median_delta_mps": -0.14754876458526,
+      "pos_error_improves": 16,
+      "pos_error_worsens": 16
+    },
+    "top_k_vel_events": [
+      {
+        "gps_index": 2,
+        "timestamp_s": 5.664433479,
+        "k_vel_max": 0.975498,
+        "dt_since_prev_accept_s": null,
+        "P_vv_frob_pre": 89.59877777,
+        "P_vv_n_m2_pre": 89.57995605,
+        "P_vv_e_m2_pre": 0.008363624103,
+        "vel_h_pre_mps": 0.055707,
+        "K_nn_diagonal": 0.9754981914749593,
+        "K_ee_diagonal": 0.0037034001140192597,
+        "K_max_diagonal": 0.9754981914749593,
+        "K_matches_k_vel": true,
+        "vel_vs_gps": {
+          "err_pre_mps": 0.404754016308329,
+          "err_post_mps": 0.38644038399062913,
+          "delta_err_mps": -0.01831363231769989,
+          "improves": true
+        },
+        "pos_vs_gps": {
+          "err_pre_m": 29.573021,
+          "err_post_m": 29.747897752525773,
+          "delta_err_m": 0.17487675252577262
+        }
+      },
+      {
+        "gps_index": 3,
+        "timestamp_s": 6.053678513,
+        "k_vel_max": 0.561341,
+        "dt_since_prev_accept_s": null,
+        "P_vv_frob_pre": 2.880936623,
+        "P_vv_n_m2_pre": 2.879934549,
+        "P_vv_e_m2_pre": 0.01610389538,
+        "vel_h_pre_mps": 0.150843,
+        "K_nn_diagonal": 0.5613979128761786,
+        "K_ee_diagonal": 0.007106424119755356,
+        "K_max_diagonal": 0.5613979128761786,
+        "K_matches_k_vel": true,
+        "vel_vs_gps": {
+          "err_pre_mps": 0.49254274890298233,
+          "err_post_mps": 0.4332178074901248,
+          "delta_err_mps": -0.059324941412857546,
+          "improves": true
+        },
+        "pos_vs_gps": {
+          "err_pre_m": 29.384821,
+          "err_post_m": 29.542488880216066,
+          "delta_err_m": 0.15766788021606715
+        }
+      },
+      {
+        "gps_index": 237,
+        "timestamp_s": 238.26852417,
+        "k_vel_max": 0.338022,
+        "dt_since_prev_accept_s": null,
+        "P_vv_frob_pre": 1.925621629,
+        "P_vv_n_m2_pre": 0.5051307678,
+        "P_vv_e_m2_pre": 1.403896689,
+        "vel_h_pre_mps": 1.431451,
+        "K_nn_diagonal": 0.18334184848995463,
+        "K_ee_diagonal": 0.38421904298126697,
+        "K_max_diagonal": 0.38421904298126697,
+        "K_matches_k_vel": false,
+        "vel_vs_gps": {
+          "err_pre_mps": 5.84698661609436,
+          "err_post_mps": 3.350792644325314,
+          "delta_err_mps": -2.4961939717690456,
+          "improves": true
+        },
+        "pos_vs_gps": {
+          "err_pre_m": 2888.148438,
+          "err_post_m": 2846.2455595328515,
+          "delta_err_m": -41.90287846714864
+        }
+      },
+      {
+        "gps_index": 7,
+        "timestamp_s": 10.553059578,
+        "k_vel_max": 0.274516,
+        "dt_since_prev_accept_s": null,
+        "P_vv_frob_pre": 0.8927123547,
+        "P_vv_n_m2_pre": 0.858705461,
+        "P_vv_e_m2_pre": 0.03284452856,
+        "vel_h_pre_mps": 0.779025,
+        "K_nn_diagonal": 0.2762260599380727,
+        "K_ee_diagonal": 0.01438754507768344,
+        "K_max_diagonal": 0.2762260599380727,
+        "K_matches_k_vel": true,
+        "vel_vs_gps": {
+          "err_pre_mps": 3.3820683412373653,
+          "err_post_mps": 2.4908769277659992,
+          "delta_err_mps": -0.8911914134713661,
+          "improves": true
+        },
+        "pos_vs_gps": {
+          "err_pre_m": 24.259777,
+          "err_post_m": 24.190338954982337,
+          "delta_err_m": -0.06943804501766238
+        }
+      },
+      {
+        "gps_index": 16,
+        "timestamp_s": 19.268434525,
+        "k_vel_max": 0.258738,
+        "dt_since_prev_accept_s": null,
+        "P_vv_frob_pre": 0.8691724539,
+        "P_vv_n_m2_pre": 0.8009110689,
+        "P_vv_e_m2_pre": 0.1585777104,
+        "vel_h_pre_mps": 2.359199,
+        "K_nn_diagonal": 0.26251537682111686,
+        "K_ee_diagonal": 0.06583873533134395,
+        "K_max_diagonal": 0.26251537682111686,
+        "K_matches_k_vel": true,
+        "vel_vs_gps": {
+          "err_pre_mps": 4.566376427780016,
+          "err_post_mps": 4.250618524720087,
+          "delta_err_mps": -0.3157579030599287,
+          "improves": true
+        },
+        "pos_vs_gps": {
+          "err_pre_m": 79.856636,
+          "err_post_m": 78.86041923827187,
+          "delta_err_m": -0.996216761728121
+        }
+      }
+    ],
+    "worst_event_verdict": {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "k_vel_max": 0.975498,
+      "k_diagonal_pred": 0.9754981914749593,
+      "bayesian_K_match": true,
+      "vel_err_pre_mps": 0.404754016308329,
+      "vel_err_post_mps": 0.38644038399062913,
+      "delta_vel_err_mps": -0.01831363231769989,
+      "label": "LEGITIMATE_HIGH_GAIN",
+      "note": "K\u2248P/(P+R); error vs GPS mejora \u2014 no firma bug ZUPT"
+    },
+    "interpretation": {
+      "high_gain_events_ge_0.7": 2,
+      "moderate_gain_events_le_0.3": 31,
+      "pattern": "ISOLATED_SPIKES",
+      "abort_guardrail_0.5": "May over-flag legitimate P/(P+R) when P_vv large after long gap"
+    }
+  },
+  "G0_fix2_reference": {
+    "timestamp_s": 5.664433479,
+    "k_vel_max": 0.197021,
+    "P_vv_frob_pre": 89.59877777,
+    "P_vv_n_m2_pre": 89.57995605,
+    "note": "pos-only Joseph; k_vel cross-gain from position update"
+  },
+  "G2_high_gain_confirmation": {
+    "fix_2": {
+      "k_vel_max": 0.975498,
+      "P_vv_n_m2_pre": 89.57995605,
+      "P_vv_frob_pre": 89.59877777,
+      "K_nn_diagonal": 0.9754981914749593,
+      "K_matches_k_vel": true,
+      "err_vel_pre_mps": 0.40475401630832897,
+      "err_vel_post_mps": 0.38644038399062913,
+      "delta_err_vel_mps": -0.018313632317699835,
+      "verdict": "LEGITIMATE_HIGH_GAIN"
+    },
+    "fix_3": {
+      "k_vel_max": 0.561341,
+      "P_vv_n_m2_pre": 2.879934549,
+      "P_vv_frob_pre": 2.880936623,
+      "K_nn_diagonal": 0.5613979128761786,
+      "K_matches_k_vel": true,
+      "err_vel_pre_mps": 0.49254274890298233,
+      "err_vel_post_mps": 0.4332178074901248,
+      "delta_err_vel_mps": -0.059324941412857546,
+      "verdict": "LEGITIMATE_HIGH_GAIN"
+    }
+  }
+}

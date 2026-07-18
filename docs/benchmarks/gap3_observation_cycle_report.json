@@ -1,0 +1,45 @@
+{
+  "audit_end_s": 60.0,
+  "observation_rows": 8752,
+  "mechanism_class": "B_REJECTED",
+  "drift_predict_only_m": 421.36613094949666,
+  "drift_full_filter_m": 182.4755856953344,
+  "drift_ratio_po_over_ff": 2.3091644251687438,
+  "gnss": {
+    "count": 57,
+    "accept_count": 7,
+    "accept_frac": 0.12280701754385964,
+    "mean_pred_dpos_h": 0.8464826666666667,
+    "mean_corr_pos_h": 0.4850231428571429,
+    "mean_hypo_corr_pos_h": 12.431780649122807,
+    "median_pred_over_corr_dpos": 0.001699,
+    "median_pred_over_hypo_corr_dpos": 0.009784958230600304,
+    "mean_innov_h": 132.12968085964914,
+    "mean_nis": 612.8374383928573
+  },
+  "nhc": {
+    "count": 5798,
+    "accept_count": 5798,
+    "accept_frac": 1.0,
+    "mean_pred_dpos_h": 0.0005312606071058986,
+    "mean_corr_pos_h": 0.009030836150396689,
+    "mean_hypo_corr_pos_h": 0.009030836150396689,
+    "median_pred_over_corr_dpos": 0.0,
+    "median_pred_over_hypo_corr_dpos": 0.0,
+    "mean_innov_h": 0.0,
+    "mean_nis": 0.6146966088082901
+  },
+  "zupt": {
+    "count": 2897,
+    "accept_count": 2897,
+    "accept_frac": 1.0,
+    "mean_pred_dpos_h": 0.004535825336555057,
+    "mean_corr_pos_h": 0.0016117811529168106,
+    "mean_hypo_corr_pos_h": 0.0016117811529168106,
+    "median_pred_over_corr_dpos": 0.0,
+    "median_pred_over_hypo_corr_dpos": 0.0,
+    "mean_innov_h": 0.0,
+    "mean_nis": null
+  },
+  "verdict": "CORRECTION_INSUFFICIENT"
+}

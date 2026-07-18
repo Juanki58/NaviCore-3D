@@ -1,0 +1,57 @@
+{
+  "experiment": "GAP-3.12 NHC decimation (Exp F)",
+  "config": "ZUPT OFF, NHC ON, sweep nhc_every_n_ticks",
+  "cases": [
+    {
+      "nhc_every_n_ticks": 1,
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "gnss_innov_h_mean_accepted": 27.191745,
+      "gnss_k_vel_mean_accepted": 0.03585857142857143
+    },
+    {
+      "nhc_every_n_ticks": 2,
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "gnss_innov_h_mean_accepted": 27.734823571428574,
+      "gnss_k_vel_mean_accepted": 0.04571614285714286
+    },
+    {
+      "nhc_every_n_ticks": 5,
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "gnss_innov_h_mean_accepted": 29.336180000000002,
+      "gnss_k_vel_mean_accepted": 0.06732371428571429
+    },
+    {
+      "nhc_every_n_ticks": 10,
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "gnss_innov_h_mean_accepted": 31.37261528571429,
+      "gnss_k_vel_mean_accepted": 0.09652099999999998
+    },
+    {
+      "nhc_every_n_ticks": 20,
+      "gnss_accept_count": 5,
+      "gnss_reject_count": 326,
+      "gnss_innov_h_mean_accepted": 32.2032242,
+      "gnss_k_vel_mean_accepted": 0.109604
+    },
+    {
+      "nhc_every_n_ticks": 50,
+      "gnss_accept_count": 3,
+      "gnss_reject_count": 328,
+      "gnss_innov_h_mean_accepted": 25.641976,
+      "gnss_k_vel_mean_accepted": 0.15144033333333332
+    },
+    {
+      "nhc_every_n_ticks": 100,
+      "gnss_accept_count": 4,
+      "gnss_reject_count": 327,
+      "gnss_innov_h_mean_accepted": 52.772634000000004,
+      "gnss_k_vel_mean_accepted": 0.11539100000000001
+    }
+  ],
+  "baseline_accepts_n1": 7,
+  "verdict": "FREQUENCY_NOT_DOMINANT"
+}

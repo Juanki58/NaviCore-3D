@@ -1,0 +1,50 @@
+{
+  "h0": {
+    "label": "H0 yaw=0",
+    "mode": "h0",
+    "output_csv": "docs\\benchmarks\\real_run_output_h0.csv",
+    "horizontal_rmse_m": 2351.0703276770173,
+    "error_h_final_m": 4586.706563337214,
+    "nis_moving_mean": 197010.9503161809,
+    "att_rmse_deg": {
+      "roll": 6.55246847670133,
+      "pitch": 4.386787692138585,
+      "yaw": 102.47081769449234
+    },
+    "gnss_accept_pct": 3.0211480362537766,
+    "gnss_accept_count": 10,
+    "gnss_reject_count": 321
+  },
+  "h2": {
+    "label": "H2 yaw estable",
+    "mode": "h2",
+    "output_csv": "docs\\benchmarks\\real_run_output_h2.csv",
+    "horizontal_rmse_m": 2302.156372522472,
+    "error_h_final_m": 4518.8154428068165,
+    "nis_moving_mean": 186328.8692041875,
+    "att_rmse_deg": {
+      "roll": 6.527710152534355,
+      "pitch": 4.441967104040361,
+      "yaw": 103.28317497588525
+    },
+    "gnss_accept_pct": 3.0211480362537766,
+    "gnss_accept_count": 10,
+    "gnss_reject_count": 321
+  },
+  "h3": {
+    "label": "H3 manga ancha",
+    "mode": "h3",
+    "output_csv": "docs\\benchmarks\\real_run_output_h3.csv",
+    "horizontal_rmse_m": 2322.0128524654806,
+    "error_h_final_m": 4565.4779970576155,
+    "nis_moving_mean": 181971.7154315329,
+    "att_rmse_deg": {
+      "roll": 6.527585510854164,
+      "pitch": 4.444225349831484,
+      "yaw": 103.28451540312317
+    },
+    "gnss_accept_pct": 6.042296072507553,
+    "gnss_accept_count": 20,
+    "gnss_reject_count": 311
+  }
+}

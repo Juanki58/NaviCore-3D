@@ -1,0 +1,148 @@
+{
+  "experiment": "gap2_gravity_identity_tick_by_tick",
+  "identity": "|a_lin,h| ~= GRAVITY * sin(delta_tilt)",
+  "window_s": [
+    2.0,
+    10.0
+  ],
+  "pass_criteria": {
+    "nrmse_pct_max": 15.0,
+    "pct_samples_rel_err_le_15_min": 90.0,
+    "correlation_min": 0.95
+  },
+  "evaluations": {
+    "A_gravity_align_internal": {
+      "label": "A_gravity_align",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.7352768250725249,
+      "rms_error_mps2": 0.030256181618467652,
+      "max_abs_error_mps2": 0.5038920489933822,
+      "nrmse_pct": 4.084687025099876,
+      "correlation": 0.9994041608851159,
+      "r_squared": 0.9985666070140085,
+      "median_rel_error_pct": 0.7899780820840516,
+      "p95_rel_error_pct": 4.233865684559802,
+      "max_rel_error_pct": 100.0,
+      "pct_samples_rel_err_le_10": 98.11083123425692,
+      "pct_samples_rel_err_le_15": 98.86649874055415,
+      "identity_holds_tick_by_tick": true,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    },
+    "B_orientation_delta_tilt": {
+      "label": "B_orientation_delta_tilt",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.6930976399900527,
+      "rms_error_mps2": 0.33217804272285856,
+      "max_abs_error_mps2": 3.83218928974015,
+      "nrmse_pct": 44.84516117212053,
+      "correlation": 0.9170499664191719,
+      "r_squared": 0.827225803584323,
+      "median_rel_error_pct": 35.04731803129224,
+      "p95_rel_error_pct": 157.71648147873813,
+      "max_rel_error_pct": 3969.349534838297,
+      "pct_samples_rel_err_le_10": 19.77329974811083,
+      "pct_samples_rel_err_le_15": 27.455919395465994,
+      "identity_holds_tick_by_tick": false,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    },
+    "C_delta_pitch": {
+      "label": "C_delta_pitch",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.6741705406490763,
+      "rms_error_mps2": 0.33524948494457,
+      "max_abs_error_mps2": 3.833845045689893,
+      "nrmse_pct": 45.259816277962145,
+      "correlation": 0.9163990942461913,
+      "r_squared": 0.8240159627101797,
+      "median_rel_error_pct": 46.048732046659055,
+      "p95_rel_error_pct": 96.16464408110976,
+      "max_rel_error_pct": 915.8046997421525,
+      "pct_samples_rel_err_le_10": 17.12846347607053,
+      "pct_samples_rel_err_le_15": 24.937027707808564,
+      "identity_holds_tick_by_tick": false,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    },
+    "h9d_a_lin_vs_a_nav_pre": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "max_abs_diff_mps2": 1.1240688771785301e-05,
+      "rms_diff_mps2": 4.8593028277893115e-06,
+      "correlation": 0.9999999999966164,
+      "identical_h9d": true
+    }
+  },
+  "diagnosis": {
+    "verdict": "MECHANISM_VALIDATED_TICK_BY_TICK",
+    "mechanism": "|a_lin,h| ~= g*sin(gravity_align) en cada tick (2-10 s). Mecanismo causal: delta_tilt -> proyeccion horizontal g -> a_lin,h -> v -> p.",
+    "next_step": "Abrir predict() solo en cadena: f_body -> R_bn -> f_nav -> (-g); buscar primera transformacion que rompe gravity_align.",
+    "h9d_alin_equals_nav_pre": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "max_abs_diff_mps2": 1.1240688771785301e-05,
+      "rms_diff_mps2": 4.8593028277893115e-06,
+      "correlation": 0.9999999999966164,
+      "identical_h9d": true
+    },
+    "candidate_A_gravity_align": {
+      "label": "A_gravity_align",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.7352768250725249,
+      "rms_error_mps2": 0.030256181618467652,
+      "max_abs_error_mps2": 0.5038920489933822,
+      "nrmse_pct": 4.084687025099876,
+      "correlation": 0.9994041608851159,
+      "r_squared": 0.9985666070140085,
+      "median_rel_error_pct": 0.7899780820840516,
+      "p95_rel_error_pct": 4.233865684559802,
+      "max_rel_error_pct": 100.0,
+      "pct_samples_rel_err_le_10": 98.11083123425692,
+      "pct_samples_rel_err_le_15": 98.86649874055415,
+      "identity_holds_tick_by_tick": true,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    },
+    "candidate_B_orientation_delta_tilt": {
+      "label": "B_orientation_delta_tilt",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.6930976399900527,
+      "rms_error_mps2": 0.33217804272285856,
+      "max_abs_error_mps2": 3.83218928974015,
+      "nrmse_pct": 44.84516117212053,
+      "correlation": 0.9170499664191719,
+      "r_squared": 0.827225803584323,
+      "median_rel_error_pct": 35.04731803129224,
+      "p95_rel_error_pct": 157.71648147873813,
+      "max_rel_error_pct": 3969.349534838297,
+      "pct_samples_rel_err_le_10": 19.77329974811083,
+      "pct_samples_rel_err_le_15": 27.455919395465994,
+      "identity_holds_tick_by_tick": false,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    },
+    "candidate_C_delta_pitch": {
+      "label": "C_delta_pitch",
+      "samples": 794,
+      "observed_mean_mps2": 0.7407221516005342,
+      "predicted_mean_mps2": 0.6741705406490763,
+      "rms_error_mps2": 0.33524948494457,
+      "max_abs_error_mps2": 3.833845045689893,
+      "nrmse_pct": 45.259816277962145,
+      "correlation": 0.9163990942461913,
+      "r_squared": 0.8240159627101797,
+      "median_rel_error_pct": 46.048732046659055,
+      "p95_rel_error_pct": 96.16464408110976,
+      "max_rel_error_pct": 915.8046997421525,
+      "pct_samples_rel_err_le_10": 17.12846347607053,
+      "pct_samples_rel_err_le_15": 24.937027707808564,
+      "identity_holds_tick_by_tick": false,
+      "g_sin_4deg_reference_mps2": 0.6840773232428263
+    }
+  },
+  "artifacts": {
+    "tick_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap2_gravity_identity_tick.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap2_gravity_identity_tick_analysis.png"
+  }
+}

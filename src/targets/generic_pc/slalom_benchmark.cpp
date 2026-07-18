@@ -1,5 +1,6 @@
 #include "slalom_benchmark.hpp"
 
+#include "geodesy.hpp"
 #include "ins_ekf.hpp"
 
 #include <cmath>
@@ -164,12 +165,13 @@ void truth_to_gps_sample(
         return;
     }
 
-    const float lat_rad = ref_lat_deg * (static_cast<float>(M_PI) / 180.0f);
-    const float cos_lat = std::cos(lat_rad);
+    const geodesy::LLA ref = geodesy::lla(ref_lat_deg, ref_lon_deg, ref_alt_m);
+    const geodesy::NED ned{truth->pos_ned[0], truth->pos_ned[1], truth->pos_ned[2]};
+    const geodesy::LLA point = geodesy::ned_to_lla(ned, ref);
 
-    gps->position.x = ref_lat_deg + (truth->pos_ned[0] / NAVICORE_METERS_PER_DEG_LAT);
-    gps->position.y = ref_lon_deg + (truth->pos_ned[1] / (NAVICORE_METERS_PER_DEG_LAT * cos_lat));
-    gps->position.z = ref_alt_m - truth->pos_ned[2];
+    gps->position.x = point.lat_deg;
+    gps->position.y = point.lon_deg;
+    gps->position.z = point.alt_m;
     gps->speed_mps = TC04_SPEED_MPS;
     gps->course_deg = truth->yaw_rad * kRadToDegF;
     gps->satellites = 12U;

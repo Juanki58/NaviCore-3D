@@ -1,0 +1,247 @@
+{
+  "experiment": "gap3_correction_efficacy",
+  "config": {
+    "h9a_gravity_tilt_init": true,
+    "yaw_init": "zero",
+    "mount": "C:\\NaviCore-3D\\calibration\\imu_mount.json",
+    "audit_window_s": [
+      0.0,
+      60.0
+    ],
+    "motion_window_s": [
+      2.0,
+      10.0
+    ]
+  },
+  "h8_comparison": {
+    "onset_motion_2_10s_zupt": {
+      "label": "onset_zupt",
+      "t0_s": 2.0,
+      "t1_s": 10.0,
+      "constraint_modes_ff": [
+        0
+      ],
+      "predict_only_a_lin_h": {
+        "mean": 0.7407221516005342,
+        "rms": 1.0896418551913793,
+        "p95": 2.22108494084554,
+        "max": 5.112515738006583
+      },
+      "full_filter_a_lin_h": {
+        "mean": 0.40123375958861895,
+        "rms": 0.65233417744515,
+        "p95": 1.5166605679324643,
+        "max": 5.044646589210784
+      },
+      "a_lin_h_corr_po_ff": 0.8422335663312438,
+      "predict_only_vel_h": {
+        "mean": 1.371556292549236,
+        "rms": 2.275464594460165,
+        "p95": 4.8816294363423625,
+        "max": 5.280274431952282
+      },
+      "full_filter_vel_h": {
+        "mean": 0.02278753907610688,
+        "rms": 0.03897978607890155,
+        "p95": 0.10528743497190497,
+        "max": 0.12357297552863247
+      },
+      "gps_speed_mps": {
+        "mean": 0.5373,
+        "rms": 0.5628484099276994,
+        "p95": 0.803,
+        "max": 0.803
+      }
+    },
+    "late_static_10_30s_zupt": {
+      "label": "late_static_zupt",
+      "t0_s": 10.0,
+      "t1_s": 30.0,
+      "constraint_modes_ff": [
+        0
+      ],
+      "predict_only_a_lin_h": {
+        "mean": 0.6918507989996625,
+        "rms": 0.8290793440523256,
+        "p95": 1.544608575751424,
+        "max": 2.264138936640152
+      },
+      "full_filter_a_lin_h": {
+        "mean": 0.5832138394029004,
+        "rms": 0.7059569631376187,
+        "p95": 1.3953443412447766,
+        "max": 2.2955711544295463
+      },
+      "a_lin_h_corr_po_ff": 0.6447578209014064,
+      "predict_only_vel_h": {
+        "mean": 4.788358383185614,
+        "rms": 5.102439306782302,
+        "p95": 6.533685740316569,
+        "max": 6.563299622917272
+      },
+      "full_filter_vel_h": {
+        "mean": 0.03769595002060643,
+        "rms": 0.04798022092700528,
+        "p95": 0.10139617275821103,
+        "max": 0.1683635980846216
+      },
+      "gps_speed_mps": {
+        "mean": 5.488889593238246,
+        "rms": 5.634830438981259,
+        "p95": 6.606,
+        "max": 6.606
+      }
+    },
+    "nhc_cruise_34_60s": {
+      "label": "nhc_cruise",
+      "t0_s": 34.0,
+      "t1_s": 60.0,
+      "constraint_modes_ff": [
+        0,
+        1
+      ],
+      "predict_only_a_lin_h": {
+        "mean": 1.2243641942440653,
+        "rms": 1.4209477365008376,
+        "p95": 2.4846998257335327,
+        "max": 3.3635616235380614
+      },
+      "full_filter_a_lin_h": {
+        "mean": 1.1608921890152897,
+        "rms": 1.3395861215576839,
+        "p95": 2.4880727167920718,
+        "max": 3.55395864064412
+      },
+      "a_lin_h_corr_po_ff": 0.649694841325326,
+      "predict_only_vel_h": {
+        "mean": 10.251601391114043,
+        "rms": 11.157899049162204,
+        "p95": 14.748668918765986,
+        "max": 15.667071846092142
+      },
+      "full_filter_vel_h": {
+        "mean": 1.6606010537141633,
+        "rms": 2.4806025032968106,
+        "p95": 6.471623930836391,
+        "max": 7.4974508550704755
+      },
+      "gps_speed_mps": {
+        "mean": 6.470493210862619,
+        "rms": 6.829978869179209,
+        "p95": 9.606,
+        "max": 9.618
+      }
+    },
+    "first_60s_end": {
+      "predict_only_vel_h_end": 15.667071846092142,
+      "full_filter_vel_h_end": 0.3599837426565261,
+      "predict_only_drift_h_est_m": NaN
+    }
+  },
+  "gnss_updates": {
+    "updates_total_0_60s": 57,
+    "accepted": 7,
+    "rejected": 50,
+    "accept_rate_pct": 12.280701754385966,
+    "innov_h_m": {
+      "mean": 132.67226884210527,
+      "rms": 147.41508709168377,
+      "p95": 213.9123748,
+      "max": 214.781082
+    },
+    "nis": {
+      "mean": 602.1616480701755,
+      "rms": 873.2397409720157,
+      "p95": 1598.4736568,
+      "max": 1619.036499
+    },
+    "first_reject": {
+      "t_s": 11.268433571,
+      "gnss_accepted": 0,
+      "innov_h_m": 33.344524,
+      "nis": 29.658861,
+      "vel_h_pre_gps_mps": 0.040719238033145956,
+      "gps_speed_at_imu": 2.638
+    },
+    "motion_2_10s": {
+      "updates": 5,
+      "accepted": 5,
+      "corr_innov_h_vs_vel_h_pre": -0.053112708840709004,
+      "corr_innov_h_vs_gps_speed": -0.7544698383129431
+    }
+  },
+  "nhc_zupt": {
+    "static_zupt_phase_0_2s": {
+      "vel_h": {
+        "mean": 0.0005487358751870748,
+        "rms": 0.0006506522145876598,
+        "p95": 0.0010947466341600888,
+        "max": 0.00111319809557868
+      },
+      "samples": 46
+    },
+    "nhc_active_cruise_34_60s": {
+      "samples": 2504,
+      "vel_h_ned": {
+        "mean": 1.7070159274858574,
+        "rms": 2.516933268733328,
+        "p95": 6.522026585477102,
+        "max": 7.4974508550704755
+      },
+      "v_body_lateral_abs": {
+        "mean": 0.38251944976661173,
+        "rms": 0.5261038555897428,
+        "p95": 1.2231363887529267,
+        "max": 1.701867569079977
+      },
+      "v_body_vertical_abs": {
+        "mean": 0.08676347591003591,
+        "rms": 0.13215735717100255,
+        "p95": 0.3593314332773933,
+        "max": 0.46086374983621947
+      }
+    },
+    "nhc_onset_motion_2_10s": {
+      "samples": 0,
+      "note": "ZUPT activo (t<=30s): NHC no aplica en arranque dinamico"
+    },
+    "nhc_all_0_60s": {
+      "samples": 2901,
+      "v_body_lateral_abs": {
+        "mean": 0.37198474377961877,
+        "rms": 0.502806760449329,
+        "p95": 1.1467656520388716,
+        "max": 1.701867569079977
+      },
+      "v_body_vertical_abs": {
+        "mean": 0.08388286563619737,
+        "rms": 0.1260932222323183,
+        "p95": 0.329745502068963,
+        "max": 0.46086374983621947
+      }
+    }
+  },
+  "diagnosis": {
+    "verdict": "CORRECTION_INSUFFICIENT",
+    "summary": "Propagacion |a_lin,h| correlacionada PO/FF (r=0.84) en arranque. ZUPT anula |v|_h en FF durante t<=30s (FF=0.023 vs PO=1.372 m/s en 2-10s). En crucero NHC 34-60s: |v|_h FF=1.66 vs GPS=6.47 vs PO=10.25 m/s. GNSS accept 0-60s=12.3%; primer rechazo t~11s con innov_h~33m. Deriva H@60s: PO~421m vs FF~182m — correccion posicion parcial, velocidad no acoplada a GPS.",
+    "key_findings": {
+      "onset_a_lin_h_corr": 0.8422335663312438,
+      "zupt_suppresses_vel_2_10s": true,
+      "cruise_vel_h_po_mps": 10.251601391114043,
+      "cruise_vel_h_ff_mps": 1.6606010537141633,
+      "cruise_gps_speed_mps": 6.470493210862619,
+      "gnss_accept_rate_pct_0_60s": 12.280701754385966,
+      "gnss_first_reject_t_s": 11.268433571,
+      "nhc_cruise_v_body_lateral_mean_mps": 0.38251944976661173,
+      "drift_h_60s_po_m": 421.0,
+      "drift_h_60s_ff_m": 182.0,
+      "interpretation": "predict() produce |a_lin,h| similar en espiritu (r~0.84+). Full filter: ZUPT fuerza v~0 en fase estatica; GNSS rechaza ~88% por NIS (innov posicion crece); NHC acota v_y/v_z body pero no v_x ni |v| vs GPS speed."
+    }
+  },
+  "artifacts": {
+    "predict_only_h8": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_predict_only_h8.csv",
+    "full_filter_h8": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_full_filter_h8.csv",
+    "full_filter_h7": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_full_filter_h7.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_correction_efficacy_analysis.png"
+  }
+}

@@ -15,6 +15,12 @@ public:
     void initialize(const NaviState &initial_state) override;
     void predict(double dt_s, const float accel_mps2[3], const float gyro_rads[3]) override;
     void update_gnss(const double pos_ned_m[3], const float std_dev_m[3]) override;
+    void update_gnss_with_velocity(
+        const double pos_ned_m[3],
+        const float std_dev_m[3],
+        float speed_mps,
+        float course_deg,
+        bool has_velocity_obs);
     void apply_constraints(
         bool is_stopping,
         float lateral_std_mps,

@@ -35,5 +35,17 @@
       "tunnel_gps_rejections": 1,
       "tunnel_nis_peak": 49.12
     }
+  },
+  {
+    "commit_hash": "16d6ccc",
+    "commit_message": "[B Intelligent] ImplementaciÃ³n de PolÃ­tica G y ArnÃ©s de DiagnÃ³stico Completo para NHC",
+    "timestamp": "2026-07-16T11:26:07+02:00",
+    "metrics": {
+      "slalom_max_lateral_drift_m": 42.725,
+      "tunnel_exit_drift_m": 316.11,
+      "tunnel_zupt_max_speed_mps": 1.418,
+      "tunnel_gps_rejections": 1,
+      "tunnel_nis_peak": 10798.05
+    }
   }
 ]

@@ -1,0 +1,247 @@
+{
+  "k_ticks_234": [
+    {
+      "tick": 2,
+      "imu_seq": 412,
+      "timestamp_s": 5.682456493,
+      "hph_yy": 0.3430495262,
+      "hph_zz": 0.8045353889,
+      "r_y_m2": 0.25,
+      "r_z_m2": 1.0,
+      "s_yy": 0.5930495262,
+      "s_zz": 1.804535389,
+      "k_scalar_y_hph_over_s": 0.5784500468251113,
+      "k_scalar_z_hph_over_s": 0.44584073764850063,
+      "k_y_max_logged": 0.117567,
+      "k_z_max_logged": 4.639388,
+      "k_vel_max_logged": 2.343858,
+      "nis_total": 3.225168467,
+      "innov_norm_mps": 2.412447,
+      "delta_P_vv": -9.921260834,
+      "dx_norm": 12.547896102941598,
+      "dP_norm": 44.5825116037167,
+      "cov_consume_ratio_dP_over_dx": 3.5529869898480624,
+      "P_pre_vv": 61.41658401
+    },
+    {
+      "tick": 3,
+      "imu_seq": 413,
+      "timestamp_s": 5.692540646,
+      "hph_yy": 0.01065078378,
+      "hph_zz": 1.22794199,
+      "r_y_m2": 0.25,
+      "r_z_m2": 1.0,
+      "s_yy": 0.2606507838,
+      "s_zz": 2.22794199,
+      "k_scalar_y_hph_over_s": 0.04086227413376858,
+      "k_scalar_z_hph_over_s": 0.5511552794065343,
+      "k_y_max_logged": 0.196366,
+      "k_z_max_logged": 5.335656,
+      "k_vel_max_logged": 3.546614,
+      "nis_total": 0.03215044364,
+      "innov_norm_mps": 0.267587,
+      "delta_P_vv": -28.04442024,
+      "dx_norm": 1.7158323557118975,
+      "dP_norm": 80.92502904763101,
+      "cov_consume_ratio_dP_over_dx": 47.163715486677184,
+      "P_pre_vv": 51.94886398
+    },
+    {
+      "tick": 4,
+      "imu_seq": 414,
+      "timestamp_s": 5.702624321,
+      "hph_yy": 0.006388515234,
+      "hph_zz": 0.5561444759,
+      "r_y_m2": 0.25,
+      "r_z_m2": 1.0,
+      "s_yy": 0.2563885152,
+      "s_zz": 1.556144476,
+      "k_scalar_y_hph_over_s": 0.02491732216698297,
+      "k_scalar_z_hph_over_s": 0.3573861453823897,
+      "k_y_max_logged": 0.129128,
+      "k_z_max_logged": 3.400935,
+      "k_vel_max_logged": 2.326664,
+      "nis_total": 0.001368540223,
+      "innov_norm_mps": 0.045971,
+      "delta_P_vv": -8.429319382,
+      "dx_norm": 0.18965249797436393,
+      "dP_norm": 23.16849467214658,
+      "cov_consume_ratio_dP_over_dx": 122.16287641662572,
+      "P_pre_vv": 24.12205887
+    }
+  ],
+  "k_saturation_verdict": "multivariate_geometry_not_scalar_saturation",
+  "predict_gap": {
+    "n_predict_ticks": 38,
+    "sum_delta_P_vv_predict": 3.189932581000007,
+    "sum_delta_P_pv_predict": 5.004257907000011,
+    "sum_delta_P_aa_predict": 0.005915272969999993,
+    "Q_vel_frob_white_noise_only_est": 0.0002669269563007828,
+    "P_vv_predict_over_white_Q_ratio": 11950.582381067115,
+    "interpretation": "Observed +3.19 >> white Q frob ~0.0003 (ratio 11951x) \u2192 growth from F*P cross-terms (att/bias/pos\u2192vel), not Q alone."
+  },
+  "pvv_gap_tail": {
+    "last_n_ticks_P_vv": [
+      2.686403513,
+      2.651988029,
+      2.621463776,
+      2.594453096,
+      2.573591471,
+      2.552960396,
+      2.535190344,
+      2.520430326,
+      2.507169008,
+      2.496057034
+    ],
+    "tail_slope_per_tick": -0.020790533569697123,
+    "tail_mean": 2.5739706993,
+    "tail_std": 0.06062015475830271,
+    "verdict": "soft_floor_in_gap"
+  },
+  "pvv_post_fix3": {
+    "extend_s": 4.0,
+    "P_vv_at_fix3_pre": 2.476805449,
+    "P_vv_at_extend_end": 3.08130765,
+    "P_vv_min_in_window": 0.9932098389,
+    "P_vv_max_in_window": 5.336217403,
+    "P_vv_range_in_window": 4.3430075641,
+    "nhc_post_samples": 397,
+    "verdict": "oscillating_equilibrium",
+    "series_sample": [
+      {
+        "t": 6.053678513,
+        "type": "gnss",
+        "P_vv": 2.476805449
+      },
+      {
+        "t": 6.247162819,
+        "type": "predict",
+        "P_vv": 2.810875893
+      },
+      {
+        "t": 6.438759804,
+        "type": "nhc",
+        "P_vv": 3.305506945
+      },
+      {
+        "t": 6.640440464,
+        "type": "predict",
+        "P_vv": 3.9539814
+      },
+      {
+        "t": 6.832037449,
+        "type": "nhc",
+        "P_vv": 4.88846159
+      },
+      {
+        "t": 7.023634911,
+        "type": "nhc",
+        "P_vv": 4.417683601
+      },
+      {
+        "t": 7.225316048,
+        "type": "predict",
+        "P_vv": 1.995484591
+      },
+      {
+        "t": 7.416913033,
+        "type": "nhc",
+        "P_vv": 1.234931469
+      },
+      {
+        "t": 7.61859417,
+        "type": "predict",
+        "P_vv": 1.143158555
+      },
+      {
+        "t": 7.810191631,
+        "type": "nhc",
+        "P_vv": 1.029168963
+      },
+      {
+        "t": 8.011872292,
+        "type": "predict",
+        "P_vv": 1.010882497
+      },
+      {
+        "t": 8.20347023,
+        "type": "nhc",
+        "P_vv": 1.000800967
+      },
+      {
+        "t": 8.405151367,
+        "type": "predict",
+        "P_vv": 1.055082202
+      },
+      {
+        "t": 8.596748352,
+        "type": "predict",
+        "P_vv": 1.112178683
+      },
+      {
+        "t": 8.788346291,
+        "type": "nhc",
+        "P_vv": 1.196888089
+      },
+      {
+        "t": 8.990027428,
+        "type": "predict",
+        "P_vv": 1.340671062
+      },
+      {
+        "t": 9.181625366,
+        "type": "nhc",
+        "P_vv": 1.515877604
+      },
+      {
+        "t": 9.383306503,
+        "type": "predict",
+        "P_vv": 1.783289909
+      },
+      {
+        "t": 9.574904442,
+        "type": "predict",
+        "P_vv": 2.089890957
+      },
+      {
+        "t": 9.766501427,
+        "type": "nhc",
+        "P_vv": 2.446435213
+      },
+      {
+        "t": 9.968182564,
+        "type": "predict",
+        "P_vv": 2.894133806
+      }
+    ]
+  },
+  "f1_cliff_compare": {
+    "baseline_top3_share": 0.7400447079294687,
+    "f1c_top3_share": 0.9569927390511825,
+    "baseline_cliff_tick": 3,
+    "f1c_cliff_tick": 26,
+    "baseline_max_abs_d_nhc": 28.044420239999997,
+    "f1c_max_abs_d_nhc": 36.91189957,
+    "baseline_first6_abs_d_nhc": [
+      1.5935859699999995,
+      9.921260830000001,
+      28.044420239999997,
+      8.42931938,
+      4.035545350000001,
+      2.375820159
+    ],
+    "f1c_first6_abs_d_nhc": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.4832191400000028
+    ],
+    "f1c_early_ticks_zero_nhc": 8,
+    "verdict": "frequency_spreads_early_cliffs"
+  },
+  "overall": {
+    "dominant_mechanism": "multivariate_NHC_Joseph + predict_cross_terms; NOT scalar K saturation; floor ~2.5 at predict\u2194NHC equilibrium; F1 decimation reduces cliff magnitude but event persists early"
+  }
+}

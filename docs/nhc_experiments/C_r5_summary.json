@@ -1,0 +1,35 @@
+{
+  "experiment_id": "C_r5",
+  "drift_exit_m": 1051.3282,
+  "drift_final_m": 1164.9401,
+  "nhc_updates": 6001,
+  "summary_all": {
+    "sample_count": 6001,
+    "mean_innov_y_mps": -0.04462106,
+    "mean_innov_z_mps": -0.07666669,
+    "std_innov_y_mps": 0.32952344,
+    "std_innov_z_mps": 1.46963441,
+    "mean_k_y": 0.50661951,
+    "mean_k_z": 1.02063608,
+    "mean_v_body_y_mps": 0.04462106,
+    "mean_v_body_z_mps": 0.07666669,
+    "frac_same_sign_corr": 0.17897017,
+    "mean_nis": 13.98385811,
+    "max_nis": 19102.57031250
+  }
+,
+  "summary_outage_const_vel": {
+    "sample_count": 4500,
+    "mean_innov_y_mps": -0.05466608,
+    "mean_innov_z_mps": -0.01330354,
+    "std_innov_y_mps": 0.37236261,
+    "std_innov_z_mps": 1.67725480,
+    "mean_k_y": 0.62943274,
+    "mean_k_z": 1.24333096,
+    "mean_v_body_y_mps": 0.05466608,
+    "mean_v_body_z_mps": 0.01330354,
+    "frac_same_sign_corr": 0.14555556,
+    "mean_nis": 17.59514236,
+    "max_nis": 19102.57031250
+  }
+}

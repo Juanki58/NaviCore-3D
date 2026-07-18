@@ -1,0 +1,42 @@
+{
+  "experiment": "H9_predict_only_isolation",
+  "description": "60 s IMU predict only, sin GNSS update, ZUPT ni NHC",
+  "predict_only_end_s": 60.0,
+  "samples": 5847,
+  "predict_only_phase": {
+    "label": "predict_only_60s",
+    "samples": 5847.0,
+    "t_start_s": 1.038665771,
+    "t_end_s": 59.996906281,
+    "a_lin_h_mean_mps2": 0.9369008960966064,
+    "a_lin_h_std_mps2": 0.6547416712705725,
+    "a_lin_n_mean_mps2": -0.12598703659996582,
+    "a_lin_e_mean_mps2": -0.2266800610569523,
+    "a_lin_d_mean_mps2": -0.005325299811869337,
+    "a_lin_along_mean_mps2": 0.18060223314500903,
+    "a_lin_lateral_mean_mps2": -0.023040985387110975,
+    "a_body_mag_mean_mps2": 9.8673937654827,
+    "a_nav_d_mean_mps2": 9.801324859928169,
+    "vel_h_mean_mps": 5.8354377575701815,
+    "gps_speed_mean_mps": 4.875629382589361,
+    "vel_minus_gps_mean_mps": 0.9598083749808203,
+    "a_lin_h_median_mps2": 0.7955611815347705
+  },
+  "implied_tilt_from_mean_a_lin_deg": 5.48224569156947,
+  "g_sin_3deg_mps2": 0.5132404052898651,
+  "baseline_comparison": {
+    "h9_1_mean_mps2": 0.516322870821727,
+    "h9_1_median_mps2": 0.4331415,
+    "h8_static_mean_mps2": 0.5163236440561915
+  },
+  "verdict": "propagation_only",
+  "interpretation": "a_lin_h persiste sin GNSS/ZUPT/NHC: el leak horizontal nace en predict (R_bn, gravedad, montaje o bias en propagacion).",
+  "thresholds_mps2": {
+    "persist": 0.35,
+    "gone": 0.15
+  },
+  "artifacts": {
+    "audit_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9_predict_only_audit.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9_predict_only_analysis.png"
+  }
+}

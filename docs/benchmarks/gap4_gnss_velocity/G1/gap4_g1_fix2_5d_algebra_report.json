@@ -1,0 +1,130 @@
+{
+  "timestamp_s": 5.664433479,
+  "P_pre_consistency_G0_vs_G1": {
+    "P_pv_frob_G0": 140.0564575,
+    "P_pv_frob_G1": 140.0564575,
+    "match": true
+  },
+  "check1_S_pos_vel_cross": {
+    "S_pos_vel_NE": [
+      [
+        140.02306087936913,
+        0.03673900427236894
+      ],
+      [
+        0.03054564505787652,
+        0.005185081179573082
+      ],
+      [
+        -2.2439714257146686,
+        -0.0005895020204160149
+      ]
+    ],
+    "P_pos_vel_NE": [
+      [
+        140.02306087936913,
+        0.03673900427236894
+      ],
+      [
+        0.03054564505787652,
+        0.005185081179573082
+      ],
+      [
+        -2.2439714257146686,
+        -0.0005895020204160149
+      ]
+    ],
+    "frob_error_S_vs_P": 0.0,
+    "pass_S_equals_P_block": true,
+    "P_vel_pos_NN_from_G0_kblock": 140.02305603,
+    "P_pos_vel_NN": 140.02306087936913,
+    "sign_consistent_with_Phi_pos_vel_positive": true,
+    "GAP3_P_pv_frob": 140.0564575,
+    "reconstructed_P_pv_frob": 140.0564575,
+    "GAP3_frob_match_pct": 100.0
+  },
+  "check2_K_5D_and_Joseph": {
+    "K_vel_vel_block_G1_reconstructed": [
+      [
+        0.962813694485729,
+        -0.00013533347895469826
+      ],
+      [
+        -0.0001353334789546976,
+        0.003701926112851449
+      ]
+    ],
+    "K_vel_vel_diag_G1": [
+      0.962813694485729,
+      0.003701926112851449
+    ],
+    "k_vel_max_logged_G1": 0.964973,
+    "K_diag_matches_logged_G1": true,
+    "S_5x5": [
+      [
+        626.027542374,
+        0.049725723,
+        -3.766936541,
+        140.02306087936913,
+        0.03673900427236894
+      ],
+      [
+        0.049725723,
+        392.812243483,
+        -0.000789209,
+        0.03054564505787652,
+        0.005185081179573082
+      ],
+      [
+        -3.766936541,
+        -0.000789209,
+        397.738031647,
+        -2.2439714257146686,
+        -0.0005895020204160149
+      ],
+      [
+        140.02306087936913,
+        0.03054564505787652,
+        -2.2439714257146686,
+        91.82995605,
+        0.0
+      ],
+      [
+        0.03673900427236894,
+        0.005185081179573082,
+        -0.0005895020204160149,
+        0.0,
+        2.258363624103
+      ]
+    ],
+    "nis_logged_G1_audit_csv_3D_only": 3.157499,
+    "nis_reconstructed_5D": 3.9158632523930224,
+    "note_nis": "CSV nis_full is pos-only 3D; 5D gate uses filter-internal NIS",
+    "Joseph_P_vv_pre_frob": 89.59877777,
+    "Joseph_P_vv_post_observed": 2.171681881,
+    "Joseph_P_vv_post_predicted": 2.166572483226811,
+    "Joseph_rel_error_vs_post": 0.002352737672073935,
+    "Joseph_pass_5pct": true
+  },
+  "check3_K_vel_vel_G1_vs_G2": {
+    "K_vel_vel_diag_G2_vel_only": [
+      0.9754981914749593,
+      0.0037034001140192597
+    ],
+    "k_vel_max_logged_G2": 0.975498,
+    "K_diag_matches_logged_G2": true,
+    "G1_diag_max": 0.962813694485729,
+    "G2_diag_max": 0.9754981914749593,
+    "G1_le_G2": true,
+    "same_sign": true
+  },
+  "truth_terrain_velocity": {
+    "G1_err_pre_mps": 0.40475401630832897,
+    "G1_err_post_mps": 0.4384295108219818,
+    "G1_delta_err_mps": 0.033675494513652815,
+    "G2_err_pre_mps": 0.40475401630832897,
+    "G2_err_post_mps": 0.38644038399062913,
+    "G2_delta_err_mps": -0.018313632317699835
+  },
+  "verdict": "ALGEBRA_CONSISTENT \u2014 velocity worsening in G1 is coupling physics, not H/Joseph bug"
+}

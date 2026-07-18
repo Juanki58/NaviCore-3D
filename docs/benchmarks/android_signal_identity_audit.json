@@ -1,0 +1,83 @@
+{
+  "dataset": "C:\\NaviCore-3D\\data\\real_run",
+  "metadata": {
+    "app": "Sensor Logger 1.61.0",
+    "platform": "android 36",
+    "device": "CPH2791",
+    "sensors_recorded": "Accelerometer|Gravity|...|TotalAcceleration|AccelerometerUncalibrated"
+  },
+  "column_order": "x,y,z as in CSV (Android device frame)",
+  "units_assumption_tests": {
+    "uncalibrated_equals_total_acceleration": {
+      "label": "uncal - total",
+      "n": 32996,
+      "norm_mean_mps2": 0.06712490080956858,
+      "norm_median_mps2": 0.0,
+      "norm_p95_mps2": 0.3470930527552922,
+      "norm_max_mps2": 2.1152283130171954,
+      "component_std_mps2": [
+        0.10687376771690073,
+        0.03584289923654897,
+        0.09245193911216205
+      ]
+    },
+    "identity_gravity_plus_linear_mps2": {
+      "label": "uncal - (gravity + linear_as_mps2)",
+      "n": 32996,
+      "norm_mean_mps2": 0.06789210303655345,
+      "norm_median_mps2": 0.0011375648195683834,
+      "norm_p95_mps2": 0.3478609006623675,
+      "norm_max_mps2": 2.1147306103662777,
+      "component_std_mps2": [
+        0.10709942052878138,
+        0.035859347165141144,
+        0.09272710365377657
+      ]
+    },
+    "identity_gravity_plus_linear_in_g": {
+      "label": "uncal - (gravity + linear_g * 9.80665)",
+      "n": 32996,
+      "norm_mean_mps2": 6.754441895530101,
+      "norm_median_mps2": 6.046198494668159,
+      "norm_p95_mps2": 14.303450988043558,
+      "norm_max_mps2": 50.46389674398999,
+      "component_std_mps2": [
+        5.301667071812246,
+        2.8936088674935476,
+        5.1135495812266765
+      ]
+    }
+  },
+  "gravity_vector_norm": {
+    "mean_mps2": 9.806648977615097,
+    "std_mps2": 5.296911898262275e-06,
+    "median_mps2": 9.806649699154093
+  },
+  "regimes": {
+    "static_0_30s": {
+      "n": 2962,
+      "mean_mps2": 0.16681659126719237,
+      "median_mps2": 0.13422571178504322,
+      "p95_mps2": 0.43869291034086644
+    },
+    "motion_2_10s": {
+      "n": 794,
+      "mean_mps2": 0.11843717509269643,
+      "median_mps2": 0.05026370079924989,
+      "p95_mps2": 0.44549039176165217
+    },
+    "cruise_11_25s": {
+      "n": 1389,
+      "mean_mps2": 0.22798958715447679,
+      "median_mps2": 0.20427415399230564,
+      "p95_mps2": 0.4765098229015017
+    },
+    "full": {
+      "n": 32996,
+      "mean_mps2": 0.06789210303655345,
+      "median_mps2": 0.0011375648195683834,
+      "p95_mps2": 0.3478609006623675
+    }
+  },
+  "best_identity_model": "identity_gravity_plus_linear_mps2"
+}

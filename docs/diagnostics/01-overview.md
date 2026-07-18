@@ -11,6 +11,10 @@ El diagnóstico no busca un “bug clásico” (signo invertido, matriz mal pues
 
 Cada experimento **H*n*** deja artefactos reproducibles (`*.json`, `*.csv`, `*.png`).
 
+### Validez de runs full-filter (H9 → GAP-3.7)
+
+El replay aplicó ZUPT con **`t ≤ 30 s` OR `gps_speed ≤ 0.1 m/s`** (sin criterio IMU). Todos los experimentos **full-filter** de ese arco están **condicionados** por ese mecanismo hasta repetirse con `--constraint-policy imu_stationary`. Los runs **predict-only** (H9) no están afectados. Regla completa: [11-replay-zupt-provenance.md](11-replay-zupt-provenance.md).
+
 ## Cadena lógica H0 → H9d
 
 ```mermaid

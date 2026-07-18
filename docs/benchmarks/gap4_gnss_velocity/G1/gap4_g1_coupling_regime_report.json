@@ -1,0 +1,152 @@
+{
+  "experiment": "GAP-4 G1 pos+vel coupling \u2014 multi-fix regime comparison",
+  "note_g1_accepts": "G1 pos+vel yielded only 8 accepts (gps#1\u20137 + #37 sin speed). fix#7 @ t\u224810.6s is the latest accept with speed before long reject streak; P_vv already in stationary band (~1.4 vs ~90 at fix#2).",
+  "fixes": [
+    {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "regime": {
+        "P_vv_frob_pre": 89.59877777,
+        "P_pv_frob_pre": 140.0564575,
+        "P_pv_over_P_vv": 1.5631514289126223,
+        "innov_h_m": 29.260845,
+        "dt_since_prev_accept_s": null
+      },
+      "check1_S_pos_vel": {
+        "frob_error_S_vs_P": 0.0,
+        "P_pos_vel_NN": 140.02306087936913,
+        "pass": true
+      },
+      "check2_K_Joseph": {
+        "K_vel_vel_diag": [
+          0.962813694485729,
+          0.003701926112851449
+        ],
+        "k_vel_max_logged": 0.964973,
+        "K_match": true,
+        "Joseph_P_vv_rel_error": 0.002352737672073935,
+        "Joseph_pass": true
+      },
+      "delta_v_decomposition_NE": {
+        "y_pos_norm_m": 39.644925721049376,
+        "y_vel_NE_mps": [
+          -0.115804,
+          0.387835
+        ],
+        "dv_from_pos_NE_mps": [
+          -0.24472804764493633,
+          -0.0026618153216863083
+        ],
+        "dv_from_vel_NE_mps": [
+          -0.11155016413603576,
+          0.0014514086721746115
+        ],
+        "dv_total_NE_mps": [
+          -0.3562782117809721,
+          -0.0012104066495116968
+        ],
+        "dv_logged_NE_mps": [
+          -0.091434,
+          -0.001477
+        ],
+        "dv_recon_error_NE_mps": 0.2648443459579587,
+        "magnitude_pos_mps": 0.24474252300102856,
+        "magnitude_vel_mps": 0.11155960606738526,
+        "magnitude_total_mps": 0.35628026787082157,
+        "cross_term_fraction": 0.6868960442109382,
+        "cross_dominates": true
+      },
+      "truth_terrain": {
+        "err_vel_pre_mps": 0.40475401630832897,
+        "err_vel_post_mps": 0.4384295108219818,
+        "delta_err_vel_mps": 0.033675494513652815,
+        "vel_improves": false
+      },
+      "check3_vs_G2_vel_only": {
+        "K_vel_vel_diag_G2": [
+          0.9754981914749593,
+          0.0037034001140192597
+        ],
+        "k_vel_max_G2": 0.975498,
+        "G1_diag_max": 0.962813694485729,
+        "G2_diag_max": 0.9754981914749593,
+        "G1_le_G2": true,
+        "G2_delta_err_vel_mps": -0.018313632317699835
+      }
+    },
+    {
+      "gps_index": 7,
+      "timestamp_s": 10.553059578,
+      "regime": {
+        "P_vv_frob_pre": 1.371244311,
+        "P_pv_frob_pre": 0.7244567871,
+        "P_pv_over_P_vv": 0.5283207239501174,
+        "innov_h_m": 23.235012,
+        "dt_since_prev_accept_s": null
+      },
+      "check1_S_pos_vel": {
+        "frob_error_S_vs_P": 0.0,
+        "P_pos_vel_NN": 0.6212172761319935,
+        "pass": true
+      },
+      "check2_K_Joseph": {
+        "K_vel_vel_diag": [
+          0.3702675646337068,
+          0.06352474851242017
+        ],
+        "k_vel_max_logged": 0.370059,
+        "K_match": true,
+        "Joseph_P_vv_rel_error": 0.023341319635633566,
+        "Joseph_pass": true
+      },
+      "delta_v_decomposition_NE": {
+        "y_pos_norm_m": 32.74492322189457,
+        "y_vel_NE_mps": [
+          -0.343717,
+          -1.079381
+        ],
+        "dv_from_pos_NE_mps": [
+          -0.09109704787248342,
+          -0.01799002374474464
+        ],
+        "dv_from_vel_NE_mps": [
+          -0.12717650960291593,
+          -0.06853850921924565
+        ],
+        "dv_total_NE_mps": [
+          -0.21827355747539934,
+          -0.08652853296399028
+        ],
+        "dv_logged_NE_mps": [
+          0.043299,
+          0.05525
+        ],
+        "dv_recon_error_NE_mps": 0.29752538586420213,
+        "magnitude_pos_mps": 0.09285641111640064,
+        "magnitude_vel_mps": 0.14446934567851127,
+        "magnitude_total_mps": 0.23479892016333212,
+        "cross_term_fraction": 0.39126141372275786,
+        "cross_dominates": false
+      },
+      "truth_terrain": {
+        "err_vel_pre_mps": 1.1327863699657585,
+        "err_vel_post_mps": 1.0672832069437121,
+        "delta_err_vel_mps": -0.0655031630220464,
+        "vel_improves": true
+      }
+    }
+  ],
+  "regime_comparison": {
+    "fix_a": 2,
+    "fix_b": 7,
+    "P_pv_ratio_b_over_a": 0.005172605390936723,
+    "P_vv_ratio_b_over_a": 0.015304274735978915,
+    "cross_fraction_a": 0.6868960442109382,
+    "cross_fraction_b": 0.39126141372275786,
+    "cross_dominates_a": true,
+    "cross_dominates_b": false,
+    "delta_err_vel_a": 0.033675494513652815,
+    "delta_err_vel_b": -0.0655031630220464,
+    "interpretation": "TRANSient_SPECIFIC \u2014 pos\u2192vel cross pull strong at post-gap fix#2 only; weaker in later accept (fix#7). Design question is startup-specific, not global R sweep."
+  }
+}

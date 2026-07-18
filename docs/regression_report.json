@@ -1,8 +1,8 @@
 {
   "suite": "NaviCore-3D",
-  "generated_at": "2026-07-15T19:15:15",
-  "result": "OK",
-  "failure_count": 0,
+  "generated_at": "2026-07-16T17:39:20",
+  "result": "FAIL",
+  "failure_count": 10,
   "tests": [
     {
       "name": "ins_ekf_gravity_compensation",
@@ -22,8 +22,25 @@
       }
     },
     {
-      "name": "super_tunnel_nhc_regression",
+      "name": "nhc_jacobian_fd",
       "passed": true,
+      "metrics": {
+        "nhc_jacobian_max_abs_err": { "value": 0.004194, "unit": "1" }
+      }
+    },
+    {
+      "name": "super_tunnel_nhc_isolation",
+      "passed": false,
+      "metrics": {
+        "dirty_nhc_off_exit_m": { "value": 303.641846, "unit": "m" },
+        "dirty_nhc_on_exit_m": { "value": 1327.363892, "unit": "m" },
+        "no_scale_nhc_off_exit_m": { "value": 296.769653, "unit": "m" },
+        "no_scale_nhc_on_exit_m": { "value": 1433.557495, "unit": "m" }
+      }
+    },
+    {
+      "name": "super_tunnel_nhc_regression",
+      "passed": false,
       "cases": [
         {
           "nhc_enabled": false,
@@ -31,13 +48,13 @@
             "start_s": 10.0,
             "end_s": 55.0
           },
-          "drift_exit_tunnel_m": 249.249634,
-          "drift_final_m": 0.016357,
+          "drift_exit_tunnel_m": 309.198090,
+          "drift_final_m": 2.073890,
           "nhc_updates": 0,
           "outage_rms": {
-            "position_m": 96.287491,
-            "velocity_mps": 6.643087,
-            "yaw_deg": 0.000009,
+            "position_m": 122.507492,
+            "velocity_mps": 8.087907,
+            "yaw_deg": 1.841893,
             "sample_count": 4500
           },
           "nhc_innovation_max_mps": {
@@ -52,26 +69,26 @@
             "start_s": 10.0,
             "end_s": 55.0
           },
-          "drift_exit_tunnel_m": 6.922852,
-          "drift_final_m": 0.017212,
+          "drift_exit_tunnel_m": 1383.552612,
+          "drift_final_m": 1491.822021,
           "nhc_updates": 6001,
           "outage_rms": {
-            "position_m": 2.504178,
-            "velocity_mps": 0.718582,
-            "yaw_deg": 0.000006,
+            "position_m": 874.869507,
+            "velocity_mps": 26.411856,
+            "yaw_deg": 102.332863,
             "sample_count": 4500
           },
           "nhc_innovation_max_mps": {
-            "lateral": 0.000003,
-            "vertical": 0.004042,
-            "norm": 0.004042
+            "lateral": 3.342239,
+            "vertical": 8.691887,
+            "norm": 8.693485
           }
         }
       ]
     },
     {
       "name": "TC_03_Constant_Slope",
-      "passed": true,
+      "passed": false,
       "case":         {
           "nhc_enabled": true,
           "scenario": {
@@ -83,26 +100,26 @@
             "start_s": 15.0,
             "end_s": 30.0
           },
-          "drift_exit_outage_m": 0.028504,
-          "drift_final_m": 0.000308,
+          "drift_exit_outage_m": 216.889114,
+          "drift_final_m": 479.729736,
           "nhc_updates": 4001,
           "outage_rms": {
-            "position_m": 0.016113,
-            "velocity_mps": 0.001744,
-            "velocity_d_mps": 0.000236,
-            "yaw_deg": 0.000005,
+            "position_m": 239.325165,
+            "velocity_mps": 44.605087,
+            "velocity_d_mps": 15.780543,
+            "yaw_deg": 43.703167,
             "sample_count": 1500
           },
           "nhc_innovation_max_mps": {
-            "lateral": 0.000003,
-            "vertical": 0.000001,
-            "norm": 0.000003
+            "lateral": 17.012003,
+            "vertical": 6.036708,
+            "norm": 18.051317
           }
         }
     },
     {
       "name": "TC_04_Aggressive_Slalom",
-      "passed": true,
+      "passed": false,
       "case":         {
           "nhc_enabled": true,
           "scenario": {
@@ -114,19 +131,19 @@
             "start_s": 10.0,
             "end_s": 20.0
           },
-          "drift_exit_outage_m": 0.439524,
-          "drift_final_m": 0.009010,
+          "drift_exit_outage_m": 113.398178,
+          "drift_final_m": 124.461998,
           "nhc_updates": 2501,
           "outage_rms": {
-            "position_m": 0.249084,
-            "velocity_mps": 0.048106,
-            "yaw_deg": 0.191149,
+            "position_m": 101.777405,
+            "velocity_mps": 17.390236,
+            "yaw_deg": 14.492553,
             "sample_count": 1000
           },
           "nhc_innovation_max_mps": {
-            "lateral": 0.000960,
-            "vertical": 0.000017,
-            "norm": 0.000960
+            "lateral": 2.296046,
+            "vertical": 1.461655,
+            "norm": 2.678683
           }
         }
     }

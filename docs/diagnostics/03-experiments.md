@@ -1,5 +1,7 @@
 # Catálogo de experimentos
 
+> **Proveniencia ZUPT:** Full-filter con replay por defecto (H3–H8, GAP-3.1–3.7) usó política `forced_time` hasta GAP-3.8. Esos resultados están **condicionados** — ver [11-replay-zupt-provenance.md](11-replay-zupt-provenance.md). Re-ejecutar con `--constraint-policy imu_stationary`.
+
 Configuración común para bloque H9+: **predict-only 60 s**, `--h9a-gravity-tilt-init`, `--mount-calibration calibration/imu_mount.json`.
 
 ## Fase A — Montaje y trayectoria

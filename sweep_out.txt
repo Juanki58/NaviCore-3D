@@ -1,0 +1,318 @@
+﻿{
+  "experiment": "GAP-4 alignment sweep \u2014 cos(dv_pos, err_pre) all k_block accepts",
+  "coverage_note": "k_block accepts with speed; counterfactual 5D pos+vel. Pool 45 includes same physical fixes across G0/G1/G2 replays \u2014 **G2-only (n=33) is primary**.",
+  "by_arm_counts": {
+    "G0": 6,
+    "G1": 6,
+    "G2": 33
+  },
+  "pool_summary_all_arms": {
+    "n": 45,
+    "n_finite_cos": 45,
+    "cos_mean": 0.03342999413264792,
+    "cos_median": 0.2756698791351994,
+    "cos_std": 0.7198284907771753,
+    "frac_cross_aids": 0.4222222222222222,
+    "frac_counterfactual_improves": 0.17777777777777778,
+    "corr_cos_vs_dt_since_accept": -0.22177052503887146,
+    "corr_cos_vs_dt_since_gnss": 0.014107401235560337,
+    "corr_cos_vs_y_pos": -0.35142414640020897,
+    "corr_cos_vs_P_pv": 0.06205382899345449,
+    "corr_cos_vs_counterfactual_delta_err": -0.10150141097258067,
+    "dt_since_accept_max_s": 153.00006866500001,
+    "first_accept_n": 1
+  },
+  "G2_summary_primary": {
+    "n": 33,
+    "n_finite_cos": 33,
+    "cos_mean": -0.05880358183918605,
+    "cos_median": 0.12535166638859388,
+    "cos_std": 0.7501775384335865,
+    "frac_cross_aids": 0.48484848484848486,
+    "frac_counterfactual_improves": 0.24242424242424243,
+    "corr_cos_vs_dt_since_accept": -0.2217020423969746,
+    "corr_cos_vs_dt_since_gnss": -0.023521959453079704,
+    "corr_cos_vs_y_pos": -0.3472598910429214,
+    "corr_cos_vs_P_pv": 0.024593787414616975,
+    "corr_cos_vs_counterfactual_delta_err": -0.07043469263746771,
+    "dt_since_accept_max_s": 153.00006866500001,
+    "first_accept_n": 1
+  },
+  "G2_gap_buckets": {
+    "gap_gt_1.0s": {
+      "n": 12,
+      "cos_mean": -0.40019900851312445,
+      "frac_aids": 0.75,
+      "frac_cf_improves": 0.25
+    },
+    "gap_le_1.0s": {
+      "n": 20,
+      "cos_mean": 0.1293280812546455,
+      "frac_aids": 0.35,
+      "frac_cf_improves": 0.25
+    },
+    "first_accept_no_dt": {
+      "n": 1,
+      "cos_mean": 0.27530827637144334
+    },
+    "gap_gt_2.0s": {
+      "n": 8,
+      "cos_mean": -0.1629047041735178,
+      "frac_aids": 0.625,
+      "frac_cf_improves": 0.375
+    },
+    "gap_le_2.0s": {
+      "n": 24,
+      "cos_mean": -0.038024535153185025,
+      "frac_aids": 0.4583333333333333,
+      "frac_cf_improves": 0.20833333333333334
+    },
+    "gap_gt_4.0s": {
+      "n": 5,
+      "cos_mean": -0.35360941891353914,
+      "frac_aids": 0.8,
+      "frac_cf_improves": 0.4
+    },
+    "gap_le_4.0s": {
+      "n": 27,
+      "cos_mean": -0.01658442157395883,
+      "frac_aids": 0.4444444444444444,
+      "frac_cf_improves": 0.2222222222222222
+    },
+    "gap_gt_5.0s": {
+      "n": 5,
+      "cos_mean": -0.35360941891353914,
+      "frac_aids": 0.8,
+      "frac_cf_improves": 0.4
+    },
+    "gap_le_5.0s": {
+      "n": 27,
+      "cos_mean": -0.01658442157395883,
+      "frac_aids": 0.4444444444444444,
+      "frac_cf_improves": 0.2222222222222222
+    },
+    "gap_gt_10.0s": {
+      "n": 3,
+      "cos_mean": -0.6881254432153906,
+      "frac_aids": 1.0,
+      "frac_cf_improves": 0.6666666666666666
+    },
+    "gap_le_10.0s": {
+      "n": 29,
+      "cos_mean": -0.005222418876496924,
+      "frac_aids": 0.4482758620689655,
+      "frac_cf_improves": 0.20689655172413793
+    }
+  },
+  "G2_contingency_cos_vs_cf_outcome": {
+    "cos_positive_n": 17,
+    "cos_negative_n": 16,
+    "cos_positive_frac_cf_improves": 0.0,
+    "cos_negative_frac_cf_improves": 0.5,
+    "hypothesis_cos_neg_helps": true
+  },
+  "gap_bucket_analysis_all_arms": {
+    "gap_gt_1.0s": {
+      "n": 20,
+      "cos_mean": -0.1518076106192663,
+      "frac_aids": 0.55,
+      "frac_cf_improves": 0.15
+    },
+    "gap_le_1.0s": {
+      "n": 24,
+      "cos_mean": 0.17771640299929328,
+      "frac_aids": 0.3333333333333333,
+      "frac_cf_improves": 0.20833333333333334
+    },
+    "first_accept_no_dt": {
+      "n": 1,
+      "cos_mean": 0.27530827637144334
+    },
+    "gap_gt_2.0s": {
+      "n": 10,
+      "cos_mean": -0.07518978751177435,
+      "frac_aids": 0.5,
+      "frac_cf_improves": 0.3
+    },
+    "gap_le_2.0s": {
+      "n": 34,
+      "cos_mean": 0.058262921609278116,
+      "frac_aids": 0.4117647058823529,
+      "frac_cf_improves": 0.14705882352941177
+    },
+    "gap_gt_4.0s": {
+      "n": 7,
+      "cos_mean": -0.17381533375675667,
+      "frac_aids": 0.5714285714285714,
+      "frac_cf_improves": 0.2857142857142857
+    },
+    "gap_le_4.0s": {
+      "n": 37,
+      "cos_mean": 0.06610131880797322,
+      "frac_aids": 0.40540540540540543,
+      "frac_cf_improves": 0.16216216216216217
+    },
+    "gap_gt_5.0s": {
+      "n": 5,
+      "cos_mean": -0.35360941891353914,
+      "frac_aids": 0.8,
+      "frac_cf_improves": 0.4
+    },
+    "gap_le_5.0s": {
+      "n": 39,
+      "cos_mean": 0.07684842446577969,
+      "frac_aids": 0.38461538461538464,
+      "frac_cf_improves": 0.15384615384615385
+    },
+    "gap_gt_10.0s": {
+      "n": 3,
+      "cos_mean": -0.6881254432153906,
+      "frac_aids": 1.0,
+      "frac_cf_improves": 0.6666666666666666
+    },
+    "gap_le_10.0s": {
+      "n": 41,
+      "cos_mean": 0.0803272631522899,
+      "frac_aids": 0.3902439024390244,
+      "frac_cf_improves": 0.14634146341463414
+    }
+  },
+  "preregistration_branch_suggestion": "MIXED \u2014 gap buckets inconclusive",
+  "highlight_fix2_fix7_fix56": [
+    {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "dt_since_prev_accept_s": 4.633755207,
+      "dt_since_prev_gnss_s": 4.633755207,
+      "innov_h_m": 29.260845,
+      "y_pos_norm_3d_m": 39.644925721049376,
+      "P_pv_frob_pre": 140.0564575,
+      "P_vv_frob_pre": 89.59877777,
+      "cross_term_fraction": 0.6868960442109382,
+      "cos_dv_pos_err_pre": 0.2756698791351994,
+      "proj_dv_pos_on_correction_mps": -0.06746814173493731,
+      "cross_aids_correction": false,
+      "counterfactual_delta_err_vel_mps": 0.20544188514705147,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": null,
+      "actual_vel_improves": null,
+      "arm": "G0"
+    },
+    {
+      "gps_index": 7,
+      "timestamp_s": 10.553059578,
+      "dt_since_prev_accept_s": 1.0084075929999994,
+      "dt_since_prev_gnss_s": 1.0084075929999994,
+      "innov_h_m": 20.092531,
+      "y_pos_norm_3d_m": 30.52851883391007,
+      "P_pv_frob_pre": 3.380354404,
+      "P_vv_frob_pre": 3.653060198,
+      "cross_term_fraction": 0.2000201820715669,
+      "cos_dv_pos_err_pre": 0.5265754350113665,
+      "proj_dv_pos_on_correction_mps": -0.11008782979603468,
+      "cross_aids_correction": false,
+      "counterfactual_delta_err_vel_mps": 0.8223287259295511,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": null,
+      "actual_vel_improves": null,
+      "arm": "G0"
+    },
+    {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "dt_since_prev_accept_s": 4.633755207,
+      "dt_since_prev_gnss_s": 4.633755207,
+      "innov_h_m": 29.260845,
+      "y_pos_norm_3d_m": 39.644925721049376,
+      "P_pv_frob_pre": 140.0564575,
+      "P_vv_frob_pre": 89.59877777,
+      "cross_term_fraction": 0.6868960442109382,
+      "cos_dv_pos_err_pre": 0.2756698791351994,
+      "proj_dv_pos_on_correction_mps": -0.06746814173493731,
+      "cross_aids_correction": false,
+      "counterfactual_delta_err_vel_mps": 0.20544188514705147,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": 0.033675494513652815,
+      "actual_vel_improves": false,
+      "arm": "G1"
+    },
+    {
+      "gps_index": 7,
+      "timestamp_s": 10.553059578,
+      "dt_since_prev_accept_s": 1.0084075929999994,
+      "dt_since_prev_gnss_s": 1.0084075929999994,
+      "innov_h_m": 23.235012,
+      "y_pos_norm_3d_m": 32.74492322189457,
+      "P_pv_frob_pre": 0.7244567871,
+      "P_vv_frob_pre": 1.371244311,
+      "cross_term_fraction": 0.39126141372275786,
+      "cos_dv_pos_err_pre": 0.48228369510371444,
+      "proj_dv_pos_on_correction_mps": -0.04478313306728732,
+      "cross_aids_correction": false,
+      "counterfactual_delta_err_vel_mps": 0.16150061754146927,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": -0.0655031630220464,
+      "actual_vel_improves": true,
+      "arm": "G1"
+    },
+    {
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "dt_since_prev_accept_s": null,
+      "dt_since_prev_gnss_s": 4.633755207,
+      "innov_h_m": 29.573021,
+      "y_pos_norm_3d_m": 40.293806254411685,
+      "P_pv_frob_pre": 140.0564575,
+      "P_vv_frob_pre": 89.59877777,
+      "cross_term_fraction": 0.973376202575113,
+      "cos_dv_pos_err_pre": 0.27530827637144334,
+      "proj_dv_pos_on_correction_mps": -0.9393519947726184,
+      "cross_aids_correction": false,
+      "counterfactual_delta_err_vel_mps": 3.2331256943038627,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": null,
+      "actual_vel_improves": null,
+      "arm": "G2"
+    },
+    {
+      "gps_index": 7,
+      "timestamp_s": 10.553059578,
+      "dt_since_prev_accept_s": 1.0084075929999994,
+      "dt_since_prev_gnss_s": 1.0084075929999994,
+      "innov_h_m": 24.259777,
+      "y_pos_norm_3d_m": 37.026529842599054,
+      "P_pv_frob_pre": 0.2220898122,
+      "P_vv_frob_pre": 0.8927123547,
+      "cross_term_fraction": 0.03513829251715889,
+      "cos_dv_pos_err_pre": -0.9979170045819844,
+      "proj_dv_pos_on_correction_mps": 0.031463480120736784,
+      "cross_aids_correction": true,
+      "counterfactual_delta_err_vel_mps": 0.7888258636300303,
+      "counterfactual_vel_improves": false,
+      "actual_delta_err_vel_mps": null,
+      "actual_vel_improves": null,
+      "arm": "G2"
+    },
+    {
+      "gps_index": 56,
+      "timestamp_s": 58.268447876,
+      "dt_since_prev_accept_s": 17.000007629000002,
+      "dt_since_prev_gnss_s": 1.0,
+      "innov_h_m": 207.361771,
+      "y_pos_norm_3d_m": 214.15300206049398,
+      "P_pv_frob_pre": 1.105299473,
+      "P_vv_frob_pre": 0.09483545274,
+      "cross_term_fraction": 0.9792772143999803,
+      "cos_dv_pos_err_pre": -0.36312024211855987,
+      "proj_dv_pos_on_correction_mps": 0.7993506781796854,
+      "cross_aids_correction": true,
+      "counterfactual_delta_err_vel_mps": -0.17081438900619927,
+      "counterfactual_vel_improves": true,
+      "actual_delta_err_vel_mps": null,
+      "actual_vel_improves": null,
+      "arm": "G2"
+    }
+  ]
+}
+
+Wrote C:\NaviCore-3D\docs\benchmarks\gap4_gnss_velocity\G1\gap4_alignment_sweep_report.json (45 rows)

@@ -1,0 +1,50 @@
+{
+  "audit_end_s": 60.0,
+  "gnss_fix_count": 57,
+  "accept_frac": 0.12280701754385964,
+  "gap3_1_nis_anatomy": {
+    "mean_innov_h_m": 132.67226884210527,
+    "mean_nis_full": 591.627061263158,
+    "mean_nis_horizontal_2d": 578.3843306842105,
+    "mean_nis_d_marginal": 13.269071877192982,
+    "mean_sqrt_hph_h_m": 9.571573904430574,
+    "mean_sqrt_s_h_m": 9.571573899169449,
+    "nis_contrib_fraction": {
+      "N": 0.8009295327761516,
+      "E": 0.17666492096738015,
+      "D": 0.022405546256468244
+    },
+    "nis_vs_innov_h_correlation": 0.8306578236768754,
+    "diagnosis": "NIS grande porque la predicci\u00f3n llega desplazada (innov_h >> sqrt(S))"
+  },
+  "gap3_2_predict_error_timeline": {
+    "max_innov_h_accepted_m": 30.927515,
+    "min_innov_h_rejected_m": 33.344524,
+    "threshold_band_m": [
+      30.927515,
+      33.344524
+    ],
+    "first_reject_timestamp_s": 11.268433571,
+    "first_reject_innov_h_m": 33.344524,
+    "last_accept_timestamp_s": 10.553059578,
+    "last_accept_innov_h_m": 24.996616
+  },
+  "gap3_3_velocity_coupling": {
+    "accept_count": 7,
+    "mean_pseudo_innov_v_h_mps": 5.77409453846154,
+    "mean_vel_pred_h_mps": 0.8897331923076922,
+    "mean_gps_speed_mps": 5.614102615384618,
+    "mean_corr_vel_h_on_accept_mps": 2.285714285714286e-06,
+    "mean_corr_pos_h_on_accept_m": 0.4850231428571429,
+    "mean_k_vel_max_on_accept": 0.0,
+    "median_dx_vel_over_dx_pos": 5.43001200401786e-06,
+    "vel_after_vs_gps_speed_mean_delta": -4.724369442307692
+  },
+  "interpretation": {
+    "innov_h_reference": "innov_h = ||z - h(x_pred)|| horizontal; error del estado EKF respecto al fix GPS en el instante del update",
+    "why_nis_large": "NIS grande porque la predicci\u00f3n llega desplazada (innov_h >> sqrt(S))",
+    "gate_mechanism": "Rechazo sistem\u00e1tico tras t\u224811.3s cuando innov_h>30.9m",
+    "velocity_coupling": "GNSS observa solo posici\u00f3n; velocidad se corrige v\u00eda cross-cov en K. Si |v_pred|<<GPS speed, la siguiente predict re-escapa."
+  },
+  "verdict": "PREDICT_ERROR_DRIVES_NIS_REJECTION"
+}

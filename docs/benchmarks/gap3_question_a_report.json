@@ -1,0 +1,77 @@
+{
+  "experiment": "GAP-3.7 Question A audit",
+  "experiment_provenance": {
+    "zupt_policy": "forced_time",
+    "validity": "CONDITIONED",
+    "rerun_required_policy": "imu_stationary",
+    "note": "docs/diagnostics/11-replay-zupt-provenance.md"
+  },
+  "question_a": "Why v_nominal \u2248 0?",
+  "question_b_status": "CLOSED (GAP-3.5/3.6: P_vv/P_pv small + H pos-only \u2192 K\u22480)",
+  "vel_accumulation_by_source": {
+    "gnss": {
+      "count": 7,
+      "sum_dv_norm_mps": 2.0712093716e-05,
+      "mean_dv_norm_mps": 2.958870530857143e-06,
+      "max_dv_norm_mps": 4.662399988e-06
+    },
+    "nhc": {
+      "count": 32845,
+      "sum_dv_norm_mps": 207.89381443446803,
+      "mean_dv_norm_mps": 0.00632954222665453,
+      "max_dv_norm_mps": 0.06881983578
+    },
+    "predict": {
+      "count": 32845,
+      "sum_dv_norm_mps": 359.6176543953105,
+      "mean_dv_norm_mps": 0.010948931478012194,
+      "max_dv_norm_mps": 0.06076260656
+    },
+    "zupt": {
+      "count": 2906,
+      "sum_dv_norm_mps": 12.90382401357845,
+      "mean_dv_norm_mps": 0.00444040743757001,
+      "max_dv_norm_mps": 1.20101428
+    }
+  },
+  "net_vel_change_proxy": {
+    "predict_sum_dv_norm": 359.6176543953105,
+    "nhc_sum_dv_norm": 207.89381443446803,
+    "zupt_sum_dv_norm": 12.90382401357845,
+    "gnss_sum_dv_norm": 2.0712093716e-05
+  },
+  "zupt_firing": {
+    "static_phase_end_s": 30.0,
+    "moving_speed_threshold_mps": 0.1,
+    "imu_ticks_zupt_armed_while_gps_2_6_mps": 1838,
+    "imu_ticks_zupt_applied_while_gps_2_6_mps": 747,
+    "imu_ticks_zupt_applied_while_gps_2_6_before_static_end": 747,
+    "imu_ticks_zupt_armed_not_applied_gps_2_6": 0,
+    "first_spurious_timestamp_s": 10.56314373,
+    "max_gps_speed_during_zupt_apply": 6.605914,
+    "mechanism": "Replay usa ZUPT cuando t <= static_phase_end (30s) OR gps_speed <= 0.1 m/s. NO hay criterio accel/gyro en replay \u2014 solo reloj + ultimo GPS speed."
+  },
+  "nhc_H_coupling": {
+    "fraction_nhc_updates_with_|H_vN|>0.05": 0.9785050997107627,
+    "sum_abs_dv_n_mps": 126.10471383129372,
+    "sum_abs_dv_e_mps": 133.4984506282019,
+    "note": "H observa v_body_y/z proyectado a NED; acopla vN/vE/vD (no solo vy/vz)."
+  },
+  "dv_forward_axis": {
+    "predict_sum_abs_dv_n": 203.25276138304176,
+    "nhc_sum_abs_dv_n": 126.10471383129372,
+    "zupt_sum_abs_dv_n": 6.04446408948552
+  },
+  "bias_ax": {
+    "corr_bias_ax_a_body_x_t_1_20s": -0.8853028123461519,
+    "bias_ax_at_10s": -1.019169
+  },
+  "verdict_question_a": "ZUPT_ACTIVE_WHILE_GPS_MOVING",
+  "interpretation": {
+    "causal_tree": "A: v_nominal\u22480 \u2190 ZUPT cada IMU en fase est\u00e1tica (t<30s) anula integraci\u00f3n predict. B: GNSS no corrige v \u2190 P_vv/P_pv + H pos-only (cerrado)."
+  },
+  "sources": {
+    "vel_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_vel_source_audit.csv",
+    "constraint_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_imu_constraint_audit.csv"
+  }
+}

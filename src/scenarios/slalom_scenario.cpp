@@ -1,6 +1,9 @@
 #include "slalom_scenario.hpp"
 
+#include "geodesy.hpp"
 #include "ins_ekf.hpp"
+#include "ins_ekf_15_state.hpp"
+#include "interfaces/INaviFilter.hpp"
 #include "mission.hpp"
 #include "NavState.h"
 #include "slalom_benchmark.hpp"
@@ -9,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <memory>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -139,12 +143,17 @@ void truth_to_gps_sample(
         return;
     }
 
-    const float lat_rad = ref_lat_deg * (static_cast<float>(M_PI) / 180.0f);
-    const float cos_lat = std::cos(lat_rad);
+    const geodesy::LLA ref = geodesy::lla(ref_lat_deg, ref_lon_deg, ref_alt_m);
+    const geodesy::NED ned{
+        truth->pos_ned[0],
+        truth->pos_ned[1],
+        truth->pos_ned[2],
+    };
+    const geodesy::LLA point = geodesy::ned_to_lla(ned, ref);
 
-    gps->position.x = ref_lat_deg + (truth->pos_ned[0] / NAVICORE_METERS_PER_DEG_LAT);
-    gps->position.y = ref_lon_deg + (truth->pos_ned[1] / (NAVICORE_METERS_PER_DEG_LAT * cos_lat));
-    gps->position.z = ref_alt_m - truth->pos_ned[2];
+    gps->position.x = point.lat_deg;
+    gps->position.y = point.lon_deg;
+    gps->position.z = point.alt_m;
     gps->speed_mps = TC04_SPEED_MPS;
     gps->course_deg = truth->yaw_rad * kRadToDegF;
     gps->satellites = 12U;
@@ -182,9 +191,14 @@ void make_ideal_slalom_imu(const TruthState *truth, uint32_t timestamp_ms, ImuSa
     imu->valid = true;
 }
 
-void seed_ekf_from_truth(InsEkfFilter *ekf, const TruthState *truth)
+void seed_filter_from_truth(INaviFilter *filter, const TruthState *truth)
 {
-    if (ekf == NULL || truth == NULL) {
+    if (filter == NULL || truth == NULL) {
+        return;
+    }
+
+    InsEkfFilter *ekf = navi_filter_try_get_ins_ekf_mut(filter);
+    if (ekf == NULL) {
         return;
     }
 
@@ -194,12 +208,15 @@ void seed_ekf_from_truth(InsEkfFilter *ekf, const TruthState *truth)
     ekf->vel_[2] = truth->vel_ned[2];
 }
 
-float lateral_drift_m(const InsEkfFilter *ekf, const TruthState *truth)
+float lateral_drift_m(const INaviFilter *filter, const TruthState *truth)
 {
-    float est_pos[3] = {0.0f, 0.0f, 0.0f};
-    ins_ekf_get_position_ned(ekf, est_pos);
-    const float dn = est_pos[0] - truth->pos_ned[0];
-    const float de = est_pos[1] - truth->pos_ned[1];
+    if (filter == NULL || truth == NULL) {
+        return 0.0f;
+    }
+
+    const NaviState state = filter->get_state();
+    const float dn = static_cast<float>(state.pos_ned[0]) - truth->pos_ned[0];
+    const float de = static_cast<float>(state.pos_ned[1]) - truth->pos_ned[1];
     const float sin_h = std::sin(truth->yaw_rad);
     const float cos_h = std::cos(truth->yaw_rad);
     return (-sin_h * dn) + (cos_h * de);
@@ -213,7 +230,9 @@ void run_slalom_scenario(
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
 
-    InsEkfFilter ekf{};
+    std::unique_ptr<INaviFilter> nav_filter = create_default_navi_filter();
+    InsEkf15State *filter_impl = dynamic_cast<InsEkf15State *>(nav_filter.get());
+    INaviFilter *filter = nav_filter.get();
     bool ekf_seeded = false;
     float max_lateral_drift_m = 0.0f;
 
@@ -256,27 +275,38 @@ void run_slalom_scenario(
         gps.timestamp_ms = t_ms;
         make_ideal_slalom_imu(&truth, t_ms, &imu);
 
-        if (gps.fix_valid && !ekf_seeded) {
-            ins_ekf_init(&ekf, gps.position, truth.yaw_rad, NAVICORE_DOMAIN_AIR);
-            ins_ekf_set_nhc_enabled(&ekf, true);
-            seed_ekf_from_truth(&ekf, &truth);
-            ref_lat_deg = gps.position.x;
-            ref_lon_deg = gps.position.y;
-            ref_alt_m = gps.position.z;
-            ekf_seeded = true;
+        if (gps.fix_valid && !ekf_seeded && filter_impl != nullptr) {
+            if (filter_impl->seed_from_gnss_sample(gps, NAVICORE_DOMAIN_AIR)) {
+                filter_impl->set_nhc_measurement_stds(
+                    NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS,
+                    NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS);
+                seed_filter_from_truth(filter, &truth);
+                ref_lat_deg = gps.position.x;
+                ref_lon_deg = gps.position.y;
+                ref_alt_m = gps.position.z;
+                ekf_seeded = true;
+            }
         }
 
         bool gnss_update_this_cycle = false;
         float tick_nis = 0.0f;
         float tick_innov_ned[3] = {0.0f, 0.0f, 0.0f};
 
-        if (ekf_seeded && imu.valid) {
-            ins_ekf_set_nhc_enabled(&ekf, true);
-            ins_ekf_predict(&ekf, &imu);
+        if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
+            InsEkfFilter &ekf = filter_impl->native();
+            filter->apply_constraints(
+                false,
+                NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS,
+                NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS);
+            filter_impl->sync_simulation_clock_ms(t_ms);
+            filter->predict(
+                static_cast<double>(dt_s),
+                imu.accel_mps2,
+                imu.gyro_radps);
 
             if (gps.fix_valid) {
                 gnss_update_this_cycle = true;
-                (void)ins_ekf_update_gnss(&ekf, &gps);
+                (void)filter_impl->update_gnss_from_sample(gps);
                 tick_nis = ins_ekf_last_nis(&ekf);
                 ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
                 if (!ins_ekf_outlier_detected(&ekf)) {
@@ -284,7 +314,7 @@ void run_slalom_scenario(
                 }
             }
 
-            const float lateral = std::fabs(lateral_drift_m(&ekf, &truth));
+            const float lateral = std::fabs(lateral_drift_m(filter, &truth));
             if (lateral > max_lateral_drift_m) {
                 max_lateral_drift_m = lateral;
             }
@@ -306,7 +336,7 @@ void run_slalom_scenario(
             }
 
             if (emit_nav != NULL) {
-                emit_nav(&ekf, t_ms, &gps, false);
+                emit_nav(filter, t_ms, &gps, false);
             }
 
             if ((t_ms % 2000U) == 0U) {

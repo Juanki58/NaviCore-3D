@@ -1,0 +1,30 @@
+{
+  "fix_timestamp_s": 10.553059578,
+  "gps_index": 0,
+  "measurement_vector": "z = [pN, pE, pD] only",
+  "velocity_in_measurement_model": false,
+  "gps_speed_available_unused": true,
+  "H_structure": "implicit I3 on pos errors; zero on vel/att/bias",
+  "innov_h_m": 24.996616311372005,
+  "nis": 8.596198,
+  "P_vel_pos_frobenius": 3.4344643396023194e-05,
+  "P_vel_pos_max_abs": 2.2885e-05,
+  "K_vel_pos_frobenius": 2.653186763120908e-07,
+  "K_vel_pos_max_abs": 1.78e-07,
+  "K_pos_pos_frobenius": 0.06817413438113343,
+  "dx_pos_norm_m": 1.418003917,
+  "dx_vel_norm_mps": 4.612e-06,
+  "dx_vel_over_dx_pos": 3.2524592807595182e-06,
+  "dx_vel_from_Kvp_innov_norm": 4.612230424359713e-06,
+  "dx_pos_from_Kpp_innov_norm": 1.4180038869238702,
+  "vel_prior_h_mps": 0.012257404496874532,
+  "vel_post_h_mps": 0.01225782056484757,
+  "gps_speed_mps": 2.637817,
+  "delta_vel_h_mps": 4.1606797303826715e-07,
+  "mechanism": "DESIGN_LIMITATION",
+  "interpretation": {
+    "why_dx_vel_tiny": "H no observa velocidad; dx_vel = K_vel_pos @ innov con K_vel_pos = P_vel_pos @ S_inv. Si P_vel_pos es peque\u00f1o (ZUPT mantiene v\u22480, poca correlaci\u00f3n pos-vel en P), la correcci\u00f3n de velocidad es negligible aunque innov_pos sea grande.",
+    "architectural_conclusion": "GPS speed/course existe en el log pero no entra al EKF. El filtro no puede corregir la variable que gobierna la siguiente deriva."
+  },
+  "source_json": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_gnss_k_block_audit.json"
+}

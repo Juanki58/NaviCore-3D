@@ -1,0 +1,243 @@
+{
+  "experiment": "tilt_gravity_projection_hypothesis",
+  "hypothesis_h0": "a_lin_h ~= GRAVITY * sin(delta_tilt)",
+  "gravity_mps2": 9.80665,
+  "reference_tilt_at_4deg": {
+    "sin_rad": 0.0697564737441253,
+    "g_sin_mps2": 0.6840773232428263
+  },
+  "evaluations": {
+    "static_0_2s_a_lin_vs_g_sin_delta_tilt": {
+      "label": "static_0_2s a_lin vs g*sin(delta_tilt)",
+      "samples": 46,
+      "observed_mean": 0.016151807515961687,
+      "predicted_mean": 0.009390983770507441,
+      "rms_error_mps2": 0.010076448875762221,
+      "nrmse_vs_observed_pct": 62.38589003617323,
+      "nrmse_vs_predicted_pct": 107.29918315275441,
+      "correlation": 0.07129295050253075,
+      "r_squared": -1.4809576564855749,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 0.09436768117292652,
+      "mean_predicted_deg_equiv": 0.05486723985889303
+    },
+    "static_0_2s_a_lin_vs_g_sin_gravity_align": {
+      "label": "static_0_2s a_lin vs g*sin(gravity_align)",
+      "samples": 46,
+      "observed_mean": 0.016151807515961687,
+      "predicted_mean": 0.01581632915135175,
+      "rms_error_mps2": 0.0006371567747105863,
+      "nrmse_vs_observed_pct": 3.9448016829133796,
+      "nrmse_vs_predicted_pct": 4.028474424206905,
+      "correlation": 0.9979578318956487,
+      "r_squared": 0.9900803362521613,
+      "compatible_h0": true,
+      "strong_compatible_h0": true,
+      "mean_observed_deg_equiv": 0.09436768117292652,
+      "mean_predicted_deg_equiv": 0.09240763162048822
+    },
+    "static_0_2s_a_lin_vs_g_sin_delta_pitch": {
+      "label": "static_0_2s a_lin vs g*sin(|delta_pitch|)",
+      "samples": 46,
+      "observed_mean": 0.016151807515961687,
+      "predicted_mean": 0.0025262274241936626,
+      "rms_error_mps2": 0.01472914318559159,
+      "nrmse_vs_observed_pct": 91.1919187436813,
+      "nrmse_vs_predicted_pct": 583.0489782721337,
+      "correlation": 0.5302289666929976,
+      "r_squared": -4.30101836288461,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 0.09436768117292652,
+      "mean_predicted_deg_equiv": 0.014759593856958285
+    },
+    "motion_2_10s_a_lin_vs_g_sin_delta_tilt": {
+      "label": "motion_2_10s a_lin vs g*sin(delta_tilt)",
+      "samples": 794,
+      "observed_mean": 0.7407221516005342,
+      "predicted_mean": 0.6930976399900527,
+      "rms_error_mps2": 0.33217804272285856,
+      "nrmse_vs_observed_pct": 44.84516117212053,
+      "nrmse_vs_predicted_pct": 47.92658689872699,
+      "correlation": 0.9170499664191719,
+      "r_squared": 0.827225803584323,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 4.331827067668644,
+      "mean_predicted_deg_equiv": 4.0528319959368195
+    },
+    "motion_2_10s_a_lin_vs_g_sin_gravity_align": {
+      "label": "motion_2_10s a_lin vs g*sin(gravity_align)",
+      "samples": 794,
+      "observed_mean": 0.7407221516005342,
+      "predicted_mean": 0.7352602292598382,
+      "rms_error_mps2": 0.030256567409509376,
+      "nrmse_vs_observed_pct": 4.084739108197551,
+      "nrmse_vs_predicted_pct": 4.115082824480748,
+      "correlation": 0.9994040187757145,
+      "r_squared": 0.9985665704599115,
+      "compatible_h0": true,
+      "strong_compatible_h0": true,
+      "mean_observed_deg_equiv": 4.331827067668644,
+      "mean_predicted_deg_equiv": 4.299824802122409
+    },
+    "motion_2_10s_a_lin_vs_g_sin_delta_pitch": {
+      "label": "motion_2_10s a_lin vs g*sin(|delta_pitch|)",
+      "samples": 794,
+      "observed_mean": 0.7407221516005342,
+      "predicted_mean": 0.6741705406490763,
+      "rms_error_mps2": 0.33524948494457,
+      "nrmse_vs_observed_pct": 45.259816277962145,
+      "nrmse_vs_predicted_pct": 49.72769718205119,
+      "correlation": 0.9163990942461913,
+      "r_squared": 0.8240159627101797,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 4.331827067668644,
+      "mean_predicted_deg_equiv": 3.941979896722949
+    },
+    "motion_nav_pre_vs_g_sin_delta_tilt": {
+      "label": "motion |a_nav_pre|_h vs g*sin(delta_tilt)",
+      "samples": 794,
+      "observed_mean": 0.74072506454534,
+      "predicted_mean": 0.6930976399900527,
+      "rms_error_mps2": 0.33217716401917713,
+      "nrmse_vs_observed_pct": 44.84486618838378,
+      "nrmse_vs_predicted_pct": 47.92646011952147,
+      "correlation": 0.9170508969465399,
+      "r_squared": 0.8272281389918887,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 4.331844135432636,
+      "mean_predicted_deg_equiv": 4.0528319959368195
+    },
+    "full_0_60s_a_lin_vs_g_sin_delta_tilt": {
+      "label": "full_0_60s a_lin vs g*sin(delta_tilt)",
+      "samples": 5798,
+      "observed_mean": 0.9340809877764811,
+      "predicted_mean": 1.39168195630553,
+      "rms_error_mps2": 0.8623082300050955,
+      "nrmse_vs_observed_pct": 92.31621682588401,
+      "nrmse_vs_predicted_pct": 61.96158727919759,
+      "correlation": 0.803054674315659,
+      "r_squared": -0.5802897691079936,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 5.465694776248869,
+      "mean_predicted_deg_equiv": 8.158504370366565
+    },
+    "full_0_60s_a_lin_vs_g_sin_gravity_align": {
+      "label": "full_0_60s a_lin vs g*sin(gravity_align)",
+      "samples": 5798,
+      "observed_mean": 0.9340809877764811,
+      "predicted_mean": 0.9233572076536479,
+      "rms_error_mps2": 0.040134164671659006,
+      "nrmse_vs_observed_pct": 4.296647206918939,
+      "nrmse_vs_predicted_pct": 4.346548046518674,
+      "correlation": 0.9986552747772025,
+      "r_squared": 0.9965767381294225,
+      "compatible_h0": true,
+      "strong_compatible_h0": true,
+      "mean_observed_deg_equiv": 5.465694776248869,
+      "mean_predicted_deg_equiv": 5.4027577549046
+    },
+    "full_0_60s_a_lin_vs_g_sin_delta_pitch": {
+      "label": "full_0_60s a_lin vs g*sin(|delta_pitch|)",
+      "samples": 5798,
+      "observed_mean": 0.9340809877764811,
+      "predicted_mean": 0.7723806831562761,
+      "rms_error_mps2": 0.5843415398183684,
+      "nrmse_vs_observed_pct": 62.557909588691594,
+      "nrmse_vs_predicted_pct": 75.6546030424402,
+      "correlation": 0.6583070086653663,
+      "r_squared": 0.27431994381449587,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 5.465694776248869,
+      "mean_predicted_deg_equiv": 4.517346393241485
+    }
+  },
+  "diagnosis": {
+    "hypothesis": "a_lin_h ~= g*sin(delta_tilt)",
+    "pass_threshold_nrmse_pct": 15.0,
+    "verdict": "H0_COMPATIBLE_INTERNAL_GRAVITY_ANGLE",
+    "likely_mechanism": "a_lin_h ~= g*sin(gravity_align_error) con NRMSE<5%%; leak horizontal es proyeccion de gravedad por discrepancia pred/meas en body",
+    "root_cause_status": "identify_first_instant_gravity_align_grows_not_orientation_csv",
+    "orientation_tilt_eval": {
+      "label": "motion_2_10s a_lin vs g*sin(delta_tilt)",
+      "samples": 794,
+      "observed_mean": 0.7407221516005342,
+      "predicted_mean": 0.6930976399900527,
+      "rms_error_mps2": 0.33217804272285856,
+      "nrmse_vs_observed_pct": 44.84516117212053,
+      "nrmse_vs_predicted_pct": 47.92658689872699,
+      "correlation": 0.9170499664191719,
+      "r_squared": 0.827225803584323,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 4.331827067668644,
+      "mean_predicted_deg_equiv": 4.0528319959368195
+    },
+    "gravity_align_eval": {
+      "label": "motion_2_10s a_lin vs g*sin(gravity_align)",
+      "samples": 794,
+      "observed_mean": 0.7407221516005342,
+      "predicted_mean": 0.7352602292598382,
+      "rms_error_mps2": 0.030256567409509376,
+      "nrmse_vs_observed_pct": 4.084739108197551,
+      "nrmse_vs_predicted_pct": 4.115082824480748,
+      "correlation": 0.9994040187757145,
+      "r_squared": 0.9985665704599115,
+      "compatible_h0": true,
+      "strong_compatible_h0": true,
+      "mean_observed_deg_equiv": 4.331827067668644,
+      "mean_predicted_deg_equiv": 4.299824802122409
+    },
+    "nav_pre_g_eval": {
+      "label": "motion |a_nav_pre|_h vs g*sin(delta_tilt)",
+      "samples": 794,
+      "observed_mean": 0.74072506454534,
+      "predicted_mean": 0.6930976399900527,
+      "rms_error_mps2": 0.33217716401917713,
+      "nrmse_vs_observed_pct": 44.84486618838378,
+      "nrmse_vs_predicted_pct": 47.92646011952147,
+      "correlation": 0.9170508969465399,
+      "r_squared": 0.8272281389918887,
+      "compatible_h0": false,
+      "strong_compatible_h0": false,
+      "mean_observed_deg_equiv": 4.331844135432636,
+      "mean_predicted_deg_equiv": 4.0528319959368195
+    },
+    "mean_level_match_g_sin_4deg": true,
+    "onset_transition": {
+      "static_baseline": {
+        "a_lin_h_mean": 0.016151807515961687,
+        "delta_tilt_deg_mean": 0.05486724520275776,
+        "g_sin_delta_tilt_mean": 0.009390983770507441
+      },
+      "first_significant_tilt_jump": {
+        "t_s": 6.398423672,
+        "a_lin_h": 0.15804637985414283,
+        "delta_tilt_deg": 1.086374632156157,
+        "g_sin_delta_tilt": 0.18593092776377187,
+        "gravity_align_deg": 0.902873
+      },
+      "motion_early_2s_mean": {
+        "a_lin_h": 0.0323768573248527,
+        "delta_tilt_deg": 0.08082259668554118,
+        "g_sin_delta_tilt": 0.013833449318805816
+      },
+      "jump_static_to_early_motion": {
+        "delta_a_lin_h": 0.016225049808891015,
+        "delta_tilt_deg": 0.02595535148278342,
+        "g_sin_at_4deg_reference_mps2": 0.6840773232428263
+      }
+    },
+    "interpretation": "Mecanismo (medias): ~4 deg inclinacion -> ~0.7 m/s2 horizontal (g*sin(4deg)=0.684). Prueba falsable: gravity_align_error (interno EKF) pasa NRMSE; delta_tilt Orientation correlaciona (r~0.92) pero no alcanza <15%% NRMSE punto a punto. Causa raiz pendiente: primer instante en que crece gravity_align / delta_tilt."
+  },
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\tilt_gravity_projection_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\tilt_gravity_projection_analysis.png"
+  }
+}

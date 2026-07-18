@@ -1,0 +1,124 @@
+{
+  "source_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9d_gravity_subtraction.csv",
+  "signal": "a_nav_pre_g = R_bn * a_corr (before gravity subtraction)",
+  "frames": {
+    "vehicle_heading_ekf_yaw": {
+      "static_0_2s": {
+        "label": "static_0_2s",
+        "n": 46,
+        "along_mean_mps2": 0.003486549678597674,
+        "along_std_mps2": 0.014666681699559998,
+        "along_abs_mean_mps2": 0.01315201423839993,
+        "lateral_mean_mps2": -0.0005014076144840012,
+        "lateral_std_mps2": 0.00861897901025542,
+        "lateral_abs_mean_mps2": 0.007304993829032179,
+        "vertical_mean_mps2": 9.804124956434782,
+        "vertical_std_mps2": 0.008942751726928566,
+        "a_lin_h_mean_mps2": 0.016151801630434785
+      },
+      "motion_2_10s": {
+        "label": "motion_2_10s",
+        "n": 794,
+        "along_mean_mps2": -0.010263244228772025,
+        "along_std_mps2": 0.37987167848874437,
+        "along_abs_mean_mps2": 0.17014763387282592,
+        "lateral_mean_mps2": 0.6590342039420262,
+        "lateral_std_mps2": 0.7801188659447621,
+        "lateral_abs_mean_mps2": 0.6796560946464568,
+        "vertical_mean_mps2": 9.770847148787153,
+        "vertical_std_mps2": 0.13661448690470238,
+        "a_lin_h_mean_mps2": 0.7407221464244333
+      },
+      "cruise_11_25s": {
+        "label": "cruise_11_25s",
+        "n": 1389,
+        "along_mean_mps2": 0.07498024540176862,
+        "along_std_mps2": 0.3372862295007747,
+        "along_abs_mean_mps2": 0.2593622007761243,
+        "lateral_mean_mps2": -0.24680079710646036,
+        "lateral_std_mps2": 0.46748137081173596,
+        "lateral_abs_mean_mps2": 0.3952604968852647,
+        "vertical_mean_mps2": 9.820056069402447,
+        "vertical_std_mps2": 0.3280767701413505,
+        "a_lin_h_mean_mps2": 0.52219463024982
+      },
+      "full_0_60s": {
+        "label": "full_0_60s",
+        "n": 5798,
+        "along_mean_mps2": 0.33332386057384594,
+        "along_std_mps2": 0.6623914876575993,
+        "along_abs_mean_mps2": 0.4730420803152053,
+        "lateral_mean_mps2": 0.06295791711677308,
+        "lateral_std_mps2": 0.8883734593821165,
+        "lateral_abs_mean_mps2": 0.6886279716953315,
+        "vertical_mean_mps2": 9.800744201449293,
+        "vertical_std_mps2": 0.2918486465672561,
+        "a_lin_h_mean_mps2": 0.9340809843289065
+      },
+      "correlations_motion_2_10s": {
+        "corr_lateral_vs_a_lin_h": 0.9293393833025388,
+        "corr_longitudinal_vs_a_lin_h": -0.12224893894938609,
+        "corr_abs_lateral_vs_a_lin_h": 0.9551392728629319
+      }
+    },
+    "vehicle_heading_gps_bearing": {
+      "static_0_2s": {
+        "label": "static_0_2s",
+        "n": 46,
+        "along_mean_mps2": 0.0031964353717738748,
+        "along_std_mps2": 0.01245962138626643,
+        "along_abs_mean_mps2": 0.01100800779052832,
+        "lateral_mean_mps2": -0.0017230639732097935,
+        "lateral_std_mps2": 0.011548916654033627,
+        "lateral_abs_mean_mps2": 0.009981389199578373,
+        "vertical_mean_mps2": 9.804124956434782,
+        "vertical_std_mps2": 0.008942751726928566,
+        "a_lin_h_mean_mps2": 0.016151801630434785
+      },
+      "motion_2_10s": {
+        "label": "motion_2_10s",
+        "n": 794,
+        "along_mean_mps2": -0.11576517646345504,
+        "along_std_mps2": 0.8591810277668717,
+        "along_abs_mean_mps2": 0.5453449499141246,
+        "lateral_mean_mps2": 0.03610756952660483,
+        "lateral_std_mps2": 0.6591069580387737,
+        "lateral_abs_mean_mps2": 0.4096865243317895,
+        "vertical_mean_mps2": 9.770847148787153,
+        "vertical_std_mps2": 0.13661448690470238,
+        "a_lin_h_mean_mps2": 0.7407221464244333
+      },
+      "cruise_11_25s": {
+        "label": "cruise_11_25s",
+        "n": 1389,
+        "along_mean_mps2": -0.21723901000621498,
+        "along_std_mps2": 0.39198115745498874,
+        "along_abs_mean_mps2": 0.33772734179233077,
+        "lateral_mean_mps2": 0.12929696884976183,
+        "lateral_std_mps2": 0.42576258865451444,
+        "lateral_abs_mean_mps2": 0.3363318887408394,
+        "vertical_mean_mps2": 9.820056069402447,
+        "vertical_std_mps2": 0.3280767701413505,
+        "a_lin_h_mean_mps2": 0.52219463024982
+      },
+      "full_0_60s": {
+        "label": "full_0_60s",
+        "n": 5798,
+        "along_mean_mps2": -0.03354441440559052,
+        "along_std_mps2": 0.8734274073978815,
+        "along_abs_mean_mps2": 0.6471461455779646,
+        "lateral_mean_mps2": 0.1344825586668382,
+        "lateral_std_mps2": 0.748967395347857,
+        "lateral_abs_mean_mps2": 0.5549208439188085,
+        "vertical_mean_mps2": 9.800744201449293,
+        "vertical_std_mps2": 0.2918486465672561,
+        "a_lin_h_mean_mps2": 0.9340809843289065
+      },
+      "correlations_motion_2_10s": {
+        "corr_lateral_vs_a_lin_h": 0.0066437857331644755,
+        "corr_longitudinal_vs_a_lin_h": -0.4055318199578477,
+        "corr_abs_lateral_vs_a_lin_h": 0.8096072768147866
+      }
+    }
+  }
+}

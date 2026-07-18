@@ -1,0 +1,192 @@
+{
+  "experiment": "H9b_attitude_propagation_audit",
+  "question": "Que mecanismo concreto hace que una actitud inicialmente correcta derive ~4.5 deg adicionales en 60 s durante propagacion pura?",
+  "configuration": {
+    "predict_only_end_s": 60.0,
+    "h9a_gravity_tilt_init": true,
+    "mount": "calibration/imu_mount.json"
+  },
+  "windows": {
+    "post_init_first_2s": {
+      "label": "post_init_first_2s",
+      "samples": 46,
+      "t_start_s": 1.532875061,
+      "t_end_s": 1.991698146,
+      "gravity_alignment_error_deg_mean": 0.09240765217391304,
+      "gravity_alignment_error_deg_median": 0.09484999999999999,
+      "gravity_alignment_error_deg_at_end": 0.086229,
+      "a_lin_h_mean_mps2": 0.016151804347826086,
+      "delta_theta_int_mag_deg_mean": 0.0005402277391304348,
+      "delta_theta_gravity_step_mag_deg_mean": 0.05120625863043478,
+      "gyro_corr_radps_mean": [
+        7.529606521739131e-05,
+        0.00015975782608695644,
+        5.5864260869565234e-05
+      ],
+      "gyro_corr_radps_std": [
+        0.0006254870092988899,
+        0.0006023973678862794,
+        0.00042234368574381584
+      ],
+      "dt_s_mean": 0.010195653152173911,
+      "dt_s_median": 0.010000001,
+      "cum_integrated_mag_deg_at_end": 0.004799256038290506,
+      "cum_observed_step_mag_deg_at_end": 0.10928170786285232,
+      "int_vs_gravity_step_dot_mean": 9.782608695652176e-10,
+      "int_vs_gravity_step_dot_positive_fraction": 0.391304347826087
+    },
+    "motion_onset_2_10s": {
+      "label": "motion_onset_2_10s",
+      "samples": 794,
+      "t_start_s": 2.001782179,
+      "t_end_s": 9.99843502,
+      "gravity_alignment_error_deg_mean": 4.318119146095718,
+      "gravity_alignment_error_deg_median": 2.5249055,
+      "gravity_alignment_error_deg_at_end": 5.059234,
+      "a_lin_h_mean_mps2": 0.7407221536523929,
+      "delta_theta_int_mag_deg_mean": 0.009938251802267003,
+      "delta_theta_gravity_step_mag_deg_mean": 1.752734946463476,
+      "gyro_corr_radps_mean": [
+        0.0006370815302267001,
+        -0.00026178718387909314,
+        0.009594360232997486
+      ],
+      "gyro_corr_radps_std": [
+        0.01308503351126357,
+        0.01261974031938383,
+        0.02080405980832681
+      ],
+      "dt_s_mean": 0.010084383870277077,
+      "dt_s_median": 0.010000001,
+      "cum_integrated_mag_deg_at_end": 4.413479482851528,
+      "cum_observed_step_mag_deg_at_end": 5.042344273820989,
+      "int_vs_gravity_step_dot_mean": -1.5940226700251888e-06,
+      "int_vs_gravity_step_dot_positive_fraction": 0.3904282115869018
+    },
+    "post_init_0_60s": {
+      "label": "post_init_0_60s",
+      "samples": 5798,
+      "t_start_s": 1.532875061,
+      "t_end_s": 59.996906281,
+      "gravity_alignment_error_deg_mean": 5.41792099051397,
+      "gravity_alignment_error_deg_median": 4.5655725,
+      "gravity_alignment_error_deg_at_end": 5.041272,
+      "a_lin_h_mean_mps2": 0.9340809796481545,
+      "delta_theta_int_mag_deg_mean": 0.04499789970627802,
+      "delta_theta_gravity_step_mag_deg_mean": 3.042837243992411,
+      "gyro_corr_radps_mean": [
+        0.0010358681735081051,
+        -0.0027876308368402947,
+        -0.049855406312349033
+      ],
+      "gyro_corr_radps_std": [
+        0.027072408598044682,
+        0.02625574588396898,
+        0.12208778538429525
+      ],
+      "dt_s_mean": 0.010085202793377024,
+      "dt_s_median": 0.010000001,
+      "cum_integrated_mag_deg_at_end": 167.31873162140226,
+      "cum_observed_step_mag_deg_at_end": 5.005460157971344,
+      "int_vs_gravity_step_dot_mean": -6.321024491203863e-07,
+      "int_vs_gravity_step_dot_positive_fraction": 0.47481890307002417
+    }
+  },
+  "convention_audit": {
+    "gyro_bias_mean_radps": [
+      -6.400000000000492e-05,
+      -0.0002927020000000275,
+      4.111500000000268e-05
+    ],
+    "gyro_corr_mean_radps": [
+      0.0010358681735081051,
+      -0.0027876308368402947,
+      -0.049855406312349033
+    ],
+    "dt_mean_s": 0.010085202793377024,
+    "integrated_vs_gravity_step_direction_cos_mean": -0.02797728954605508,
+    "max_per_tick_delta_theta_int_deg": 0.3278094284296239,
+    "units_deg_rad_mix_suspected": false,
+    "notes": {
+      "gyro_sign": "Revisar si signo de omega produce deriva coherente con delta_theta_gravity.",
+      "quaternion_order": "Sin evidencia fuerte de orden de cuaternion invertido.",
+      "gyro_frame": "Confirmar que gyro_corr esta en body frame antes de integrar.",
+      "units": "Magnitudes por tick compatibles con rad/s * s."
+    }
+  },
+  "mechanism_diagnosis": {
+    "alignment_error_at_2s_deg": 0.086229,
+    "alignment_error_at_10s_deg": 5.059234,
+    "alignment_error_at_60s_deg": 5.041272,
+    "additional_drift_deg_2s_to_60s": 4.955043,
+    "error_jump_static_to_10s_deg": 4.973005,
+    "drift_rate_deg_per_s_2s_to_60s": 0.08475370063610882,
+    "expected_drift_rate_from_h9a_deg_per_s": 0.075,
+    "integration_matches_observation_drift": false,
+    "likely_mechanism": "dynamic_accel_contaminates_gravity_observation",
+    "corr_int_step_dot_mean_full": -6.321024491203863e-07,
+    "corr_int_step_dot_mean_static_0_2s": 9.782608695652176e-10,
+    "cum_integrated_vs_observed_ratio": 33.42724271912188,
+    "static_window": {
+      "label": "static_post_init_0_2s",
+      "samples": 46,
+      "t_start_s": 1.532875061,
+      "t_end_s": 1.991698146,
+      "gravity_alignment_error_deg_mean": 0.09240765217391304,
+      "gravity_alignment_error_deg_median": 0.09484999999999999,
+      "gravity_alignment_error_deg_at_end": 0.086229,
+      "a_lin_h_mean_mps2": 0.016151804347826086,
+      "delta_theta_int_mag_deg_mean": 0.0005402277391304348,
+      "delta_theta_gravity_step_mag_deg_mean": 0.05120625863043478,
+      "gyro_corr_radps_mean": [
+        7.529606521739131e-05,
+        0.00015975782608695644,
+        5.5864260869565234e-05
+      ],
+      "gyro_corr_radps_std": [
+        0.0006254870092988899,
+        0.0006023973678862794,
+        0.00042234368574381584
+      ],
+      "dt_s_mean": 0.010195653152173911,
+      "dt_s_median": 0.010000001,
+      "cum_integrated_mag_deg_at_end": 0.004799256038290506,
+      "cum_observed_step_mag_deg_at_end": 0.10928170786285232,
+      "int_vs_gravity_step_dot_mean": 9.782608695652176e-10,
+      "int_vs_gravity_step_dot_positive_fraction": 0.391304347826087
+    },
+    "motion_onset_window": {
+      "label": "motion_onset_2_10s",
+      "samples": 794,
+      "t_start_s": 2.001782179,
+      "t_end_s": 9.99843502,
+      "gravity_alignment_error_deg_mean": 4.318119146095718,
+      "gravity_alignment_error_deg_median": 2.5249055,
+      "gravity_alignment_error_deg_at_end": 5.059234,
+      "a_lin_h_mean_mps2": 0.7407221536523929,
+      "delta_theta_int_mag_deg_mean": 0.009938251802267003,
+      "delta_theta_gravity_step_mag_deg_mean": 1.752734946463476,
+      "gyro_corr_radps_mean": [
+        0.0006370815302267001,
+        -0.00026178718387909314,
+        0.009594360232997486
+      ],
+      "gyro_corr_radps_std": [
+        0.01308503351126357,
+        0.01261974031938383,
+        0.02080405980832681
+      ],
+      "dt_s_mean": 0.010084383870277077,
+      "dt_s_median": 0.010000001,
+      "cum_integrated_mag_deg_at_end": 4.413479482851528,
+      "cum_observed_step_mag_deg_at_end": 5.042344273820989,
+      "int_vs_gravity_step_dot_mean": -1.5940226700251888e-06,
+      "int_vs_gravity_step_dot_positive_fraction": 0.3904282115869018
+    }
+  },
+  "interpretation": "Mecanismo mas probable: dynamic_accel_contaminates_gravity_observation. Estatico 0-2s: error=0.086 deg. Salto 2-10s: +4.97 deg. 60s: 5.04 deg. Integracion vs observacion (60s): no coinciden.",
+  "artifacts": {
+    "csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9b_attitude_propagation.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9b_attitude_propagation_analysis.png"
+  }
+}

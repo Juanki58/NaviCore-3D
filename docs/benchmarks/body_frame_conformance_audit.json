@@ -1,0 +1,150 @@
+{
+  "contract": "docs/diagnostics/08-body-frame-contract.md",
+  "dataset": "data/real_run (Patron Oro)",
+  "mount_static_median_body_mps2": [
+    -0.002342198629035875,
+    -0.0024278630015301767,
+    9.795845521291554
+  ],
+  "mount_I1_z_alignment_error_mps2": 0.011318885693093231,
+  "regimes": {
+    "static_0_2s": {
+      "n": 46,
+      "I1_f_body_mag": {
+        "mean": 9.804139890056467,
+        "median": 9.803431804994638,
+        "p95": 9.817492899411816,
+        "max": 9.82458433864311
+      },
+      "I2_a_nav_pre_h": {
+        "mean": 0.016151801631320593,
+        "median": 0.016462774778480342,
+        "p95": 0.025095397718947764,
+        "max": 0.02795093858179639
+      },
+      "I2_a_nav_d_mean": 9.804124956434782,
+      "I3_a_lin_h": {
+        "mean": 0.016151801630434785,
+        "median": 0.016462775,
+        "p95": 0.025095399,
+        "max": 0.027950939
+      },
+      "I3_a_lin_ned_h": {
+        "mean": 0.016151801631320593,
+        "median": 0.016462774778480342,
+        "p95": 0.025095397718947764,
+        "max": 0.02795093858179639
+      }
+    },
+    "motion_2_10s": {
+      "n": 794,
+      "I1_f_body_mag": {
+        "mean": 9.83131949147339,
+        "median": 9.807738797873741,
+        "p95": 10.028709927226721,
+        "max": 11.189919200195613
+      },
+      "I2_a_nav_pre_h": {
+        "mean": 0.7407221489973249,
+        "median": 0.4283291604633014,
+        "p95": 2.2210846580284205,
+        "max": 5.112516031535272
+      },
+      "I2_a_nav_d_mean": 9.770847148787153,
+      "I3_a_lin_h": {
+        "mean": 0.7407221464244333,
+        "median": 0.4283291545,
+        "p95": 2.22108455925,
+        "max": 5.112515926
+      },
+      "I3_a_lin_ned_h": {
+        "mean": 0.7407221489973249,
+        "median": 0.4283291604633014,
+        "p95": 2.2210846580284205,
+        "max": 5.112516031535272
+      }
+    },
+    "cruise_11_25s": {
+      "n": 1389,
+      "I1_f_body_mag": {
+        "mean": 9.840145150747935,
+        "median": 9.83361384721645,
+        "p95": 10.35349194485914,
+        "max": 11.914857312509806
+      },
+      "I2_a_nav_pre_h": {
+        "mean": 0.5221946312537293,
+        "median": 0.43348708851362194,
+        "p95": 1.2609689543916678,
+        "max": 2.2641391839733997
+      },
+      "I2_a_nav_d_mean": 9.820056069402447,
+      "I3_a_lin_h": {
+        "mean": 0.52219463024982,
+        "median": 0.433487087,
+        "p95": 1.2609688996,
+        "max": 2.264139175
+      },
+      "I3_a_lin_ned_h": {
+        "mean": 0.5221946312537293,
+        "median": 0.43348708851362194,
+        "p95": 1.2609689543916678,
+        "max": 2.2641391839733997
+      }
+    }
+  },
+  "invariant_checks": [
+    {
+      "name": "I1_static|f_B| in [g-0.15,g+0.15]",
+      "value": 9.804139890056467,
+      "limit": "[9.656649999999999,9.95665]",
+      "pass": true
+    },
+    {
+      "name": "I2_static_a_nav_pre_h median",
+      "value": 0.016462774778480342,
+      "limit": 0.05,
+      "pass": true
+    },
+    {
+      "name": "I3_static_a_lin_h median",
+      "value": 0.016462775,
+      "limit": 0.05,
+      "pass": true
+    },
+    {
+      "name": "mount_Z_alignment",
+      "value": 0.011318885693093231,
+      "limit": 0.05,
+      "pass": true
+    },
+    {
+      "name": "I2_motion_a_nav_pre_h median",
+      "value": 0.4283291604633014,
+      "limit": 0.05,
+      "pass": false
+    },
+    {
+      "name": "I3_motion_a_lin_h median",
+      "value": 0.4283291545,
+      "limit": 0.05,
+      "pass": false
+    }
+  ],
+  "code_conformance": {
+    "predict_order_bias_before_rotate": true,
+    "predict_uses_R_bn_not_R_nb": true,
+    "gravity_subtracted_in_NED_after_rotate": true,
+    "mount_applied_once_in_replay": true,
+    "h9a_roll_pitch_from_FRD_gravity_formula": true,
+    "nhc_observes_body_y_z_velocity": true,
+    "imu_mount_declares_body_target_Z_down_only": true,
+    "contract_requires_full_FRD_vehicle_axes": true,
+    "gap_mount_calibrates_Z_not_explicit_forward": true
+  },
+  "verdict": {
+    "static_regime_conformant": true,
+    "dynamic_regime_conformant": false,
+    "primary_gap": "R_mount calibrates gravity on +Z body (M4/M2 partial) but contract \u00a73.2 requires full vehicle FRD including forward +X; yaw-of-mount not observable from gravity alone."
+  }
+}

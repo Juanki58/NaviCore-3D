@@ -1,0 +1,92 @@
+{
+  "experiment": "GAP-3.6 cov step cycle audit",
+  "window_s": [
+    9.0,
+    12.0
+  ],
+  "reduction_by_update": {
+    "predict": {
+      "label": "predict",
+      "count": 32845,
+      "mean_d_P_vv_frob": 0.00016247391109154515,
+      "mean_d_P_pv_frob": 0.00033342090883281257,
+      "median_d_P_vv_frob": 0.00016482173999999433,
+      "median_d_P_pv_frob": 0.00032427907000000256,
+      "mean_d_P_vv_fwd": 0.00011256717960330339,
+      "mean_d_P_vv_lat": 9.050290369274864e-05,
+      "mean_d_P_vv_vert": 2.9436660274130012e-05
+    },
+    "nhc": {
+      "label": "nhc",
+      "count": 32845,
+      "mean_d_P_vv_frob": -0.00017625965190441772,
+      "mean_d_P_pv_frob": -0.0003221117143953116,
+      "median_d_P_vv_frob": -0.00016200169999999736,
+      "median_d_P_pv_frob": -0.0003160536299999933,
+      "mean_d_P_vv_fwd": -0.00010754410593771045,
+      "mean_d_P_vv_lat": -0.00011731719350581,
+      "mean_d_P_vv_vert": -5.7787893180039594e-05
+    },
+    "zupt": {
+      "label": "zupt",
+      "count": 2906,
+      "mean_d_P_vv_frob": -0.0004271178552034412,
+      "mean_d_P_pv_frob": -8.96137872610289e-05,
+      "median_d_P_vv_frob": -4.223901490000003e-05,
+      "median_d_P_pv_frob": -3.6379970000000032e-06,
+      "mean_d_P_vv_fwd": -0.0003997899206961804,
+      "mean_d_P_vv_lat": -3.962856895402615e-05,
+      "mean_d_P_vv_vert": -2.185801806049553e-05
+    },
+    "gnss": {
+      "label": "gnss",
+      "count": 331,
+      "mean_d_P_vv_frob": 0.0,
+      "mean_d_P_pv_frob": -1.5026644018126894e-08,
+      "median_d_P_vv_frob": 0.0,
+      "median_d_P_pv_frob": 0.0,
+      "mean_d_P_vv_fwd": -2.6374622362475877e-13,
+      "mean_d_P_vv_lat": -5.274924470038524e-13,
+      "mean_d_P_vv_vert": -5.274924470857408e-13
+    }
+  },
+  "nhc_forward_vs_lateral": {
+    "mean_reduction_fwd_m2": -0.00010754410593771045,
+    "mean_reduction_lat_m2": -0.00011731719350581,
+    "mean_reduction_vert_m2": -5.7787893180039594e-05,
+    "ratio_fwd_over_lat": 0.9166951810212239,
+    "nhc_also_crushes_forward": true
+  },
+  "last_gnss_accept_in_window": {
+    "timestamp_s": 10.553059578,
+    "imu_seq": 895,
+    "update_type": "gnss",
+    "phase": "pre",
+    "P_pp_frob": 8.93946743,
+    "P_vv_frob": 0.0004158983938,
+    "P_pv_frob": 3.434438986e-05,
+    "P_vv_n_m2": 0.0002341509535,
+    "P_vv_e_m2": 0.000265990966,
+    "P_vv_d_m2": 0.0002176302805,
+    "P_vv_body_fwd_m2": 0.00026861683,
+    "P_vv_body_lat_m2": 0.0002312579454,
+    "P_vv_body_vert_m2": 0.000217903158,
+    "P_vv_std_n": 0.015302,
+    "P_vv_std_e": 0.016309,
+    "P_vv_std_d": 0.014752,
+    "vel_h_mps": 0.012258,
+    "v_body_x": -0.01154,
+    "v_body_y": -0.002076,
+    "v_body_z": 0.005915
+  },
+  "window_step_count": 1794,
+  "pvv_at_last_accept_pre": 0.0004158983938,
+  "ppv_at_last_accept_pre": 3.434438986e-05,
+  "verdict": "NHC_SUPPRESSES_P_PV_EACH_IMU",
+  "interpretation": {
+    "cycle_hypothesis": "predict aumenta P_pv; NHC/ZUPT la reducen; GNSS accept (Joseph pos-only) aniquila P_pv residual. P_vv colapsa por ZUPT (3D vel) en fase est\u00e1tica y por acoplamiento NHC en cuerpo.",
+    "nhc_longitudinal": "Si d_P_vv_body_fwd es del mismo orden que d_P_vv_body_lat, NHC est\u00e1 reduciendo incertidumbre longitudinal v\u00eda acoplamiento Joseph, no solo vy/vz."
+  },
+  "source_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_cov_step_audit.csv",
+  "pvv_trace_rows": 32845
+}

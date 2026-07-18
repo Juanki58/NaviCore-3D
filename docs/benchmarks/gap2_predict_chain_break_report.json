@@ -1,0 +1,135 @@
+{
+  "experiment": "gap2_predict_chain_break",
+  "predict_chain": "mount -> body -> bias -> quat_integrate/R_bn -> NED -> -g",
+  "diagnosis": {
+    "verdict": "BREAK_AT_SPECIFIC_FORCE_CONTAMINATION",
+    "first_break_stage": "E4_gravity_align",
+    "first_break_t_s": 3.705984354,
+    "first_gravity_align_1deg_t_s": 3.705984354,
+    "recommended_predict_audit_lines": "ins_ekf.cpp ~669-732 (quat_integrate, quat_to_dcm_bn, body_to_ned, -kGravityNed)",
+    "recommended_root_cause_focus": "a_corr (fuerza especifica medida) se inclina respecto a g_body_ref mientras pred_tilt (R_bn) permanece bajo: contaminacion horizontal en body_to_ned(a_corr) en ins_ekf.cpp ~723, no mount ni -g.",
+    "static_baseline": {
+      "a_body_h_mean": 0.15687373972138663,
+      "a_body_h_p95": 0.17788031280803265,
+      "a_body_h_max": 0.18130287707562406,
+      "a_corr_h_body_mean": 0.15688694327076877,
+      "a_corr_h_body_p95": 0.17789351963461983,
+      "a_corr_h_body_max": 0.1813161017227816,
+      "bias_h_body_mean": 1.3225021890341053e-05,
+      "bias_h_body_p95": 1.3225021890341051e-05,
+      "bias_h_body_max": 1.3225021890341051e-05,
+      "meas_tilt_from_g_deg_mean": 0.9168922147033541,
+      "meas_tilt_from_g_deg_p95": 1.0391914244505414,
+      "meas_tilt_from_g_deg_max": 1.0600790812375747,
+      "pred_tilt_from_g_deg_mean": 0.9355892910121975,
+      "pred_tilt_from_g_deg_p95": 0.9395552374444192,
+      "pred_tilt_from_g_deg_max": 0.939960900941264,
+      "gravity_align_deg_mean": 0.09214708695652174,
+      "gravity_align_deg_p95": 0.146375,
+      "gravity_align_deg_max": 0.163129,
+      "a_nav_pre_h_mean": 0.016151801630434785,
+      "a_nav_pre_h_p95": 0.025095399,
+      "a_nav_pre_h_max": 0.027950939,
+      "a_lin_h_mean": 0.016151801630434785,
+      "a_lin_h_p95": 0.025095399,
+      "a_lin_h_max": 0.027950939
+    },
+    "onset_analysis": {
+      "first_gravity_align_1deg": {
+        "t_s": 3.705984354,
+        "value": 1.22605,
+        "metric": "gravity_align_deg",
+        "threshold": 1.0
+      },
+      "first_a_lin_h_0p1": {
+        "t_s": 3.695900202,
+        "value": 0.157904685,
+        "metric": "a_lin_h",
+        "threshold": 0.1
+      },
+      "first_a_nav_pre_h_0p1": {
+        "t_s": 3.695900202,
+        "value": 0.157904685,
+        "metric": "a_nav_pre_h",
+        "threshold": 0.1
+      },
+      "first_stage_break_vs_static_p95": {
+        "stage": "E4_gravity_align",
+        "t_s": 3.705984354,
+        "value": 1.22605,
+        "metric": "gravity_align_deg",
+        "threshold": 1.0,
+        "static_p95": 0.146375
+      },
+      "all_stage_breaks_vs_static_p95": [
+        {
+          "stage": "E0_mount_body_h",
+          "t_s": 4.724472523,
+          "value": 0.7867261449519257,
+          "metric": "a_body_h",
+          "threshold": 0.533640938424098,
+          "static_p95": 0.17788031280803265
+        },
+        {
+          "stage": "E2_meas_tilt_from_g",
+          "t_s": 4.724472523,
+          "value": 4.620739386024281,
+          "metric": "meas_tilt_from_g_deg",
+          "threshold": 3.1175742733516243,
+          "static_p95": 1.0391914244505414
+        },
+        {
+          "stage": "E3_pred_tilt_from_g",
+          "t_s": 25.901414871,
+          "value": 2.8196057193136017,
+          "metric": "pred_tilt_from_g_deg",
+          "threshold": 2.8186657123332575,
+          "static_p95": 0.9395552374444192
+        },
+        {
+          "stage": "E4_gravity_align",
+          "t_s": 3.705984354,
+          "value": 1.22605,
+          "metric": "gravity_align_deg",
+          "threshold": 1.0,
+          "static_p95": 0.146375
+        },
+        {
+          "stage": "E5_nav_pre_h",
+          "t_s": 3.695900202,
+          "value": 0.157904685,
+          "metric": "a_nav_pre_h",
+          "threshold": 0.075286197,
+          "static_p95": 0.025095399
+        }
+      ],
+      "first_mount_body_h_break": {
+        "stage": "E0_mount_body_h",
+        "t_s": 4.724472523,
+        "value": 0.7867261449519257,
+        "metric": "a_body_h",
+        "threshold": 0.533640938424098,
+        "static_p95": 0.17788031280803265
+      },
+      "motion_correlations": {
+        "gravity_align_vs_meas_tilt": 0.996341141073326,
+        "gravity_align_vs_pred_tilt": 0.773770656275459,
+        "gravity_align_vs_delta_theta_gravity_step": 0.3938138449626285,
+        "gravity_align_vs_delta_theta_int": 0.8261386808708613,
+        "a_lin_h_vs_gravity_align": 0.9995736453361962,
+        "meas_tilt_vs_a_body_h": 0.999560328089361
+      },
+      "motion_means": {
+        "meas_tilt_from_g_deg": 4.872756721472631,
+        "pred_tilt_from_g_deg": 1.0559185467009549,
+        "gravity_align_deg": 4.317784651133501,
+        "a_body_h": 0.8351796176294439
+      }
+    },
+    "chain_verdict_summary": "Mount/bias estables en estatico. gravity_align = angle(g_pred, a_corr_unit); crece cuando R_bn (post quat_integrate) deja de coincidir con direccion de a_corr. Resta -g no anade leak (H9d). Mecanismo: R_bn + interpretacion gravedad en dinamica."
+  },
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap2_predict_chain_break_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap2_predict_chain_break_analysis.png"
+  }
+}

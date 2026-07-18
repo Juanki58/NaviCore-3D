@@ -1,0 +1,41 @@
+{
+  "experiment": "H7_gnss_audit",
+  "parse_origin_deg": {
+    "lat": 41.192122,
+    "lon": 1.5191053,
+    "alt_m": 84.4000015258789
+  },
+  "geo_audit": {
+    "samples": 331.0,
+    "delta_n_max_m": 0.0,
+    "delta_e_max_m": 0.0,
+    "delta_d_max_m": 0.0,
+    "delta_horiz_max_m": 0.0,
+    "delta_horiz_mean_m": 0.0,
+    "delta_horiz_rms_m": 0.0
+  },
+  "geo_alert_threshold_m": 0.1,
+  "geo_alert_triggered": false,
+  "geodesy_model": "WGS84 ECEF->NED (geodesy.hpp / geodesy.py)",
+  "consistency_source": "C:\\NaviCore-3D\\docs\\benchmarks\\h4_consistency.csv",
+  "first_moving_update": {
+    "source_file": "h4_consistency.csv",
+    "timestamp_s": 10.553059578,
+    "speed_mps": 2.63781714,
+    "ekf_n_m": 0.28699059000000027,
+    "ekf_e_m": -0.4370212999999996,
+    "gps_n_m": 3.87596459,
+    "gps_e_m": -5.5536153,
+    "innov_n_m": 3.588974,
+    "innov_e_m": -5.116594,
+    "s_nn": 138.375473,
+    "s_ee": 138.375473,
+    "s_dd": 142.064362,
+    "nis": 0.303524,
+    "gnss_accepted": true
+  },
+  "artifacts": {
+    "geo_audit_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h7_gnss_geo_audit.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h7_gnss_audit_error.png"
+  }
+}

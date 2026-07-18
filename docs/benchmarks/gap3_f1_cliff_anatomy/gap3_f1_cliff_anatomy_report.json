@@ -1,0 +1,157 @@
+{
+  "experiment": "GAP-3.18 F1.2 cliff anatomy",
+  "cliff_by_policy": {
+    "N=1": {
+      "n_ticks": 38,
+      "n_nhc_applied": 38,
+      "sum_abs_dP_nhc": 62.69215893700001,
+      "sum_dP_predict": 3.189932581000007,
+      "top3_share": 0.7400447079294687,
+      "cliff_tick": 3,
+      "cliff_imu_seq": 413,
+      "cliff_abs_dP": 28.044420239999997,
+      "cliff_P_pre": 51.94886398,
+      "cliff_k_vel": 3.546614,
+      "first_nhc_tick": 1,
+      "first_nhc_abs_dP": 1.5935859699999995,
+      "first_nhc_P_pre": 62.52542496,
+      "zero_nhc_ticks_before_first": -1
+    },
+    "N=10": {
+      "n_ticks": 38,
+      "n_nhc_applied": 4,
+      "sum_abs_dP_nhc": 57.739532470000015,
+      "sum_dP_predict": 16.837368010000013,
+      "top3_share": 0.9569927390511825,
+      "cliff_tick": 26,
+      "cliff_imu_seq": 436,
+      "cliff_abs_dP": 36.91189957,
+      "cliff_P_pre": 66.52935028,
+      "cliff_k_vel": NaN,
+      "first_nhc_tick": 6,
+      "first_nhc_abs_dP": 2.4832191400000028,
+      "first_nhc_P_pre": 66.20470428,
+      "zero_nhc_ticks_before_first": 4
+    },
+    "N=20": {
+      "n_ticks": 38,
+      "n_nhc_applied": 2,
+      "sum_abs_dP_nhc": 6.478282929999985,
+      "sum_dP_predict": 21.04602050999999,
+      "top3_share": 1.0,
+      "cliff_tick": 26,
+      "cliff_imu_seq": 436,
+      "cliff_abs_dP": 4.035202029999994,
+      "cliff_P_pre": 74.55316925,
+      "cliff_k_vel": NaN,
+      "first_nhc_tick": 6,
+      "first_nhc_abs_dP": 2.443080899999991,
+      "first_nhc_P_pre": 66.28051758,
+      "zero_nhc_ticks_before_first": 4
+    }
+  },
+  "cliff_k_ticks": [
+    {
+      "tick": 2,
+      "k_vel_max": 2.343858,
+      "k_scalar_z": 0.44584073764850063,
+      "nis_total": 3.225168467,
+      "abs_dP_nhc": 9.921260830000001,
+      "P_pre": 61.41658401
+    },
+    {
+      "tick": 3,
+      "k_vel_max": 3.546614,
+      "k_scalar_z": 0.5511552794065343,
+      "nis_total": 0.03215044364,
+      "abs_dP_nhc": 28.044420239999997,
+      "P_pre": 51.94886398
+    },
+    {
+      "tick": 4,
+      "k_vel_max": 2.326664,
+      "k_scalar_z": 0.3573861453823897,
+      "nis_total": 0.001368540223,
+      "abs_dP_nhc": 8.42931938,
+      "P_pre": 24.12205887
+    }
+  ],
+  "state_vs_frequency": {
+    "verdict": "STATE_CONDITIONED_BURST",
+    "detail": "Decimation cambia cu\u00e1ndo dispara NHC, pero |\u0394P| en cada disparo depende de P_pre (corr N=1=0.70). Cliff persiste bursty (top3\u219296%); no es Riccati suave ni solo frecuencia.",
+    "corr_P_pre_vs_abs_dP_N1": 0.6980127813347426,
+    "by_policy": {
+      "N=1": {
+        "n_events": 38,
+        "mean_dP_over_P": 0.0824902660734855,
+        "max_abs_dP": 28.044420239999997,
+        "P_at_max_drop": 51.94886398
+      },
+      "N=10": {
+        "n_events": 4,
+        "mean_dP_over_P": 0.2583570388962625,
+        "max_abs_dP": 36.91189957,
+        "P_at_max_drop": 66.52935028
+      },
+      "N=20": {
+        "n_events": 2,
+        "mean_dP_over_P": 0.0454924356006538,
+        "max_abs_dP": 4.035202029999994,
+        "P_at_max_drop": 74.55316925
+      }
+    },
+    "P_bin_stats": [
+      {
+        "P_bin": "(0, 10]",
+        "n": 32,
+        "mean_abs_dP": 0.2591314690000001,
+        "mean_dP_over_P": 0.050125304822618975,
+        "policies": [
+          "N=1"
+        ]
+      },
+      {
+        "P_bin": "(10, 20]",
+        "n": 2,
+        "mean_abs_dP": 3.2056827545000006,
+        "mean_dP_over_P": 0.22715091806104942,
+        "policies": [
+          "N=1"
+        ]
+      },
+      {
+        "P_bin": "(20, 40]",
+        "n": 2,
+        "mean_abs_dP": 9.52849102,
+        "mean_dP_over_P": 0.3392683166283829,
+        "policies": [
+          "N=1",
+          "N=10"
+        ]
+      },
+      {
+        "P_bin": "(40, 70]",
+        "n": 7,
+        "mean_abs_dP": 12.730602535714285,
+        "mean_dP_over_P": 0.2097242509066233,
+        "policies": [
+          "N=1",
+          "N=10",
+          "N=20"
+        ]
+      },
+      {
+        "P_bin": "(70, 200]",
+        "n": 1,
+        "mean_abs_dP": 4.035202029999994,
+        "mean_dP_over_P": 0.054125157529771865,
+        "policies": [
+          "N=20"
+        ]
+      }
+    ],
+    "frequency_only_falsified": true,
+    "state_conditioned": true
+  },
+  "verdict": "STATE_CONDITIONED_BURST"
+}

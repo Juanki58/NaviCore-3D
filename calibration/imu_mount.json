@@ -9,7 +9,8 @@
   "static_phase_end_s": 30.0,
   "static_samples": 2974,
   "gravity_mps2": 9.80665,
-  "body_target": "body Z+ (EKF down)",
+  "body_target": "vehicle body FRD (+X forward, +Y right, +Z down); see docs/diagnostics/08-body-frame-contract.md",
+  "body_target_legacy_note": "Previously labeled body Z+ (EKF down); Rodrigues aligns gravity to +Z only",
   "sensor_median_accel_mps2": [
     0.0400500037,
     7.70295048,

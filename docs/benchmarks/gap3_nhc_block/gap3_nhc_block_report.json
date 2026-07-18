@@ -1,0 +1,97 @@
+{
+  "experiment": "GAP-3.9 NHC block audit",
+  "design": "ZUPT OFF (disabled); compare NHC ON vs OFF",
+  "audit_window_s": 60.0,
+  "cases": [
+    {
+      "case_id": "B_nhc_on",
+      "config": {
+        "constraint_policy": "disabled",
+        "nhc_policy": "enabled",
+        "label": "ZUPT OFF, NHC ON"
+      },
+      "nhc_updates_total": 32845,
+      "nhc_updates_t_le_audit_end": 5798,
+      "nis_total_mean": 1.2033958610658932,
+      "nis_total_median": 0.4457066357,
+      "nis_contrib_y_mean": 1.0341010354713072,
+      "nis_contrib_z_mean": 0.16929482683365668,
+      "dx_vel_norm_mean": 0.03557459091754729,
+      "dx_vel_norm_median": 0.012404083275,
+      "dx_pos_norm_mean": 0.17740882941975422,
+      "delta_P_vv_frob_mean": -0.016751313859875258,
+      "delta_P_pv_frob_mean": -0.037710072666988684,
+      "delta_P_aa_frob_mean": -0.00015422433281103094,
+      "P_vv_frob_pre_mean": 3.0308562566279638,
+      "P_vv_frob_post_mean": 3.014104942771549,
+      "P_pv_frob_pre_mean": 9.419123084092929,
+      "P_pv_frob_post_mean": 9.381413011298413,
+      "k_vel_max_mean": 0.09399999620558813,
+      "k_pos_max_mean": 0.41466043342531905,
+      "cov_only_updates_frac": 0.05053466712659538,
+      "cov_only_updates_count": 293,
+      "longitudinal_coupling_mean_abs_dvx": 0.03053374424500683,
+      "longitudinal_coupling_p95_abs_dvx": 0.10654900071999981,
+      "longitudinal_coupling_frac_gt_0p1": 0.05392450569203116,
+      "sum_abs_delta_P_vv_frob": 97.12411775955675,
+      "sum_dx_vel_norm": 206.2614781399392,
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "gnss_innov_h_mean_accepted": 27.191745,
+      "gnss_k_vel_max_mean_accepted": 0.03585857142857143,
+      "gnss_k_vel_max_mean_rejected": 0.03555709259259259,
+      "gnss_nis_median_accepted": 2.727068,
+      "gnss_nhc_correlation": {
+        "gnss_fixes_correlated": 330,
+        "k_vel_max_mean_at_gnss_accepted": 0.041835000000000004,
+        "k_vel_max_mean_at_gnss_rejected": 0.03555709259259259,
+        "P_vv_frob_mean_before_gnss_accepted": 17.360075394333332,
+        "P_vv_frob_mean_before_gnss_rejected": 3.204358032218488
+      },
+      "artifacts": {
+        "nhc_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\B_nhc_on\\nhc_block_audit.csv",
+        "gnss_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\B_nhc_on\\gnss_nis_audit.csv"
+      }
+    },
+    {
+      "case_id": "E_nhc_off",
+      "config": {
+        "constraint_policy": "disabled",
+        "nhc_policy": "disabled",
+        "label": "ZUPT OFF, NHC OFF"
+      },
+      "gnss_accept_count": 56,
+      "gnss_reject_count": 275,
+      "gnss_innov_h_mean_accepted": 7.668530517857143,
+      "gnss_k_vel_max_mean_accepted": 0.20636107142857144,
+      "gnss_k_vel_max_mean_rejected": 0.030792083636363633,
+      "gnss_nis_median_accepted": 0.2074455,
+      "gnss_nhc_correlation": {},
+      "artifacts": {
+        "nhc_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\E_nhc_off\\nhc_block_audit.csv",
+        "gnss_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\E_nhc_off\\gnss_nis_audit.csv"
+      }
+    }
+  ],
+  "comparison_B_vs_E": {
+    "delta_gnss_accepts": 49,
+    "delta_gnss_k_vel_accepted": 0.1705025,
+    "nhc_on_updates": 32845
+  },
+  "hypothesis_NHC_cov_collapse": {
+    "statement": "NHC reduce P_vv/P_pv cada tick; estado cambia poco; GNSS k_vel\u21920 y no corrige velocidad.",
+    "cov_only_updates_frac_B": 0.05053466712659538,
+    "cov_only_updates_count_B": 293,
+    "longitudinal_coupling_frac_gt_0p1_B": 0.05392450569203116,
+    "k_vel_max_at_gnss_accepted_B": 0.041835000000000004,
+    "k_vel_max_at_gnss_accepted_E": null
+  },
+  "verdict": "NHC_DOMINATES_GNSS_ACCEPTANCE",
+  "artifacts": {
+    "report_json": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\gap3_nhc_block_report.json",
+    "timeline_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\gap3_nhc_block_timeline.png",
+    "nis_decomposition_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\gap3_nhc_block_nis_decomposition.png",
+    "vbody_coupling_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\gap3_nhc_block_vbody_coupling.png",
+    "dp_vs_dx_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gap3_nhc_block\\gap3_nhc_block_dp_vs_dx.png"
+  }
+}

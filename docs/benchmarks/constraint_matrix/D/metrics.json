@@ -1,0 +1,33 @@
+{
+  "experiment_id": "D",
+  "config": {
+    "label": "imu_stationary",
+    "constraint_policy": "imu_stationary",
+    "nhc_policy": "enabled",
+    "zupt": "IMU stationary",
+    "nhc": "ON"
+  },
+  "gnss_accept_count": 7,
+  "gnss_reject_count": 324,
+  "final_drift_m": 4532.252,
+  "vel_h_mean_t_9_11s": 0.028934763819095478,
+  "vel_h_mean_t_30_35s": 0.07229003427419355,
+  "vel_h_median_t_30_35s": 0.0600035,
+  "sum_dv_norm_by_source": {
+    "gnss": 2.6582436136e-05,
+    "nhc": 75.33026644561858,
+    "predict": 314.1384716109212,
+    "zupt": 134.87760484616314
+  },
+  "bias_ax_at_10s": -0.672837,
+  "gnss_nis_mean": 187825.55762541693,
+  "gnss_nis_median_accepted": 3.123897,
+  "gnss_innov_h_mean": 1831.939186513595,
+  "gnss_innov_h_mean_accepted": 27.924125142857143,
+  "P_pv_frob_gnss_pre_mean": 0.003410650898138459,
+  "P_vv_frob_gnss_pre_mean": 0.00801256377198127,
+  "pipeline_tick_mean_abs_dv_pred": 0.00844526332062625,
+  "pipeline_tick_mean_abs_dv_nhc": 0.0021418091984981777,
+  "pipeline_tick_mean_abs_dv_zupt": 0.0037888218750125563,
+  "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\D"
+}

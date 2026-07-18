@@ -1,0 +1,174 @@
+{
+  "phase": "GAP-5 passive validation (hypothesis 1 only \u2014 controller implementation)",
+  "run_dir": "docs\\benchmarks\\gap5_adaptive_nhc\\p0_passive_validation",
+  "gamma_regime_stats": {
+    "gamma_inst_max": 10.922676,
+    "gamma_inst_p95": 0.00011159999999999854,
+    "gamma_filtered_max": 10.922676,
+    "gamma_filtered_mean": 0.1088051859948242,
+    "gamma_filtered_std": 0.6980959974117421,
+    "median_tick_dt_s": 0.010086059000002479,
+    "fraction_gamma_filt_above_8": 0.0013091794793728118,
+    "fraction_gamma_filt_above_12": 0.0,
+    "fraction_gamma_inst_above_12": 0.0,
+    "fraction_gamma_inst_above_22": 0.0
+  },
+  "controller_activity": {
+    "time_frac_N1": 1.0,
+    "time_frac_N5": 0.0,
+    "time_frac_N10": 0.0,
+    "n_transitions": 0,
+    "duration_s": 331.258140564
+  },
+  "offline_gamma_fix2_fix3": {
+    "t_fix2": 5.664433479,
+    "t_fix3": 6.053678513,
+    "gap_duration_s": 0.389245034,
+    "gap_imu_ticks": 38,
+    "sum_delta_P_vv_predict": 0.9673681259999993,
+    "sum_abs_delta_P_vv_nhc": 0.12454128299999923,
+    "gamma_offline_gap": 0.12874238839661678
+  },
+  "f1_reference": {
+    "gamma_f1_baseline_gap": 19.65312975904548,
+    "t_fix2_f1": 5.664433479,
+    "t_fix3_f1": 6.053678513
+  },
+  "online_gamma_fix2_fix3_window": {
+    "gamma_inst_max_in_fix2_3_window": 7.96915,
+    "gamma_filtered_max_in_fix2_3_window": 5.596432,
+    "gamma_inst_at_fix2": 7.96915
+  },
+  "scale_bridge": {
+    "interpretation": "F1 offline Gamma = gap-integrated sum|\u0394P_vv|_NHC / sum \u0394P_predict over fix#2\u2192#3 (strict open interval, gps_index 2/3). Online gamma_inst uses rolling 1 s decay with predict/NHC split approximation; gamma_filtered is EWMA \u03c4=1 s. Init bootstrap can spike gamma before any burst. F1 historical used pos-only GNSS; GAP-5 PoC uses pos_vel + p_pv none \u2014 expect different offline gap Gamma even on same trajectory.",
+    "gamma_offline_this_run": 0.12874238839661678,
+    "gamma_f1_historical_baseline": 19.65312975904548,
+    "ratio_offline_this_to_f1_historical": 0.006550732121297996,
+    "ratio_inst_peak_burst_to_offline_this": 61.899970159396396,
+    "ratio_inst_peak_burst_to_f1_historical": 0.4054901228305455
+  },
+  "threshold_separation": {
+    "threshold_up_1_to_5": 12.0,
+    "threshold_up_5_to_10": 22.0,
+    "gamma_filtered_ever_reaches_12": false,
+    "gamma_inst_ever_reaches_12": false,
+    "note": "If gamma_filtered never reaches 12, v1 controller instance is inactive \u2014 not hypothesis failure."
+  },
+  "gamma_regime_plateaus_ge_2s": [
+    {
+      "t_start": 5.763128757,
+      "t_end": 8.304310799,
+      "duration_s": 2.541182042,
+      "gamma_filt_mean": 4.889932118577075,
+      "gamma_filt_std": 0.5837769354921946
+    },
+    {
+      "t_start": 11.45054245,
+      "t_end": 41.44153595,
+      "duration_s": 29.990993500000002,
+      "gamma_filt_mean": 0.03159745512605043,
+      "gamma_filt_std": 0.10072882214825127
+    },
+    {
+      "t_start": 41.451618195,
+      "t_end": 71.442695618,
+      "duration_s": 29.991077423,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 71.452781677,
+      "t_end": 101.44392395,
+      "duration_s": 29.991142272999994,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 101.45401001,
+      "t_end": 131.450393677,
+      "duration_s": 29.99638366699999,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 131.460479736,
+      "t_end": 161.452209473,
+      "duration_s": 29.991729737000014,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 161.462280273,
+      "t_end": 191.45401001,
+      "duration_s": 29.991729736999986,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 191.464080811,
+      "t_end": 221.455871582,
+      "duration_s": 29.991790770999984,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 221.465957642,
+      "t_end": 251.457794189,
+      "duration_s": 29.99183654699999,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 251.467880249,
+      "t_end": 281.459777832,
+      "duration_s": 29.991897582999997,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 281.46987915,
+      "t_end": 311.46182251,
+      "duration_s": 29.991943359999993,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    },
+    {
+      "t_start": 311.471893311,
+      "t_end": 332.791015625,
+      "duration_s": 21.319122314000026,
+      "gamma_filt_mean": 0.0,
+      "gamma_filt_std": 0.0
+    }
+  ],
+  "threshold_proximity": {
+    "gamma_filt_within_8_pm1s": 0.0008829349977165474,
+    "gamma_inst_within_8_pm1s": 0.0013700715481808495,
+    "gamma_filt_within_12_pm1s": 0.0,
+    "gamma_inst_within_12_pm1s": 0.0,
+    "gamma_filt_within_18_pm1s": 0.0,
+    "gamma_inst_within_18_pm1s": 0.0,
+    "gamma_filt_within_22_pm1s": 0.0,
+    "gamma_inst_within_22_pm1s": 0.0
+  },
+  "hypothetical_state_sequence": [
+    {
+      "timestamp_s": 1.532875061,
+      "gamma_raw": 10.922676,
+      "gamma_filtered": 10.922676,
+      "N_proposed": 1,
+      "reason": "init",
+      "transition": 0
+    }
+  ],
+  "verdict_implementation": {
+    "burst_gamma_inst_visible": true,
+    "offline_gamma_matches_f1_historical": false,
+    "inst_peak_consistent_with_offline_gap": true,
+    "gamma_filtered_not_excessively_noisy": true,
+    "gamma_inst_crosses_threshold_12": false,
+    "gamma_filtered_crosses_threshold_12": false,
+    "controller_v1_would_transition_in_active": false,
+    "ready_for_active_poc": false,
+    "caveat": "If gamma_filtered never crosses 12, v1 controller is inactive \u2014 recalibrate thresholds (v2), not H5-PoC. Compare F1-bridge profile before blaming online estimator."
+  }
+}

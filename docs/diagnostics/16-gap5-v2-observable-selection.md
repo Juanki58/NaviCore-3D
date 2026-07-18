@@ -438,6 +438,22 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 
 ---
 
+## 12b. Addendum — contexto G-ext (no altera §2 ni O1–O5)
+
+**Fuente:** [INTERPRETATION.md](../benchmarks/real_run_19082026_baseline/INTERPRETATION.md) · K14/K15 en [STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md)
+
+G-ext aporta **contexto experimental** previo al benchmark, sin reabrir la preregistración v1.2:
+
+1. Hay **dos recorridos** con núcleo de bloqueo compartido y comportamiento externo distinto.
+2. ~506 s de GNSS limpio + reject continuo desacoplan calidad externa vs régimen interno → motiva la lectura operativa de OQ1:
+   > ¿Qué observable interno permanece coherente cuando la calidad externa del GNSS deja de explicar el comportamiento del filtro?
+3. La dominancia del eje Norte **no se reproduce** en G-ext; no se adopta ninguna explicación sustituta (longitudinal, eje principal de innovación, etc.) hasta falsificación en v2.
+4. G-ext **no** interroga la región de bifurcación fix#4 — no mezclar brazos §11 GAP-4 con este dataset para ese fin.
+
+**H6-OBS formal (§2) permanece invariante.** Este addendum no añade candidatos ni cambia criterios C1–C7.
+
+---
+
 ## 13. Congelación
 
 | Campo | Valor |
@@ -451,6 +467,7 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 | Paso 0 | Catálogo congelado en `paso0_property_justification.md` |
 | Regla §0.2 | Solo observables — prohibido discutir control en v2 |
 | §17 | Prohibido redactar hasta cierre completo v2 |
+| Addendum | §12b G-ext (contexto; no cambia §2) |
 
 ---
 
@@ -464,3 +481,4 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 | **1.0** | **2026-07-18** | **CONGELADA** — §0.2 solo observables; catálogo Paso 0; H7-MIN; tag `gap5-v2-observable-preregistration-frozen` |
 | **1.1** | **2026-07-18** | Test protocolo §5.1; C7 perfiles R0–R4; tres tipos resultado §5.0; prohibido score hasta §9 |
 | **1.2** | **2026-07-18** | Executive summary autónomo; capa modelo del régimen; C7 alimenta no elige; §9.2 regime_model.md |
+| **1.2+§12b** | **2026-07-18** | Addendum G-ext (K14/K15); OQ1 afilada; H6 formal intacta |

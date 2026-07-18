@@ -4,16 +4,24 @@ Documentación técnica del pipeline experimental usado para auditar consistenci
 
 ## Reference documentation (estado congelado)
 
-Documentación de referencia — **no narrativa**. Solo veredictos congelados:
+**Entrada:** [reference/STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md](reference/STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md) (D21) → [reference/README.md](reference/README.md)
 
 | Archivo | Contenido |
 |---------|-----------|
-| [reference/STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md) | Conocimiento confirmado (K1–K13) |
-| [reference/OPEN_QUESTIONS.md](reference/OPEN_QUESTIONS.md) | Preguntas abiertas (OQ1–OQ6) |
-| [reference/DECISION_LOG.md](reference/DECISION_LOG.md) | Decisiones de diseño (D1–D11) |
-| [reference/RESEARCH_MAP.md](reference/RESEARCH_MAP.md) | Mapa fases → pregunta / outcome / tag |
+| [reference/STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md](reference/STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md) | **Cierre Stage I** — baseline científico de etapa |
+| [reference/CURRENT_STATE_OF_THE_RESEARCH.md](reference/CURRENT_STATE_OF_THE_RESEARCH.md) | Artículo interno — qué sabemos / no sabemos |
+| [reference/SCIENTIFIC_CHRONOLOGY.md](reference/SCIENTIFIC_CHRONOLOGY.md) | Cronología científica (no commits) |
+| [reference/RESEARCH_STATUS.md](reference/RESEARCH_STATUS.md) | Fase del proyecto (Stage I cerrada) |
+| [reference/RESEARCH_METRICS.md](reference/RESEARCH_METRICS.md) | Indicadores X/Y/Z + V/P/R |
+| [reference/DEPENDENCY_MAP.md](reference/DEPENDENCY_MAP.md) | Dependencias K ↔ fases ↔ OQ |
+| [reference/CONSISTENCY_AUDIT.md](reference/CONSISTENCY_AUDIT.md) | Auditoría de consistencia |
+| [reference/REDUNDANCY_INVENTORY.md](reference/REDUNDANCY_INVENTORY.md) | Redundancias (solo listado) |
+| [reference/STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md) | Conocimiento consolidado (K1–K15) |
+| [reference/OPEN_QUESTIONS.md](reference/OPEN_QUESTIONS.md) | Preguntas abiertas (OQ1–OQ7) |
+| [reference/DECISION_LOG.md](reference/DECISION_LOG.md) | Decisiones (D1–D21) |
+| [reference/RESEARCH_MAP.md](reference/RESEARCH_MAP.md) | Mapa fases → outcome / tag |
 
-Índice: [reference/README.md](reference/README.md)
+Índice (3 niveles: baselines / programa / en curso): [reference/README.md](reference/README.md)
 
 ---
 
@@ -46,13 +54,10 @@ Entre **H9** y **GAP-3.7**, el replay aplicaba ZUPT con `t≤30 s` OR `gps_speed
 
 ## Pregunta operativa actual
 
-**GAP-4 diagnóstico congelado** (`gap4-diagnostic-complete`). Ver [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.
+**Pausa estratégica** antes del benchmark H6 — ver [reference/RESEARCH_STATUS.md](reference/RESEARCH_STATUS.md).
 
-**GAP-5 v1 (cerrado):** instancia controlador Γ̄ inactiva bajo operacionalización preregistrada — ver [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md). PoC activo **no ejecutado**.
-
-**GAP-5 v2 (activa):** selección de **propiedad / observable** — [16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md) (`gap5-v2-observable-preregistration-frozen`). **Solo observables** — prohibido discutir políticas de control en v2.
-
-**No mezclar** con §11 P_pv.
+Cadena cerrada: GAP-3 → GAP-4 → GAP-5 v1 → G-ext (K14/K15).  
+**Siguiente (cuando se abra):** GAP-5 v2 — [16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md) (preregistrada v1.2; **no ejecutada**). Solo observables — prohibido controlador en v2. **No mezclar** con §11 P_pv.
 
 ---
 

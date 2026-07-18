@@ -1,24 +1,67 @@
 # Reference documentation index
 
-**Purpose:** freeze **state of knowledge** — not project narrative.
+**Purpose:** freeze **state of knowledge** — not invent new science.
 
-Each claim belongs to exactly one category:
+## Tres niveles de conocimiento
 
-| Category | File |
-|----------|------|
-| Confirmed knowledge | [STATE_OF_KNOWLEDGE.md](STATE_OF_KNOWLEDGE.md) |
-| Open question | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) |
-| Design decision | [DECISION_LOG.md](DECISION_LOG.md) |
-| Phase map (question / hypothesis / outcome / tag) | [RESEARCH_MAP.md](RESEARCH_MAP.md) |
+| Nivel | Rol | Entrada |
+|-------|-----|---------|
+| **1. Baselines** | Congelados; cualquier trabajo futuro los **asume** | [STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md](STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md) · [regime_model.md](../../benchmarks/gap5_v2_observable_selection/regime_model.md) |
+| **2. Programa** | K, OQ, GAP, D, mapas, métricas | este directorio (`reference/`) |
+| **3. En curso** | Experimentos activos | *(vacío tras cierre Stage I)* — futuro GAP-5 v3 |
+
+**Start here (post Stage I):**  
+→ [STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md](STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md)  
+→ [CURRENT_STATE_OF_THE_RESEARCH.md](CURRENT_STATE_OF_THE_RESEARCH.md)  
+→ [RESEARCH_STATUS.md](RESEARCH_STATUS.md)
+
+---
+
+## 1. Baselines (congelados)
+
+| Documento | Rol |
+|-----------|-----|
+| **[Stage I closure](STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md)** | Cierre de etapa: alcance, asumibles, no reabrir |
+| [regime_model.md](../../benchmarks/gap5_v2_observable_selection/regime_model.md) | Modelo parcial de régimen (D20) |
+| [H6_ARTIFACT_CONSISTENCY_REVIEW.md](../../benchmarks/gap5_v2_observable_selection/H6_ARTIFACT_CONSISTENCY_REVIEW.md) | Consistencia pre-síntesis (D19) |
+| [INTERPRETATION G-ext](../../benchmarks/real_run_19082026_baseline/INTERPRETATION.md) | Lectura congelada validación externa |
+| Protocolo H6 v1.2 | [16-gap5-v2-observable-selection.md](../16-gap5-v2-observable-selection.md) |
+
+Tag sugerido: `stage-I-regime-identification-closed` (al versionar).
+
+---
+
+## 2. Programa de investigación
+
+| Layer | File |
+|-------|------|
+| **Artículo interno (estado)** | [CURRENT_STATE_OF_THE_RESEARCH.md](CURRENT_STATE_OF_THE_RESEARCH.md) |
+| Project phase / status | [RESEARCH_STATUS.md](RESEARCH_STATUS.md) |
+| **Consolidated knowledge (K)** | [STATE_OF_KNOWLEDGE.md](STATE_OF_KNOWLEDGE.md) |
+| **Open questions (OQ)** | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) |
+| Design decisions (D) | [DECISION_LOG.md](DECISION_LOG.md) |
+| Phase map (GAP / tags) | [RESEARCH_MAP.md](RESEARCH_MAP.md) |
+| Scientific chronology | [SCIENTIFIC_CHRONOLOGY.md](SCIENTIFIC_CHRONOLOGY.md) |
+| Program metrics X/Y/Z + V/P/R | [RESEARCH_METRICS.md](RESEARCH_METRICS.md) |
+| Dependency map | [DEPENDENCY_MAP.md](DEPENDENCY_MAP.md) |
+| Evidence Strength Audit | [EVIDENCE_STRENGTH_AUDIT.md](EVIDENCE_STRENGTH_AUDIT.md) |
+| Critical Evidence Review | [CRITICAL_EVIDENCE_REVIEW.md](CRITICAL_EVIDENCE_REVIEW.md) |
+| Evidence Review (K×G1×G-ext) | [EVIDENCE_REVIEW.md](EVIDENCE_REVIEW.md) |
+| Consistency audit | [CONSISTENCY_AUDIT.md](CONSISTENCY_AUDIT.md) |
+| Redundancy inventory | [REDUNDANCY_INVENTORY.md](REDUNDANCY_INVENTORY.md) |
+| H6 preflight | [H6_PREFLIGHT.md](H6_PREFLIGHT.md) |
 
 ## Rules
 
 1. Use only hypotheses and verdicts already frozen (git tags, congelados docs).
 2. Do not mix categories in one entry.
-3. Do not reinterpret results or summarize discussions.
+3. STATE / OPEN stay non-narrative; CURRENT_STATE / STATUS may frame the chain.
 4. Refuted hypotheses appear in **RESEARCH_MAP** outcomes, not as open questions.
-5. Update these files when a phase closes with a new tag — not before.
+5. Update when a phase closes — not before.
+6. Never move consolidated ↔ open without a new frozen experiment.
+7. Editor mode: consolidate and make traceable; do **not** invent hypotheses or controllers.
+8. **Stage I closed (D21):** do not reopen regime-identification framing inside a future control protocol; see Stage I §6–§7.
 
-## Protocol / phase docs (detail, not summary)
+## Protocol / phase docs (detail)
 
-Detailed protocols remain in sibling files: `10–16-*.md`, `15-gap5-passive-outcome.md`, etc.
+`docs/diagnostics/10–16-*.md`, G-ext: `docs/benchmarks/real_run_19082026_baseline/INTERPRETATION.md`.

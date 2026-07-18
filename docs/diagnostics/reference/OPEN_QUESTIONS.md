@@ -6,15 +6,18 @@
 
 ---
 
-### OQ1 — What filter property defines regime?
+### OQ1 — What internal observable stays coherent when external GNSS quality no longer explains filter behaviour?
 
 | Campo | Valor |
 |-------|-------|
 | Owner | GAP-5 v2 |
 | Hypothesis | H6-OBS |
-| Status | **Open** |
+| Status | **Partially open** |
 | Protocol | [16-gap5-v2-observable-selection.md](../16-gap5-v2-observable-selection.md) |
-| Tag | `gap5-v2-observable-preregistration-v1.1` |
+| Tag | `gap5-v2-observable-preregistration-v1.2` |
+| Motivation | G-ext (K14/K15): ~506 s clean GNSS + continuous reject decouples external quality from internal regime — [INTERPRETATION.md](../../benchmarks/real_run_19082026_baseline/INTERPRETATION.md) |
+| Note | Formal H6-OBS unchanged. Do **not** pre-adopt “North → longitudinal”. |
+| H6 closure | **2026-07-18** — [regime_model.md](../../benchmarks/gap5_v2_observable_selection/regime_model.md) §9: mapa parcial (R1←O1; R3←O3 provisional; R2 hueco); **no** propiedad única ni H7-MIN demostrados → OQ1 **no cerrada**. |
 
 ---
 
@@ -25,7 +28,7 @@
 | Owner | GAP-5 v2 (exploratory) |
 | Hypothesis | H7-MIN |
 | Status | **Open** |
-| Note | Outcomes: one suffices / two / three / none of O1–O5 |
+| Note | D19/regime_model: results do **not** allow concluding that one Oi is sufficient **nor** that a minimal set is necessary. H7-MIN neither weakened nor artificially strengthened. |
 
 ---
 
@@ -34,8 +37,9 @@
 | Campo | Valor |
 |-------|-------|
 | Owner | GAP-5 v2 |
-| Status | **Open** |
+| Status | **Open** (parcialmente acotada) |
 | Context | Γ failed invariance (K13); invariance is selection criterion C3/C7 |
+| Evidence Strength Audit | **(a) Cerrado para Γ̄ v1 / K13.** **(b)** H6: C3 ordinal OK for O1–O5 on this arm; full R1–R4 model invariance still open ([regime_model.md](../../benchmarks/gap5_v2_observable_selection/regime_model.md) §2.5). |
 
 ---
 
@@ -44,8 +48,8 @@
 | Campo | Valor |
 |-------|-------|
 | Owner | GAP-5 v2 closure (§9.2) |
-| Status | **Open** |
-| Note | C7 provides evidence; `regime_model.md` is the deliverable — may be vector (H7-MIN) |
+| Status | **Partially answered** |
+| Note | [regime_model.md](../../benchmarks/gap5_v2_observable_selection/regime_model.md) §2.4–§4: provisional feed map + indeterminate cardinality — not a frozen controller architecture |
 
 ---
 
@@ -55,8 +59,9 @@
 |-------|-------|
 | Owner | GAP-5 v3+ (not v2) |
 | Hypothesis | H5-PoC |
-| Status | **Open** — **not tested** |
+| Status | **Open** — **not tested** (cota negativa parcial) |
 | Prerequisite | Observable/property frozen; controller preregistration |
+| Evidence Strength Audit | **Cota:** instancia Γ̄ v1 **no** es esa operacionalización (K12). OQ5 completa espera propiedad elegida por H6. No re-probar Γ̄ v1 como respuesta. |
 
 ---
 

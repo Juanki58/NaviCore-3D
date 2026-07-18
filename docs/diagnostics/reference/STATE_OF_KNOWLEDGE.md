@@ -2,7 +2,7 @@
 
 **Tipo:** documentación de referencia — no narrativa, no cronología.  
 **Regla:** solo afirmaciones con veredicto congelado (tags / informes congelados).  
-**Última actualización:** 2026-07-18
+**Última actualización:** 2026-07-18 (K14/K15 G-ext)
 
 ---
 
@@ -16,7 +16,7 @@ NHC application rate controls `P_vv` level and `k_vel` (dose–response).
 |-------|-------|
 | Evidence | F1 (`docs/benchmarks/gap3_f1_nhc_dose_response/`) |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2 |
 
 ---
 
@@ -28,7 +28,7 @@ With ZUPT removed from baseline: NHC ON → 7 accepts; NHC OFF → 56 accepts on
 |-------|-------|
 | Evidence | Constraint matrix A–E (§8.10) |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2 |
 
 ---
 
@@ -40,7 +40,7 @@ Higher `P_vv` / `k_vel` from lower NHC frequency does not increase accepts (e.g.
 |-------|-------|
 | Evidence | F1, F1.1 |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2 |
 
 ---
 
@@ -52,7 +52,9 @@ Rejects driven by `contrib_N`, `Λ_N`; innovation in nominal state grows while `
 |-------|-------|
 | Evidence | F1.1 |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2, §8.17 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2, §8.17 |
+
+**Scope note (Critical Evidence Review, 2026-07-18):** Confirmed on F1.1 / G1-lineage evidence. G-ext reproduced elevated gate stress (`Λ`) but **not** North-axis dominance of \|innovation\|; do **not** read K4 as trajectory-universal “North”. Axis identity remains open for H6-OBS (see INTERPRETATION / D12). Core claim retained: rejects are innovation / Λ-driven, not “low K only” (K3).
 
 ---
 
@@ -64,7 +66,7 @@ Burst concentrated in few NHC ticks (top-3 share high when meaningful); decimati
 |-------|-------|
 | Evidence | F1.2, gap fix#2→#3 autopsy |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2, §8.18 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2, §8.18 |
 
 ---
 
@@ -76,7 +78,7 @@ Gap-integrated ratio Σ|ΔP_vv|_NHC / ΣΔP_predict ≈ 19.7 (baseline F1 config
 |-------|-------|
 | Evidence | F1 baseline, cov_step audit |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2 |
 
 ---
 
@@ -88,7 +90,7 @@ Joseph accounts for ~31% of drop; remainder mechanistically tied to NHC in gap.
 |-------|-------|
 | Evidence | GAP-3.14 cliff anatomy |
 | Status | **Confirmed** |
-| Source | [12-gap3-synthesis.md](12-gap3-synthesis.md) §2 |
+| Source | [12-gap3-synthesis.md](../12-gap3-synthesis.md) §2 |
 
 ---
 
@@ -100,7 +102,7 @@ Position innovation transfers to velocity via `P_pv` under normal EKF operation.
 |-------|-------|
 | Evidence | GAP-4 autopsy, logged filter state |
 | Status | **Confirmed** |
-| Source | [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.5 |
+| Source | [13-gap4-gnss-velocity-protocol.md](../13-gap4-gnss-velocity-protocol.md) §10.5 |
 | Tag | `gap4-diagnostic-complete` |
 
 ---
@@ -113,7 +115,7 @@ Arms 1d vs 1d′ share pre-update at fix#4; post-update diverges; subsequent com
 |-------|-------|
 | Evidence | GAP-4 divergence tree, truth table |
 | Status | **Confirmed** |
-| Source | [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.5, §10.7 |
+| Source | [13-gap4-gnss-velocity-protocol.md](../13-gap4-gnss-velocity-protocol.md) §10.5, §10.7 |
 
 ---
 
@@ -125,7 +127,7 @@ Post-hoc K/cos recomputation can infer wrong gate trigger; `gnss_nis_audit.csv` 
 |-------|-------|
 | Evidence | gps#32 autopsy (cos_tot ≈ −0.87 logged, +0.87 reconstructed) |
 | Status | **Confirmed** (methodological rule) |
-| Source | [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.6 |
+| Source | [13-gap4-gnss-velocity-protocol.md](../13-gap4-gnss-velocity-protocol.md) §10.6 |
 
 ---
 
@@ -137,7 +139,7 @@ Passive f1-bridge: offline gap Γ = 19.65; Γ_inst peak ≈ 18.14 in fix#2→#3 
 |-------|-------|
 | Evidence | GAP-5 v1 passive (`p0_passive_f1_bridge`) |
 | Status | **Confirmed** |
-| Source | [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) §3.1 |
+| Source | [15-gap5-passive-outcome.md](../15-gap5-passive-outcome.md) §3.1 |
 
 ---
 
@@ -149,7 +151,7 @@ Passive f1-bridge: offline gap Γ = 19.65; Γ_inst peak ≈ 18.14 in fix#2→#3 
 |-------|-------|
 | Evidence | GAP-5 v1 passive |
 | Status | **Confirmed** (methodological) |
-| Source | [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) |
+| Source | [15-gap5-passive-outcome.md](../15-gap5-passive-outcome.md) |
 
 ---
 
@@ -161,7 +163,43 @@ Same gap window: Γ_offline ≈ 0.13 vs ≈ 19.7 (F1 config) — magnitude and i
 |-------|-------|
 | Evidence | GAP-5 v1 passive (`p0_passive_validation` vs `p0_passive_f1_bridge`) |
 | Status | **Confirmed** |
-| Source | [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) §3.1 |
+| Source | [15-gap5-passive-outcome.md](../15-gap5-passive-outcome.md) §3.1 |
+
+---
+
+### K14 — G-ext reproduces filter lockout core on an independent trajectory (not full G1 causal sequence)
+
+Under identical G1 shell (`pos_vel`, `p_pv=none`, ZUPT off, NHC N=1): `P_vv` compression, early `P_pv` growth, elevated gate innovations (`Λ_N` on rejects), and loss of GNSS re-acquire (1 accept / 680 rejects) reappear on run `19082026`.
+
+**Does not claim:** G-ext “confirms G1” end-to-end. Missing pieces (e.g. multi-accept chain, fix#2-style `|ΔP|/P` abort) are absent because the filter never re-enters that state region.
+
+| Campo | Valor |
+|-------|-------|
+| Evidence | `docs/benchmarks/real_run_19082026_baseline/` |
+| Status | **Confirmed** |
+| Source | [INTERPRETATION.md](../../benchmarks/real_run_19082026_baseline/INTERPRETATION.md) |
+
+---
+
+### K15 — Long clean external GNSS can coexist with continuous internal reject (G-ext)
+
+~506 s of externally “clean” GNSS (hAcc / speed criteria) while the EKF remains in continuous reject — external quality and internal regime are **not** the same variable.
+
+| Campo | Valor |
+|-------|-------|
+| Evidence | G-ext Phase A clean windows + Phase B `gnss_nis_audit.csv` |
+| Status | **Confirmed** |
+| Source | [INTERPRETATION.md](../../benchmarks/real_run_19082026_baseline/INTERPRETATION.md) |
+
+---
+
+### Explicit non-claims (G-ext)
+
+| Non-claim | Reason |
+|-----------|--------|
+| G-ext validates/invalidates fix#4 `P_pv` bifurcation (K9) | No second accept — experiment never enters that state region |
+| “North axis is not universal” | Only: North dominance **not reproduced**; dominant component appears trajectory-geometry-dependent — open for H6-OBS |
+| “North → along-track” | New hypothesis — **not** adopted; leave to GAP-5 v2 falsification |
 
 ---
 

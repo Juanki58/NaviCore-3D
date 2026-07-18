@@ -63,9 +63,27 @@ void print_usage(const char *program_name)
         "         [--consistency-csv <csv>]\n"
         "         [--h5-sync-audit-csv <csv>]\n"
         "         [--h7-update-audit-csv <csv>]\n"
+        "         [--gap3-observation-audit-csv <csv>]\n"
+        "         [--gap3-gnss-nis-audit-csv <csv>]\n"
+        "         [--gap3-nhc-block-audit-csv <csv>]\n"
+        "         [--gap3-gnss-k-block-audit-json <json>]\n"
+        "         [--gap3-cov-propagation-audit-csv <csv>]\n"
+        "         [--gap3-cov-step-audit-csv <csv>]\n"
+        "         [--gap3-vel-source-audit-csv <csv>]\n"
+        "         [--gap3-imu-constraint-audit-csv <csv>]\n"
+        "         [--gap3-constraint-pipeline-audit-csv <csv>]\n"
+        "         [--constraint-policy auto|forced_time|gps_stop|imu_stationary|disabled]\n"
+        "         [--nhc-policy enabled|disabled]\n"
+        "         [--gnss-obs-mode pos|pos_vel|vel_only]\n"
+        "         [--p-pv-policy none|gap_le_1s|zero|cos_pos|cos_tot]\n"
+        "         [--gnss-vel-std-mps <m/s>]\n"
+        "         [--nhc-every-n-ticks <N>]\n"
+        "         [--static-phase-end-s <s>] [--moving-speed-threshold-mps <m/s>]\n"
+        "         [--imu-stationary-accel-dev-mps2 <m/s2>] [--imu-stationary-gyro-radps <rad/s>]\n"
         "         [--h8-propagation-audit-csv <csv>]\n"
         "         [--h9-tilt-audit-csv <csv>]\n"
         "         [--predict-only] [--predict-only-end-s <s>]\n"
+        "         [--replay-end-s <s>]\n"
         "         [--h9a-gravity-tilt-init]\n"
         "         [--h9a-gravity-alignment-audit-csv <csv>]\n"
         "         [--h9b-attitude-propagation-audit-csv <csv>]\n"
@@ -107,10 +125,20 @@ int main(int argc, char *argv[])
     const char *consistency_csv = nullptr;
     const char *sync_audit_csv = nullptr;
     const char *h7_update_audit_csv = nullptr;
+    const char *gap3_observation_audit_csv = nullptr;
+    const char *gap3_gnss_nis_audit_csv = nullptr;
+    const char *gap3_nhc_block_audit_csv = nullptr;
+    const char *gap3_gnss_k_block_audit_json = nullptr;
+    const char *gap3_cov_propagation_audit_csv = nullptr;
+    const char *gap3_cov_step_audit_csv = nullptr;
+    const char *gap3_vel_source_audit_csv = nullptr;
+    const char *gap3_imu_constraint_audit_csv = nullptr;
+    const char *gap3_constraint_pipeline_audit_csv = nullptr;
     const char *h8_propagation_audit_csv = nullptr;
     const char *h9_tilt_audit_csv = nullptr;
     bool predict_only_mode = false;
     float predict_only_end_s = 60.0f;
+    float replay_end_s = 0.0f;
     bool h9a_gravity_tilt_init = false;
     const char *h9a_gravity_alignment_audit_csv = nullptr;
     const char *h9b_attitude_propagation_audit_csv = nullptr;
@@ -132,6 +160,17 @@ int main(int argc, char *argv[])
     bool gnss_ref_lat_set = false;
     bool gnss_ref_lon_set = false;
     bool gnss_ref_alt_set = false;
+    ReplayConstraintPolicy constraint_policy = ReplayConstraintPolicy::FORCED_TIME;
+    ReplayNhcPolicy nhc_policy = ReplayNhcPolicy::ENABLED;
+    ReplayGnssObsMode gnss_obs_mode = ReplayGnssObsMode::POS;
+    ReplayPpvPolicy ppv_policy = ReplayPpvPolicy::NONE;
+    float gnss_vel_std_mps = 0.0f;
+    uint32_t nhc_every_n_ticks = 1U;
+    float static_phase_end_s = 30.0f;
+    float moving_speed_threshold_mps = 0.1f;
+    float imu_stationary_accel_dev_mps2 = 0.5f;
+    float imu_stationary_gyro_radps = 0.05f;
+    float gravity_mps2 = 9.80665f;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--input") == 0) {
@@ -201,6 +240,135 @@ int main(int argc, char *argv[])
                 return 1;
             }
             h7_update_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-observation-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_observation_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-gnss-nis-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_gnss_nis_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-nhc-block-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_nhc_block_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-gnss-k-block-audit-json") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_gnss_k_block_audit_json = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-cov-propagation-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_cov_propagation_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-cov-step-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_cov_step_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-vel-source-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_vel_source_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-imu-constraint-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_imu_constraint_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--gap3-constraint-pipeline-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gap3_constraint_pipeline_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--constraint-policy") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!replay_parse_constraint_policy(argv[++i], &constraint_policy)) {
+                std::printf("ERROR: --constraint-policy invalido: %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--nhc-policy") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!replay_parse_nhc_policy(argv[++i], &nhc_policy)) {
+                std::printf("ERROR: --nhc-policy invalido: %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--gnss-obs-mode") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!replay_parse_gnss_obs_mode(argv[++i], &gnss_obs_mode)) {
+                std::printf("ERROR: --gnss-obs-mode invalido: %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--p-pv-policy") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!replay_parse_p_pv_policy(argv[++i], &ppv_policy)) {
+                std::printf("ERROR: --p-pv-policy invalido: %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--gnss-vel-std-mps") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            gnss_vel_std_mps = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--nhc-every-n-ticks") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            nhc_every_n_ticks = static_cast<uint32_t>(std::strtoul(argv[++i], nullptr, 10));
+            if (nhc_every_n_ticks == 0U) {
+                nhc_every_n_ticks = 1U;
+            }
+        } else if (std::strcmp(argv[i], "--static-phase-end-s") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            static_phase_end_s = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--moving-speed-threshold-mps") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            moving_speed_threshold_mps = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--imu-stationary-accel-dev-mps2") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            imu_stationary_accel_dev_mps2 = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--imu-stationary-gyro-radps") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            imu_stationary_gyro_radps = static_cast<float>(std::atof(argv[++i]));
         } else if (std::strcmp(argv[i], "--h8-propagation-audit-csv") == 0) {
             if (i + 1 >= argc) {
                 print_usage(argv[0]);
@@ -221,6 +389,12 @@ int main(int argc, char *argv[])
                 return 1;
             }
             predict_only_end_s = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--replay-end-s") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            replay_end_s = static_cast<float>(std::atof(argv[++i]));
         } else if (std::strcmp(argv[i], "--h9a-gravity-tilt-init") == 0) {
             h9a_gravity_tilt_init = true;
         } else if (std::strcmp(argv[i], "--h9a-gravity-alignment-audit-csv") == 0) {
@@ -344,10 +518,19 @@ int main(int argc, char *argv[])
     config.consistency_csv_path = consistency_csv;
     config.sync_audit_csv_path = sync_audit_csv;
     config.h7_update_audit_csv_path = h7_update_audit_csv;
+    config.gap3_observation_audit_csv_path = gap3_observation_audit_csv;
+    config.gap3_gnss_nis_audit_csv_path = gap3_gnss_nis_audit_csv;
+    config.gap3_nhc_block_audit_csv_path = gap3_nhc_block_audit_csv;
+    config.gap3_gnss_k_block_audit_json_path = gap3_gnss_k_block_audit_json;
+    config.gap3_cov_propagation_audit_csv_path = gap3_cov_propagation_audit_csv;
+    config.gap3_cov_step_audit_csv_path = gap3_cov_step_audit_csv;
+    config.gap3_vel_source_audit_csv_path = gap3_vel_source_audit_csv;
+    config.gap3_imu_constraint_audit_csv_path = gap3_imu_constraint_audit_csv;
+    config.gap3_constraint_pipeline_audit_csv_path = gap3_constraint_pipeline_audit_csv;
     config.h8_propagation_audit_csv_path = h8_propagation_audit_csv;
     config.h9_tilt_audit_csv_path = h9_tilt_audit_csv;
     config.predict_only_mode = predict_only_mode;
-    config.replay_end_s = predict_only_mode ? predict_only_end_s : 0.0f;
+    config.replay_end_s = predict_only_mode ? predict_only_end_s : replay_end_s;
     config.h9a_gravity_tilt_init = h9a_gravity_tilt_init;
     config.h9a_gravity_alignment_audit_csv_path = h9a_gravity_alignment_audit_csv;
     config.h9b_attitude_propagation_audit_csv_path = h9b_attitude_propagation_audit_csv;
@@ -367,8 +550,17 @@ int main(int argc, char *argv[])
     config.gnss_ref_lon_deg = gnss_ref_lon_deg;
     config.gnss_ref_alt_m = gnss_ref_alt_m;
     config.gnss_ref_overridden = gnss_ref_lat_set && gnss_ref_lon_set && gnss_ref_alt_set;
-    config.static_phase_end_s = 30.0f;
-    config.moving_speed_threshold_mps = 0.1f;
+    config.static_phase_end_s = static_phase_end_s;
+    config.moving_speed_threshold_mps = moving_speed_threshold_mps;
+    config.constraint_policy = constraint_policy;
+    config.nhc_policy = nhc_policy;
+    config.gnss_obs_mode = gnss_obs_mode;
+    config.ppv_policy = ppv_policy;
+    config.gnss_vel_std_mps = gnss_vel_std_mps;
+    config.nhc_every_n_ticks = nhc_every_n_ticks;
+    config.imu_stationary_accel_dev_mps2 = imu_stationary_accel_dev_mps2;
+    config.imu_stationary_gyro_radps = imu_stationary_gyro_radps;
+    config.gravity_mps2 = gravity_mps2;
     config.zupt_lateral_std_mps = 0.1f;
     config.zupt_vertical_std_mps = 0.1f;
     config.nhc_lateral_std_mps = 0.5f;

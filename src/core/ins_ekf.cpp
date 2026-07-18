@@ -4,6 +4,7 @@
 #include "math_utils.hpp"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifndef NAVICORE_INS_EKF_PI_F
@@ -643,6 +644,8 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
         return;
     }
 
+    ins_ekf_log_cov_step_audit(this, "predict", "pre");
+
     predict_audit_last_.valid = false;
     predict_audit_last_.dt_s = dt_s;
     predict_audit_last_.imu_body_mps2[0] = imu_sample.accel_mps2[0];
@@ -732,8 +735,17 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
     predict_audit_last_.a_lin_mps2[2] = a_n[2];
 
     for (uint8_t i = 0U; i < 3U; ++i) {
-        vel_[i] += a_n[i] * dt_s;
+        const float dv = a_n[i] * dt_s;
+        vel_[i] += dv;
         pos_[i] += vel_[i] * dt_s;
+    }
+    {
+        const float dv_log[3] = {
+            a_n[0] * dt_s,
+            a_n[1] * dt_s,
+            a_n[2] * dt_s,
+        };
+        ins_ekf_log_vel_modification(this, "predict", dv_log, NULL, NULL, false);
     }
     predict_audit_last_.vel_ned_mps[0] = vel_[0];
     predict_audit_last_.vel_ned_mps[1] = vel_[1];
@@ -780,7 +792,433 @@ void InsEkfFilter::predict(const ImuSample &imu_sample, float dt_s)
         cov.P,
         scratch_b_);
 
+    predict_audit_last_.f_dp_dv_dt_s = dt_s;
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            predict_audit_last_.f_va[r][c] = f_va[r][c];
+            predict_audit_last_.f_vba[r][c] = f_vba[r][c];
+        }
+    }
+
+    ins_ekf_log_cov_step_audit(this, "predict", "post");
+
     last_imu_timestamp_ms = imu_sample.timestamp_ms;
+}
+
+static void gnss_store_delta_x_audit(InsEkfFilter *filter, const float delta_x[INS_EKF_STATE_DIM])
+{
+    if (filter == NULL || delta_x == NULL) {
+        return;
+    }
+
+    float dx_pos_sq = 0.0f;
+    float dx_vel_sq = 0.0f;
+    float dx_att_sq = 0.0f;
+    float dx_ba_sq = 0.0f;
+    float dx_bg_sq = 0.0f;
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        const float dp = delta_x[INS_ERR_POS_N + i];
+        const float dv = delta_x[INS_ERR_VEL_N + i];
+        const float da = delta_x[INS_ERR_ATT_X + i];
+        const float dba = delta_x[INS_ERR_BIAS_AX + i];
+        const float dbg = delta_x[INS_ERR_BIAS_GX + i];
+        dx_pos_sq += dp * dp;
+        dx_vel_sq += dv * dv;
+        dx_att_sq += da * da;
+        dx_ba_sq += dba * dba;
+        dx_bg_sq += dbg * dbg;
+        if (i == 0U) {
+            filter->gnss_last_dx_pos_n_m = dp;
+            filter->gnss_last_dx_vel_n_mps = dv;
+            filter->gnss_last_dx_att_x_rad = da;
+        } else if (i == 1U) {
+            filter->gnss_last_dx_pos_e_m = dp;
+            filter->gnss_last_dx_vel_e_mps = dv;
+            filter->gnss_last_dx_att_y_rad = da;
+        } else {
+            filter->gnss_last_dx_pos_d_m = dp;
+            filter->gnss_last_dx_vel_d_mps = dv;
+            filter->gnss_last_dx_att_z_rad = da;
+        }
+    }
+
+    filter->gnss_last_dx_pos_norm_m = std::sqrt(dx_pos_sq);
+    filter->gnss_last_dx_vel_norm_mps = std::sqrt(dx_vel_sq);
+    filter->gnss_last_dx_att_norm_rad = std::sqrt(dx_att_sq);
+    filter->gnss_last_dx_bias_a_norm = std::sqrt(dx_ba_sq);
+    filter->gnss_last_dx_bias_g_norm = std::sqrt(dx_bg_sq);
+}
+
+static void gnss_store_k_audit_n(
+    InsEkfFilter *filter,
+    const float k_gain[INS_EKF_STATE_DIM][5],
+    uint8_t n_meas)
+{
+    if (filter == NULL || k_gain == NULL || n_meas == 0U) {
+        return;
+    }
+
+    float k_pos = 0.0f;
+    float k_vel = 0.0f;
+    float k_att = 0.0f;
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = 0U; c < n_meas; ++c) {
+            const float k_abs = std::fabs(k_gain[r][c]);
+            if (r >= INS_ERR_POS_N && r < INS_ERR_POS_N + 3U) {
+                k_pos = fmaxf(k_pos, k_abs);
+            } else if (r >= INS_ERR_VEL_N && r < INS_ERR_VEL_N + 3U) {
+                k_vel = fmaxf(k_vel, k_abs);
+            } else if (r >= INS_ERR_ATT_X && r < INS_ERR_ATT_X + 3U) {
+                k_att = fmaxf(k_att, k_abs);
+            }
+        }
+    }
+
+    filter->gnss_last_k_pos_max = k_pos;
+    filter->gnss_last_k_vel_max = k_vel;
+    filter->gnss_last_k_att_max = k_att;
+}
+
+static bool invert_matrix_n(
+    const float a[5][5],
+    float inv_out[5][5],
+    uint8_t n)
+{
+    if (n == 0U || n > 5U) {
+        return false;
+    }
+
+    float aug[5][10]{};
+    for (uint8_t i = 0U; i < n; ++i) {
+        for (uint8_t j = 0U; j < n; ++j) {
+            aug[i][j] = a[i][j];
+        }
+        aug[i][n + i] = 1.0f;
+    }
+
+    for (uint8_t col = 0U; col < n; ++col) {
+        uint8_t pivot = col;
+        float max_abs = std::fabs(aug[col][col]);
+        for (uint8_t r = col + 1U; r < n; ++r) {
+            const float v = std::fabs(aug[r][col]);
+            if (v > max_abs) {
+                max_abs = v;
+                pivot = r;
+            }
+        }
+        if (max_abs <= 1.0e-12f) {
+            return false;
+        }
+        if (pivot != col) {
+            for (uint8_t c = 0U; c < 2U * n; ++c) {
+                const float tmp = aug[col][c];
+                aug[col][c] = aug[pivot][c];
+                aug[pivot][c] = tmp;
+            }
+        }
+
+        const float diag = aug[col][col];
+        for (uint8_t c = 0U; c < 2U * n; ++c) {
+            aug[col][c] /= diag;
+        }
+
+        for (uint8_t r = 0U; r < n; ++r) {
+            if (r == col) {
+                continue;
+            }
+            const float factor = aug[r][col];
+            if (factor == 0.0f) {
+                continue;
+            }
+            for (uint8_t c = 0U; c < 2U * n; ++c) {
+                aug[r][c] -= factor * aug[col][c];
+            }
+        }
+    }
+
+    for (uint8_t i = 0U; i < n; ++i) {
+        for (uint8_t j = 0U; j < n; ++j) {
+            inv_out[i][j] = aug[i][n + j];
+        }
+    }
+    return true;
+}
+
+static void gnss_build_s_matrix(
+    const InsEkfFilter *filter,
+    const float h_rows[5][INS_EKF_STATE_DIM],
+    const float meas_var[5],
+    uint8_t n_meas,
+    float s_out[5][5])
+{
+    for (uint8_t i = 0U; i < n_meas; ++i) {
+        for (uint8_t j = 0U; j < n_meas; ++j) {
+            float sum = 0.0f;
+            for (uint8_t k = 0U; k < kDim; ++k) {
+                for (uint8_t l = 0U; l < kDim; ++l) {
+                    sum += h_rows[i][k] * filter->cov.P[k][l] * h_rows[j][l];
+                }
+            }
+            s_out[i][j] = sum;
+        }
+        s_out[i][i] += meas_var[i];
+    }
+}
+
+static void gnss_joseph_update_n(
+    InsEkfMat15 p_in,
+    const float k_gain[INS_EKF_STATE_DIM][5],
+    const float h_rows[5][INS_EKF_STATE_DIM],
+    const float meas_var[5],
+    uint8_t n_meas,
+    InsEkfMat15 p_out,
+    InsEkfMat15 scratch_a,
+    InsEkfMat15 scratch_b)
+{
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = 0U; c < kDim; ++c) {
+            scratch_a[r][c] = (r == c) ? 1.0f : 0.0f;
+            for (uint8_t i = 0U; i < n_meas; ++i) {
+                scratch_a[r][c] -= k_gain[r][i] * h_rows[i][c];
+            }
+        }
+    }
+
+    mat15_mul(scratch_a, p_in, scratch_b);
+    mat15_transpose_inplace(scratch_a);
+    mat15_mul(scratch_b, scratch_a, p_out);
+
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = r; c < kDim; ++c) {
+            float krk_t = 0.0f;
+            for (uint8_t i = 0U; i < n_meas; ++i) {
+                krk_t += k_gain[r][i] * meas_var[i] * k_gain[c][i];
+            }
+            p_out[r][c] += krk_t;
+            if (r != c) {
+                p_out[c][r] = p_out[r][c];
+            }
+        }
+    }
+
+    mat_symmetrize(p_out);
+}
+
+static void gnss_store_k_audit(
+    InsEkfFilter *filter,
+    const float k_gain[INS_EKF_STATE_DIM][3])
+{
+    float k5[INS_EKF_STATE_DIM][5]{};
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            k5[r][c] = k_gain[r][c];
+        }
+    }
+    gnss_store_k_audit_n(filter, k5, 3U);
+}
+
+static void gnss_clear_correction_audit(InsEkfFilter *filter)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    filter->gnss_last_k_pos_max = 0.0f;
+    filter->gnss_last_k_vel_max = 0.0f;
+    filter->gnss_last_k_att_max = 0.0f;
+    const float zeros[INS_EKF_STATE_DIM]{};
+    gnss_store_delta_x_audit(filter, zeros);
+}
+
+static void ins_ekf_zero_pv_cross(InsEkfCovariance *cov)
+{
+    if (cov == NULL) {
+        return;
+    }
+
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            cov->P[INS_ERR_VEL_N + i][INS_ERR_POS_N + j] = 0.0f;
+            cov->P[INS_ERR_POS_N + j][INS_ERR_VEL_N + i] = 0.0f;
+        }
+    }
+}
+
+static float ins_ekf_effective_gnss_gap_s(const InsEkfFilter *filter, uint32_t timestamp_ms)
+{
+    if (filter == NULL) {
+        return -1.0f;
+    }
+
+    float gap_accept_s = -1.0f;
+    if (filter->last_gnss_accept_ms > 0U && timestamp_ms >= filter->last_gnss_accept_ms) {
+        gap_accept_s =
+            static_cast<float>(timestamp_ms - filter->last_gnss_accept_ms) * 0.001f;
+    }
+
+    if (gap_accept_s >= 0.0f) {
+        return gap_accept_s;
+    }
+
+    if (filter->last_gnss_fix_ms > 0U && timestamp_ms >= filter->last_gnss_fix_ms) {
+        return static_cast<float>(timestamp_ms - filter->last_gnss_fix_ms) * 0.001f;
+    }
+
+    return -1.0f;
+}
+
+static float ins_ekf_cos_alignment_2d(
+    float dv_n,
+    float dv_e,
+    float err_n,
+    float err_e)
+{
+    const float dn = std::hypot(dv_n, dv_e);
+    const float en = std::hypot(err_n, err_e);
+    if (dn < 1e-9f || en < 1e-9f) {
+        return 0.0f;
+    }
+    return (dv_n * err_n + dv_e * err_e) / (dn * en);
+}
+
+static bool gnss_compute_kalman_update(
+    InsEkfFilter *filter,
+    const float h_rows[5U][INS_EKF_STATE_DIM],
+    const float y[5U],
+    const float meas_var[5U],
+    uint8_t n_meas,
+    float s_mat[5U][5U],
+    float s_inv[5U][5U],
+    float k_gain[INS_EKF_STATE_DIM][5U],
+    float delta_x[INS_EKF_STATE_DIM])
+{
+    if (filter == NULL || n_meas == 0U) {
+        return false;
+    }
+
+    gnss_build_s_matrix(filter, h_rows, meas_var, n_meas, s_mat);
+    if (!invert_matrix_n(s_mat, s_inv, n_meas)) {
+        return false;
+    }
+
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        float ph_t[5U]{};
+        for (uint8_t c = 0U; c < n_meas; ++c) {
+            for (uint8_t k = 0U; k < kDim; ++k) {
+                ph_t[c] += filter->cov.P[r][k] * h_rows[c][k];
+            }
+        }
+        for (uint8_t c = 0U; c < n_meas; ++c) {
+            float k_rc = 0.0f;
+            for (uint8_t j = 0U; j < n_meas; ++j) {
+                k_rc += ph_t[j] * s_inv[j][c];
+            }
+            k_gain[r][c] = k_rc;
+        }
+    }
+
+    for (uint8_t r = 0U; r < kDim; ++r) {
+        float correction = 0.0f;
+        for (uint8_t c = 0U; c < n_meas; ++c) {
+            correction += k_gain[r][c] * y[c];
+        }
+        delta_x[r] = correction;
+    }
+
+    return true;
+}
+
+static void ins_ekf_capture_ppv_frob_pre(InsEkfFilter *filter)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    InsEkfCovBlockMetrics metrics{};
+    if (ins_ekf_get_cov_block_metrics(filter, &metrics)) {
+        filter->gnss_last_ppv_frob_pre = metrics.p_vel_pos_frob;
+    }
+}
+
+static void ins_ekf_capture_ppv_frob_post(InsEkfFilter *filter)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    InsEkfCovBlockMetrics metrics{};
+    if (ins_ekf_get_cov_block_metrics(filter, &metrics)) {
+        filter->gnss_last_ppv_frob_post = metrics.p_vel_pos_frob;
+    }
+}
+
+static bool ins_ekf_ppv_policy_triggered(
+    InsEkfFilter *filter,
+    const float k_gain[INS_EKF_STATE_DIM][5U],
+    const float y[5U],
+    uint8_t n_meas,
+    float err_pre_n,
+    float err_pre_e,
+    float effective_gap_s,
+    const float delta_x[INS_EKF_STATE_DIM],
+    bool zero_before_k)
+{
+    if (filter == NULL) {
+        return false;
+    }
+
+    filter->gnss_last_ppv_policy = static_cast<uint8_t>(filter->ppv_policy);
+    filter->gnss_last_ppv_effective_gap_s = effective_gap_s;
+    filter->gnss_last_cos_dv_pos_err_pre = 0.0f;
+    filter->gnss_last_cos_dv_tot_err_pre = 0.0f;
+
+    if (n_meas >= 5U) {
+        float dv_pos_n = 0.0f;
+        float dv_pos_e = 0.0f;
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            dv_pos_n += k_gain[INS_ERR_VEL_N][j] * y[j];
+            dv_pos_e += k_gain[INS_ERR_VEL_E][j] * y[j];
+        }
+        filter->gnss_last_cos_dv_pos_err_pre = ins_ekf_cos_alignment_2d(
+            dv_pos_n,
+            dv_pos_e,
+            err_pre_n,
+            err_pre_e);
+        filter->gnss_last_cos_dv_tot_err_pre = ins_ekf_cos_alignment_2d(
+            delta_x[INS_ERR_VEL_N],
+            delta_x[INS_ERR_VEL_E],
+            err_pre_n,
+            err_pre_e);
+    }
+
+    if (zero_before_k) {
+        return false;
+    }
+
+    bool triggered = false;
+    switch (filter->ppv_policy) {
+    case INS_EKF_PPV_POLICY_NONE:
+        triggered = false;
+        break;
+    case INS_EKF_PPV_POLICY_GAP_LE_1S:
+        triggered = effective_gap_s >= 0.0f
+            && effective_gap_s <= NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S;
+        break;
+    case INS_EKF_PPV_POLICY_ZERO:
+        triggered = true;
+        break;
+    case INS_EKF_PPV_POLICY_COS_POS:
+        triggered = filter->gnss_last_cos_dv_pos_err_pre > 0.0f;
+        break;
+    case INS_EKF_PPV_POLICY_COS_TOT:
+        triggered = filter->gnss_last_cos_dv_tot_err_pre > 0.0f;
+        break;
+    default:
+        break;
+    }
+
+    filter->gnss_last_ppv_triggered = triggered ? 1U : 0U;
+    return triggered;
 }
 
 bool InsEkfFilter::update_gnss(const GpsSample &gps_sample, float *out_nis)
@@ -789,53 +1227,144 @@ bool InsEkfFilter::update_gnss(const GpsSample &gps_sample, float *out_nis)
         return false;
     }
 
-    float z_n = 0.0f;
-    float z_e = 0.0f;
-    float z_d = 0.0f;
-    geodesy::lla_to_ned(
-        ref_lat_deg,
-        ref_lon_deg,
-        ref_alt_m,
-        gps_sample.position.x,
-        gps_sample.position.y,
-        gps_sample.position.z,
-        &z_n,
-        &z_e,
-        &z_d);
-
-    const float y[3] = {
-        z_n - pos_[0],
-        z_e - pos_[1],
-        z_d - pos_[2],
-    };
-
-    gnss_innovation_last[0] = y[0];
-    gnss_innovation_last[1] = y[1];
-    gnss_innovation_last[2] = y[2];
-
-    InsEkfMat3 s{};
-    for (uint8_t i = 0U; i < 3U; ++i) {
-        for (uint8_t j = 0U; j < 3U; ++j) {
-            s[i][j] = cov.P[INS_ERR_POS_N + i][INS_ERR_POS_N + j];
-            gnss_innovation_cov_last[i][j] = s[i][j];
+    const uint32_t gnss_fix_timestamp_ms = gps_sample.timestamp_ms;
+    struct GnssFixTimestampScope {
+        InsEkfFilter *filter;
+        uint32_t ts;
+        ~GnssFixTimestampScope()
+        {
+            if (filter != NULL) {
+                filter->last_gnss_fix_ms = ts;
+            }
         }
-        s[i][i] += gnss_pos_var_m2;
-        gnss_innovation_cov_last[i][i] = s[i][i];
+    } gnss_fix_ts_scope{this, gnss_fix_timestamp_ms};
+
+    ins_ekf_log_cov_step_audit(this, "gnss", "pre");
+    ins_ekf_capture_ppv_frob_pre(this);
+
+    constexpr uint8_t kMaxMeas = 5U;
+    float y[kMaxMeas]{};
+    float h_rows[kMaxMeas][INS_EKF_STATE_DIM]{};
+    float meas_var[kMaxMeas]{};
+    uint8_t n_meas = 0U;
+
+    const float course_rad = gps_sample.course_deg * kDegToRadF;
+    const float v_gps_n = gps_sample.speed_mps * std::cos(course_rad);
+    const float v_gps_e = gps_sample.speed_mps * std::sin(course_rad);
+    const bool has_vel_meas = gps_sample.speed_mps > 0.0f;
+
+    if (gnss_obs_mode == INS_EKF_GNSS_OBS_VEL_ONLY) {
+        if (!has_vel_meas) {
+            return false;
+        }
+        n_meas = 2U;
+        y[0] = v_gps_n - vel_[0];
+        y[1] = v_gps_e - vel_[1];
+        h_rows[0][INS_ERR_VEL_N] = 1.0f;
+        h_rows[1][INS_ERR_VEL_E] = 1.0f;
+        meas_var[0] = gnss_vel_var_m2_h;
+        meas_var[1] = gnss_vel_var_m2_h;
+        gnss_innovation_last[0] = y[0];
+        gnss_innovation_last[1] = y[1];
+        gnss_innovation_last[2] = 0.0f;
+    } else {
+        float z_n = 0.0f;
+        float z_e = 0.0f;
+        float z_d = 0.0f;
+        geodesy::lla_to_ned(
+            ref_lat_deg,
+            ref_lon_deg,
+            ref_alt_m,
+            gps_sample.position.x,
+            gps_sample.position.y,
+            gps_sample.position.z,
+            &z_n,
+            &z_e,
+            &z_d);
+
+        y[0] = z_n - pos_[0];
+        y[1] = z_e - pos_[1];
+        y[2] = z_d - pos_[2];
+        h_rows[0][INS_ERR_POS_N] = 1.0f;
+        h_rows[1][INS_ERR_POS_E] = 1.0f;
+        h_rows[2][INS_ERR_POS_D] = 1.0f;
+        meas_var[0] = gnss_pos_var_m2;
+        meas_var[1] = gnss_pos_var_m2;
+        meas_var[2] = gnss_pos_var_m2;
+        n_meas = 3U;
+
+        gnss_innovation_last[0] = y[0];
+        gnss_innovation_last[1] = y[1];
+        gnss_innovation_last[2] = y[2];
+
+        if (gnss_obs_mode == INS_EKF_GNSS_OBS_POS_VEL && has_vel_meas) {
+            y[3] = v_gps_n - vel_[0];
+            y[4] = v_gps_e - vel_[1];
+            h_rows[3][INS_ERR_VEL_N] = 1.0f;
+            h_rows[4][INS_ERR_VEL_E] = 1.0f;
+            meas_var[3] = gnss_vel_var_m2_h;
+            meas_var[4] = gnss_vel_var_m2_h;
+            n_meas = 5U;
+        }
     }
 
-    InsEkfMat3 s_inv{};
-    if (!ins_ekf_invert3x3(s, s_inv)) {
+    const float effective_gap_s = ins_ekf_effective_gnss_gap_s(this, gps_sample.timestamp_ms);
+    const float err_pre_n = vel_[0] - v_gps_n;
+    const float err_pre_e = vel_[1] - v_gps_e;
+
+    bool zero_before_k = false;
+    if (ppv_policy == INS_EKF_PPV_POLICY_ZERO) {
+        zero_before_k = true;
+    } else if (ppv_policy == INS_EKF_PPV_POLICY_GAP_LE_1S
+        && effective_gap_s >= 0.0f
+        && effective_gap_s <= NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S) {
+        zero_before_k = true;
+    }
+    if (zero_before_k) {
+        ins_ekf_zero_pv_cross(&cov);
+        gnss_last_ppv_policy = static_cast<uint8_t>(ppv_policy);
+        gnss_last_ppv_effective_gap_s = effective_gap_s;
+        gnss_last_ppv_triggered = 1U;
+    }
+
+    gnss_last_update_timestamp_ms = last_imu_timestamp_ms;
+
+    float s_mat[kMaxMeas][kMaxMeas]{};
+    float s_inv[kMaxMeas][kMaxMeas]{};
+    float k_gain[INS_EKF_STATE_DIM][kMaxMeas]{};
+    float delta_x_candidate[INS_EKF_STATE_DIM]{};
+
+    if (!gnss_compute_kalman_update(
+            this,
+            h_rows,
+            y,
+            meas_var,
+            n_meas,
+            s_mat,
+            s_inv,
+            k_gain,
+            delta_x_candidate)) {
         outlier_detected = true;
         gnss_nis_last = 0.0f;
+        gnss_last_accepted = 0U;
+        gnss_last_reject_reason = 2U;
+        gnss_clear_correction_audit(this);
         if (out_nis != NULL) {
             *out_nis = gnss_nis_last;
         }
         return false;
     }
 
-    float nis = 0.0f;
     for (uint8_t i = 0U; i < 3U; ++i) {
         for (uint8_t j = 0U; j < 3U; ++j) {
+            gnss_innovation_cov_last[i][j] =
+                (i < n_meas && j < n_meas) ? s_mat[i][j] : 0.0f;
+        }
+    }
+
+    float nis = 0.0f;
+    for (uint8_t i = 0U; i < n_meas; ++i) {
+        for (uint8_t j = 0U; j < n_meas; ++j) {
             nis += y[i] * s_inv[i][j] * y[j];
         }
     }
@@ -845,41 +1374,93 @@ bool InsEkfFilter::update_gnss(const GpsSample &gps_sample, float *out_nis)
         *out_nis = nis;
     }
 
+    const bool ppv_recompute = ins_ekf_ppv_policy_triggered(
+            this,
+            k_gain,
+            y,
+            n_meas,
+            err_pre_n,
+            err_pre_e,
+            effective_gap_s,
+            delta_x_candidate,
+            zero_before_k);
+    if (ppv_recompute) {
+        ins_ekf_zero_pv_cross(&cov);
+        if (!gnss_compute_kalman_update(
+                this,
+                h_rows,
+                y,
+                meas_var,
+                n_meas,
+                s_mat,
+                s_inv,
+                k_gain,
+                delta_x_candidate)) {
+            outlier_detected = true;
+            gnss_nis_last = 0.0f;
+            gnss_last_accepted = 0U;
+            gnss_last_reject_reason = 2U;
+            gnss_clear_correction_audit(this);
+            if (out_nis != NULL) {
+                *out_nis = gnss_nis_last;
+            }
+            return false;
+        }
+    }
+
+    gnss_store_k_audit_n(this, k_gain, n_meas);
+    gnss_store_delta_x_audit(this, delta_x_candidate);
+
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            gnss_last_p_vel_pos[i][j] = cov.P[INS_ERR_VEL_N + i][INS_ERR_POS_N + j];
+            gnss_last_s_inv[i][j] = (i < n_meas && j < n_meas) ? s_inv[i][j] : 0.0f;
+            if (gnss_obs_mode == INS_EKF_GNSS_OBS_VEL_ONLY) {
+                gnss_last_k_pos_pos[i][j] = 0.0f;
+                gnss_last_k_vel_pos[i][j] = (j < 2U) ? k_gain[INS_ERR_VEL_N + i][j] : 0.0f;
+            } else {
+                gnss_last_k_pos_pos[i][j] = k_gain[INS_ERR_POS_N + i][j];
+                gnss_last_k_vel_pos[i][j] = k_gain[INS_ERR_VEL_N + i][j];
+            }
+        }
+    }
+
     if (nis > nis_threshold) {
         outlier_detected = true;
+        gnss_last_accepted = 0U;
+        gnss_last_reject_reason = 1U;
+        ins_ekf_log_cov_step_audit(this, "gnss", "post_reject");
+        ins_ekf_capture_ppv_frob_post(this);
         return false;
     }
 
-    float k_gain[INS_EKF_STATE_DIM][3]{};
     for (uint8_t r = 0U; r < kDim; ++r) {
-        for (uint8_t c = 0U; c < 3U; ++c) {
-            float sum = 0.0f;
-            for (uint8_t j = 0U; j < 3U; ++j) {
-                sum += cov.P[r][INS_ERR_POS_N + j] * s_inv[j][c];
-            }
-            k_gain[r][c] = sum;
-        }
+        delta_x_[r] = delta_x_candidate[r];
     }
 
-    for (uint8_t r = 0U; r < kDim; ++r) {
-        float correction = 0.0f;
-        for (uint8_t c = 0U; c < 3U; ++c) {
-            correction += k_gain[r][c] * y[c];
-        }
-        delta_x_[r] = correction;
-    }
-
+    const float gnss_dv_log[3] = {
+        delta_x_[INS_ERR_VEL_N],
+        delta_x_[INS_ERR_VEL_E],
+        delta_x_[INS_ERR_VEL_D],
+    };
     ins_ekf_inject_error_into_nominal(this);
+    ins_ekf_log_vel_modification(this, "gnss", gnss_dv_log, NULL, NULL, false);
 
-    ins_ekf_covariance_joseph_update(
+    gnss_joseph_update_n(
         cov.P,
         k_gain,
-        gnss_pos_var_m2,
+        h_rows,
+        meas_var,
+        n_meas,
         cov.P,
         scratch_a_,
         scratch_b_);
 
     outlier_detected = false;
+    gnss_last_accepted = 1U;
+    gnss_last_reject_reason = 0U;
+    ins_ekf_log_cov_step_audit(this, "gnss", "post_accept");
+    ins_ekf_capture_ppv_frob_post(this);
     return true;
 }
 
@@ -888,6 +1469,8 @@ bool InsEkfFilter::update_nhc()
     if (!initialized || !nhc_enabled) {
         return false;
     }
+
+    ins_ekf_log_cov_step_audit(this, "nhc", "pre");
 
     InsEkfMat3 dcm_bn{};
     quat_to_dcm_bn(q_att_, dcm_bn);
@@ -952,10 +1535,21 @@ bool InsEkfFilter::update_nhc()
     s_mat[0][0] += nhc_lateral_var_m2;
     s_mat[1][1] += nhc_vertical_var_m2;
 
+    nhc_last_hph_yy = s_mat[0][0] - nhc_lateral_var_m2;
+    nhc_last_hph_yz = s_mat[0][1];
+    nhc_last_hph_zz = s_mat[1][1] - nhc_vertical_var_m2;
+    nhc_last_s_yy = s_mat[0][0];
+    nhc_last_s_yz = s_mat[0][1];
+    nhc_last_s_zz = s_mat[1][1];
+
     float s_inv[2][2]{};
     if (!ins_ekf_invert2x2(s_mat, s_inv)) {
         return false;
     }
+
+    nhc_last_s_inv_yy = s_inv[0][0];
+    nhc_last_s_inv_yz = s_inv[0][1];
+    nhc_last_s_inv_zz = s_inv[1][1];
 
     float k_gain[INS_EKF_STATE_DIM][2]{};
     for (uint8_t r = 0U; r < kDim; ++r) {
@@ -976,13 +1570,30 @@ bool InsEkfFilter::update_nhc()
     float k_max = 0.0f;
     float k_y = 0.0f;
     float k_z = 0.0f;
+    float k_pos = 0.0f;
+    float k_vel = 0.0f;
+    float k_att = 0.0f;
+    float k_bias = 0.0f;
     for (uint8_t r = 0U; r < kDim; ++r) {
         k_y = fmaxf(k_y, fabsf(k_gain[r][0]));
         k_z = fmaxf(k_z, fabsf(k_gain[r][1]));
         for (uint8_t c = 0U; c < 2U; ++c) {
             k_max = fmaxf(k_max, fabsf(k_gain[r][c]));
         }
+        if (r >= INS_ERR_POS_N && r <= INS_ERR_POS_D) {
+            k_pos = fmaxf(k_pos, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
+        } else if (r >= INS_ERR_VEL_N && r <= INS_ERR_VEL_D) {
+            k_vel = fmaxf(k_vel, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
+        } else if (r >= INS_ERR_ATT_X && r <= INS_ERR_ATT_Z) {
+            k_att = fmaxf(k_att, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
+        } else if (r >= INS_ERR_BIAS_AX && r <= INS_ERR_BIAS_GZ) {
+            k_bias = fmaxf(k_bias, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
+        }
     }
+    nhc_last_k_vel_max = k_vel;
+    nhc_last_k_pos_max = k_pos;
+    nhc_last_k_att_max = k_att;
+    nhc_last_k_bias_max = k_bias;
 
     float nis = 0.0f;
     for (uint8_t i = 0U; i < 2U; ++i) {
@@ -990,6 +1601,10 @@ bool InsEkfFilter::update_nhc()
             nis += y[i] * s_inv[i][j] * y[j];
         }
     }
+    const float sy0 = (s_inv[0][0] * y[0]) + (s_inv[0][1] * y[1]);
+    const float sy1 = (s_inv[1][0] * y[0]) + (s_inv[1][1] * y[1]);
+    nhc_last_nis_contrib_y = y[0] * sy0;
+    nhc_last_nis_contrib_z = y[1] * sy1;
 
     float dx_vel_sq = 0.0f;
     float dx_att_sq = 0.0f;
@@ -1009,6 +1624,16 @@ bool InsEkfFilter::update_nhc()
     nhc_last_dx_att_x_rad = delta_x_[INS_ERR_ATT_X];
     nhc_last_dx_att_y_rad = delta_x_[INS_ERR_ATT_Y];
     nhc_last_dx_att_z_rad = delta_x_[INS_ERR_ATT_Z];
+    nhc_last_dx_pos_n_m = delta_x_[INS_ERR_POS_N];
+    nhc_last_dx_pos_e_m = delta_x_[INS_ERR_POS_E];
+    nhc_last_dx_pos_d_m = delta_x_[INS_ERR_POS_D];
+
+    float dx_bias_sq = 0.0f;
+    for (uint8_t r = INS_ERR_BIAS_AX; r <= INS_ERR_BIAS_GZ; ++r) {
+        const float db = delta_x_[r];
+        dx_bias_sq += db * db;
+    }
+    nhc_last_dx_bias_norm = sqrtf(dx_bias_sq);
 
     nhc_last_update_timestamp_ms = last_imu_timestamp_ms;
     nhc_last_innov_y_mps = y[0];
@@ -1045,7 +1670,43 @@ bool InsEkfFilter::update_nhc()
         ++nhc_stat_same_sign_count;
     }
 
+    nhc_last_h_row0_vel[0] = h_rows[0][INS_ERR_VEL_N + 0];
+    nhc_last_h_row0_vel[1] = h_rows[0][INS_ERR_VEL_N + 1];
+    nhc_last_h_row0_vel[2] = h_rows[0][INS_ERR_VEL_N + 2];
+    nhc_last_h_row1_vel[0] = h_rows[1][INS_ERR_VEL_N + 0];
+    nhc_last_h_row1_vel[1] = h_rows[1][INS_ERR_VEL_N + 1];
+    nhc_last_h_row1_vel[2] = h_rows[1][INS_ERR_VEL_N + 2];
+
+    InsEkfCovBlockMetrics cov_pre{};
+    (void)ins_ekf_get_cov_block_metrics(this, &cov_pre);
+    nhc_last_cov_pre = cov_pre;
+
+    const float nhc_dv_log[3] = {
+        delta_x_[INS_ERR_VEL_N],
+        delta_x_[INS_ERR_VEL_E],
+        delta_x_[INS_ERR_VEL_D],
+    };
+    const float h0[3] = {
+        h_rows[0][INS_ERR_VEL_N],
+        h_rows[0][INS_ERR_VEL_E],
+        h_rows[0][INS_ERR_VEL_D],
+    };
+    const float h1[3] = {
+        h_rows[1][INS_ERR_VEL_N],
+        h_rows[1][INS_ERR_VEL_E],
+        h_rows[1][INS_ERR_VEL_D],
+    };
     ins_ekf_inject_error_into_nominal(this);
+    ins_ekf_log_vel_modification(this, "nhc", nhc_dv_log, h0, h1, true);
+
+    float v_body_after[3]{};
+    ned_to_body(dcm_bn, vel_, v_body_after);
+    nhc_last_v_body_after_x_mps = v_body_after[0];
+    nhc_last_v_body_after_y_mps = v_body_after[1];
+    nhc_last_v_body_after_z_mps = v_body_after[2];
+    nhc_last_vel_after_n_mps = vel_[0];
+    nhc_last_vel_after_e_mps = vel_[1];
+    nhc_last_vel_after_d_mps = vel_[2];
 
     const float meas_var[2] = {nhc_lateral_var_m2, nhc_vertical_var_m2};
     ins_ekf_covariance_joseph_update2(
@@ -1057,7 +1718,13 @@ bool InsEkfFilter::update_nhc()
         scratch_a_,
         scratch_b_);
 
+    InsEkfCovBlockMetrics cov_post{};
+    (void)ins_ekf_get_cov_block_metrics(this, &cov_post);
+    nhc_last_cov_post = cov_post;
+
     ++nhc_update_count;
+    ins_ekf_log_cov_step_audit(this, "nhc", "post");
+    ins_ekf_log_nhc_block_audit(this);
     return true;
 }
 
@@ -1104,6 +1771,8 @@ bool InsEkfFilter::update_zupt()
     if (!initialized) {
         return false;
     }
+
+    ins_ekf_log_cov_step_audit(this, "zupt", "pre");
 
     /* Pseudo-medicion: velocidad NED = 0 m/s. */
     const float y[3] = {
@@ -1166,7 +1835,13 @@ bool InsEkfFilter::update_zupt()
         delta_x_[r] = (k_gain[r][0] * y[0]) + (k_gain[r][1] * y[1]) + (k_gain[r][2] * y[2]);
     }
 
+    const float zupt_dv_log[3] = {
+        delta_x_[INS_ERR_VEL_N],
+        delta_x_[INS_ERR_VEL_E],
+        delta_x_[INS_ERR_VEL_D],
+    };
     ins_ekf_inject_error_into_nominal(this);
+    ins_ekf_log_vel_modification(this, "zupt", zupt_dv_log, NULL, NULL, false);
 
     const float meas_var[3] = {zupt_r_used[0], zupt_r_used[1], zupt_r_used[2]};
     ins_ekf_covariance_joseph_update3(
@@ -1179,6 +1854,7 @@ bool InsEkfFilter::update_zupt()
         scratch_b_);
 
     ++zupt_update_count;
+    ins_ekf_log_cov_step_audit(this, "zupt", "post");
     return true;
 }
 
@@ -1224,8 +1900,12 @@ void ins_ekf_init(
     filter->bias_accel_rw_var = NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR;
     filter->bias_gyro_rw_var = NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR;
     filter->gnss_pos_var_m2 = NAVICORE_INS_EKF_GNSS_POS_VAR_M2;
+    filter->gnss_vel_var_m2_h = NAVICORE_INS_EKF_GNSS_VEL_VAR_M2;
+    filter->gnss_obs_mode = INS_EKF_GNSS_OBS_POS;
+    filter->ppv_policy = INS_EKF_PPV_POLICY_NONE;
     filter->nis_threshold = NAVICORE_INS_EKF_NIS_THRESHOLD;
     filter->nhc_enabled = false;
+    filter->nhc_every_n_ticks = NAVICORE_INS_EKF_NHC_EVERY_N_TICKS;
     filter->nhc_lateral_var_m2 =
         NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS * NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS;
     filter->nhc_vertical_var_m2 =
@@ -1264,14 +1944,51 @@ bool ins_ekf_predict(InsEkfFilter *filter, const ImuSample *imu)
         return false;
     }
 
+    ins_ekf_reset_vel_pipeline_audit(filter);
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        filter->vel_pipeline_audit_last_.vel_before_predict[i] = filter->vel_[i];
+    }
+
     const float dt_s = ins_ekf_predict_dt_s(filter, imu->timestamp_ms);
     filter->predict(*imu, dt_s);
+
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        filter->vel_pipeline_audit_last_.vel_after_predict[i] = filter->vel_[i];
+        filter->vel_pipeline_audit_last_.dv_predict[i] =
+            filter->vel_pipeline_audit_last_.vel_after_predict[i]
+            - filter->vel_pipeline_audit_last_.vel_before_predict[i];
+    }
+
     if (filter->nhc_enabled) {
         filter->nhc_tick_counter++;
-        if ((filter->nhc_tick_counter % NAVICORE_INS_EKF_NHC_EVERY_N_TICKS) == 0U) {
-            filter->update_nhc();
+        const uint32_t nhc_stride =
+            (filter->nhc_every_n_ticks == 0U) ? 1U : filter->nhc_every_n_ticks;
+        if ((filter->nhc_tick_counter % nhc_stride) == 0U) {
+            const float vel_before_nhc[3] = {
+                filter->vel_[0],
+                filter->vel_[1],
+                filter->vel_[2],
+            };
+            if (filter->update_nhc()) {
+                filter->vel_pipeline_audit_last_.nhc_applied = true;
+                for (uint8_t i = 0U; i < 3U; ++i) {
+                    filter->vel_pipeline_audit_last_.vel_after_nhc[i] = filter->vel_[i];
+                    filter->vel_pipeline_audit_last_.dv_nhc[i] =
+                        filter->vel_[i] - vel_before_nhc[i];
+                }
+            }
         }
     }
+
+    if (!filter->vel_pipeline_audit_last_.nhc_applied) {
+        for (uint8_t i = 0U; i < 3U; ++i) {
+            filter->vel_pipeline_audit_last_.vel_after_nhc[i] =
+                filter->vel_pipeline_audit_last_.vel_after_predict[i];
+            filter->vel_pipeline_audit_last_.dv_nhc[i] = 0.0f;
+        }
+    }
+
+    filter->vel_pipeline_audit_last_.valid = true;
     return true;
 }
 
@@ -1291,6 +2008,15 @@ void ins_ekf_set_nhc_enabled(InsEkfFilter *filter, bool enabled)
     }
 
     filter->nhc_enabled = enabled;
+}
+
+void ins_ekf_set_nhc_every_n_ticks(InsEkfFilter *filter, uint32_t every_n_ticks)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    filter->nhc_every_n_ticks = (every_n_ticks == 0U) ? 1U : every_n_ticks;
 }
 
 bool ins_ekf_nhc_enabled(const InsEkfFilter *filter)
@@ -1384,6 +2110,230 @@ bool ins_ekf_get_nhc_last_update_detail(
     return true;
 }
 
+bool ins_ekf_write_nhc_block_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == NULL) {
+        return false;
+    }
+
+    fprintf(
+        audit_fp,
+        "timestamp_s,imu_seq,nhc_update_index,accepted,"
+        "v_body_x_before_mps,v_body_y_before_mps,v_body_z_before_mps,"
+        "v_body_x_after_mps,v_body_y_after_mps,v_body_z_after_mps,"
+        "dv_body_x_mps,dv_body_y_mps,dv_body_z_mps,"
+        "innov_y_mps,innov_z_mps,innov_norm_mps,"
+        "hph_yy,hph_yz,hph_zz,r_y_m2,r_z_m2,"
+        "s_yy,s_yz,s_zz,s_inv_yy,s_inv_yz,s_inv_zz,"
+        "s_eigmin,s_eigmax,s_cond,"
+        "nis_total,nis_contrib_y,nis_contrib_z,"
+        "k_y_max,k_z_max,k_vel_max,k_pos_max,k_att_max,k_bias_max,"
+        "dx_pos_n_m,dx_pos_e_m,dx_pos_d_m,dx_pos_norm_m,"
+        "dx_vel_n_mps,dx_vel_e_mps,dx_vel_d_mps,dx_vel_norm_mps,"
+        "dx_att_x_rad,dx_att_y_rad,dx_att_z_rad,dx_att_norm_rad,dx_bias_norm,"
+        "vel_n_mps,vel_e_mps,vel_d_mps,vel_h_mps,"
+        "vel_after_n_mps,vel_after_e_mps,vel_after_h_mps,"
+        "h_r0_vn,h_r0_ve,h_r0_vd,h_r1_vn,h_r1_ve,h_r1_vd,"
+        "P_pre_pp_frob,P_pre_vv_frob,P_pre_pv_frob,P_pre_vp_frob,P_pre_aa_frob,P_pre_vel_pos_max_abs,"
+        "P_pre_vv_body_fwd_m2,P_pre_vv_body_lat_m2,P_pre_vv_body_vert_m2,"
+        "P_post_pp_frob,P_post_vv_frob,P_post_pv_frob,P_post_vp_frob,P_post_aa_frob,P_post_vel_pos_max_abs,"
+        "P_post_vv_body_fwd_m2,P_post_vv_body_lat_m2,P_post_vv_body_vert_m2,"
+        "delta_P_pp_frob,delta_P_vv_frob,delta_P_pv_frob,delta_P_aa_frob,delta_P_vel_pos_max_abs,"
+        "delta_P_vv_body_fwd_m2,delta_P_vv_body_lat_m2,delta_P_vv_body_vert_m2,"
+        "gps_speed_mps\n");
+    return true;
+}
+
+void ins_ekf_set_nhc_block_audit(InsEkfFilter *filter, FILE *audit_fp)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->nhc_block_audit_fp = audit_fp;
+}
+
+void ins_ekf_set_nhc_block_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq,
+    float gps_speed_mps)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->nhc_block_audit_timestamp_s = timestamp_s;
+    filter->nhc_block_audit_imu_seq = imu_seq;
+    filter->nhc_block_audit_gps_speed_mps = gps_speed_mps;
+}
+
+static void nhc_symmetric2_eigen_extremes(
+    float s00,
+    float s01,
+    float s11,
+    float *out_min,
+    float *out_max)
+{
+    const float trace = s00 + s11;
+    const float det = (s00 * s11) - (s01 * s01);
+    const float disc = fmaxf((trace * trace) - (4.0f * det), 0.0f);
+    const float root = sqrtf(disc);
+    const float e0 = 0.5f * (trace - root);
+    const float e1 = 0.5f * (trace + root);
+    if (out_min != NULL) {
+        *out_min = fminf(e0, e1);
+    }
+    if (out_max != NULL) {
+        *out_max = fmaxf(e0, e1);
+    }
+}
+
+void ins_ekf_log_nhc_block_audit(InsEkfFilter *filter)
+{
+    if (filter == NULL || filter->nhc_block_audit_fp == NULL || !filter->initialized) {
+        return;
+    }
+
+    const InsEkfCovBlockMetrics &pre = filter->nhc_last_cov_pre;
+    const InsEkfCovBlockMetrics &post = filter->nhc_last_cov_post;
+    const float vel_h_before = hypotf(filter->nhc_last_vel_n_mps, filter->nhc_last_vel_e_mps);
+    const float vel_h_after = hypotf(
+        filter->nhc_last_vel_after_n_mps,
+        filter->nhc_last_vel_after_e_mps);
+    const float dv_body_x =
+        filter->nhc_last_v_body_after_x_mps - filter->nhc_last_v_body_x_mps;
+    const float dv_body_y =
+        filter->nhc_last_v_body_after_y_mps - filter->nhc_last_v_body_y_mps;
+    const float dv_body_z =
+        filter->nhc_last_v_body_after_z_mps - filter->nhc_last_v_body_z_mps;
+
+    float s_eigmin = 0.0f;
+    float s_eigmax = 0.0f;
+    float s_cond = 0.0f;
+    {
+        const float yy = filter->nhc_last_s_yy;
+        const float yz = filter->nhc_last_s_yz;
+        const float zz = filter->nhc_last_s_zz;
+        nhc_symmetric2_eigen_extremes(yy, yz, zz, &s_eigmin, &s_eigmax);
+        s_cond = (s_eigmin > 1.0e-12f) ? (s_eigmax / s_eigmin) : 0.0f;
+    }
+
+    fprintf(
+        filter->nhc_block_audit_fp,
+        "%.9f,%llu,%u,1,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%.6f,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,"
+        "%.6f\n",
+        filter->nhc_block_audit_timestamp_s,
+        static_cast<unsigned long long>(filter->nhc_block_audit_imu_seq),
+        filter->nhc_update_count,
+        filter->nhc_last_v_body_x_mps,
+        filter->nhc_last_v_body_y_mps,
+        filter->nhc_last_v_body_z_mps,
+        filter->nhc_last_v_body_after_x_mps,
+        filter->nhc_last_v_body_after_y_mps,
+        filter->nhc_last_v_body_after_z_mps,
+        dv_body_x,
+        dv_body_y,
+        dv_body_z,
+        filter->nhc_last_innov_y_mps,
+        filter->nhc_last_innov_z_mps,
+        filter->nhc_last_innov_norm_mps,
+        filter->nhc_last_hph_yy,
+        filter->nhc_last_hph_yz,
+        filter->nhc_last_hph_zz,
+        filter->nhc_lateral_var_m2,
+        filter->nhc_vertical_var_m2,
+        filter->nhc_last_s_yy,
+        filter->nhc_last_s_yz,
+        filter->nhc_last_s_zz,
+        filter->nhc_last_s_inv_yy,
+        filter->nhc_last_s_inv_yz,
+        filter->nhc_last_s_inv_zz,
+        s_eigmin,
+        s_eigmax,
+        s_cond,
+        filter->nhc_last_nis,
+        filter->nhc_last_nis_contrib_y,
+        filter->nhc_last_nis_contrib_z,
+        filter->nhc_last_k_y,
+        filter->nhc_last_k_z,
+        filter->nhc_last_k_vel_max,
+        filter->nhc_last_k_pos_max,
+        filter->nhc_last_k_att_max,
+        filter->nhc_last_k_bias_max,
+        filter->nhc_last_dx_pos_n_m,
+        filter->nhc_last_dx_pos_e_m,
+        filter->nhc_last_dx_pos_d_m,
+        filter->nhc_last_dx_pos_norm_m,
+        filter->nhc_last_dx_vel_n_mps,
+        filter->nhc_last_dx_vel_e_mps,
+        filter->nhc_last_dx_vel_d_mps,
+        filter->nhc_last_dx_vel_norm_mps,
+        filter->nhc_last_dx_att_x_rad,
+        filter->nhc_last_dx_att_y_rad,
+        filter->nhc_last_dx_att_z_rad,
+        filter->nhc_last_dx_att_norm_rad,
+        filter->nhc_last_dx_bias_norm,
+        filter->nhc_last_vel_n_mps,
+        filter->nhc_last_vel_e_mps,
+        filter->nhc_last_vel_d_mps,
+        vel_h_before,
+        filter->nhc_last_vel_after_n_mps,
+        filter->nhc_last_vel_after_e_mps,
+        vel_h_after,
+        filter->nhc_last_h_row0_vel[0],
+        filter->nhc_last_h_row0_vel[1],
+        filter->nhc_last_h_row0_vel[2],
+        filter->nhc_last_h_row1_vel[0],
+        filter->nhc_last_h_row1_vel[1],
+        filter->nhc_last_h_row1_vel[2],
+        pre.p_pos_pos_frob,
+        pre.p_vel_vel_frob,
+        pre.p_vel_pos_frob,
+        pre.p_vel_pos_frob,
+        pre.p_att_att_frob,
+        pre.p_vel_pos_max_abs,
+        pre.p_vv_body_forward_m2,
+        pre.p_vv_body_lateral_m2,
+        pre.p_vv_body_vertical_m2,
+        post.p_pos_pos_frob,
+        post.p_vel_vel_frob,
+        post.p_vel_pos_frob,
+        post.p_vel_pos_frob,
+        post.p_att_att_frob,
+        post.p_vel_pos_max_abs,
+        post.p_vv_body_forward_m2,
+        post.p_vv_body_lateral_m2,
+        post.p_vv_body_vertical_m2,
+        post.p_pos_pos_frob - pre.p_pos_pos_frob,
+        post.p_vel_vel_frob - pre.p_vel_vel_frob,
+        post.p_vel_pos_frob - pre.p_vel_pos_frob,
+        post.p_att_att_frob - pre.p_att_att_frob,
+        post.p_vel_pos_max_abs - pre.p_vel_pos_max_abs,
+        post.p_vv_body_forward_m2 - pre.p_vv_body_forward_m2,
+        post.p_vv_body_lateral_m2 - pre.p_vv_body_lateral_m2,
+        post.p_vv_body_vertical_m2 - pre.p_vv_body_vertical_m2,
+        filter->nhc_block_audit_gps_speed_mps);
+}
+
 bool ins_ekf_get_nhc_run_summary(
     const InsEkfFilter *filter,
     InsEkfNhcRunSummary *out_summary)
@@ -1455,6 +2405,110 @@ bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps)
     return true;
 }
 
+void ins_ekf_set_gnss_obs_mode(InsEkfFilter *filter, InsEkfGnssObsMode mode)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    filter->gnss_obs_mode = mode;
+    switch (mode) {
+    case INS_EKF_GNSS_OBS_POS:
+        filter->nis_threshold = NAVICORE_INS_EKF_NIS_THRESHOLD;
+        break;
+    case INS_EKF_GNSS_OBS_VEL_ONLY:
+        filter->nis_threshold = NAVICORE_INS_EKF_NIS_THRESHOLD_VEL_2DOF;
+        break;
+    case INS_EKF_GNSS_OBS_POS_VEL:
+        filter->nis_threshold = NAVICORE_INS_EKF_NIS_THRESHOLD_POS_VEL_5DOF;
+        break;
+    default:
+        filter->gnss_obs_mode = INS_EKF_GNSS_OBS_POS;
+        filter->nis_threshold = NAVICORE_INS_EKF_NIS_THRESHOLD;
+        break;
+    }
+}
+
+void ins_ekf_set_p_pv_policy(InsEkfFilter *filter, InsEkfPpvPolicy policy)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    filter->ppv_policy = policy;
+}
+
+const char *ins_ekf_p_pv_policy_name(InsEkfPpvPolicy policy)
+{
+    switch (policy) {
+    case INS_EKF_PPV_POLICY_NONE:
+        return "none";
+    case INS_EKF_PPV_POLICY_GAP_LE_1S:
+        return "gap_le_1s";
+    case INS_EKF_PPV_POLICY_ZERO:
+        return "zero";
+    case INS_EKF_PPV_POLICY_COS_POS:
+        return "cos_pos";
+    case INS_EKF_PPV_POLICY_COS_TOT:
+        return "cos_tot";
+    default:
+        return "unknown";
+    }
+}
+
+bool ins_ekf_parse_p_pv_policy(const char *text, InsEkfPpvPolicy *out_policy)
+{
+    if (text == NULL || out_policy == NULL || text[0] == '\0') {
+        return false;
+    }
+
+    if (strcmp(text, "none") == 0) {
+        *out_policy = INS_EKF_PPV_POLICY_NONE;
+        return true;
+    }
+    if (strcmp(text, "gap_le_1s") == 0 || strcmp(text, "gap-le-1s") == 0) {
+        *out_policy = INS_EKF_PPV_POLICY_GAP_LE_1S;
+        return true;
+    }
+    if (strcmp(text, "zero") == 0 || strcmp(text, "unconditional") == 0) {
+        *out_policy = INS_EKF_PPV_POLICY_ZERO;
+        return true;
+    }
+    if (strcmp(text, "cos_pos") == 0 || strcmp(text, "cos-pos") == 0) {
+        *out_policy = INS_EKF_PPV_POLICY_COS_POS;
+        return true;
+    }
+    if (strcmp(text, "cos_tot") == 0 || strcmp(text, "cos-tot") == 0
+        || strcmp(text, "cos_total") == 0) {
+        *out_policy = INS_EKF_PPV_POLICY_COS_TOT;
+        return true;
+    }
+    return false;
+}
+
+void ins_ekf_set_gnss_vel_var_m2(InsEkfFilter *filter, float var_m2_h)
+{
+    if (filter == NULL || var_m2_h <= 0.0f) {
+        return;
+    }
+
+    filter->gnss_vel_var_m2_h = var_m2_h;
+}
+
+const char *ins_ekf_gnss_obs_mode_name(InsEkfGnssObsMode mode)
+{
+    switch (mode) {
+    case INS_EKF_GNSS_OBS_POS:
+        return "pos";
+    case INS_EKF_GNSS_OBS_POS_VEL:
+        return "pos_vel";
+    case INS_EKF_GNSS_OBS_VEL_ONLY:
+        return "vel_only";
+    default:
+        return "unknown";
+    }
+}
+
 bool ins_ekf_outlier_detected(const InsEkfFilter *filter)
 {
     if (filter == NULL) {
@@ -1491,6 +2545,67 @@ void ins_ekf_get_gnss_innovation(const InsEkfFilter *filter, float out_ned[3])
     out_ned[0] = filter->gnss_innovation_last[0];
     out_ned[1] = filter->gnss_innovation_last[1];
     out_ned[2] = filter->gnss_innovation_last[2];
+}
+
+bool ins_ekf_get_gnss_last_update_detail(
+    const InsEkfFilter *filter,
+    InsEkfGnssUpdateDetail *out_detail)
+{
+    if (filter == NULL || out_detail == NULL || filter->gnss_last_update_timestamp_ms == 0U) {
+        return false;
+    }
+
+    out_detail->timestamp_ms = filter->gnss_last_update_timestamp_ms;
+    out_detail->accepted = filter->gnss_last_accepted;
+    out_detail->reject_reason = filter->gnss_last_reject_reason;
+    out_detail->innov_n_m = filter->gnss_innovation_last[0];
+    out_detail->innov_e_m = filter->gnss_innovation_last[1];
+    out_detail->innov_d_m = filter->gnss_innovation_last[2];
+    out_detail->nis = filter->gnss_nis_last;
+    out_detail->k_pos_max = filter->gnss_last_k_pos_max;
+    out_detail->k_vel_max = filter->gnss_last_k_vel_max;
+    out_detail->k_att_max = filter->gnss_last_k_att_max;
+    out_detail->dx_pos_norm_m = filter->gnss_last_dx_pos_norm_m;
+    out_detail->dx_vel_norm_mps = filter->gnss_last_dx_vel_norm_mps;
+    out_detail->dx_att_norm_rad = filter->gnss_last_dx_att_norm_rad;
+    out_detail->dx_pos_n_m = filter->gnss_last_dx_pos_n_m;
+    out_detail->dx_pos_e_m = filter->gnss_last_dx_pos_e_m;
+    out_detail->dx_pos_d_m = filter->gnss_last_dx_pos_d_m;
+    out_detail->dx_vel_n_mps = filter->gnss_last_dx_vel_n_mps;
+    out_detail->dx_vel_e_mps = filter->gnss_last_dx_vel_e_mps;
+    out_detail->dx_vel_d_mps = filter->gnss_last_dx_vel_d_mps;
+    out_detail->dx_att_x_rad = filter->gnss_last_dx_att_x_rad;
+    out_detail->dx_att_y_rad = filter->gnss_last_dx_att_y_rad;
+    out_detail->dx_att_z_rad = filter->gnss_last_dx_att_z_rad;
+    out_detail->ppv_policy = filter->gnss_last_ppv_policy;
+    out_detail->ppv_triggered = filter->gnss_last_ppv_triggered;
+    out_detail->ppv_effective_gap_s = filter->gnss_last_ppv_effective_gap_s;
+    out_detail->cos_dv_pos_err_pre = filter->gnss_last_cos_dv_pos_err_pre;
+    out_detail->cos_dv_tot_err_pre = filter->gnss_last_cos_dv_tot_err_pre;
+    out_detail->ppv_frob_pre = filter->gnss_last_ppv_frob_pre;
+    out_detail->ppv_frob_post = filter->gnss_last_ppv_frob_post;
+    return true;
+}
+
+bool ins_ekf_get_gnss_last_k_block_detail(
+    const InsEkfFilter *filter,
+    InsEkfGnssKBlockDetail *out_detail)
+{
+    if (filter == NULL || out_detail == NULL || filter->gnss_last_update_timestamp_ms == 0U) {
+        return false;
+    }
+
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            out_detail->p_vel_pos[i][j] = filter->gnss_last_p_vel_pos[i][j];
+            out_detail->k_vel_pos[i][j] = filter->gnss_last_k_vel_pos[i][j];
+            out_detail->k_pos_pos[i][j] = filter->gnss_last_k_pos_pos[i][j];
+            out_detail->s_inv[i][j] = filter->gnss_last_s_inv[i][j];
+        }
+    }
+    out_detail->dx_bias_accel_norm = filter->gnss_last_dx_bias_a_norm;
+    out_detail->dx_bias_gyro_norm = filter->gnss_last_dx_bias_g_norm;
+    return true;
 }
 
 void ins_ekf_get_bias(
@@ -1530,6 +2645,267 @@ void ins_ekf_get_velocity_ned(const InsEkfFilter *filter, float out_ned[3])
     out_ned[0] = filter->vel_[0];
     out_ned[1] = filter->vel_[1];
     out_ned[2] = filter->vel_[2];
+}
+
+static float block3_frobenius(const float block[3][3])
+{
+    float sum_sq = 0.0f;
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            sum_sq += block[r][c] * block[r][c];
+        }
+    }
+    return std::sqrt(sum_sq);
+}
+
+static float block3_max_abs(const float block[3][3])
+{
+    float max_abs = 0.0f;
+    for (uint8_t r = 0U; r < 3U; ++r) {
+        for (uint8_t c = 0U; c < 3U; ++c) {
+            const float abs_val = fabsf(block[r][c]);
+            if (abs_val > max_abs) {
+                max_abs = abs_val;
+            }
+        }
+    }
+    return max_abs;
+}
+
+bool ins_ekf_get_cov_block_metrics(
+    const InsEkfFilter *filter,
+    InsEkfCovBlockMetrics *out_metrics)
+{
+    if (filter == NULL || out_metrics == NULL || !filter->initialized) {
+        return false;
+    }
+
+    float p_pos_pos[3][3]{};
+    float p_vel_vel[3][3]{};
+    float p_vel_pos[3][3]{};
+    float p_vel_att[3][3]{};
+    float p_att_att[3][3]{};
+
+    for (uint8_t i = 0U; i < 3U; ++i) {
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            const uint8_t pos_i = static_cast<uint8_t>(INS_ERR_POS_N + i);
+            const uint8_t pos_j = static_cast<uint8_t>(INS_ERR_POS_N + j);
+            const uint8_t vel_i = static_cast<uint8_t>(INS_ERR_VEL_N + i);
+            const uint8_t vel_j = static_cast<uint8_t>(INS_ERR_VEL_N + j);
+            const uint8_t att_i = static_cast<uint8_t>(INS_ERR_ATT_X + i);
+            const uint8_t att_j = static_cast<uint8_t>(INS_ERR_ATT_X + j);
+            p_pos_pos[i][j] = filter->cov.P[pos_i][pos_j];
+            p_vel_vel[i][j] = filter->cov.P[vel_i][vel_j];
+            p_vel_pos[i][j] = filter->cov.P[vel_i][pos_j];
+            p_vel_att[i][j] = filter->cov.P[vel_i][att_j];
+            p_att_att[i][j] = filter->cov.P[att_i][att_j];
+        }
+    }
+
+    out_metrics->p_pos_pos_frob = block3_frobenius(p_pos_pos);
+    out_metrics->p_vel_vel_frob = block3_frobenius(p_vel_vel);
+    out_metrics->p_vel_pos_frob = block3_frobenius(p_vel_pos);
+    out_metrics->p_vel_att_frob = block3_frobenius(p_vel_att);
+    out_metrics->p_att_att_frob = block3_frobenius(p_att_att);
+    out_metrics->p_pos_std_n_m =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_N][INS_ERR_POS_N], 0.0f));
+    out_metrics->p_pos_std_e_m =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_E][INS_ERR_POS_E], 0.0f));
+    out_metrics->p_pos_std_d_m =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_POS_D][INS_ERR_POS_D], 0.0f));
+    out_metrics->p_vel_std_n_mps =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_VEL_N][INS_ERR_VEL_N], 0.0f));
+    out_metrics->p_vel_std_e_mps =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_VEL_E][INS_ERR_VEL_E], 0.0f));
+    out_metrics->p_vel_std_d_mps =
+        sqrtf(fmaxf(filter->cov.P[INS_ERR_VEL_D][INS_ERR_VEL_D], 0.0f));
+    out_metrics->p_vel_pos_max_abs = block3_max_abs(p_vel_pos);
+    out_metrics->p_vv_var_n_m2 = filter->cov.P[INS_ERR_VEL_N][INS_ERR_VEL_N];
+    out_metrics->p_vv_var_e_m2 = filter->cov.P[INS_ERR_VEL_E][INS_ERR_VEL_E];
+    out_metrics->p_vv_var_d_m2 = filter->cov.P[INS_ERR_VEL_D][INS_ERR_VEL_D];
+
+    InsEkfMat3 dcm_bn{};
+    quat_to_dcm_bn(filter->q_att_, dcm_bn);
+    float v_body[3]{};
+    ned_to_body(dcm_bn, filter->vel_, v_body);
+    out_metrics->vel_body_x_mps = v_body[0];
+    out_metrics->vel_body_y_mps = v_body[1];
+    out_metrics->vel_body_z_mps = v_body[2];
+
+    for (uint8_t axis = 0U; axis < 3U; ++axis) {
+        float var_body = 0.0f;
+        for (uint8_t j = 0U; j < 3U; ++j) {
+            float row_sum = 0.0f;
+            for (uint8_t k = 0U; k < 3U; ++k) {
+                row_sum += dcm_bn[axis][j] * p_vel_vel[j][k];
+            }
+            var_body += row_sum * dcm_bn[axis][j];
+        }
+        if (axis == 0U) {
+            out_metrics->p_vv_body_forward_m2 = fmaxf(var_body, 0.0f);
+        } else if (axis == 1U) {
+            out_metrics->p_vv_body_lateral_m2 = fmaxf(var_body, 0.0f);
+        } else {
+            out_metrics->p_vv_body_vertical_m2 = fmaxf(var_body, 0.0f);
+        }
+    }
+    return true;
+}
+
+void ins_ekf_set_cov_step_audit(InsEkfFilter *filter, FILE *audit_fp)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->cov_step_audit_fp = audit_fp;
+}
+
+void ins_ekf_set_cov_step_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->cov_step_audit_timestamp_s = timestamp_s;
+    filter->cov_step_audit_imu_seq = imu_seq;
+}
+
+void ins_ekf_log_cov_step_audit(
+    InsEkfFilter *filter,
+    const char *update_type,
+    const char *phase)
+{
+    if (filter == NULL || filter->cov_step_audit_fp == NULL || update_type == NULL
+        || phase == NULL || !filter->initialized) {
+        return;
+    }
+
+    InsEkfCovBlockMetrics metrics{};
+    if (!ins_ekf_get_cov_block_metrics(filter, &metrics)) {
+        return;
+    }
+
+    const float vel_h = hypotf(filter->vel_[0], filter->vel_[1]);
+    fprintf(
+        filter->cov_step_audit_fp,
+        "%.9f,%llu,%s,%s,"
+        "%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,"
+        "%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f\n",
+        filter->cov_step_audit_timestamp_s,
+        static_cast<unsigned long long>(filter->cov_step_audit_imu_seq),
+        update_type,
+        phase,
+        metrics.p_pos_pos_frob,
+        metrics.p_vel_vel_frob,
+        metrics.p_vel_pos_frob,
+        metrics.p_att_att_frob,
+        metrics.p_vv_var_n_m2,
+        metrics.p_vv_var_e_m2,
+        metrics.p_vv_var_d_m2,
+        metrics.p_vv_body_forward_m2,
+        metrics.p_vv_body_lateral_m2,
+        metrics.p_vv_body_vertical_m2,
+        metrics.p_vel_std_n_mps,
+        metrics.p_vel_std_e_mps,
+        metrics.p_vel_std_d_mps,
+        vel_h,
+        metrics.vel_body_x_mps,
+        metrics.vel_body_y_mps,
+        metrics.vel_body_z_mps);
+}
+
+void ins_ekf_reset_vel_pipeline_audit(InsEkfFilter *filter)
+{
+    if (filter == NULL) {
+        return;
+    }
+    memset(&filter->vel_pipeline_audit_last_, 0, sizeof(filter->vel_pipeline_audit_last_));
+}
+
+bool ins_ekf_get_vel_pipeline_audit(
+    const InsEkfFilter *filter,
+    InsEkfVelPipelineAudit *out_audit)
+{
+    if (filter == NULL || out_audit == NULL || !filter->initialized) {
+        return false;
+    }
+    *out_audit = filter->vel_pipeline_audit_last_;
+    return out_audit->valid;
+}
+
+void ins_ekf_set_vel_source_audit(InsEkfFilter *filter, FILE *audit_fp)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->vel_source_audit_fp = audit_fp;
+}
+
+void ins_ekf_set_vel_source_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq,
+    float gps_speed_mps)
+{
+    if (filter == NULL) {
+        return;
+    }
+    filter->vel_source_audit_timestamp_s = timestamp_s;
+    filter->vel_source_audit_imu_seq = imu_seq;
+    filter->vel_source_audit_gps_speed_mps = gps_speed_mps;
+}
+
+void ins_ekf_log_vel_modification(
+    InsEkfFilter *filter,
+    const char *source,
+    const float dv_ned[3],
+    const float h_nhc_row0_vel[3],
+    const float h_nhc_row1_vel[3],
+    bool log_nhc_h)
+{
+    if (filter == NULL || filter->vel_source_audit_fp == NULL || source == NULL
+        || dv_ned == NULL || !filter->initialized) {
+        return;
+    }
+
+    const float dv_norm = sqrtf(
+        (dv_ned[0] * dv_ned[0]) + (dv_ned[1] * dv_ned[1]) + (dv_ned[2] * dv_ned[2]));
+    const float vel_h = hypotf(filter->vel_[0], filter->vel_[1]);
+
+    const float h00 = (log_nhc_h && h_nhc_row0_vel != NULL) ? h_nhc_row0_vel[0] : 0.0f;
+    const float h01 = (log_nhc_h && h_nhc_row0_vel != NULL) ? h_nhc_row0_vel[1] : 0.0f;
+    const float h02 = (log_nhc_h && h_nhc_row0_vel != NULL) ? h_nhc_row0_vel[2] : 0.0f;
+    const float h10 = (log_nhc_h && h_nhc_row1_vel != NULL) ? h_nhc_row1_vel[0] : 0.0f;
+    const float h11 = (log_nhc_h && h_nhc_row1_vel != NULL) ? h_nhc_row1_vel[1] : 0.0f;
+    const float h12 = (log_nhc_h && h_nhc_row1_vel != NULL) ? h_nhc_row1_vel[2] : 0.0f;
+
+    fprintf(
+        filter->vel_source_audit_fp,
+        "%.9f,%llu,%s,%.9e,%.9e,%.9e,%.9e,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+        filter->vel_source_audit_timestamp_s,
+        static_cast<unsigned long long>(filter->vel_source_audit_imu_seq),
+        source,
+        dv_ned[0],
+        dv_ned[1],
+        dv_ned[2],
+        dv_norm,
+        filter->vel_[0],
+        filter->vel_[1],
+        filter->vel_[2],
+        vel_h,
+        filter->vel_source_audit_gps_speed_mps,
+        h00,
+        h01,
+        h02,
+        h10,
+        h11,
+        h12);
 }
 
 float ins_ekf_get_covariance_flat(const InsEkfFilter *filter, uint16_t linear_idx)

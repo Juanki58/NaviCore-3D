@@ -24,6 +24,7 @@ constexpr double kMaxDtS = 0.05;
 constexpr float kGnssMinHorizontalStdM = 5.0f;
 constexpr float kGnssMinVerticalStdM = 8.0f;
 constexpr float kRadToDegF = 180.0f / static_cast<float>(M_PI);
+constexpr float kDegToRadF = static_cast<float>(M_PI) / 180.0f;
 constexpr float kLegacyMountRollRad = -45.18f * static_cast<float>(M_PI) / 180.0f;
 constexpr float kLegacyMountPitchRad = -51.52f * static_cast<float>(M_PI) / 180.0f;
 constexpr float kLegacyMountYawRad = 110.40f * static_cast<float>(M_PI) / 180.0f;
@@ -282,39 +283,237 @@ bool replay_constraints_use_nhc(
         && (last_gps_speed_mps > moving_speed_threshold_mps);
 }
 
-void apply_replay_constraints(
-    INaviFilter *filter,
-    double timestamp_s,
-    float last_gps_speed_mps,
-    const RealRunReplayConfig &config)
-{
-    if (filter == nullptr || config.predict_only_mode) {
-        return;
-    }
-
-    if (replay_constraints_use_nhc(
-            timestamp_s,
-            last_gps_speed_mps,
-            config.static_phase_end_s,
-            config.moving_speed_threshold_mps)) {
-        filter->apply_constraints(
-            false,
-            config.nhc_lateral_std_mps,
-            config.nhc_vertical_std_mps);
-        return;
-    }
-
-    filter->apply_constraints(
-        true,
-        config.zupt_lateral_std_mps,
-        config.zupt_vertical_std_mps);
-}
-
 float horizontal_drift_m(const NaviState &state, const double ref_pos_ned[3])
 {
     const float dn = static_cast<float>(state.pos_ned[0]) - static_cast<float>(ref_pos_ned[0]);
     const float de = static_cast<float>(state.pos_ned[1]) - static_cast<float>(ref_pos_ned[1]);
     return std::sqrt((dn * dn) + (de * de));
+}
+
+void gap3_compute_cycle_pred_accum(
+    const float anchor_pos[3],
+    const float anchor_vel[3],
+    const float state_pos[3],
+    const float state_vel[3],
+    double last_obs_timestamp_s,
+    double current_timestamp_s,
+    double *out_pred_dpos_h,
+    double *out_pred_dvel_h,
+    double *out_pred_dt)
+{
+    if (out_pred_dpos_h != nullptr) {
+        const float dn = state_pos[0] - anchor_pos[0];
+        const float de = state_pos[1] - anchor_pos[1];
+        *out_pred_dpos_h = std::sqrt(static_cast<double>((dn * dn) + (de * de)));
+    }
+    if (out_pred_dvel_h != nullptr) {
+        const float dvn = state_vel[0] - anchor_vel[0];
+        const float dve = state_vel[1] - anchor_vel[1];
+        *out_pred_dvel_h = std::sqrt(static_cast<double>((dvn * dvn) + (dve * dve)));
+    }
+    if (out_pred_dt != nullptr) {
+        *out_pred_dt = current_timestamp_s - last_obs_timestamp_s;
+    }
+}
+
+void gap3_set_observation_anchor(
+    float anchor_pos[3],
+    float anchor_vel[3],
+    const float state_pos[3],
+    const float state_vel[3],
+    double *last_obs_timestamp_s,
+    double current_timestamp_s,
+    bool *has_anchor)
+{
+    if (anchor_pos == nullptr || anchor_vel == nullptr || state_pos == nullptr
+        || state_vel == nullptr || last_obs_timestamp_s == nullptr || has_anchor == nullptr) {
+        return;
+    }
+
+    anchor_pos[0] = state_pos[0];
+    anchor_pos[1] = state_pos[1];
+    anchor_pos[2] = state_pos[2];
+    anchor_vel[0] = state_vel[0];
+    anchor_vel[1] = state_vel[1];
+    anchor_vel[2] = state_vel[2];
+    *last_obs_timestamp_s = current_timestamp_s;
+    *has_anchor = true;
+}
+
+bool invert_matrix3(float s[3][3], float inv_out[3][3])
+{
+    const float det =
+        (s[0][0] * ((s[1][1] * s[2][2]) - (s[1][2] * s[2][1])))
+        - (s[0][1] * ((s[1][0] * s[2][2]) - (s[1][2] * s[2][0])))
+        + (s[0][2] * ((s[1][0] * s[2][1]) - (s[1][1] * s[2][0])));
+    if (std::fabs(det) < 1.0e-12f) {
+        return false;
+    }
+
+    const float inv_det = 1.0f / det;
+    inv_out[0][0] = ((s[1][1] * s[2][2]) - (s[1][2] * s[2][1])) * inv_det;
+    inv_out[0][1] = ((s[0][2] * s[2][1]) - (s[0][1] * s[2][2])) * inv_det;
+    inv_out[0][2] = ((s[0][1] * s[1][2]) - (s[0][2] * s[1][1])) * inv_det;
+    inv_out[1][0] = ((s[1][2] * s[2][0]) - (s[1][0] * s[2][2])) * inv_det;
+    inv_out[1][1] = ((s[0][0] * s[2][2]) - (s[0][2] * s[2][0])) * inv_det;
+    inv_out[1][2] = ((s[0][2] * s[1][0]) - (s[0][0] * s[1][2])) * inv_det;
+    inv_out[2][0] = ((s[1][0] * s[2][1]) - (s[1][1] * s[2][0])) * inv_det;
+    inv_out[2][1] = ((s[0][1] * s[2][0]) - (s[0][0] * s[2][1])) * inv_det;
+    inv_out[2][2] = ((s[0][0] * s[1][1]) - (s[0][1] * s[1][0])) * inv_det;
+    return true;
+}
+
+bool invert_matrix2(float s[2][2], float inv_out[2][2])
+{
+    const float det = (s[0][0] * s[1][1]) - (s[0][1] * s[1][0]);
+    if (std::fabs(det) < 1.0e-12f) {
+        return false;
+    }
+
+    const float inv_det = 1.0f / det;
+    inv_out[0][0] = s[1][1] * inv_det;
+    inv_out[0][1] = -s[0][1] * inv_det;
+    inv_out[1][0] = -s[1][0] * inv_det;
+    inv_out[1][1] = s[0][0] * inv_det;
+    return true;
+}
+
+float quadratic_form3(const float y[3], const float s_inv[3][3])
+{
+    float nis = 0.0f;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            nis += y[i] * s_inv[i][j] * y[j];
+        }
+    }
+    return nis;
+}
+
+void nis_component_contributions(
+    const float y[3],
+    const float s_inv[3][3],
+    float out_contrib[3])
+{
+    float sy[3] = {0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            sy[i] += s_inv[i][j] * y[j];
+        }
+    }
+    out_contrib[0] = y[0] * sy[0];
+    out_contrib[1] = y[1] * sy[1];
+    out_contrib[2] = y[2] * sy[2];
+}
+
+void symmetric2_eigen_extremes(
+    float s00,
+    float s01,
+    float s11,
+    float *out_min,
+    float *out_max)
+{
+    const float trace = s00 + s11;
+    const float det = (s00 * s11) - (s01 * s01);
+    const float disc = fmaxf((trace * trace) - (4.0f * det), 0.0f);
+    const float root = std::sqrt(disc);
+    const float e0 = 0.5f * (trace - root);
+    const float e1 = 0.5f * (trace + root);
+    if (out_min != nullptr) {
+        *out_min = fminf(e0, e1);
+    }
+    if (out_max != nullptr) {
+        *out_max = fmaxf(e0, e1);
+    }
+}
+
+void symmetric3_eigen_extremes(
+    const float s[3][3],
+    float *out_min,
+    float *out_max)
+{
+    float a[3][3]{};
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            a[i][j] = s[i][j];
+        }
+    }
+
+    for (int sweep = 0; sweep < 50; ++sweep) {
+        float off_sum = 0.0f;
+        for (int p = 0; p < 2; ++p) {
+            for (int q = p + 1; q < 3; ++q) {
+                off_sum += std::fabs(a[p][q]);
+            }
+        }
+        if (off_sum < 1.0e-12f) {
+            break;
+        }
+
+        for (int p = 0; p < 2; ++p) {
+            for (int q = p + 1; q < 3; ++q) {
+                const float apq = a[p][q];
+                if (std::fabs(apq) < 1.0e-15f) {
+                    continue;
+                }
+                const float app = a[p][p];
+                const float aqq = a[q][q];
+                const float tau = (aqq - app) / (2.0f * apq);
+                const float t = (tau >= 0.0f ? 1.0f : -1.0f)
+                    / (std::fabs(tau) + std::sqrt(1.0f + (tau * tau)));
+                const float c = 1.0f / std::sqrt(1.0f + (t * t));
+                const float s_rot = t * c;
+                for (int k = 0; k < 3; ++k) {
+                    const float akp = a[p][k];
+                    const float akq = a[q][k];
+                    a[p][k] = (c * akp) - (s_rot * akq);
+                    a[q][k] = (s_rot * akp) + (c * akq);
+                }
+                for (int k = 0; k < 3; ++k) {
+                    const float apk = a[k][p];
+                    const float aqk = a[k][q];
+                    a[k][p] = (c * apk) - (s_rot * aqk);
+                    a[k][q] = (s_rot * apk) + (c * aqk);
+                }
+                a[p][p] = (c * c * app) - (2.0f * c * s_rot * apq) + (s_rot * s_rot * aqq);
+                a[q][q] = (s_rot * s_rot * app) + (2.0f * c * s_rot * apq) + (c * c * aqq);
+                a[p][q] = 0.0f;
+                a[q][p] = 0.0f;
+            }
+        }
+    }
+
+    float eigmin = a[0][0];
+    float eigmax = a[0][0];
+    for (int i = 1; i < 3; ++i) {
+        eigmin = fminf(eigmin, a[i][i]);
+        eigmax = fmaxf(eigmax, a[i][i]);
+    }
+    if (out_min != nullptr) {
+        *out_min = eigmin;
+    }
+    if (out_max != nullptr) {
+        *out_max = eigmax;
+    }
+}
+
+void matrix_s_condition(
+    const float s[3][3],
+    float *out_eigmin,
+    float *out_eigmax,
+    float *out_cond)
+{
+    float eigmin = 0.0f;
+    float eigmax = 0.0f;
+    symmetric3_eigen_extremes(s, &eigmin, &eigmax);
+    if (out_eigmin != nullptr) {
+        *out_eigmin = eigmin;
+    }
+    if (out_eigmax != nullptr) {
+        *out_eigmax = eigmax;
+    }
+    if (out_cond != nullptr) {
+        *out_cond = (eigmin > 1.0e-12f) ? (eigmax / eigmin) : 0.0f;
+    }
 }
 
 bool write_output_header(FILE *output_fp)
@@ -2233,6 +2432,853 @@ bool write_h7_update_audit_row(
     return true;
 }
 
+bool write_gap3_observation_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,update_type,accepted,reject_reason,"
+        "pred_accum_dpos_h_m,pred_accum_dvel_h_mps,pred_accum_dt_s,"
+        "innov_n,innov_e,innov_d,innov_h_m,innov_v_lateral,innov_v_vertical,"
+        "nis,k_pos_max,k_vel_max,k_att_max,"
+        "dx_pos_norm_m,dx_vel_norm_mps,dx_att_norm_rad,"
+        "dx_pos_n_m,dx_pos_e_m,dx_vel_n_mps,dx_vel_e_mps,"
+        "corr_pos_h_m,corr_vel_h_mps,corr_att_norm_rad,"
+        "hypo_corr_pos_h_m,hypo_corr_vel_h_mps,"
+        "pred_over_corr_dpos_ratio,pred_over_corr_dvel_ratio,"
+        "state_pos_n_m,state_pos_e_m,state_vel_h_mps\n");
+    return true;
+}
+
+bool write_gap3_observation_audit_row(
+    FILE *audit_fp,
+    const char *update_type,
+    double timestamp_s,
+    bool accepted,
+    int reject_reason,
+    double pred_accum_dpos_h,
+    double pred_accum_dvel_h,
+    double pred_accum_dt,
+    const InsEkfGnssUpdateDetail *gnss_detail,
+    const InsEkfNhcUpdateDetail *nhc_detail,
+    const float pos_before[3],
+    const float pos_after[3],
+    const float vel_before[3],
+    const float vel_after[3])
+{
+    if (audit_fp == nullptr || update_type == nullptr || pos_before == nullptr ||
+        pos_after == nullptr || vel_before == nullptr || vel_after == nullptr) {
+        return false;
+    }
+
+    float innov_n = 0.0f;
+    float innov_e = 0.0f;
+    float innov_d = 0.0f;
+    float innov_v_lateral = 0.0f;
+    float innov_v_vertical = 0.0f;
+    float nis = 0.0f;
+    float k_pos_max = 0.0f;
+    float k_vel_max = 0.0f;
+    float k_att_max = 0.0f;
+    float dx_pos_norm = 0.0f;
+    float dx_vel_norm = 0.0f;
+    float dx_att_norm = 0.0f;
+    float dx_pos_n = 0.0f;
+    float dx_pos_e = 0.0f;
+    float dx_vel_n = 0.0f;
+    float dx_vel_e = 0.0f;
+
+    if (gnss_detail != nullptr) {
+        innov_n = gnss_detail->innov_n_m;
+        innov_e = gnss_detail->innov_e_m;
+        innov_d = gnss_detail->innov_d_m;
+        nis = gnss_detail->nis;
+        k_pos_max = gnss_detail->k_pos_max;
+        k_vel_max = gnss_detail->k_vel_max;
+        k_att_max = gnss_detail->k_att_max;
+        dx_pos_norm = gnss_detail->dx_pos_norm_m;
+        dx_vel_norm = gnss_detail->dx_vel_norm_mps;
+        dx_att_norm = gnss_detail->dx_att_norm_rad;
+        dx_pos_n = gnss_detail->dx_pos_n_m;
+        dx_pos_e = gnss_detail->dx_pos_e_m;
+        dx_vel_n = gnss_detail->dx_vel_n_mps;
+        dx_vel_e = gnss_detail->dx_vel_e_mps;
+    } else if (nhc_detail != nullptr) {
+        innov_v_lateral = nhc_detail->innov_y_mps;
+        innov_v_vertical = nhc_detail->innov_z_mps;
+        nis = nhc_detail->nis;
+        k_vel_max = nhc_detail->k_max;
+        dx_vel_norm = nhc_detail->dx_vel_norm_mps;
+        dx_vel_n = nhc_detail->dx_vel_n_mps;
+        dx_vel_e = nhc_detail->dx_vel_e_mps;
+        dx_att_norm = nhc_detail->dx_att_norm_rad;
+    }
+
+    const float innov_h = std::sqrt((innov_n * innov_n) + (innov_e * innov_e));
+    const float corr_pos_h = std::sqrt(
+        ((pos_after[0] - pos_before[0]) * (pos_after[0] - pos_before[0])) +
+        ((pos_after[1] - pos_before[1]) * (pos_after[1] - pos_before[1])));
+    const float corr_vel_h = std::sqrt(
+        ((vel_after[0] - vel_before[0]) * (vel_after[0] - vel_before[0])) +
+        ((vel_after[1] - vel_before[1]) * (vel_after[1] - vel_before[1])));
+    const float corr_att_norm = (gnss_detail != nullptr) ? gnss_detail->dx_att_norm_rad : 0.0f;
+
+    float hypo_corr_pos_h = corr_pos_h;
+    float hypo_corr_vel_h = corr_vel_h;
+    if (gnss_detail != nullptr) {
+        hypo_corr_pos_h = std::sqrt(
+            (gnss_detail->dx_pos_n_m * gnss_detail->dx_pos_n_m) +
+            (gnss_detail->dx_pos_e_m * gnss_detail->dx_pos_e_m));
+        hypo_corr_vel_h = std::sqrt(
+            (gnss_detail->dx_vel_n_mps * gnss_detail->dx_vel_n_mps) +
+            (gnss_detail->dx_vel_e_mps * gnss_detail->dx_vel_e_mps));
+    } else if (nhc_detail != nullptr) {
+        hypo_corr_vel_h = nhc_detail->dx_vel_norm_mps;
+    }
+
+    const double pred_over_corr_dpos =
+        (corr_pos_h > 1.0e-6f) ? (pred_accum_dpos_h / static_cast<double>(corr_pos_h)) : -1.0;
+    const double pred_over_corr_dvel =
+        (corr_vel_h > 1.0e-6f) ? (pred_accum_dvel_h / static_cast<double>(corr_vel_h)) : -1.0;
+    const float state_vel_h = std::sqrt(
+        (vel_after[0] * vel_after[0]) + (vel_after[1] * vel_after[1]));
+
+    std::fprintf(
+        audit_fp,
+        "%.9f,%s,%d,%d,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,"
+        "%.6f,%.6f,"
+        "%.6f,%.6f,%.6f\n",
+        timestamp_s,
+        update_type,
+        accepted ? 1 : 0,
+        reject_reason,
+        pred_accum_dpos_h,
+        pred_accum_dvel_h,
+        pred_accum_dt,
+        innov_n,
+        innov_e,
+        innov_d,
+        innov_h,
+        innov_v_lateral,
+        innov_v_vertical,
+        nis,
+        k_pos_max,
+        k_vel_max,
+        k_att_max,
+        dx_pos_norm,
+        dx_vel_norm,
+        dx_att_norm,
+        dx_pos_n,
+        dx_pos_e,
+        dx_vel_n,
+        dx_vel_e,
+        corr_pos_h,
+        corr_vel_h,
+        corr_att_norm,
+        hypo_corr_pos_h,
+        hypo_corr_vel_h,
+        pred_over_corr_dpos,
+        pred_over_corr_dvel,
+        pos_after[0],
+        pos_after[1],
+        state_vel_h);
+    return true;
+}
+
+bool write_gap3_gnss_nis_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,gps_index,"
+        "z_n_m,z_e_m,z_d_m,hx_n_m,hx_e_m,hx_d_m,"
+        "innov_n_m,innov_e_m,innov_d_m,innov_h_m,innov_d_abs_m,pred_error_3d_m,"
+        "vel_pred_n_mps,vel_pred_e_mps,vel_pred_d_mps,vel_pred_h_mps,"
+        "gps_speed_mps,gps_course_deg,has_gps_speed,"
+        "pseudo_innov_v_n_mps,pseudo_innov_v_e_mps,pseudo_innov_v_d_mps,pseudo_innov_v_h_mps,"
+        "hph_nn,hph_ee,hph_dd,r_m2,"
+        "s_nn,s_ee,s_dd,s_ne,"
+        "nis_full,nis_horizontal_2d,nis_d_marginal,"
+        "nis_contrib_n,nis_contrib_e,nis_contrib_d,"
+        "nis_threshold,accepted,reject_reason,"
+        "s_eigmin,s_eigmax,s_cond,"
+        "k_pos_max,k_vel_max,k_att_max,"
+        "dx_pos_n_m,dx_pos_e_m,dx_pos_d_m,dx_vel_n_mps,dx_vel_e_mps,dx_vel_d_mps,"
+        "corr_pos_h_m,corr_vel_h_mps,"
+        "vel_after_n_mps,vel_after_e_mps,vel_after_h_mps,"
+        "dt_since_prev_gnss_s,dt_since_prev_accept_s,"
+        "ppv_policy,ppv_triggered,ppv_effective_gap_s,"
+        "cos_dv_pos_err_pre,cos_dv_tot_err_pre,"
+        "ppv_frob_pre,ppv_frob_post\n");
+    return true;
+}
+
+bool write_gap3_gnss_nis_audit_row(
+    FILE *audit_fp,
+    double timestamp_s,
+    uint32_t gps_index,
+    const float z_ned[3],
+    const float hx_ned[3],
+    const float vel_pred[3],
+    bool has_gps_speed,
+    float gps_speed_mps,
+    float gps_course_deg,
+    const float hph[3][3],
+    float r_m2,
+    float nis_threshold,
+    bool accepted,
+    int reject_reason,
+    double dt_since_prev_gnss_s,
+    double dt_since_prev_accept_s,
+    const InsEkfGnssUpdateDetail *gnss_detail,
+    const float pos_after[3],
+    const float vel_after[3])
+{
+    if (audit_fp == nullptr || z_ned == nullptr || hx_ned == nullptr || vel_pred == nullptr
+        || pos_after == nullptr || vel_after == nullptr) {
+        return false;
+    }
+
+    const float innov[3] = {
+        z_ned[0] - hx_ned[0],
+        z_ned[1] - hx_ned[1],
+        z_ned[2] - hx_ned[2],
+    };
+    const float innov_h = std::sqrt((innov[0] * innov[0]) + (innov[1] * innov[1]));
+    const float pred_error_3d = std::sqrt(
+        (innov[0] * innov[0]) + (innov[1] * innov[1]) + (innov[2] * innov[2]));
+    const float vel_pred_h = std::sqrt(
+        (vel_pred[0] * vel_pred[0]) + (vel_pred[1] * vel_pred[1]));
+
+    float v_gps_n = 0.0f;
+    float v_gps_e = 0.0f;
+    if (has_gps_speed && gps_speed_mps > 0.0f) {
+        const float course_rad = gps_course_deg * kDegToRadF;
+        v_gps_n = gps_speed_mps * std::cos(course_rad);
+        v_gps_e = gps_speed_mps * std::sin(course_rad);
+    }
+    const float pseudo_innov_v[3] = {
+        vel_pred[0] - v_gps_n,
+        vel_pred[1] - v_gps_e,
+        vel_pred[2],
+    };
+    const float pseudo_innov_v_h = std::sqrt(
+        (pseudo_innov_v[0] * pseudo_innov_v[0]) + (pseudo_innov_v[1] * pseudo_innov_v[1]));
+
+    float s_matrix[3][3]{};
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            s_matrix[i][j] = hph[i][j];
+        }
+        s_matrix[i][i] += r_m2;
+    }
+
+    float s_inv[3][3]{};
+    float nis_full = 0.0f;
+    float nis_horizontal_2d = 0.0f;
+    float nis_d_marginal = 0.0f;
+    float nis_contrib[3] = {0.0f, 0.0f, 0.0f};
+    if (invert_matrix3(s_matrix, s_inv)) {
+        nis_full = quadratic_form3(innov, s_inv);
+        nis_component_contributions(innov, s_inv, nis_contrib);
+        if (s_matrix[2][2] > 1.0e-12f) {
+            nis_d_marginal = (innov[2] * innov[2]) / s_matrix[2][2];
+        }
+
+        float s_h[2][2] = {
+            {s_matrix[0][0], s_matrix[0][1]},
+            {s_matrix[1][0], s_matrix[1][1]},
+        };
+        float s_h_inv[2][2]{};
+        const float y_h[2] = {innov[0], innov[1]};
+        if (invert_matrix2(s_h, s_h_inv)) {
+            nis_horizontal_2d = (y_h[0] * ((s_h_inv[0][0] * y_h[0]) + (s_h_inv[0][1] * y_h[1])))
+                + (y_h[1] * ((s_h_inv[1][0] * y_h[0]) + (s_h_inv[1][1] * y_h[1])));
+        }
+    }
+
+    float s_eigmin = 0.0f;
+    float s_eigmax = 0.0f;
+    float s_cond = 0.0f;
+    matrix_s_condition(s_matrix, &s_eigmin, &s_eigmax, &s_cond);
+
+    float k_pos_max = 0.0f;
+    float k_vel_max = 0.0f;
+    float k_att_max = 0.0f;
+    float dx_pos[3] = {0.0f, 0.0f, 0.0f};
+    float dx_vel[3] = {0.0f, 0.0f, 0.0f};
+    float ppv_effective_gap_s = 0.0f;
+    float cos_dv_pos_err_pre = 0.0f;
+    float cos_dv_tot_err_pre = 0.0f;
+    float ppv_frob_pre = 0.0f;
+    float ppv_frob_post = 0.0f;
+    const char *ppv_policy_name = "none";
+    int ppv_triggered = 0;
+    if (gnss_detail != nullptr) {
+        k_pos_max = gnss_detail->k_pos_max;
+        k_vel_max = gnss_detail->k_vel_max;
+        k_att_max = gnss_detail->k_att_max;
+        dx_pos[0] = gnss_detail->dx_pos_n_m;
+        dx_pos[1] = gnss_detail->dx_pos_e_m;
+        dx_pos[2] = gnss_detail->dx_pos_d_m;
+        dx_vel[0] = gnss_detail->dx_vel_n_mps;
+        dx_vel[1] = gnss_detail->dx_vel_e_mps;
+        dx_vel[2] = gnss_detail->dx_vel_d_mps;
+        ppv_effective_gap_s = gnss_detail->ppv_effective_gap_s;
+        cos_dv_pos_err_pre = gnss_detail->cos_dv_pos_err_pre;
+        cos_dv_tot_err_pre = gnss_detail->cos_dv_tot_err_pre;
+        ppv_frob_pre = gnss_detail->ppv_frob_pre;
+        ppv_frob_post = gnss_detail->ppv_frob_post;
+        ppv_triggered = static_cast<int>(gnss_detail->ppv_triggered);
+        ppv_policy_name = ins_ekf_p_pv_policy_name(
+            static_cast<InsEkfPpvPolicy>(gnss_detail->ppv_policy));
+        if (ppv_policy_name == nullptr) {
+            ppv_policy_name = "unknown";
+        }
+    }
+
+    const float corr_pos_h = std::sqrt(
+        ((pos_after[0] - hx_ned[0]) * (pos_after[0] - hx_ned[0]))
+        + ((pos_after[1] - hx_ned[1]) * (pos_after[1] - hx_ned[1])));
+    const float corr_vel_h = std::sqrt(
+        ((vel_after[0] - vel_pred[0]) * (vel_after[0] - vel_pred[0]))
+        + ((vel_after[1] - vel_pred[1]) * (vel_after[1] - vel_pred[1])));
+    const float vel_after_h = std::sqrt(
+        (vel_after[0] * vel_after[0]) + (vel_after[1] * vel_after[1]));
+
+    std::fprintf(
+        audit_fp,
+        "%.9f,%u,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%d,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%d,%d,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f",
+        timestamp_s,
+        gps_index,
+        z_ned[0],
+        z_ned[1],
+        z_ned[2],
+        hx_ned[0],
+        hx_ned[1],
+        hx_ned[2],
+        innov[0],
+        innov[1],
+        innov[2],
+        innov_h,
+        std::fabs(innov[2]),
+        pred_error_3d,
+        vel_pred[0],
+        vel_pred[1],
+        vel_pred[2],
+        vel_pred_h,
+        gps_speed_mps,
+        gps_course_deg,
+        has_gps_speed ? 1 : 0,
+        pseudo_innov_v[0],
+        pseudo_innov_v[1],
+        pseudo_innov_v[2],
+        pseudo_innov_v_h,
+        hph[0][0],
+        hph[1][1],
+        hph[2][2],
+        r_m2,
+        s_matrix[0][0],
+        s_matrix[1][1],
+        s_matrix[2][2],
+        s_matrix[0][1],
+        nis_full,
+        nis_horizontal_2d,
+        nis_d_marginal,
+        nis_contrib[0],
+        nis_contrib[1],
+        nis_contrib[2],
+        nis_threshold,
+        accepted ? 1 : 0,
+        reject_reason,
+        s_eigmin,
+        s_eigmax,
+        s_cond,
+        k_pos_max,
+        k_vel_max,
+        k_att_max,
+        dx_pos[0],
+        dx_pos[1],
+        dx_pos[2],
+        dx_vel[0],
+        dx_vel[1],
+        dx_vel[2],
+        corr_pos_h,
+        corr_vel_h,
+        vel_after[0],
+        vel_after[1],
+        vel_after_h,
+        dt_since_prev_gnss_s,
+        dt_since_prev_accept_s);
+    std::fprintf(
+        audit_fp,
+        ",%s,%d,%.6f,%.6f,%.6f,%.6f,%.6f",
+        ppv_policy_name,
+        ppv_triggered,
+        ppv_effective_gap_s,
+        cos_dv_pos_err_pre,
+        cos_dv_tot_err_pre,
+        ppv_frob_pre,
+        ppv_frob_post);
+    std::fputc('\n', audit_fp);
+    return true;
+}
+
+void write_matrix3_json_value(FILE *fp, const float m[3][3])
+{
+    if (fp == nullptr) {
+        return;
+    }
+
+    std::fprintf(fp, "[\n");
+    for (int i = 0; i < 3; ++i) {
+        std::fprintf(
+            fp,
+            "      [%.9f, %.9f, %.9f]%s\n",
+            m[i][0],
+            m[i][1],
+            m[i][2],
+            (i < 2) ? "," : "");
+    }
+    std::fprintf(fp, "    ]");
+}
+
+bool write_gap3_gnss_k_block_audit_json(
+    FILE *json_fp,
+    double timestamp_s,
+    uint32_t gps_index,
+    bool accepted,
+    const float z_ned[3],
+    const float hx_ned[3],
+    const float vel_prior[3],
+    const float vel_post[3],
+    const float pos_post[3],
+    float gps_speed_mps,
+    bool has_gps_speed,
+    const float hph[3][3],
+    float r_m2,
+    const float s_matrix[3][3],
+    const InsEkfGnssUpdateDetail *gnss_detail,
+    const InsEkfGnssKBlockDetail *k_block)
+{
+    if (json_fp == nullptr || z_ned == nullptr || hx_ned == nullptr || vel_prior == nullptr
+        || vel_post == nullptr || pos_post == nullptr || gnss_detail == nullptr
+        || k_block == nullptr) {
+        return false;
+    }
+
+    const float innov[3] = {
+        z_ned[0] - hx_ned[0],
+        z_ned[1] - hx_ned[1],
+        z_ned[2] - hx_ned[2],
+    };
+
+    std::fprintf(json_fp, "{\n");
+    std::fprintf(json_fp, "  \"experiment\": \"GAP-3 GNSS K-block single-fix audit\",\n");
+    std::fprintf(json_fp, "  \"timestamp_s\": %.9f,\n", timestamp_s);
+    std::fprintf(json_fp, "  \"gps_index\": %u,\n", gps_index);
+    std::fprintf(json_fp, "  \"accepted\": %s,\n", accepted ? "true" : "false");
+    std::fprintf(json_fp, "  \"measurement_model\": {\n");
+    std::fprintf(json_fp, "    \"z_observed\": \"position_only [pN,pE,pD]\",\n");
+    std::fprintf(json_fp, "    \"z_velocity_in_ekf\": false,\n");
+    std::fprintf(json_fp, "    \"gps_speed_available_in_log\": %s,\n", has_gps_speed ? "true" : "false");
+    std::fprintf(json_fp, "    \"gps_speed_mps\": %.6f,\n", gps_speed_mps);
+    std::fprintf(json_fp, "    \"H_on_error_state\": \"implicit I3 on pos errors; zero on vel/att/bias\"\n");
+    std::fprintf(json_fp, "  },\n");
+
+    std::fprintf(json_fp, "  \"z_ned_m\": [%.6f, %.6f, %.6f],\n", z_ned[0], z_ned[1], z_ned[2]);
+    std::fprintf(json_fp, "  \"hx_ned_m\": [%.6f, %.6f, %.6f],\n", hx_ned[0], hx_ned[1], hx_ned[2]);
+    std::fprintf(json_fp, "  \"innovation_ned_m\": [%.6f, %.6f, %.6f],\n", innov[0], innov[1], innov[2]);
+    std::fprintf(
+        json_fp,
+        "  \"x_prior\": {\"pos_ned_m\": [%.6f, %.6f, %.6f], \"vel_ned_mps\": [%.6f, %.6f, %.6f]},\n",
+        hx_ned[0],
+        hx_ned[1],
+        hx_ned[2],
+        vel_prior[0],
+        vel_prior[1],
+        vel_prior[2]);
+    std::fprintf(
+        json_fp,
+        "  \"x_post\": {\"pos_ned_m\": [%.6f, %.6f, %.6f], \"vel_ned_mps\": [%.6f, %.6f, %.6f]},\n",
+        pos_post[0],
+        pos_post[1],
+        pos_post[2],
+        vel_post[0],
+        vel_post[1],
+        vel_post[2]);
+
+    std::fprintf(json_fp, "  \"S_m2\": ");
+    write_matrix3_json_value(json_fp, s_matrix);
+    std::fprintf(json_fp, ",\n");
+    std::fprintf(json_fp, "  \"HPH_m2\": ");
+    write_matrix3_json_value(json_fp, hph);
+    std::fprintf(json_fp, ",\n");
+    std::fprintf(json_fp, "  \"R_m2\": %.6f,\n", r_m2);
+    std::fprintf(json_fp, "  \"S_inv\": ");
+    write_matrix3_json_value(json_fp, k_block->s_inv);
+    std::fprintf(json_fp, ",\n");
+    std::fprintf(json_fp, "  \"P_vel_pos_cross_m2\": ");
+    write_matrix3_json_value(json_fp, k_block->p_vel_pos);
+    std::fprintf(json_fp, ",\n");
+    std::fprintf(json_fp, "  \"K_pos_pos\": ");
+    write_matrix3_json_value(json_fp, k_block->k_pos_pos);
+    std::fprintf(json_fp, ",\n");
+    std::fprintf(json_fp, "  \"K_vel_pos\": ");
+    write_matrix3_json_value(json_fp, k_block->k_vel_pos);
+    std::fprintf(json_fp, ",\n");
+
+    std::fprintf(json_fp, "  \"delta_x\": {\n");
+    std::fprintf(
+        json_fp,
+        "    \"pos_ned_m\": [%.9f, %.9f, %.9f],\n",
+        gnss_detail->dx_pos_n_m,
+        gnss_detail->dx_pos_e_m,
+        gnss_detail->dx_pos_d_m);
+    std::fprintf(
+        json_fp,
+        "    \"vel_ned_mps\": [%.9f, %.9f, %.9f],\n",
+        gnss_detail->dx_vel_n_mps,
+        gnss_detail->dx_vel_e_mps,
+        gnss_detail->dx_vel_d_mps);
+    std::fprintf(
+        json_fp,
+        "    \"att_rad\": [%.9f, %.9f, %.9f],\n",
+        gnss_detail->dx_att_x_rad,
+        gnss_detail->dx_att_y_rad,
+        gnss_detail->dx_att_z_rad);
+    std::fprintf(
+        json_fp,
+        "    \"bias_accel_norm\": %.9f,\n",
+        k_block->dx_bias_accel_norm);
+    std::fprintf(
+        json_fp,
+        "    \"bias_gyro_norm\": %.9f,\n",
+        k_block->dx_bias_gyro_norm);
+    std::fprintf(json_fp, "    \"pos_norm_m\": %.9f,\n", gnss_detail->dx_pos_norm_m);
+    std::fprintf(json_fp, "    \"vel_norm_mps\": %.9f,\n", gnss_detail->dx_vel_norm_mps);
+    std::fprintf(json_fp, "    \"att_norm_rad\": %.9f\n", gnss_detail->dx_att_norm_rad);
+    std::fprintf(json_fp, "  },\n");
+    std::fprintf(json_fp, "  \"nis\": %.6f,\n", gnss_detail->nis);
+    std::fprintf(json_fp, "  \"interpretation\": \"K_vel_pos = P_vel_pos * S_inv; velocity correction only via cross-covariance, not H\"\n");
+    std::fprintf(json_fp, "}\n");
+    return true;
+}
+
+static float matrix3_frobenius(const float m[3][3])
+{
+    float sum_sq = 0.0f;
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            sum_sq += m[r][c] * m[r][c];
+        }
+    }
+    return std::sqrt(sum_sq);
+}
+
+static float matrix3_max_abs(const float m[3][3])
+{
+    float max_abs = 0.0f;
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            const float abs_val = std::fabs(m[r][c]);
+            if (abs_val > max_abs) {
+                max_abs = abs_val;
+            }
+        }
+    }
+    return max_abs;
+}
+
+bool write_gap3_cov_propagation_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,event,"
+        "P_pos_pos_frob,P_vel_vel_frob,P_vel_pos_frob,P_vel_att_frob,"
+        "P_pos_std_n,P_pos_std_e,P_pos_std_d,"
+        "P_vel_std_n,P_vel_std_e,P_vel_std_d,"
+        "P_vel_pos_max,K_vel_pos_max,"
+        "F_dt,F_va_frob,F_vba_frob,F_va_max,"
+        "vel_h_mps,gps_speed_mps,gnss_accepted\n");
+    return true;
+}
+
+bool write_gap3_cov_propagation_audit_row(
+    FILE *audit_fp,
+    const char *event,
+    double timestamp_s,
+    const InsEkfFilter &ekf,
+    float vel_h_mps,
+    float gps_speed_mps,
+    int gnss_accepted,
+    float k_vel_pos_max)
+{
+    if (audit_fp == nullptr || event == nullptr) {
+        return false;
+    }
+
+    InsEkfCovBlockMetrics cov_metrics{};
+    if (!ins_ekf_get_cov_block_metrics(&ekf, &cov_metrics)) {
+        return false;
+    }
+
+    InsEkfPredictAudit predict_audit{};
+    const bool has_predict_audit = ins_ekf_get_last_predict_audit(&ekf, &predict_audit);
+    const float f_dt = has_predict_audit ? predict_audit.f_dp_dv_dt_s : 0.0f;
+    const float f_va_frob =
+        has_predict_audit ? matrix3_frobenius(predict_audit.f_va) : 0.0f;
+    const float f_vba_frob =
+        has_predict_audit ? matrix3_frobenius(predict_audit.f_vba) : 0.0f;
+    const float f_va_max =
+        has_predict_audit ? matrix3_max_abs(predict_audit.f_va) : 0.0f;
+
+    std::fprintf(
+        audit_fp,
+        "%.9f,%s,"
+        "%.9e,%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.9e,%.9e,"
+        "%.6f,%.9e,%.9e,%.9e,"
+        "%.6f,%.6f,%d\n",
+        timestamp_s,
+        event,
+        cov_metrics.p_pos_pos_frob,
+        cov_metrics.p_vel_vel_frob,
+        cov_metrics.p_vel_pos_frob,
+        cov_metrics.p_vel_att_frob,
+        cov_metrics.p_pos_std_n_m,
+        cov_metrics.p_pos_std_e_m,
+        cov_metrics.p_pos_std_d_m,
+        cov_metrics.p_vel_std_n_mps,
+        cov_metrics.p_vel_std_e_mps,
+        cov_metrics.p_vel_std_d_mps,
+        cov_metrics.p_vel_pos_max_abs,
+        k_vel_pos_max,
+        f_dt,
+        f_va_frob,
+        f_vba_frob,
+        f_va_max,
+        vel_h_mps,
+        gps_speed_mps,
+        gnss_accepted);
+    return true;
+}
+
+bool write_gap3_vel_source_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,imu_seq,source,dv_n,dv_e,dv_d,dv_norm,"
+        "vel_n,vel_e,vel_d,vel_h_mps,gps_speed_mps,"
+        "h_nhc_r0_vn,h_nhc_r0_ve,h_nhc_r0_vd,h_nhc_r1_vn,h_nhc_r1_ve,h_nhc_r1_vd\n");
+    return true;
+}
+
+bool write_gap3_imu_constraint_audit_row(
+    FILE *audit_fp,
+    double timestamp_s,
+    uint64_t imu_seq,
+    bool nhc_mode_selected,
+    bool zupt_armed,
+    bool zupt_applied,
+    bool nhc_applied,
+    float gps_speed_mps,
+    float static_phase_end_s,
+    float moving_speed_threshold_mps,
+    float accel_norm_mps2,
+    float gyro_norm_radps,
+    float vel_h_mps,
+    float bias_ax,
+    float bias_ay,
+    float bias_az,
+    float a_body_x,
+    float a_body_y,
+    float a_body_z,
+    const char *constraint_policy,
+    bool nhc_policy_enabled)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "%.9f,%llu,%d,%d,%d,%d,%.6f,%.3f,%.3f,%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%s,%d\n",
+        timestamp_s,
+        static_cast<unsigned long long>(imu_seq),
+        nhc_mode_selected ? 1 : 0,
+        zupt_armed ? 1 : 0,
+        zupt_applied ? 1 : 0,
+        nhc_applied ? 1 : 0,
+        gps_speed_mps,
+        static_phase_end_s,
+        moving_speed_threshold_mps,
+        accel_norm_mps2,
+        gyro_norm_radps,
+        vel_h_mps,
+        bias_ax,
+        bias_ay,
+        bias_az,
+        a_body_x,
+        a_body_y,
+        a_body_z,
+        constraint_policy != nullptr ? constraint_policy : "",
+        nhc_policy_enabled ? 1 : 0);
+    return true;
+}
+
+bool write_gap3_imu_constraint_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,imu_seq,nhc_mode_selected,zupt_armed,zupt_applied,nhc_applied,"
+        "gps_speed_mps,static_phase_end_s,moving_speed_threshold_mps,"
+        "accel_norm_mps2,gyro_norm_radps,vel_h_mps,"
+        "bias_ax,bias_ay,bias_az,a_body_x,a_body_y,a_body_z,"
+        "constraint_policy,nhc_policy_enabled\n");
+    return true;
+}
+
+bool write_gap3_constraint_pipeline_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,imu_seq,constraint_policy,zupt_armed,nhc_armed,"
+        "vel_before_n,vel_before_e,vel_before_d,"
+        "dv_pred_n,dv_pred_e,dv_pred_d,"
+        "vel_after_pred_n,vel_after_pred_e,vel_after_pred_d,"
+        "dv_nhc_n,dv_nhc_e,dv_nhc_d,nhc_applied,"
+        "vel_after_nhc_n,vel_after_nhc_e,vel_after_nhc_d,"
+        "dv_zupt_n,dv_zupt_e,dv_zupt_d,zupt_applied,"
+        "vel_after_zupt_n,vel_after_zupt_e,vel_after_zupt_d,"
+        "vel_h_mps,gps_speed_mps\n");
+    return true;
+}
+
+bool write_gap3_constraint_pipeline_audit_row(
+    FILE *audit_fp,
+    double timestamp_s,
+    uint64_t imu_seq,
+    const char *constraint_policy,
+    bool zupt_armed,
+    bool nhc_armed,
+    const float vel_before[3],
+    const InsEkfVelPipelineAudit &pipeline,
+    float gps_speed_mps)
+{
+    if (audit_fp == nullptr || vel_before == nullptr || !pipeline.valid) {
+        return false;
+    }
+
+    const float vel_h = std::hypot(pipeline.vel_after_zupt[0], pipeline.vel_after_zupt[1]);
+    std::fprintf(
+        audit_fp,
+        "%.9f,%llu,%s,%d,%d,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%d,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f,%.6f,%d,"
+        "%.6f,%.6f,%.6f,"
+        "%.6f,%.6f\n",
+        timestamp_s,
+        static_cast<unsigned long long>(imu_seq),
+        constraint_policy != nullptr ? constraint_policy : "",
+        zupt_armed ? 1 : 0,
+        nhc_armed ? 1 : 0,
+        vel_before[0],
+        vel_before[1],
+        vel_before[2],
+        pipeline.dv_predict[0],
+        pipeline.dv_predict[1],
+        pipeline.dv_predict[2],
+        pipeline.vel_after_predict[0],
+        pipeline.vel_after_predict[1],
+        pipeline.vel_after_predict[2],
+        pipeline.dv_nhc[0],
+        pipeline.dv_nhc[1],
+        pipeline.dv_nhc[2],
+        pipeline.nhc_applied ? 1 : 0,
+        pipeline.vel_after_nhc[0],
+        pipeline.vel_after_nhc[1],
+        pipeline.vel_after_nhc[2],
+        pipeline.dv_zupt[0],
+        pipeline.dv_zupt[1],
+        pipeline.dv_zupt[2],
+        pipeline.zupt_applied ? 1 : 0,
+        pipeline.vel_after_zupt[0],
+        pipeline.vel_after_zupt[1],
+        pipeline.vel_after_zupt[2],
+        vel_h,
+        gps_speed_mps);
+    return true;
+}
+
+bool write_gap3_cov_step_audit_header(FILE *audit_fp)
+{
+    if (audit_fp == nullptr) {
+        return false;
+    }
+
+    std::fprintf(
+        audit_fp,
+        "timestamp_s,imu_seq,update_type,phase,"
+        "P_pp_frob,P_vv_frob,P_pv_frob,P_aa_frob,"
+        "P_vv_n_m2,P_vv_e_m2,P_vv_d_m2,"
+        "P_vv_body_fwd_m2,P_vv_body_lat_m2,P_vv_body_vert_m2,"
+        "P_vv_std_n,P_vv_std_e,P_vv_std_d,"
+        "vel_h_mps,v_body_x,v_body_y,v_body_z\n");
+    return true;
+}
+
 bool write_h5_sync_audit_header(FILE *sync_fp)
 {
     if (sync_fp == nullptr) {
@@ -2426,6 +3472,247 @@ bool parse_json_rotation_matrix(const char *path, float out_matrix[3][3])
 }
 
 } /* namespace */
+
+const char *replay_constraint_policy_name(ReplayConstraintPolicy policy)
+{
+    switch (policy) {
+    case ReplayConstraintPolicy::AUTO:
+        return "auto";
+    case ReplayConstraintPolicy::FORCED_TIME:
+        return "forced_time";
+    case ReplayConstraintPolicy::GPS_STOP:
+        return "gps_stop";
+    case ReplayConstraintPolicy::IMU_STATIONARY:
+        return "imu_stationary";
+    case ReplayConstraintPolicy::DISABLED:
+        return "disabled";
+    default:
+        return "unknown";
+    }
+}
+
+bool replay_parse_constraint_policy(const char *text, ReplayConstraintPolicy *out_policy)
+{
+    if (text == nullptr || out_policy == nullptr || text[0] == '\0') {
+        return false;
+    }
+    if (std::strcmp(text, "auto") == 0 || std::strcmp(text, "AUTO") == 0) {
+        *out_policy = ReplayConstraintPolicy::AUTO;
+        return true;
+    }
+    if (std::strcmp(text, "forced_time") == 0 || std::strcmp(text, "FORCED_TIME") == 0) {
+        *out_policy = ReplayConstraintPolicy::FORCED_TIME;
+        return true;
+    }
+    if (std::strcmp(text, "gps_stop") == 0 || std::strcmp(text, "GPS_STOP") == 0) {
+        *out_policy = ReplayConstraintPolicy::GPS_STOP;
+        return true;
+    }
+    if (std::strcmp(text, "imu_stationary") == 0 || std::strcmp(text, "IMU_STATIONARY") == 0) {
+        *out_policy = ReplayConstraintPolicy::IMU_STATIONARY;
+        return true;
+    }
+    if (std::strcmp(text, "disabled") == 0 || std::strcmp(text, "DISABLED") == 0) {
+        *out_policy = ReplayConstraintPolicy::DISABLED;
+        return true;
+    }
+    return false;
+}
+
+bool replay_parse_nhc_policy(const char *text, ReplayNhcPolicy *out_policy)
+{
+    if (text == nullptr || out_policy == nullptr || text[0] == '\0') {
+        return false;
+    }
+    if (std::strcmp(text, "enabled") == 0 || std::strcmp(text, "on") == 0
+        || std::strcmp(text, "ENABLED") == 0 || std::strcmp(text, "ON") == 0) {
+        *out_policy = ReplayNhcPolicy::ENABLED;
+        return true;
+    }
+    if (std::strcmp(text, "disabled") == 0 || std::strcmp(text, "off") == 0
+        || std::strcmp(text, "DISABLED") == 0 || std::strcmp(text, "OFF") == 0) {
+        *out_policy = ReplayNhcPolicy::DISABLED;
+        return true;
+    }
+    return false;
+}
+
+const char *replay_gnss_obs_mode_name(ReplayGnssObsMode mode)
+{
+    switch (mode) {
+    case ReplayGnssObsMode::POS:
+        return "pos";
+    case ReplayGnssObsMode::POS_VEL:
+        return "pos_vel";
+    case ReplayGnssObsMode::VEL_ONLY:
+        return "vel_only";
+    default:
+        return "unknown";
+    }
+}
+
+bool replay_parse_gnss_obs_mode(const char *text, ReplayGnssObsMode *out_mode)
+{
+    if (text == nullptr || out_mode == nullptr || text[0] == '\0') {
+        return false;
+    }
+    if (std::strcmp(text, "pos") == 0 || std::strcmp(text, "POS") == 0) {
+        *out_mode = ReplayGnssObsMode::POS;
+        return true;
+    }
+    if (std::strcmp(text, "pos_vel") == 0 || std::strcmp(text, "pos+vel") == 0
+        || std::strcmp(text, "POS_VEL") == 0) {
+        *out_mode = ReplayGnssObsMode::POS_VEL;
+        return true;
+    }
+    if (std::strcmp(text, "vel_only") == 0 || std::strcmp(text, "vel-only") == 0
+        || std::strcmp(text, "VEL_ONLY") == 0) {
+        *out_mode = ReplayGnssObsMode::VEL_ONLY;
+        return true;
+    }
+    return false;
+}
+
+const char *replay_p_pv_policy_name(ReplayPpvPolicy policy)
+{
+    switch (policy) {
+    case ReplayPpvPolicy::NONE:
+        return "none";
+    case ReplayPpvPolicy::GAP_LE_1S:
+        return "gap_le_1s";
+    case ReplayPpvPolicy::ZERO:
+        return "zero";
+    case ReplayPpvPolicy::COS_POS:
+        return "cos_pos";
+    case ReplayPpvPolicy::COS_TOT:
+        return "cos_tot";
+    default:
+        return "unknown";
+    }
+}
+
+bool replay_parse_p_pv_policy(const char *text, ReplayPpvPolicy *out_policy)
+{
+    if (text == nullptr || out_policy == nullptr || text[0] == '\0') {
+        return false;
+    }
+    InsEkfPpvPolicy ekf_policy = INS_EKF_PPV_POLICY_NONE;
+    if (!ins_ekf_parse_p_pv_policy(text, &ekf_policy)) {
+        return false;
+    }
+    switch (ekf_policy) {
+    case INS_EKF_PPV_POLICY_GAP_LE_1S:
+        *out_policy = ReplayPpvPolicy::GAP_LE_1S;
+        return true;
+    case INS_EKF_PPV_POLICY_ZERO:
+        *out_policy = ReplayPpvPolicy::ZERO;
+        return true;
+    case INS_EKF_PPV_POLICY_COS_POS:
+        *out_policy = ReplayPpvPolicy::COS_POS;
+        return true;
+    case INS_EKF_PPV_POLICY_COS_TOT:
+        *out_policy = ReplayPpvPolicy::COS_TOT;
+        return true;
+    default:
+        *out_policy = ReplayPpvPolicy::NONE;
+        return true;
+    }
+}
+
+ReplayConstraintDecision replay_evaluate_constraints(
+    double timestamp_s,
+    float last_gps_speed_mps,
+    float accel_norm_mps2,
+    float gyro_norm_radps,
+    const RealRunReplayConfig &config)
+{
+    ReplayConstraintDecision decision{};
+    decision.policy = config.constraint_policy;
+    decision.nhc_armed = config.nhc_policy == ReplayNhcPolicy::ENABLED;
+
+    if (config.predict_only_mode) {
+        return decision;
+    }
+
+    ReplayConstraintPolicy effective_policy = config.constraint_policy;
+    if (effective_policy == ReplayConstraintPolicy::AUTO) {
+        effective_policy = ReplayConstraintPolicy::FORCED_TIME;
+    }
+
+    switch (effective_policy) {
+    case ReplayConstraintPolicy::FORCED_TIME:
+        decision.zupt_armed =
+            (timestamp_s <= static_cast<double>(config.static_phase_end_s))
+            || (last_gps_speed_mps <= config.moving_speed_threshold_mps);
+        break;
+    case ReplayConstraintPolicy::GPS_STOP:
+        decision.zupt_armed = last_gps_speed_mps <= config.moving_speed_threshold_mps;
+        break;
+    case ReplayConstraintPolicy::IMU_STATIONARY: {
+        const float gravity_mps2 =
+            config.gravity_mps2 > 0.0f ? config.gravity_mps2 : 9.80665f;
+        const float accel_dev = std::fabs(accel_norm_mps2 - gravity_mps2);
+        decision.zupt_armed =
+            (accel_dev <= config.imu_stationary_accel_dev_mps2)
+            && (gyro_norm_radps <= config.imu_stationary_gyro_radps);
+        break;
+    }
+    case ReplayConstraintPolicy::DISABLED:
+        decision.zupt_armed = false;
+        break;
+    default:
+        decision.zupt_armed = false;
+        break;
+    }
+
+    return decision;
+}
+
+void apply_replay_constraints(
+    INaviFilter *filter,
+    double timestamp_s,
+    float last_gps_speed_mps,
+    float accel_norm_mps2,
+    float gyro_norm_radps,
+    const RealRunReplayConfig &config,
+    ReplayConstraintDecision *out_decision)
+{
+    if (filter == nullptr || config.predict_only_mode) {
+        if (out_decision != nullptr) {
+            *out_decision = ReplayConstraintDecision{};
+        }
+        return;
+    }
+
+    const ReplayConstraintDecision decision = replay_evaluate_constraints(
+        timestamp_s,
+        last_gps_speed_mps,
+        accel_norm_mps2,
+        gyro_norm_radps,
+        config);
+
+    if (out_decision != nullptr) {
+        *out_decision = decision;
+    }
+
+    if (decision.zupt_armed) {
+        filter->apply_constraints(
+            true,
+            config.zupt_lateral_std_mps,
+            config.zupt_vertical_std_mps);
+        return;
+    }
+
+    if (decision.nhc_armed) {
+        filter->apply_constraints(
+            false,
+            config.nhc_lateral_std_mps,
+            config.nhc_vertical_std_mps);
+        return;
+    }
+
+    filter->apply_constraints(false, 0.0f, 0.0f);
+}
 
 bool real_run_replay_load_mount_matrix(
     RealRunMountMode mode,
@@ -3068,6 +4355,147 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
         }
     }
 
+    FILE *gap3_observation_audit_fp = nullptr;
+    if (config.gap3_observation_audit_csv_path != nullptr
+        && config.gap3_observation_audit_csv_path[0] != '\0') {
+        gap3_observation_audit_fp = std::fopen(config.gap3_observation_audit_csv_path, "w");
+        if (gap3_observation_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 observation audit CSV: %s\n",
+                config.gap3_observation_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_observation_audit_header(gap3_observation_audit_fp)) {
+            std::fclose(gap3_observation_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_gnss_nis_audit_fp = nullptr;
+    if (config.gap3_gnss_nis_audit_csv_path != nullptr
+        && config.gap3_gnss_nis_audit_csv_path[0] != '\0') {
+        gap3_gnss_nis_audit_fp = std::fopen(config.gap3_gnss_nis_audit_csv_path, "w");
+        if (gap3_gnss_nis_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 GNSS NIS audit CSV: %s\n",
+                config.gap3_gnss_nis_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_gnss_nis_audit_header(gap3_gnss_nis_audit_fp)) {
+            std::fclose(gap3_gnss_nis_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_nhc_block_audit_fp = nullptr;
+    if (config.gap3_nhc_block_audit_csv_path != nullptr
+        && config.gap3_nhc_block_audit_csv_path[0] != '\0') {
+        gap3_nhc_block_audit_fp = std::fopen(config.gap3_nhc_block_audit_csv_path, "w");
+        if (gap3_nhc_block_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 NHC block audit CSV: %s\n",
+                config.gap3_nhc_block_audit_csv_path);
+            return false;
+        }
+        if (!ins_ekf_write_nhc_block_audit_header(gap3_nhc_block_audit_fp)) {
+            std::fclose(gap3_nhc_block_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_gnss_k_block_json_fp = nullptr;
+    if (config.gap3_gnss_k_block_audit_json_path != nullptr
+        && config.gap3_gnss_k_block_audit_json_path[0] != '\0') {
+        gap3_gnss_k_block_json_fp = std::fopen(config.gap3_gnss_k_block_audit_json_path, "w");
+        if (gap3_gnss_k_block_json_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 GNSS K-block audit JSON: %s\n",
+                config.gap3_gnss_k_block_audit_json_path);
+            return false;
+        }
+    }
+
+    FILE *gap3_cov_propagation_audit_fp = nullptr;
+    if (config.gap3_cov_propagation_audit_csv_path != nullptr
+        && config.gap3_cov_propagation_audit_csv_path[0] != '\0') {
+        gap3_cov_propagation_audit_fp = std::fopen(config.gap3_cov_propagation_audit_csv_path, "w");
+        if (gap3_cov_propagation_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 cov propagation audit CSV: %s\n",
+                config.gap3_cov_propagation_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_cov_propagation_audit_header(gap3_cov_propagation_audit_fp)) {
+            std::fclose(gap3_cov_propagation_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_cov_step_audit_fp = nullptr;
+    if (config.gap3_cov_step_audit_csv_path != nullptr
+        && config.gap3_cov_step_audit_csv_path[0] != '\0') {
+        gap3_cov_step_audit_fp = std::fopen(config.gap3_cov_step_audit_csv_path, "w");
+        if (gap3_cov_step_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 cov step audit CSV: %s\n",
+                config.gap3_cov_step_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_cov_step_audit_header(gap3_cov_step_audit_fp)) {
+            std::fclose(gap3_cov_step_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_vel_source_audit_fp = nullptr;
+    if (config.gap3_vel_source_audit_csv_path != nullptr
+        && config.gap3_vel_source_audit_csv_path[0] != '\0') {
+        gap3_vel_source_audit_fp = std::fopen(config.gap3_vel_source_audit_csv_path, "w");
+        if (gap3_vel_source_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 vel source audit CSV: %s\n",
+                config.gap3_vel_source_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_vel_source_audit_header(gap3_vel_source_audit_fp)) {
+            std::fclose(gap3_vel_source_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_imu_constraint_audit_fp = nullptr;
+    if (config.gap3_imu_constraint_audit_csv_path != nullptr
+        && config.gap3_imu_constraint_audit_csv_path[0] != '\0') {
+        gap3_imu_constraint_audit_fp = std::fopen(config.gap3_imu_constraint_audit_csv_path, "w");
+        if (gap3_imu_constraint_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 IMU constraint audit CSV: %s\n",
+                config.gap3_imu_constraint_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_imu_constraint_audit_header(gap3_imu_constraint_audit_fp)) {
+            std::fclose(gap3_imu_constraint_audit_fp);
+            return false;
+        }
+    }
+
+    FILE *gap3_constraint_pipeline_audit_fp = nullptr;
+    if (config.gap3_constraint_pipeline_audit_csv_path != nullptr
+        && config.gap3_constraint_pipeline_audit_csv_path[0] != '\0') {
+        gap3_constraint_pipeline_audit_fp =
+            std::fopen(config.gap3_constraint_pipeline_audit_csv_path, "w");
+        if (gap3_constraint_pipeline_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir GAP-3 constraint pipeline audit CSV: %s\n",
+                config.gap3_constraint_pipeline_audit_csv_path);
+            return false;
+        }
+        if (!write_gap3_constraint_pipeline_audit_header(gap3_constraint_pipeline_audit_fp)) {
+            std::fclose(gap3_constraint_pipeline_audit_fp);
+            return false;
+        }
+    }
+
     char header_line[kMaxCsvLineBytes];
     if (std::fgets(header_line, static_cast<int>(sizeof(header_line)), input_fp) == nullptr) {
         std::fclose(input_fp);
@@ -3113,6 +4541,8 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     double last_predict_timestamp_s = 0.0;
     bool has_last_predict_timestamp = false;
     float last_gps_speed_mps = 0.0f;
+    float last_imu_accel_norm_mps2 = 0.0f;
+    float last_imu_gyro_norm_radps = 0.0f;
     double last_gps_pos_ned[3] = {0.0, 0.0, 0.0};
     bool has_last_gps_pos = false;
     double heading_ref_pos_ned[3] = {0.0, 0.0, 0.0};
@@ -3126,6 +4556,24 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     GravityTiltInitAccumulator gravity_tilt_init{};
     bool h9b_has_prev_gravity_rv = false;
     float h9b_prev_gravity_rv_rad[3] = {0.0f, 0.0f, 0.0f};
+    float gap3_gnss_anchor_pos[3] = {0.0f, 0.0f, 0.0f};
+    float gap3_gnss_anchor_vel[3] = {0.0f, 0.0f, 0.0f};
+    bool gap3_gnss_has_anchor = false;
+    double gap3_gnss_last_timestamp_s = 0.0;
+    float gap3_nhc_anchor_pos[3] = {0.0f, 0.0f, 0.0f};
+    float gap3_nhc_anchor_vel[3] = {0.0f, 0.0f, 0.0f};
+    bool gap3_nhc_has_anchor = false;
+    double gap3_nhc_last_timestamp_s = 0.0;
+    float gap3_zupt_anchor_pos[3] = {0.0f, 0.0f, 0.0f};
+    float gap3_zupt_anchor_vel[3] = {0.0f, 0.0f, 0.0f};
+    bool gap3_zupt_has_anchor = false;
+    double gap3_zupt_last_timestamp_s = 0.0;
+    double gap3_last_gnss_timestamp_s = -1.0;
+    double gap3_last_gnss_accept_timestamp_s = -1.0;
+    double gap3_prev_gps_pos_ned[3] = {0.0, 0.0, 0.0};
+    bool gap3_has_prev_gps_pos = false;
+    double gap3_cov_last_predict_log_s = -1.0;
+    uint64_t gap3_cov_step_imu_seq = 0U;
 
     YawHeadingWindow yaw_window{};
     uint32_t yaw_window_capacity = config.yaw_init_min_samples;
@@ -3196,6 +4644,13 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
             config.h9a_gravity_init_min_samples,
             config.h9a_gravity_init_window_s);
     }
+    std::printf(
+        "REAL_RUN_REPLAY: constraint_policy=%s nhc_policy=%s nhc_every_n=%u static_end=%.1fs gps_thresh=%.2f m/s\n",
+        replay_constraint_policy_name(config.constraint_policy),
+        config.nhc_policy == ReplayNhcPolicy::ENABLED ? "enabled" : "disabled",
+        config.nhc_every_n_ticks,
+        config.static_phase_end_s,
+        config.moving_speed_threshold_mps);
     if (instrumentation_fp != nullptr) {
         std::printf("REAL_RUN_REPLAY: instrumentacion=%s\n", config.instrumentation_csv_path);
     }
@@ -3229,6 +4684,36 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     }
     if (h7_update_audit_fp != nullptr) {
         std::printf("REAL_RUN_REPLAY: h7_update_audit=%s\n", config.h7_update_audit_csv_path);
+    }
+    if (gap3_observation_audit_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_observation_audit=%s\n",
+            config.gap3_observation_audit_csv_path);
+    }
+    if (gap3_gnss_nis_audit_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_gnss_nis_audit=%s\n",
+            config.gap3_gnss_nis_audit_csv_path);
+    }
+    if (gap3_nhc_block_audit_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_nhc_block_audit=%s\n",
+            config.gap3_nhc_block_audit_csv_path);
+    }
+    if (gap3_gnss_k_block_json_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_gnss_k_block_audit=%s\n",
+            config.gap3_gnss_k_block_audit_json_path);
+    }
+    if (gap3_cov_propagation_audit_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_cov_propagation_audit=%s\n",
+            config.gap3_cov_propagation_audit_csv_path);
+    }
+    if (gap3_cov_step_audit_fp != nullptr) {
+        std::printf(
+            "REAL_RUN_REPLAY: gap3_cov_step_audit=%s\n",
+            config.gap3_cov_step_audit_csv_path);
     }
     if (h8_propagation_audit_fp != nullptr) {
         std::printf(
@@ -3334,6 +4819,82 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                     static_cast<uint32_t>(row.timestamp_s * 1000.0));
                 filter_initialized = true;
                 result.filter_initialized = true;
+                if (gap3_cov_step_audit_fp != nullptr) {
+                    InsEkfFilter &ekf_init = filter_impl->native();
+                    ins_ekf_set_cov_step_audit(&ekf_init, gap3_cov_step_audit_fp);
+                    ins_ekf_set_cov_step_audit_context(&ekf_init, row.timestamp_s, 0U);
+                    ins_ekf_log_cov_step_audit(&ekf_init, "init", "post");
+                }
+                if (gap3_vel_source_audit_fp != nullptr) {
+                    ins_ekf_set_vel_source_audit(
+                        &filter_impl->native(),
+                        gap3_vel_source_audit_fp);
+                }
+                if (gap3_nhc_block_audit_fp != nullptr) {
+                    ins_ekf_set_nhc_block_audit(
+                        &filter_impl->native(),
+                        gap3_nhc_block_audit_fp);
+                }
+                ins_ekf_set_nhc_every_n_ticks(
+                    &filter_impl->native(),
+                    config.nhc_every_n_ticks);
+                {
+                    InsEkfGnssObsMode ekf_gnss_mode = INS_EKF_GNSS_OBS_POS;
+                    switch (config.gnss_obs_mode) {
+                    case ReplayGnssObsMode::POS_VEL:
+                        ekf_gnss_mode = INS_EKF_GNSS_OBS_POS_VEL;
+                        break;
+                    case ReplayGnssObsMode::VEL_ONLY:
+                        ekf_gnss_mode = INS_EKF_GNSS_OBS_VEL_ONLY;
+                        break;
+                    default:
+                        ekf_gnss_mode = INS_EKF_GNSS_OBS_POS;
+                        break;
+                    }
+                    ins_ekf_set_gnss_obs_mode(&filter_impl->native(), ekf_gnss_mode);
+                    if (config.gnss_vel_std_mps > 0.0f) {
+                        const float var = config.gnss_vel_std_mps * config.gnss_vel_std_mps;
+                        ins_ekf_set_gnss_vel_var_m2(&filter_impl->native(), var);
+                    }
+                    {
+                        InsEkfPpvPolicy ekf_ppv = INS_EKF_PPV_POLICY_NONE;
+                        switch (config.ppv_policy) {
+                        case ReplayPpvPolicy::GAP_LE_1S:
+                            ekf_ppv = INS_EKF_PPV_POLICY_GAP_LE_1S;
+                            break;
+                        case ReplayPpvPolicy::ZERO:
+                            ekf_ppv = INS_EKF_PPV_POLICY_ZERO;
+                            break;
+                        case ReplayPpvPolicy::COS_POS:
+                            ekf_ppv = INS_EKF_PPV_POLICY_COS_POS;
+                            break;
+                        case ReplayPpvPolicy::COS_TOT:
+                            ekf_ppv = INS_EKF_PPV_POLICY_COS_TOT;
+                            break;
+                        default:
+                            ekf_ppv = INS_EKF_PPV_POLICY_NONE;
+                            break;
+                        }
+                        ins_ekf_set_p_pv_policy(&filter_impl->native(), ekf_ppv);
+                    }
+                    std::printf(
+                        "REAL_RUN_REPLAY: gnss_obs_mode=%s | sigma_vel=%.2f m/s | p_pv_policy=%s\n",
+                        ins_ekf_gnss_obs_mode_name(ekf_gnss_mode),
+                        std::sqrt(filter_impl->native().gnss_vel_var_m2_h),
+                        ins_ekf_p_pv_policy_name(filter_impl->native().ppv_policy));
+                }
+                if (gap3_cov_propagation_audit_fp != nullptr) {
+                    InsEkfFilter &ekf_init = filter_impl->native();
+                    (void)write_gap3_cov_propagation_audit_row(
+                        gap3_cov_propagation_audit_fp,
+                        "init",
+                        row.timestamp_s,
+                        ekf_init,
+                        0.0f,
+                        row.has_speed ? row.speed : 0.0f,
+                        -1,
+                        0.0f);
+                }
                 if (!geodesy_validation_printed) {
                     print_geodesy_datum_validation(geodesy_validation);
                     geodesy_validation_printed = true;
@@ -3429,7 +4990,14 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                 continue;
             }
 
-            apply_replay_constraints(filter.get(), row.timestamp_s, last_gps_speed_mps, config);
+            apply_replay_constraints(
+                filter.get(),
+                row.timestamp_s,
+                row.has_speed ? row.speed : last_gps_speed_mps,
+                last_imu_accel_norm_mps2,
+                last_imu_gyro_norm_radps,
+                config,
+                nullptr);
 
             float std_dev[3] = {kGnssMinHorizontalStdM, kGnssMinHorizontalStdM, kGnssMinVerticalStdM};
             if (row.has_accuracy) {
@@ -3480,14 +5048,55 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                 ekf_pos_before[2],
             };
 
-            filter->update_gnss(row.pos_ned, std_dev);
+            if (gap3_cov_propagation_audit_fp != nullptr) {
+                const float vel_h_before = std::hypot(vel_before[0], vel_before[1]);
+                (void)write_gap3_cov_propagation_audit_row(
+                    gap3_cov_propagation_audit_fp,
+                    "gnss_pre",
+                    row.timestamp_s,
+                    ekf,
+                    vel_h_before,
+                    row.has_speed ? row.speed : 0.0f,
+                    -1,
+                    0.0f);
+            }
+            if (gap3_cov_step_audit_fp != nullptr) {
+                ins_ekf_set_cov_step_audit_context(&ekf, row.timestamp_s, gap3_cov_step_imu_seq);
+            }
+
+            float gps_course_deg = 0.0f;
+            const bool has_gps_course = gap3_has_prev_gps_pos;
+            if (has_gps_course) {
+                gps_course_deg = compute_gnss_course_rad(
+                    gap3_prev_gps_pos_ned,
+                    row.pos_ned,
+                    nullptr)
+                    * kRadToDegF;
+            }
+            const bool has_vel_obs =
+                row.has_speed && row.speed > 0.0f && has_gps_course;
+            const bool vel_only_skip =
+                config.gnss_obs_mode == ReplayGnssObsMode::VEL_ONLY && !has_vel_obs;
+
+            if (!vel_only_skip) {
+                if (config.gnss_obs_mode == ReplayGnssObsMode::POS) {
+                    filter->update_gnss(row.pos_ned, std_dev);
+                } else {
+                    filter_impl->update_gnss_with_velocity(
+                        row.pos_ned,
+                        std_dev,
+                        row.has_speed ? row.speed : 0.0f,
+                        gps_course_deg,
+                        has_vel_obs);
+                }
+            }
 
             if (nis_gate_bypassed) {
                 ekf.nis_threshold = saved_nis_threshold;
             }
 
             const uint32_t accepts_after = ins_ekf_gnss_accept_count(&ekf);
-            bool gnss_accepted = accepts_after > accepts_before;
+            bool gnss_accepted = !vel_only_skip && accepts_after > accepts_before;
             if (nis_gate_bypassed) {
                 gnss_accepted = true;
             }
@@ -3499,6 +5108,21 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
             float innovation_ned[3] = {0.0f, 0.0f, 0.0f};
             ins_ekf_get_gnss_innovation(&ekf, innovation_ned);
             const float nis_value = ins_ekf_last_nis(&ekf);
+
+            if (gap3_cov_propagation_audit_fp != nullptr) {
+                float vel_after_gnss[3] = {0.0f, 0.0f, 0.0f};
+                ins_ekf_get_velocity_ned(&ekf, vel_after_gnss);
+                const float vel_h_after = std::hypot(vel_after_gnss[0], vel_after_gnss[1]);
+                (void)write_gap3_cov_propagation_audit_row(
+                    gap3_cov_propagation_audit_fp,
+                    gnss_accepted ? "gnss_post" : "gnss_reject",
+                    row.timestamp_s,
+                    ekf,
+                    vel_h_after,
+                    row.has_speed ? row.speed : 0.0f,
+                    gnss_accepted ? 1 : 0,
+                    ekf.gnss_last_k_vel_max);
+            }
 
             float s_matrix[3][3]{};
             for (int i = 0; i < 3; ++i) {
@@ -3525,8 +5149,11 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                     ins_ekf_gnss_reject_count(&ekf));
             }
 
-            if (h7_update_audit_fp != nullptr) {
+            if (h7_update_audit_fp != nullptr || gap3_gnss_nis_audit_fp != nullptr) {
                 ++gps_update_index;
+            }
+
+            if (h7_update_audit_fp != nullptr) {
                 (void)write_h7_update_audit_row(
                     h7_update_audit_fp,
                     row.timestamp_s,
@@ -3539,6 +5166,168 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                     nis_gate_bypassed ? kH3NisGateBypassThreshold : saved_nis_threshold,
                     gnss_accepted,
                     row.pos_ned);
+            }
+
+            if (gap3_observation_audit_fp != nullptr) {
+                if (!gap3_gnss_has_anchor) {
+                    gap3_set_observation_anchor(
+                        gap3_gnss_anchor_pos,
+                        gap3_gnss_anchor_vel,
+                        ekf_pos_before,
+                        vel_before,
+                        &gap3_gnss_last_timestamp_s,
+                        row.timestamp_s,
+                        &gap3_gnss_has_anchor);
+                }
+
+                double pred_dpos_h = 0.0;
+                double pred_dvel_h = 0.0;
+                double pred_dt_s = 0.0;
+                gap3_compute_cycle_pred_accum(
+                    gap3_gnss_anchor_pos,
+                    gap3_gnss_anchor_vel,
+                    ekf_pos_before,
+                    vel_before,
+                    gap3_gnss_last_timestamp_s,
+                    row.timestamp_s,
+                    &pred_dpos_h,
+                    &pred_dvel_h,
+                    &pred_dt_s);
+
+                float pos_after[3] = {0.0f, 0.0f, 0.0f};
+                float vel_after[3] = {0.0f, 0.0f, 0.0f};
+                ins_ekf_get_position_ned(&ekf, pos_after);
+                ins_ekf_get_velocity_ned(&ekf, vel_after);
+
+                InsEkfGnssUpdateDetail gnss_detail{};
+                const InsEkfGnssUpdateDetail *gnss_detail_ptr = nullptr;
+                if (ins_ekf_get_gnss_last_update_detail(&ekf, &gnss_detail)) {
+                    gnss_detail_ptr = &gnss_detail;
+                }
+
+                const bool gnss_logged_accepted = gnss_accepted || nis_gate_bypassed;
+                int reject_reason = gnss_detail_ptr != nullptr
+                    ? static_cast<int>(gnss_detail.reject_reason)
+                    : (gnss_logged_accepted ? 0 : 1);
+
+                (void)write_gap3_observation_audit_row(
+                    gap3_observation_audit_fp,
+                    "GNSS",
+                    row.timestamp_s,
+                    gnss_logged_accepted,
+                    reject_reason,
+                    pred_dpos_h,
+                    pred_dvel_h,
+                    pred_dt_s,
+                    gnss_detail_ptr,
+                    nullptr,
+                    ekf_pos_before,
+                    pos_after,
+                    vel_before,
+                    vel_after);
+
+                gap3_set_observation_anchor(
+                    gap3_gnss_anchor_pos,
+                    gap3_gnss_anchor_vel,
+                    pos_after,
+                    vel_after,
+                    &gap3_gnss_last_timestamp_s,
+                    row.timestamp_s,
+                    &gap3_gnss_has_anchor);
+            }
+
+            if (gap3_gnss_nis_audit_fp != nullptr) {
+                float pos_after_nis[3] = {0.0f, 0.0f, 0.0f};
+                float vel_after_nis[3] = {0.0f, 0.0f, 0.0f};
+                ins_ekf_get_position_ned(&ekf, pos_after_nis);
+                ins_ekf_get_velocity_ned(&ekf, vel_after_nis);
+
+                InsEkfGnssUpdateDetail gnss_nis_detail{};
+                const InsEkfGnssUpdateDetail *gnss_nis_detail_ptr = nullptr;
+                if (ins_ekf_get_gnss_last_update_detail(&ekf, &gnss_nis_detail)) {
+                    gnss_nis_detail_ptr = &gnss_nis_detail;
+                }
+
+                const bool gnss_nis_accepted = gnss_accepted || nis_gate_bypassed;
+                int gnss_nis_reject_reason = gnss_nis_detail_ptr != nullptr
+                    ? static_cast<int>(gnss_nis_detail.reject_reason)
+                    : (gnss_nis_accepted ? 0 : 1);
+
+                float gps_course_deg = 0.0f;
+                if (gap3_has_prev_gps_pos) {
+                    gps_course_deg = compute_gnss_course_rad(
+                        gap3_prev_gps_pos_ned,
+                        row.pos_ned,
+                        nullptr)
+                        * kRadToDegF;
+                }
+
+                const double dt_since_prev_gnss = gap3_last_gnss_timestamp_s >= 0.0
+                    ? (row.timestamp_s - gap3_last_gnss_timestamp_s)
+                    : 0.0;
+                const double dt_since_prev_accept = gap3_last_gnss_accept_timestamp_s >= 0.0
+                    ? (row.timestamp_s - gap3_last_gnss_accept_timestamp_s)
+                    : -1.0;
+
+                (void)write_gap3_gnss_nis_audit_row(
+                    gap3_gnss_nis_audit_fp,
+                    row.timestamp_s,
+                    gps_update_index,
+                    z_ned,
+                    hx_ned,
+                    vel_before,
+                    row.has_speed,
+                    row.has_speed ? row.speed : 0.0f,
+                    gps_course_deg,
+                    hph_before,
+                    r_m2_before,
+                    nis_gate_bypassed ? kH3NisGateBypassThreshold : saved_nis_threshold,
+                    gnss_nis_accepted,
+                    gnss_nis_reject_reason,
+                    dt_since_prev_gnss,
+                    dt_since_prev_accept,
+                    gnss_nis_detail_ptr,
+                    pos_after_nis,
+                    vel_after_nis);
+
+                gap3_last_gnss_timestamp_s = row.timestamp_s;
+                if (gnss_nis_accepted) {
+                    gap3_last_gnss_accept_timestamp_s = row.timestamp_s;
+                }
+                gap3_prev_gps_pos_ned[0] = row.pos_ned[0];
+                gap3_prev_gps_pos_ned[1] = row.pos_ned[1];
+                gap3_prev_gps_pos_ned[2] = row.pos_ned[2];
+                gap3_has_prev_gps_pos = true;
+            }
+
+            if (gap3_gnss_k_block_json_fp != nullptr && gnss_accepted) {
+                InsEkfGnssKBlockDetail k_block{};
+                InsEkfGnssUpdateDetail dump_detail{};
+                if (ins_ekf_get_gnss_last_k_block_detail(&ekf, &k_block)
+                    && ins_ekf_get_gnss_last_update_detail(&ekf, &dump_detail)) {
+                    float pos_post_dump[3] = {0.0f, 0.0f, 0.0f};
+                    float vel_post_dump[3] = {0.0f, 0.0f, 0.0f};
+                    ins_ekf_get_position_ned(&ekf, pos_post_dump);
+                    ins_ekf_get_velocity_ned(&ekf, vel_post_dump);
+                    (void)write_gap3_gnss_k_block_audit_json(
+                        gap3_gnss_k_block_json_fp,
+                        row.timestamp_s,
+                        gps_update_index,
+                        true,
+                        z_ned,
+                        hx_ned,
+                        vel_before,
+                        vel_post_dump,
+                        pos_post_dump,
+                        row.has_speed ? row.speed : 0.0f,
+                        row.has_speed,
+                        hph_before,
+                        r_m2_before,
+                        s_matrix,
+                        &dump_detail,
+                        &k_block);
+                    std::fprintf(gap3_gnss_k_block_json_fp, "\n");
+                }
             }
 
             if (instrumentation_fp != nullptr) {
@@ -3684,12 +5473,274 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                 }
             }
 
-            apply_replay_constraints(filter.get(), row.timestamp_s, last_gps_speed_mps, config);
+            float accel_norm = 0.0f;
+            float gyro_norm = 0.0f;
+            if (row.has_accel) {
+                accel_norm = std::sqrt(
+                    (row.accel[0] * row.accel[0])
+                    + (row.accel[1] * row.accel[1])
+                    + (row.accel[2] * row.accel[2]));
+            }
+            if (row.has_gyro) {
+                gyro_norm = std::sqrt(
+                    (row.gyro[0] * row.gyro[0])
+                    + (row.gyro[1] * row.gyro[1])
+                    + (row.gyro[2] * row.gyro[2]));
+            }
+            last_imu_accel_norm_mps2 = accel_norm;
+            last_imu_gyro_norm_radps = gyro_norm;
+
+            float vel_before_constraints[3] = {0.0f, 0.0f, 0.0f};
+            ins_ekf_get_velocity_ned(&filter_impl->native(), vel_before_constraints);
+
+            ReplayConstraintDecision constraint_decision{};
+            apply_replay_constraints(
+                filter.get(),
+                row.timestamp_s,
+                last_gps_speed_mps,
+                accel_norm,
+                gyro_norm,
+                config,
+                &constraint_decision);
             filter_impl->sync_simulation_clock_ms(static_cast<uint32_t>(row.timestamp_s * 1000.0));
+
+            const bool nhc_mode_selected =
+                constraint_decision.nhc_armed && !constraint_decision.zupt_armed;
+            const bool zupt_armed = constraint_decision.zupt_armed;
+            const char *constraint_policy_name =
+                replay_constraint_policy_name(constraint_decision.policy);
+
+            if (gap3_cov_step_audit_fp != nullptr || gap3_vel_source_audit_fp != nullptr
+                || gap3_nhc_block_audit_fp != nullptr) {
+                InsEkfFilter &ekf_step = filter_impl->native();
+                ins_ekf_set_cov_step_audit_context(
+                    &ekf_step,
+                    row.timestamp_s,
+                    ++gap3_cov_step_imu_seq);
+                ins_ekf_set_vel_source_audit_context(
+                    &ekf_step,
+                    row.timestamp_s,
+                    gap3_cov_step_imu_seq,
+                    last_gps_speed_mps);
+                ins_ekf_set_nhc_block_audit_context(
+                    &ekf_step,
+                    row.timestamp_s,
+                    gap3_cov_step_imu_seq,
+                    last_gps_speed_mps);
+            }
+
+            float pos_pre_predict[3] = {0.0f, 0.0f, 0.0f};
+            float vel_pre_predict[3] = {0.0f, 0.0f, 0.0f};
+            if (gap3_observation_audit_fp != nullptr) {
+                ins_ekf_get_position_ned(&filter_impl->native(), pos_pre_predict);
+                ins_ekf_get_velocity_ned(&filter_impl->native(), vel_pre_predict);
+            }
+            const uint32_t nhc_before_predict = ins_ekf_nhc_update_count(&filter_impl->native());
+            const uint32_t zupt_before_predict = ins_ekf_zupt_update_count(&filter_impl->native());
 
             filter->predict(dt_s, aligned_accel, aligned_gyro);
             last_predict_timestamp_s = row.timestamp_s;
             has_last_predict_timestamp = true;
+
+            InsEkfFilter &ekf_post = filter_impl->native();
+            const uint32_t nhc_after_predict = ins_ekf_nhc_update_count(&ekf_post);
+            const uint32_t zupt_after_predict = ins_ekf_zupt_update_count(&ekf_post);
+            const bool nhc_applied = nhc_after_predict > nhc_before_predict;
+            const bool zupt_applied = zupt_after_predict > zupt_before_predict;
+
+            if (gap3_imu_constraint_audit_fp != nullptr) {
+                float vel_post[3] = {0.0f, 0.0f, 0.0f};
+                ins_ekf_get_velocity_ned(&ekf_post, vel_post);
+                const float vel_h_post = std::hypot(vel_post[0], vel_post[1]);
+                InsEkfPredictAudit predict_audit{};
+                float a_body_x = 0.0f;
+                float a_body_y = 0.0f;
+                float a_body_z = 0.0f;
+                if (ins_ekf_get_last_predict_audit(&ekf_post, &predict_audit) && predict_audit.valid) {
+                    a_body_x = predict_audit.a_corr_mps2[0];
+                    a_body_y = predict_audit.a_corr_mps2[1];
+                    a_body_z = predict_audit.a_corr_mps2[2];
+                }
+                (void)write_gap3_imu_constraint_audit_row(
+                    gap3_imu_constraint_audit_fp,
+                    row.timestamp_s,
+                    gap3_cov_step_imu_seq,
+                    nhc_mode_selected,
+                    zupt_armed,
+                    zupt_applied,
+                    nhc_applied,
+                    last_gps_speed_mps,
+                    config.static_phase_end_s,
+                    config.moving_speed_threshold_mps,
+                    accel_norm,
+                    gyro_norm,
+                    vel_h_post,
+                    ekf_post.bias_a_[0],
+                    ekf_post.bias_a_[1],
+                    ekf_post.bias_a_[2],
+                    a_body_x,
+                    a_body_y,
+                    a_body_z,
+                    constraint_policy_name,
+                    config.nhc_policy == ReplayNhcPolicy::ENABLED);
+            }
+
+            if (gap3_constraint_pipeline_audit_fp != nullptr) {
+                InsEkfVelPipelineAudit pipeline{};
+                if (ins_ekf_get_vel_pipeline_audit(&ekf_post, &pipeline)) {
+                    (void)write_gap3_constraint_pipeline_audit_row(
+                        gap3_constraint_pipeline_audit_fp,
+                        row.timestamp_s,
+                        gap3_cov_step_imu_seq,
+                        constraint_policy_name,
+                        zupt_armed,
+                        constraint_decision.nhc_armed,
+                        vel_before_constraints,
+                        pipeline,
+                        last_gps_speed_mps);
+                }
+            }
+
+            if (gap3_cov_propagation_audit_fp != nullptr
+                && (gap3_cov_last_predict_log_s < 0.0
+                    || (row.timestamp_s - gap3_cov_last_predict_log_s) >= 1.0)) {
+                InsEkfFilter &ekf_cov = filter_impl->native();
+                float vel_predict[3] = {0.0f, 0.0f, 0.0f};
+                ins_ekf_get_velocity_ned(&ekf_cov, vel_predict);
+                const float vel_h_predict = std::hypot(vel_predict[0], vel_predict[1]);
+                (void)write_gap3_cov_propagation_audit_row(
+                    gap3_cov_propagation_audit_fp,
+                    "predict_1hz",
+                    row.timestamp_s,
+                    ekf_cov,
+                    vel_h_predict,
+                    last_gps_speed_mps,
+                    -1,
+                    0.0f);
+                gap3_cov_last_predict_log_s = row.timestamp_s;
+            }
+
+            if (gap3_observation_audit_fp != nullptr) {
+                InsEkfFilter &ekf_gap3 = filter_impl->native();
+                const uint32_t nhc_after_predict = ins_ekf_nhc_update_count(&ekf_gap3);
+                const uint32_t zupt_after_predict = ins_ekf_zupt_update_count(&ekf_gap3);
+
+                if (nhc_after_predict > nhc_before_predict || zupt_after_predict > zupt_before_predict) {
+                    float pos_post_predict[3] = {0.0f, 0.0f, 0.0f};
+                    float vel_post_predict[3] = {0.0f, 0.0f, 0.0f};
+                    ins_ekf_get_position_ned(&ekf_gap3, pos_post_predict);
+                    ins_ekf_get_velocity_ned(&ekf_gap3, vel_post_predict);
+
+                    if (nhc_after_predict > nhc_before_predict) {
+                        if (!gap3_nhc_has_anchor) {
+                            gap3_set_observation_anchor(
+                                gap3_nhc_anchor_pos,
+                                gap3_nhc_anchor_vel,
+                                pos_pre_predict,
+                                vel_pre_predict,
+                                &gap3_nhc_last_timestamp_s,
+                                row.timestamp_s,
+                                &gap3_nhc_has_anchor);
+                        }
+
+                        double pred_dpos_h = 0.0;
+                        double pred_dvel_h = 0.0;
+                        double pred_dt_s = 0.0;
+                        gap3_compute_cycle_pred_accum(
+                            gap3_nhc_anchor_pos,
+                            gap3_nhc_anchor_vel,
+                            pos_pre_predict,
+                            vel_pre_predict,
+                            gap3_nhc_last_timestamp_s,
+                            row.timestamp_s,
+                            &pred_dpos_h,
+                            &pred_dvel_h,
+                            &pred_dt_s);
+
+                        InsEkfNhcUpdateDetail nhc_detail{};
+                        const InsEkfNhcUpdateDetail *nhc_detail_ptr = nullptr;
+                        if (ins_ekf_get_nhc_last_update_detail(&ekf_gap3, &nhc_detail)) {
+                            nhc_detail_ptr = &nhc_detail;
+                        }
+                        (void)write_gap3_observation_audit_row(
+                            gap3_observation_audit_fp,
+                            "NHC",
+                            row.timestamp_s,
+                            true,
+                            0,
+                            pred_dpos_h,
+                            pred_dvel_h,
+                            pred_dt_s,
+                            nullptr,
+                            nhc_detail_ptr,
+                            pos_pre_predict,
+                            pos_post_predict,
+                            vel_pre_predict,
+                            vel_post_predict);
+
+                        gap3_set_observation_anchor(
+                            gap3_nhc_anchor_pos,
+                            gap3_nhc_anchor_vel,
+                            pos_post_predict,
+                            vel_post_predict,
+                            &gap3_nhc_last_timestamp_s,
+                            row.timestamp_s,
+                            &gap3_nhc_has_anchor);
+                    }
+
+                    if (zupt_after_predict > zupt_before_predict) {
+                        if (!gap3_zupt_has_anchor) {
+                            gap3_set_observation_anchor(
+                                gap3_zupt_anchor_pos,
+                                gap3_zupt_anchor_vel,
+                                pos_pre_predict,
+                                vel_pre_predict,
+                                &gap3_zupt_last_timestamp_s,
+                                row.timestamp_s,
+                                &gap3_zupt_has_anchor);
+                        }
+
+                        double pred_dpos_h = 0.0;
+                        double pred_dvel_h = 0.0;
+                        double pred_dt_s = 0.0;
+                        gap3_compute_cycle_pred_accum(
+                            gap3_zupt_anchor_pos,
+                            gap3_zupt_anchor_vel,
+                            pos_pre_predict,
+                            vel_pre_predict,
+                            gap3_zupt_last_timestamp_s,
+                            row.timestamp_s,
+                            &pred_dpos_h,
+                            &pred_dvel_h,
+                            &pred_dt_s);
+
+                        (void)write_gap3_observation_audit_row(
+                            gap3_observation_audit_fp,
+                            "ZUPT",
+                            row.timestamp_s,
+                            true,
+                            0,
+                            pred_dpos_h,
+                            pred_dvel_h,
+                            pred_dt_s,
+                            nullptr,
+                            nullptr,
+                            pos_pre_predict,
+                            pos_post_predict,
+                            vel_pre_predict,
+                            vel_post_predict);
+
+                        gap3_set_observation_anchor(
+                            gap3_zupt_anchor_pos,
+                            gap3_zupt_anchor_vel,
+                            pos_post_predict,
+                            vel_post_predict,
+                            &gap3_zupt_last_timestamp_s,
+                            row.timestamp_s,
+                            &gap3_zupt_has_anchor);
+                    }
+                }
+            }
 
             if ((h8_propagation_audit_fp != nullptr
                     || h9_tilt_audit_fp != nullptr
@@ -3709,15 +5760,17 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
                     float pitch_rad = 0.0f;
                     float yaw_rad = 0.0f;
                     ins_ekf_get_attitude_rad(&ekf_audit, &roll_rad, &pitch_rad, &yaw_rad);
+                    const ReplayConstraintDecision audit_decision = replay_evaluate_constraints(
+                        row.timestamp_s,
+                        last_gps_speed_mps,
+                        accel_norm,
+                        gyro_norm,
+                        config);
                     const int constraint_mode = config.predict_only_mode
                         ? -1
-                        : (replay_constraints_use_nhc(
-                            row.timestamp_s,
-                            last_gps_speed_mps,
-                            config.static_phase_end_s,
-                            config.moving_speed_threshold_mps)
-                            ? 1
-                            : 0);
+                        : (audit_decision.zupt_armed
+                            ? 0
+                            : (audit_decision.nhc_armed ? 1 : 2));
                     const float roll_deg = roll_rad * kRadToDegF;
                     const float pitch_deg = pitch_rad * kRadToDegF;
                     const float yaw_deg = yaw_rad * kRadToDegF;
@@ -3857,6 +5910,33 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     }
     if (h7_update_audit_fp != nullptr) {
         std::fclose(h7_update_audit_fp);
+    }
+    if (gap3_observation_audit_fp != nullptr) {
+        std::fclose(gap3_observation_audit_fp);
+    }
+    if (gap3_gnss_nis_audit_fp != nullptr) {
+        std::fclose(gap3_gnss_nis_audit_fp);
+    }
+    if (gap3_nhc_block_audit_fp != nullptr) {
+        std::fclose(gap3_nhc_block_audit_fp);
+    }
+    if (gap3_gnss_k_block_json_fp != nullptr) {
+        std::fclose(gap3_gnss_k_block_json_fp);
+    }
+    if (gap3_cov_propagation_audit_fp != nullptr) {
+        std::fclose(gap3_cov_propagation_audit_fp);
+    }
+    if (gap3_cov_step_audit_fp != nullptr) {
+        std::fclose(gap3_cov_step_audit_fp);
+    }
+    if (gap3_vel_source_audit_fp != nullptr) {
+        std::fclose(gap3_vel_source_audit_fp);
+    }
+    if (gap3_imu_constraint_audit_fp != nullptr) {
+        std::fclose(gap3_imu_constraint_audit_fp);
+    }
+    if (gap3_constraint_pipeline_audit_fp != nullptr) {
+        std::fclose(gap3_constraint_pipeline_audit_fp);
     }
     if (h8_propagation_audit_fp != nullptr) {
         std::fclose(h8_propagation_audit_fp);

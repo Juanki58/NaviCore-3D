@@ -1,0 +1,9 @@
+{
+  "figures": {
+    "fig1_divergence_tree": "C:\\NaviCore-3D\\docs\\benchmarks\\gap4_gnss_velocity\\G1_intervention\\fig1_divergence_tree.png",
+    "fig2_causal_chain": "C:\\NaviCore-3D\\docs\\benchmarks\\gap4_gnss_velocity\\G1_intervention\\fig2_causal_chain.png",
+    "fig3_ppv_ratio_vs_cos_scatter": "C:\\NaviCore-3D\\docs\\benchmarks\\gap4_gnss_velocity\\G1_intervention\\fig3_ppv_ratio_vs_cos_scatter.png"
+  },
+  "source_tree": "C:\\NaviCore-3D\\docs\\benchmarks\\gap4_gnss_velocity\\G1_intervention\\ppv_divergence_tree.json",
+  "tag": "gap4-diagnostic-complete"
+}

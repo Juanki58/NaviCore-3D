@@ -1,0 +1,28 @@
+flowchart TD
+  ctrl["control / ppv_none<br/>reference trunk"]
+  t0["fix#2 [A] NIS=1.38 |Ppv|=140.06 Pvv=89.60 r=1.563 cos_pos=+0.29 cos_tot=+0.27 trig=1"]
+  ctrl --> t0
+  t1["fix#3 [A] NIS=0.59 |Ppv|=21.05 Pvv=0.12 r=169.593 cos_pos=+0.94 cos_tot=+0.94 trig=1"]
+  t0 --> t1
+  fix4split{"fix#4 PRE shared<br/>|Ppv|=5.41 cos_pos=+0.64 cos_tot=-0.67"}
+  t1 --> fix4split
+  1d4["1d POST<br/>trig=1 |Ppv| 5.4->0.0"]
+  1dp4["1d-prime POST<br/>trig=0 |Ppv| 5.4->1.6"]
+  fix4split --> 1d4
+  fix4split --> 1dp4
+  d0["fix#5 [A] NIS=0.22 |Ppv|=0.41 Pvv=0.56 r=0.722 cos_pos=+0.47 cos_tot=-0.40 trig=1"]
+  1d4 --> d0
+  d1["fix#6 [A] NIS=0.22 |Ppv|=1.30 Pvv=0.62 r=2.105 cos_pos=-0.77 cos_tot=-0.80 trig=0"]
+  d0 --> d1
+  d2["fix#7 [A] NIS=0.19 |Ppv|=2.66 Pvv=0.96 r=2.765 cos_pos=-0.71 cos_tot=-0.75 trig=0"]
+  d1 --> d2
+  d3["fix#32 [R] NIS=2865.80 |Ppv|=0.45 Pvv=0.58 r=0.781 cos_pos=-0.39 cos_tot=-0.98 trig=0"]
+  d2 --> d3
+  p0["fix#5 [A] NIS=2.15 |Ppv|=1.66 Pvv=0.60 r=2.784 cos_pos=-0.36 cos_tot=-0.40 trig=0"]
+  1dp4 --> p0
+  p1["fix#6 [A] NIS=2.42 |Ppv|=2.85 Pvv=0.59 r=4.854 cos_pos=+0.51 cos_tot=+0.52 trig=1"]
+  p0 --> p1
+  p2["fix#7 [A] NIS=2.29 |Ppv|=3.03 Pvv=0.52 r=5.872 cos_pos=+0.63 cos_tot=+0.58 trig=1"]
+  p1 --> p2
+  p3["fix#32 [A] NIS=695441.88 |Ppv|=0.10 Pvv=0.01 r=9.118 cos_pos=-0.87 cos_tot=-0.87 trig=0"]
+  p2 --> p3

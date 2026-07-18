@@ -4,7 +4,7 @@ Documentación técnica del pipeline experimental usado para auditar consistenci
 
 ## Objetivo
 
-Reducir por eliminación la causa de deriva horizontal y sobreconfianza del filtro durante aceleración longitudinal, sin tuning ciego ni nuevas hipótesis numeradas hasta cerrar la cadena de actitud.
+Cerrar la **trazabilidad de señales** y verificar **conformidad con el [Body Frame Contract](08-body-frame-contract.md)**. Sin nuevas hipótesis numeradas hasta resolver ambigüedades de representación.
 
 ## Lectura recomendada
 
@@ -16,8 +16,28 @@ Reducir por eliminación la causa de deriva horizontal y sobreconfianza del filt
 | [04-findings.md](04-findings.md) | Resultados consolidados y decisiones |
 | [05-attitude-investigation.md](05-attitude-investigation.md) | Bloque H9: actitud, triada gravitatoria, cadena de referencias |
 | [06-reproduction.md](06-reproduction.md) | Compilar, ejecutar replay y reproducir auditorías |
+| [07-signal-traceability.md](07-signal-traceability.md) | **Trazabilidad de señales** Android → mount → EKF; identidad física CSV |
+| [08-body-frame-contract.md](08-body-frame-contract.md) | **Body Frame Contract** — especificación formal del modelo físico INS |
+| [09-predict-conformance-audit.md](09-predict-conformance-audit.md) | **Auditoría de conformidad** predict() + replay vs contrato |
+| [10-gap3-ins-model-audit.md](10-gap3-ins-model-audit.md) | GAP-3 auditoría detallada (§8.1–§8.18) |
+| **[12-gap3-synthesis.md](12-gap3-synthesis.md)** | **GAP-3 cerrado** — síntesis A/B/C, diagrama causal |
+| **[13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md)** | **GAP-4 diagnostic CERRADO** (`gap4-diagnostic-complete`) — autopsia P_pv |
+| **[14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md)** | **GAP-5 preregistrado** — PoC NHC adaptativo (no ejecutado) |
+| **[11-replay-zupt-provenance.md](11-replay-zupt-provenance.md)** | **Proveniencia ZUPT legacy** — qué runs están condicionados |
+
+## ⚠ Aviso de validez (Jul 2026)
+
+Entre **H9** y **GAP-3.7**, el replay aplicaba ZUPT con `t≤30 s` OR `gps_speed≤0.1 m/s`. **Todos los experimentos full-filter de ese periodo deben considerarse condicionados** hasta repetirse con `--constraint-policy imu_stationary`. Los runs **predict-only** (H9) no están afectados. Detalle: [11-replay-zupt-provenance.md](11-replay-zupt-provenance.md).
 
 ## Pregunta operativa actual
+
+**GAP-4 diagnóstico congelado** (`gap4-diagnostic-complete`). Ver [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.
+
+**GAP-5 (siguiente):** política NHC adaptativa por estado interno — PoC preregistrado en [14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md). **No mezclar** con §11 P_pv.
+
+---
+
+## Pregunta histórica (H9 / actitud)
 
 > ¿Por qué `R_bn` desarrolla ~4° de error de inclinación al entrar en régimen dinámico, mientras el heading horizontal (`R_bn·e_x` vs GPS) puede seguir siendo coherente en el tramo crítico?
 

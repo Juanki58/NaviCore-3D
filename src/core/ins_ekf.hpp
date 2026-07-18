@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "NavState.h"
 #include "navigation_state.hpp"
@@ -38,6 +39,41 @@ typedef float InsEkfVec3[3];
 
 #ifndef NAVICORE_INS_EKF_GNSS_POS_VAR_M2
 #define NAVICORE_INS_EKF_GNSS_POS_VAR_M2 6.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_GNSS_VEL_STD_MPS
+#define NAVICORE_INS_EKF_GNSS_VEL_STD_MPS 1.5f
+#endif
+
+#ifndef NAVICORE_INS_EKF_GNSS_VEL_VAR_M2
+#define NAVICORE_INS_EKF_GNSS_VEL_VAR_M2 \
+    (NAVICORE_INS_EKF_GNSS_VEL_STD_MPS * NAVICORE_INS_EKF_GNSS_VEL_STD_MPS)
+#endif
+
+#ifndef NAVICORE_INS_EKF_NIS_THRESHOLD_VEL_2DOF
+#define NAVICORE_INS_EKF_NIS_THRESHOLD_VEL_2DOF 9.210f /* chi2 2 DoF @ 99% */
+#endif
+
+#ifndef NAVICORE_INS_EKF_NIS_THRESHOLD_POS_VEL_5DOF
+#define NAVICORE_INS_EKF_NIS_THRESHOLD_POS_VEL_5DOF 15.086f /* chi2 5 DoF @ 99% */
+#endif
+
+enum InsEkfGnssObsMode : uint8_t {
+    INS_EKF_GNSS_OBS_POS = 0,
+    INS_EKF_GNSS_OBS_POS_VEL = 1,
+    INS_EKF_GNSS_OBS_VEL_ONLY = 2,
+};
+
+enum InsEkfPpvPolicy : uint8_t {
+    INS_EKF_PPV_POLICY_NONE = 0,
+    INS_EKF_PPV_POLICY_GAP_LE_1S = 1,
+    INS_EKF_PPV_POLICY_ZERO = 2,
+    INS_EKF_PPV_POLICY_COS_POS = 3,
+    INS_EKF_PPV_POLICY_COS_TOT = 4,
+};
+
+#ifndef NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S
+#define NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S 1.0f
 #endif
 
 #ifndef NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2
@@ -156,8 +192,36 @@ typedef struct {
     float bias_a_mps2[3];
     float bias_g_radps[3];
     float dcm_bn[3][3];
+    /* Bloques no nulos de F en el ultimo predict (discretizacion sparse). */
+    float f_dp_dv_dt_s;
+    float f_va[3][3];
+    float f_vba[3][3];
     bool valid;
 } InsEkfPredictAudit;
+
+typedef struct {
+    float p_pos_pos_frob;
+    float p_vel_vel_frob;
+    float p_vel_pos_frob;
+    float p_vel_att_frob;
+    float p_att_att_frob;
+    float p_pos_std_n_m;
+    float p_pos_std_e_m;
+    float p_pos_std_d_m;
+    float p_vel_std_n_mps;
+    float p_vel_std_e_mps;
+    float p_vel_std_d_mps;
+    float p_vel_pos_max_abs;
+    float p_vv_var_n_m2;
+    float p_vv_var_e_m2;
+    float p_vv_var_d_m2;
+    float p_vv_body_forward_m2;
+    float p_vv_body_lateral_m2;
+    float p_vv_body_vertical_m2;
+    float vel_body_x_mps;
+    float vel_body_y_mps;
+    float vel_body_z_mps;
+} InsEkfCovBlockMetrics;
 
 typedef struct {
     float dt_s;
@@ -176,6 +240,19 @@ typedef struct {
     float yaw_after_rad;
     bool valid;
 } InsEkfAttitudePropAudit;
+
+typedef struct {
+    bool valid;
+    float vel_before_predict[3];
+    float dv_predict[3];
+    float vel_after_predict[3];
+    float dv_nhc[3];
+    float vel_after_nhc[3];
+    bool nhc_applied;
+    float dv_zupt[3];
+    float vel_after_zupt[3];
+    bool zupt_applied;
+} InsEkfVelPipelineAudit;
 
 struct InsEkfFilter {
     /* --- Estado nominal absoluto (ESKF) --- */
@@ -206,15 +283,50 @@ struct InsEkfFilter {
     float bias_accel_rw_var;
     float bias_gyro_rw_var;
     float gnss_pos_var_m2;
+    float gnss_vel_var_m2_h;
+    InsEkfGnssObsMode gnss_obs_mode;
+    InsEkfPpvPolicy ppv_policy;
     float nis_threshold;
 
     /* --- Diagnostico GNSS (esqueleto update) --- */
     float gnss_nis_last;
     float gnss_innovation_last[3];
     float gnss_innovation_cov_last[3][3];
+    uint32_t gnss_last_update_timestamp_ms;
+    uint8_t gnss_last_accepted;
+    uint8_t gnss_last_reject_reason;
+    float gnss_last_k_pos_max;
+    float gnss_last_k_vel_max;
+    float gnss_last_k_att_max;
+    float gnss_last_dx_pos_norm_m;
+    float gnss_last_dx_vel_norm_mps;
+    float gnss_last_dx_att_norm_rad;
+    float gnss_last_dx_pos_n_m;
+    float gnss_last_dx_pos_e_m;
+    float gnss_last_dx_pos_d_m;
+    float gnss_last_dx_vel_n_mps;
+    float gnss_last_dx_vel_e_mps;
+    float gnss_last_dx_vel_d_mps;
+    float gnss_last_dx_att_x_rad;
+    float gnss_last_dx_att_y_rad;
+    float gnss_last_dx_att_z_rad;
+    float gnss_last_p_vel_pos[3][3];
+    float gnss_last_k_vel_pos[3][3];
+    float gnss_last_k_pos_pos[3][3];
+    float gnss_last_s_inv[3][3];
+    float gnss_last_dx_bias_a_norm;
+    float gnss_last_dx_bias_g_norm;
+    uint8_t gnss_last_ppv_policy;
+    uint8_t gnss_last_ppv_triggered;
+    float gnss_last_ppv_effective_gap_s;
+    float gnss_last_cos_dv_pos_err_pre;
+    float gnss_last_cos_dv_tot_err_pre;
+    float gnss_last_ppv_frob_pre;
+    float gnss_last_ppv_frob_post;
 
     uint32_t last_imu_timestamp_ms;
     uint32_t last_gnss_accept_ms;
+    uint32_t last_gnss_fix_ms;
     uint32_t gnss_accept_count;
     uint32_t gnss_reject_count;
     uint32_t nhc_update_count;
@@ -249,6 +361,35 @@ struct InsEkfFilter {
     float nhc_last_k_y;
     float nhc_last_k_z;
     float nhc_last_nis;
+    float nhc_last_hph_yy;
+    float nhc_last_hph_yz;
+    float nhc_last_hph_zz;
+    float nhc_last_s_yy;
+    float nhc_last_s_yz;
+    float nhc_last_s_zz;
+    float nhc_last_s_inv_yy;
+    float nhc_last_s_inv_yz;
+    float nhc_last_s_inv_zz;
+    float nhc_last_k_vel_max;
+    float nhc_last_k_pos_max;
+    float nhc_last_k_att_max;
+    float nhc_last_k_bias_max;
+    float nhc_last_h_row0_vel[3];
+    float nhc_last_h_row1_vel[3];
+    float nhc_last_vel_after_n_mps;
+    float nhc_last_vel_after_e_mps;
+    float nhc_last_vel_after_d_mps;
+    float nhc_last_v_body_after_x_mps;
+    float nhc_last_v_body_after_y_mps;
+    float nhc_last_v_body_after_z_mps;
+    float nhc_last_nis_contrib_y;
+    float nhc_last_nis_contrib_z;
+    float nhc_last_dx_pos_n_m;
+    float nhc_last_dx_pos_e_m;
+    float nhc_last_dx_pos_d_m;
+    float nhc_last_dx_bias_norm;
+    InsEkfCovBlockMetrics nhc_last_cov_pre{};
+    InsEkfCovBlockMetrics nhc_last_cov_post{};
 
     double nhc_stat_sum_innov_y;
     double nhc_stat_sum_innov_z;
@@ -266,12 +407,29 @@ struct InsEkfFilter {
     bool initialized;
     bool outlier_detected;
     bool nhc_enabled;
+    uint32_t nhc_every_n_ticks;
     float nhc_lateral_var_m2;
     float nhc_vertical_var_m2;
     float zupt_vel_var_m2;
 
     InsEkfPredictAudit predict_audit_last_;
     InsEkfAttitudePropAudit attitude_prop_audit_last_;
+
+    FILE *cov_step_audit_fp;
+    double cov_step_audit_timestamp_s;
+    uint64_t cov_step_audit_imu_seq;
+
+    FILE *vel_source_audit_fp;
+    double vel_source_audit_timestamp_s;
+    uint64_t vel_source_audit_imu_seq;
+    float vel_source_audit_gps_speed_mps;
+
+    InsEkfVelPipelineAudit vel_pipeline_audit_last_;
+
+    FILE *nhc_block_audit_fp;
+    double nhc_block_audit_timestamp_s;
+    uint64_t nhc_block_audit_imu_seq;
+    float nhc_block_audit_gps_speed_mps;
 
     void predict(const ImuSample &imu_sample, float dt_s);
     bool update_gnss(const GpsSample &gps_sample, float *out_nis);
@@ -290,8 +448,15 @@ void ins_ekf_init(
 
 bool ins_ekf_predict(InsEkfFilter *filter, const ImuSample *imu);
 bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps);
+void ins_ekf_set_gnss_obs_mode(InsEkfFilter *filter, InsEkfGnssObsMode mode);
+void ins_ekf_set_p_pv_policy(InsEkfFilter *filter, InsEkfPpvPolicy policy);
+void ins_ekf_set_gnss_vel_var_m2(InsEkfFilter *filter, float var_m2_h);
+const char *ins_ekf_gnss_obs_mode_name(InsEkfGnssObsMode mode);
+const char *ins_ekf_p_pv_policy_name(InsEkfPpvPolicy policy);
+bool ins_ekf_parse_p_pv_policy(const char *text, InsEkfPpvPolicy *out_policy);
 bool ins_ekf_update_nhc(InsEkfFilter *filter);
 void ins_ekf_set_nhc_enabled(InsEkfFilter *filter, bool enabled);
+void ins_ekf_set_nhc_every_n_ticks(InsEkfFilter *filter, uint32_t every_n_ticks);
 bool ins_ekf_nhc_enabled(const InsEkfFilter *filter);
 uint32_t ins_ekf_nhc_update_count(const InsEkfFilter *filter);
 void ins_ekf_get_nhc_innovation_last(
@@ -334,6 +499,63 @@ typedef struct {
 bool ins_ekf_get_nhc_last_update_detail(
     const InsEkfFilter *filter,
     InsEkfNhcUpdateDetail *out_detail);
+bool ins_ekf_write_nhc_block_audit_header(FILE *audit_fp);
+void ins_ekf_set_nhc_block_audit(InsEkfFilter *filter, FILE *audit_fp);
+void ins_ekf_set_nhc_block_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq,
+    float gps_speed_mps);
+void ins_ekf_log_nhc_block_audit(InsEkfFilter *filter);
+
+typedef struct {
+    uint32_t timestamp_ms;
+    uint8_t accepted;
+    uint8_t reject_reason;
+    float innov_n_m;
+    float innov_e_m;
+    float innov_d_m;
+    float nis;
+    float k_pos_max;
+    float k_vel_max;
+    float k_att_max;
+    float dx_pos_norm_m;
+    float dx_vel_norm_mps;
+    float dx_att_norm_rad;
+    float dx_pos_n_m;
+    float dx_pos_e_m;
+    float dx_pos_d_m;
+    float dx_vel_n_mps;
+    float dx_vel_e_mps;
+    float dx_vel_d_mps;
+    float dx_att_x_rad;
+    float dx_att_y_rad;
+    float dx_att_z_rad;
+    uint8_t ppv_policy;
+    uint8_t ppv_triggered;
+    float ppv_effective_gap_s;
+    float cos_dv_pos_err_pre;
+    float cos_dv_tot_err_pre;
+    float ppv_frob_pre;
+    float ppv_frob_post;
+} InsEkfGnssUpdateDetail;
+
+typedef struct {
+    float p_vel_pos[3][3];
+    float k_vel_pos[3][3];
+    float k_pos_pos[3][3];
+    float s_inv[3][3];
+    float dx_bias_accel_norm;
+    float dx_bias_gyro_norm;
+} InsEkfGnssKBlockDetail;
+
+bool ins_ekf_get_gnss_last_k_block_detail(
+    const InsEkfFilter *filter,
+    InsEkfGnssKBlockDetail *out_detail);
+
+bool ins_ekf_get_gnss_last_update_detail(
+    const InsEkfFilter *filter,
+    InsEkfGnssUpdateDetail *out_detail);
 
 typedef struct {
     uint32_t sample_count;
@@ -384,6 +606,36 @@ bool ins_ekf_apply_gravity_tilt_init(
 bool ins_ekf_get_last_predict_audit(
     const InsEkfFilter *filter,
     InsEkfPredictAudit *out_audit);
+bool ins_ekf_get_cov_block_metrics(
+    const InsEkfFilter *filter,
+    InsEkfCovBlockMetrics *out_metrics);
+void ins_ekf_set_cov_step_audit(InsEkfFilter *filter, FILE *audit_fp);
+void ins_ekf_set_cov_step_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq);
+void ins_ekf_log_cov_step_audit(
+    InsEkfFilter *filter,
+    const char *update_type,
+    const char *phase);
+void ins_ekf_set_vel_source_audit(InsEkfFilter *filter, FILE *audit_fp);
+void ins_ekf_set_vel_source_audit_context(
+    InsEkfFilter *filter,
+    double timestamp_s,
+    uint64_t imu_seq,
+    float gps_speed_mps);
+void ins_ekf_log_vel_modification(
+    InsEkfFilter *filter,
+    const char *source,
+    const float dv_ned[3],
+    const float h_nhc_row0_vel[3],
+    const float h_nhc_row1_vel[3],
+    bool log_nhc_h);
+bool ins_ekf_get_vel_pipeline_audit(
+    const InsEkfFilter *filter,
+    InsEkfVelPipelineAudit *out_audit);
+void ins_ekf_reset_vel_pipeline_audit(InsEkfFilter *filter);
+
 bool ins_ekf_get_last_attitude_prop_audit(
     const InsEkfFilter *filter,
     InsEkfAttitudePropAudit *out_audit);

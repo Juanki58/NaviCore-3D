@@ -2,7 +2,20 @@
 
 Documentación técnica del pipeline experimental usado para auditar consistencia, geodesia, sincronización y propagación inercial del EKF sobre datos reales de vehículo (`data/real_run/`).
 
-## Objetivo
+## Reference documentation (estado congelado)
+
+Documentación de referencia — **no narrativa**. Solo veredictos congelados:
+
+| Archivo | Contenido |
+|---------|-----------|
+| [reference/STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md) | Conocimiento confirmado (K1–K13) |
+| [reference/OPEN_QUESTIONS.md](reference/OPEN_QUESTIONS.md) | Preguntas abiertas (OQ1–OQ6) |
+| [reference/DECISION_LOG.md](reference/DECISION_LOG.md) | Decisiones de diseño (D1–D11) |
+| [reference/RESEARCH_MAP.md](reference/RESEARCH_MAP.md) | Mapa fases → pregunta / outcome / tag |
+
+Índice: [reference/README.md](reference/README.md)
+
+---
 
 Cerrar la **trazabilidad de señales** y verificar **conformidad con el [Body Frame Contract](08-body-frame-contract.md)**. Sin nuevas hipótesis numeradas hasta resolver ambigüedades de representación.
 
@@ -24,7 +37,7 @@ Cerrar la **trazabilidad de señales** y verificar **conformidad con el [Body Fr
 | **[13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md)** | **GAP-4 diagnostic CERRADO** (`gap4-diagnostic-complete`) — autopsia P_pv |
 | **[14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md)** | **GAP-5 v1 preregistrado** — PoC NHC adaptativo (instancia v1 **cerrada**) |
 | **[15-gap5-passive-outcome.md](15-gap5-passive-outcome.md)** | **GAP-5 passive CONGELADO** — outcome v1; cierre instancia Γ̄ |
-| **[16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md)** | **GAP-5 v2 CONGELADA** (`gap5-v2-observable-preregistration-frozen`) — solo observables |
+| **[16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md)** | **GAP-5 v2 CONGELADA** (v1.2) — propiedad → observable → caracterización → **modelo régimen** |
 | **[11-replay-zupt-provenance.md](11-replay-zupt-provenance.md)** | **Proveniencia ZUPT legacy** — qué runs están condicionados |
 
 ## ⚠ Aviso de validez (Jul 2026)

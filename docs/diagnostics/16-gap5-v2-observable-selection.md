@@ -1,28 +1,77 @@
 # GAP-5 v2 — Selección del observable de régimen (preregistración)
 
-**Estado:** **CONGELADA** (v1.1) — tag `gap5-v2-observable-preregistration-v1.1`  
+**Estado:** **CONGELADA** (v1.2) — tag `gap5-v2-observable-preregistration-v1.2`  
 **Fecha congelación:** 2026-07-18  
 **Prerequisito:** [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) (v1 **CERRADA**)  
+**Contexto mínimo (sin leer GAP-3/4):** [reference/STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md), [reference/RESEARCH_MAP.md](reference/RESEARCH_MAP.md)  
 **Paso 0 congelado:** [paso0_property_justification.md](../benchmarks/gap5_v2_observable_selection/paso0_property_justification.md)  
 **PoC controlador / RMSE / NHC activo / discusión de políticas:** **prohibidos** en toda GAP-5 v2
+
+---
+
+## Executive summary (lectura autónoma)
+
+Este documento es la **especificación científica** de GAP-5 v2. No requiere leer el historial GAP-3/4/5 si se acepta el contexto mínimo enlazado arriba.
+
+### ¿Qué pregunta intenta responder esta fase?
+
+> **¿Qué propiedad interna del EKF — y qué observable(s) — permiten construir un modelo del régimen dinámico del filtro?**
+
+No pregunta cómo controlar NHC. Pregunta qué **observar** antes de cualquier política.
+
+### ¿Qué queda explícitamente fuera de alcance?
+
+| Fuera de alcance | Fase propietaria |
+|------------------|------------------|
+| PoC controlador adaptativo, umbrales, dwell | GAP-5 v3+ |
+| RMSE, accepts, drift como criterio de selección | GAP-5 v3+ |
+| Retune Γ̄ v1 (p.ej. umbral 12→9) | **Cerrado** — [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) |
+| Modificar EKF, NHC, P_pv | Fuera de GAP-5 |
+| **Construir o calibrar el controlador** | Post-modelo de régimen |
+
+### ¿Qué resultado cierra la fase (incluso si es negativo)?
+
+| Outcome | Veredicto | Cierra v2 |
+|---------|-----------|-----------|
+| Al menos una propiedad + perfil C7 válidos; **modelo de régimen** documentado (uno o vector H7-MIN) | H6-OBS apoyada o H7-MIN confirmada | **Sí** |
+| Ningún O1–O5 cumple invarianza C-F1↔C-PoC | H6-OBS refutada para este conjunto | **Sí** |
+| Perfiles C7 distintos por Oi → **modelo de régimen = combinación** (p.ej. R1←Γ_inst, R2←‖P_pv‖/P_vv, R3←Λ_N) | H7-MIN | **Sí** |
+| Todos los Oi colapsan en mismo C7 sin refutar Paso 0 | Resultado metodológico — ejes insuficientes | **Sí** (revisión v1.3) |
+| PoC activo ejecutado antes de modelo de régimen | Protocolo violado | **No cierra** |
+
+**Entregables de cierre:** `observable_characterization.json` + **documento modelo de régimen** (§9.2) congelados.
 
 ---
 
 ## 0. Arquitectura de fases (congelada como principio)
 
 ```
-diagnóstico
-      ↓
 propiedad del filtro
       ↓
 observable (operacionalización causal)
-      ↓                    ↘
-validación del observable   controlador (fase posterior)
-      ↓                    ↘
-caracterización              validación del controlador (O/D, RMSE…)
+      ↓
+caracterización experimental (C1–C7)     ← GAP-5 v2 benchmark
+      ↓
+modelo del régimen                       ← síntesis post-caracterización (§9.2)
+      ↓
+controlador                                ← GAP-5 v3+
+      ↓
+validación ingeniería (O/D, RMSE…)         ← post-controlador
 ```
 
-**Regla:** si el observable es incorrecto, ningún ajuste de umbrales o constantes de tiempo salvará el diseño. El controlador será casi una **consecuencia** de la elección del observable — no al revés.
+**Regla:** C7 **no construye** el modelo del régimen. Solo **alimenta evidencia** (perfiles R0–R4 por observable). El modelo — posiblemente un **vector** de observables (H7-MIN) — se explicita **después**, en síntesis.
+
+**Anti-tentación:** un perfil temporal interesante en un observable **≠** régimen ya identificado. Ejemplo hipotético post-v2:
+
+| Régimen | Evidencia C7 | Observable que alimenta |
+|---------|--------------|-------------------------|
+| R1 burst | pico | Γ_inst |
+| R2 degradación nominal | alto sostenido | Λ_N |
+| R3 acoplamiento | pico | ‖P_pv‖ / P_vv |
+
+El **modelo del régimen** es la combinación explícita; ningún C7 aislado «elige» el modelo.
+
+**Regla:** si el observable es incorrecto, ningún controlador lo compensará. El controlador es consecuencia del **modelo de régimen**, no del pico más alto en un gráfico.
 
 ### 0.1 Independencia observable ↔ controlador (principio general)
 
@@ -37,9 +86,10 @@ Un observable puede:
 
 | Pregunta | Fase | Ejemplo de error a evitar |
 |----------|------|---------------------------|
-| ¿El observable identifica el régimen? | GAP-5 v2 | — |
-| ¿La operacionalización preserva la propiedad online? | Passive post-v2 | Confundir Γ offline (válido en F1) con Γ̄ (operacionalización refutada) |
-| ¿El controlador mejora O1–O3? | GAP-5 v3+ | «Λ_N no mejoró RMSE → Λ_N era mal observable» |
+| ¿El observable describe su propiedad en R0–R4? | Caracterización v2 (C7) | Confundir perfil con régimen identificado |
+| ¿El **modelo de régimen** (combinación) es coherente? | Síntesis §9.2 | «Γ_inst pico en R1 → ya tenemos régimen» |
+| ¿La operacionalización preserva la propiedad online? | Passive post-v2 | Confundir Γ offline con Γ̄ |
+| ¿El controlador mejora O1–O3? | GAP-5 v3+ | «Λ_N no mejoró RMSE → mal observable» |
 
 **Corolario:** un observable **válido** puede no producir **nunca** una transición de controlador — y eso no es fallo del observable. Γ_inst ilustró la propiedad (consumo de P); Γ̄ falló como operacionalización de control; ambas cosas pueden ser ciertas a la vez.
 
@@ -187,7 +237,9 @@ Un resultado **metodológico** no es un fracaso científico. Γ̄ pertenece a la
 | **C4** ¿Memoria / suavizado incompatible con soporte de R1? | Operacionalización vs burst |
 | **C5** ¿Causal (sin futuro)? | Control en tiempo real |
 | **C6** ¿Local (tick o ventana causal)? | Implementabilidad online |
-| **C7** **Perfil R0–R4** — ¿matriz observada coincide con predicción Paso 0? | **Discriminación principal** entre candidatos |
+| **C7** **Perfil R0–R4** — ¿matriz observada coincide con predicción Paso 0? | **Evidencia** para modelo de régimen — **no** el modelo |
+
+**C7 alimenta; no decide:** perfiles por Oi se combinan en §9.2 en un **modelo del régimen** explícito (estados R0–R4 ← uno o más observables). Un solo Oi con buen perfil en R1 no implica que R2–R4 estén cubiertos.
 
 **Respuesta C7:** por cada Oi, tabla `{R0, R1, R2, R3, R4} → {bajo \| pico \| alto \| meseta \| N/A}` en C-F1 y C-PoC por separado. Dos observables con el mismo vector C7 en ambas configs → empate (escenario B).
 
@@ -272,9 +324,24 @@ Un índice agregado, aunque orientativo, invita a optimizar el número en lugar 
 
 1. Caracterización **completa** de cada Oi (propiedad, cuándo cambia / no cambia, configs que conservan o pierden significado).
 2. Veredicto por Oi: hipótesis Paso 0 **confirmada / refutada / operacionalización refutada** (tipo metodológico).
-3. **Solo entonces**, si hace falta elegir una propiedad para v3: sintetizar trade-offs en prosa — dimensiones separadas, sin score único salvo que se documente explícitamente como resumen narrativo.
+3. **Modelo del régimen (§9.2)** — explicitar qué observables alimentan qué regímenes R0–R4; uno solo vs vector H7-MIN.
+4. **Solo entonces**, si hace falta preparar v3: síntesis narrativa en prosa — dimensiones separadas, sin score único.
 
-**No se elige** el observable que detecte antes el burst.
+### 9.2 Modelo del régimen (entregable de cierre)
+
+Documento congelado: `docs/benchmarks/gap5_v2_observable_selection/regime_model.md` (o sección equivalente en informe final).
+
+Contenido mínimo:
+
+| Campo | Descripción |
+|-------|-------------|
+| **Estados** | R0–R4 (definición operativa §6) |
+| **Observables por régimen** | p.ej. R1←O1, R2←O4, R3←O3 — con evidencia C7 |
+| **Cardinalidad** | ¿Un observable basta / vector mínimo / ninguno del catálogo? |
+| **Invarianza** | ¿Modelo válido en C-F1 y C-PoC? |
+| **Fuera de alcance declarado** | Qué no explica el modelo |
+
+**No se elige** el observable con el pico más temprano en R1.
 
 | Resultado | Acción |
 |-----------|--------|
@@ -298,7 +365,8 @@ Un índice agregado, aunque orientativo, invita a optimizar el número en lugar 
 ```
 docs/benchmarks/gap5_v2_observable_selection/
   paso0_property_justification.md    # tabla §4 congelada
-  observable_characterization.json   # C1–C7, perfiles, veredictos; sin score agregado
+  observable_characterization.json   # C1–C7, perfiles; sin score agregado
+  regime_model.md                    # modelo del régimen (§9.2) — cierre v2
   observable_characterization.md
   figures/                           # series temporales por régimen
 ```
@@ -325,10 +393,13 @@ Script previsto (post-tag): `tools/audit_gap5_v2_observable_selection.py`
   Informe caracterización (no ranking)
         │
         ▼
-  Passive operacionalización (sin controlador)
+  regime_model.md (modelo del régimen — §9.2)
         │
         ▼
-  (futuro) GAP-5 v3 — controlador sobre propiedad congelada
+  (futuro) Passive operacionalización observable(s)
+        │
+        ▼
+  (futuro) GAP-5 v3 — controlador sobre modelo congelado
 ```
 
 **Prohibiciones:**
@@ -371,10 +442,10 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 
 | Campo | Valor |
 |-------|-------|
-| Versión | **1.1** |
+| Versión | **1.2** |
 | Estado | **CONGELADA** |
-| Tag Git | `gap5-v2-observable-preregistration-v1.1` (supersedes v1.0 tag para ejecución benchmark) |
-| Tag Git v1.0 | `gap5-v2-observable-preregistration-frozen` (histórico) |
+| Tag Git | `gap5-v2-observable-preregistration-v1.2` |
+| Tag Git v1.1 | `gap5-v2-observable-preregistration-v1.1` (histórico) |
 | Hipótesis principal | H6-OBS (§2) |
 | Hipótesis exploratoria | H7-MIN (§2.1) |
 | Paso 0 | Catálogo congelado en `paso0_property_justification.md` |
@@ -392,3 +463,4 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 | **0.3** | **2026-07-18** | §0.1 observable≠controlador; Paso 0 + falsabilidad; §12 síntesis post-v2 |
 | **1.0** | **2026-07-18** | **CONGELADA** — §0.2 solo observables; catálogo Paso 0; H7-MIN; tag `gap5-v2-observable-preregistration-frozen` |
 | **1.1** | **2026-07-18** | Test protocolo §5.1; C7 perfiles R0–R4; tres tipos resultado §5.0; prohibido score hasta §9 |
+| **1.2** | **2026-07-18** | Executive summary autónomo; capa modelo del régimen; C7 alimenta no elige; §9.2 regime_model.md |

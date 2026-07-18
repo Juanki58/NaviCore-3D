@@ -1,7 +1,10 @@
 # GAP-5 — Política NHC adaptativa (preregistración)
 
-**Estado:** **CONGELADA** (v1.0) — tag `gap5-preregistration-frozen`; hook replay autorizado post-tag  
-**Fecha congelación:** 2026-07-18  
+**Estado:** **CONGELADA** (v1.0 preregistración) — tag `gap5-preregistration-frozen`  
+**Instancia controlador v1.0:** **CERRADA** — [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md)  
+**GAP-5 v2 (observable):** **CONGELADA** — [16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md) (`gap5-v2-observable-preregistration-frozen`)  
+**PoC activo B0/B1/P0:** **no ejecutado**  
+**Fecha congelación preregistración:** 2026-07-18  
 **Prerequisito:** tag `gap4-diagnostic-complete`; [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10 congelado; [12-gap3-synthesis.md](12-gap3-synthesis.md)
 
 ---
@@ -242,7 +245,7 @@ docs/benchmarks/gap5_adaptive_nhc/
   controller_audit.csv    # lazo cerrado — trazabilidad
 ```
 
-Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` (implementar post-tag).
+Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` — **bloqueado** hasta GAP-5 v2 (observable validado en passive). Ver [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md).
 
 ---
 
@@ -263,20 +266,28 @@ Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` (implementar post-tag).
 gap4-diagnostic-complete
         │
         ▼
-  14-adaptive-nhc-protocol.md (v1.0 CONGELADA)
+  14-adaptive-nhc-protocol.md (v1.0 CONGELADA — preregistración)
         │
         ▼
   tag gap5-preregistration-frozen
         │
         ▼
-  hook replay + run_gap5_adaptive_nhc_poc.py
+  hook replay passive + run_gap5_p0_passive_validation.py
         │
         ▼
-  tag gap5-poc-complete (solo tras informe JSON)
+  15-gap5-passive-outcome.md (CONGELADO — v1 instancia CERRADA)
+        │
+        ▼
+  GAP-5 v2 — diseño del observable (preregistración pendiente)
+        │
+        ▼
+  (futuro) PoC activo solo tras observable validado en passive
         │
         ▼
   §11 P_pv (separado; no mezclar brazos)
 ```
+
+**Nota (2026-07-18):** el camino `run_gap5_adaptive_nhc_poc.py` → `gap5-poc-complete` **no se ejecutó** y **no debe ejecutarse** con la instancia v1. El outcome passive refuta la operacionalización Γ̄, no la hipótesis H5-PoC en abstracto.
 
 **Regla:** una hipótesis (§4.0), una palanca (NHC frecuencia), un experimento, una interpretación.
 
@@ -303,3 +314,4 @@ gap4-diagnostic-complete
 |---------|-------|-------|
 | 0.1 | 2026-07-18 | Borrador inicial post-freeze GAP-4 |
 | **1.0** | **2026-07-18** | Congelada: disclaimer Γ, Γ̄ 1 s, histeresis, dwell, jerarquía O/D, hipótesis vs controlador, diagnóstico actividad |
+| 1.0-post | 2026-07-18 | Outcome passive congelado en [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md); instancia v1 cerrada; PoC activo bloqueado |

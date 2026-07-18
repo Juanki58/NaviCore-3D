@@ -1,5 +1,6 @@
 #include "real_run_replay.hpp"
 
+#include "adaptive_nhc_controller.hpp"
 #include "geodesy.hpp"
 #include "ins_ekf.hpp"
 #include "ins_ekf_15_state.hpp"
@@ -4463,6 +4464,23 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
         }
     }
 
+    FILE *adaptive_nhc_controller_audit_fp = nullptr;
+    if (config.adaptive_nhc_controller_audit_csv_path != nullptr
+        && config.adaptive_nhc_controller_audit_csv_path[0] != '\0') {
+        adaptive_nhc_controller_audit_fp =
+            std::fopen(config.adaptive_nhc_controller_audit_csv_path, "w");
+        if (adaptive_nhc_controller_audit_fp == nullptr) {
+            std::printf(
+                "REAL_RUN_REPLAY: no se pudo abrir adaptive NHC controller audit CSV: %s\n",
+                config.adaptive_nhc_controller_audit_csv_path);
+            return false;
+        }
+        if (!adaptive_nhc_controller_audit_write_header(adaptive_nhc_controller_audit_fp)) {
+            std::fclose(adaptive_nhc_controller_audit_fp);
+            return false;
+        }
+    }
+
     FILE *gap3_imu_constraint_audit_fp = nullptr;
     if (config.gap3_imu_constraint_audit_csv_path != nullptr
         && config.gap3_imu_constraint_audit_csv_path[0] != '\0') {
@@ -4574,6 +4592,10 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     bool gap3_has_prev_gps_pos = false;
     double gap3_cov_last_predict_log_s = -1.0;
     uint64_t gap3_cov_step_imu_seq = 0U;
+    const bool adaptive_nhc_armed = config.adaptive_nhc_mode != AdaptiveNhcMode::OFF;
+    GammaBarEstimator adaptive_gamma_estimator(1.0);
+    AdaptiveNhcController adaptive_nhc_controller;
+    AdaptiveNhcControllerOutput adaptive_nhc_out{};
 
     YawHeadingWindow yaw_window{};
     uint32_t yaw_window_capacity = config.yaw_init_min_samples;
@@ -4651,6 +4673,15 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
         config.nhc_every_n_ticks,
         config.static_phase_end_s,
         config.moving_speed_threshold_mps);
+    if (adaptive_nhc_armed) {
+        std::printf(
+            "REAL_RUN_REPLAY: adaptive_nhc=%s audit=%s\n",
+            adaptive_nhc_mode_name(config.adaptive_nhc_mode),
+            (config.adaptive_nhc_controller_audit_csv_path != nullptr
+                && config.adaptive_nhc_controller_audit_csv_path[0] != '\0')
+                ? config.adaptive_nhc_controller_audit_csv_path
+                : "(none)");
+    }
     if (instrumentation_fp != nullptr) {
         std::printf("REAL_RUN_REPLAY: instrumentacion=%s\n", config.instrumentation_csv_path);
     }
@@ -5538,6 +5569,27 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
             const uint32_t nhc_before_predict = ins_ekf_nhc_update_count(&filter_impl->native());
             const uint32_t zupt_before_predict = ins_ekf_zupt_update_count(&filter_impl->native());
 
+            InsEkfFilter &ekf_imu = filter_impl->native();
+            InsEkfCovBlockMetrics pvv_pre_predict{};
+            bool pvv_pre_ok = false;
+            if (adaptive_nhc_armed) {
+                pvv_pre_ok = ins_ekf_get_cov_block_metrics(&ekf_imu, &pvv_pre_predict);
+                adaptive_nhc_out = adaptive_nhc_controller.update(
+                    row.timestamp_s,
+                    adaptive_gamma_estimator.gamma_filtered());
+                adaptive_nhc_out.gamma_raw = adaptive_gamma_estimator.gamma_inst();
+                adaptive_nhc_out.gamma_filtered = adaptive_gamma_estimator.gamma_filtered();
+                adaptive_nhc_out.p_vv_pre = pvv_pre_ok ? pvv_pre_predict.p_vel_vel_frob : 0.0f;
+
+                const uint32_t nhc_stride =
+                    (config.adaptive_nhc_mode == AdaptiveNhcMode::ACTIVE)
+                        ? adaptive_nhc_out.nhc_every_n_ticks
+                        : config.nhc_every_n_ticks;
+                if (config.nhc_policy == ReplayNhcPolicy::ENABLED && nhc_mode_selected) {
+                    ins_ekf_set_nhc_every_n_ticks(&ekf_imu, nhc_stride);
+                }
+            }
+
             filter->predict(dt_s, aligned_accel, aligned_gyro);
             last_predict_timestamp_s = row.timestamp_s;
             has_last_predict_timestamp = true;
@@ -5547,6 +5599,31 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
             const uint32_t zupt_after_predict = ins_ekf_zupt_update_count(&ekf_post);
             const bool nhc_applied = nhc_after_predict > nhc_before_predict;
             const bool zupt_applied = zupt_after_predict > zupt_before_predict;
+
+            if (adaptive_nhc_armed) {
+                InsEkfCovBlockMetrics pvv_post_predict{};
+                const bool pvv_post_ok =
+                    ins_ekf_get_cov_block_metrics(&ekf_post, &pvv_post_predict);
+                const float pvv_pre = pvv_pre_ok ? pvv_pre_predict.p_vel_vel_frob : 0.0f;
+                const float pvv_post = pvv_post_ok ? pvv_post_predict.p_vel_vel_frob : 0.0f;
+                adaptive_nhc_out.p_vv_post = pvv_post;
+                adaptive_nhc_out.delta_p_vv = std::fabs(pvv_post - pvv_pre);
+                adaptive_gamma_estimator.observe(
+                    row.timestamp_s,
+                    pvv_pre,
+                    pvv_post,
+                    nhc_applied);
+                adaptive_nhc_out.gamma_raw = adaptive_gamma_estimator.gamma_inst();
+                adaptive_nhc_out.gamma_filtered = adaptive_gamma_estimator.gamma_filtered();
+
+                if (adaptive_nhc_controller_audit_fp != nullptr) {
+                    (void)adaptive_nhc_controller_audit_write_row(
+                        adaptive_nhc_controller_audit_fp,
+                        row.timestamp_s,
+                        config.adaptive_nhc_mode,
+                        adaptive_nhc_out);
+                }
+            }
 
             if (gap3_imu_constraint_audit_fp != nullptr) {
                 float vel_post[3] = {0.0f, 0.0f, 0.0f};
@@ -5934,6 +6011,9 @@ bool real_run_replay_execute(const RealRunReplayConfig &config, RealRunReplayRes
     }
     if (gap3_imu_constraint_audit_fp != nullptr) {
         std::fclose(gap3_imu_constraint_audit_fp);
+    }
+    if (adaptive_nhc_controller_audit_fp != nullptr) {
+        std::fclose(adaptive_nhc_controller_audit_fp);
     }
     if (gap3_constraint_pipeline_audit_fp != nullptr) {
         std::fclose(gap3_constraint_pipeline_audit_fp);

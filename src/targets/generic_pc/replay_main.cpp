@@ -78,6 +78,8 @@ void print_usage(const char *program_name)
         "         [--p-pv-policy none|gap_le_1s|zero|cos_pos|cos_tot]\n"
         "         [--gnss-vel-std-mps <m/s>]\n"
         "         [--nhc-every-n-ticks <N>]\n"
+        "         [--adaptive-nhc off|passive|active]\n"
+        "         [--adaptive-nhc-controller-audit-csv <csv>]\n"
         "         [--static-phase-end-s <s>] [--moving-speed-threshold-mps <m/s>]\n"
         "         [--imu-stationary-accel-dev-mps2 <m/s2>] [--imu-stationary-gyro-radps <rad/s>]\n"
         "         [--h8-propagation-audit-csv <csv>]\n"
@@ -166,6 +168,8 @@ int main(int argc, char *argv[])
     ReplayPpvPolicy ppv_policy = ReplayPpvPolicy::NONE;
     float gnss_vel_std_mps = 0.0f;
     uint32_t nhc_every_n_ticks = 1U;
+    AdaptiveNhcMode adaptive_nhc_mode = AdaptiveNhcMode::OFF;
+    const char *adaptive_nhc_controller_audit_csv = nullptr;
     float static_phase_end_s = 30.0f;
     float moving_speed_threshold_mps = 0.1f;
     float imu_stationary_accel_dev_mps2 = 0.5f;
@@ -345,6 +349,21 @@ int main(int argc, char *argv[])
             if (nhc_every_n_ticks == 0U) {
                 nhc_every_n_ticks = 1U;
             }
+        } else if (std::strcmp(argv[i], "--adaptive-nhc") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!adaptive_nhc_parse_mode(argv[++i], &adaptive_nhc_mode)) {
+                std::printf("ERROR: --adaptive-nhc invalido: %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--adaptive-nhc-controller-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            adaptive_nhc_controller_audit_csv = argv[++i];
         } else if (std::strcmp(argv[i], "--static-phase-end-s") == 0) {
             if (i + 1 >= argc) {
                 print_usage(argv[0]);
@@ -558,6 +577,8 @@ int main(int argc, char *argv[])
     config.ppv_policy = ppv_policy;
     config.gnss_vel_std_mps = gnss_vel_std_mps;
     config.nhc_every_n_ticks = nhc_every_n_ticks;
+    config.adaptive_nhc_mode = adaptive_nhc_mode;
+    config.adaptive_nhc_controller_audit_csv_path = adaptive_nhc_controller_audit_csv;
     config.imu_stationary_accel_dev_mps2 = imu_stationary_accel_dev_mps2;
     config.imu_stationary_gyro_radps = imu_stationary_gyro_radps;
     config.gravity_mps2 = gravity_mps2;

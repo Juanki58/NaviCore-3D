@@ -22,7 +22,9 @@ Cerrar la **trazabilidad de señales** y verificar **conformidad con el [Body Fr
 | [10-gap3-ins-model-audit.md](10-gap3-ins-model-audit.md) | GAP-3 auditoría detallada (§8.1–§8.18) |
 | **[12-gap3-synthesis.md](12-gap3-synthesis.md)** | **GAP-3 cerrado** — síntesis A/B/C, diagrama causal |
 | **[13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md)** | **GAP-4 diagnostic CERRADO** (`gap4-diagnostic-complete`) — autopsia P_pv |
-| **[14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md)** | **GAP-5 preregistrado** — PoC NHC adaptativo (no ejecutado) |
+| **[14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md)** | **GAP-5 v1 preregistrado** — PoC NHC adaptativo (instancia v1 **cerrada**) |
+| **[15-gap5-passive-outcome.md](15-gap5-passive-outcome.md)** | **GAP-5 passive CONGELADO** — outcome v1; cierre instancia Γ̄ |
+| **[16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md)** | **GAP-5 v2 CONGELADA** (`gap5-v2-observable-preregistration-frozen`) — solo observables |
 | **[11-replay-zupt-provenance.md](11-replay-zupt-provenance.md)** | **Proveniencia ZUPT legacy** — qué runs están condicionados |
 
 ## ⚠ Aviso de validez (Jul 2026)
@@ -33,7 +35,11 @@ Entre **H9** y **GAP-3.7**, el replay aplicaba ZUPT con `t≤30 s` OR `gps_speed
 
 **GAP-4 diagnóstico congelado** (`gap4-diagnostic-complete`). Ver [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10.
 
-**GAP-5 (siguiente):** política NHC adaptativa por estado interno — PoC preregistrado en [14-adaptive-nhc-protocol.md](14-adaptive-nhc-protocol.md). **No mezclar** con §11 P_pv.
+**GAP-5 v1 (cerrado):** instancia controlador Γ̄ inactiva bajo operacionalización preregistrada — ver [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md). PoC activo **no ejecutado**.
+
+**GAP-5 v2 (activa):** selección de **propiedad / observable** — [16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md) (`gap5-v2-observable-preregistration-frozen`). **Solo observables** — prohibido discutir políticas de control en v2.
+
+**No mezclar** con §11 P_pv.
 
 ---
 

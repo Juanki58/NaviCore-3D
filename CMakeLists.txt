@@ -78,6 +78,7 @@ set(NAVICORE_REPLAY_SOURCES
 add_executable(NaviCore3D_Replay
     ${NAVICORE_PC_DIR}/replay_main.cpp
     ${NAVICORE_PC_DIR}/real_run_replay.cpp
+    ${NAVICORE_PC_DIR}/adaptive_nhc_controller.cpp
     ${NAVICORE_REPLAY_SOURCES}
 )
 

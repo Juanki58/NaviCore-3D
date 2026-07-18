@@ -1,0 +1,67 @@
+{
+  "status": "FROZEN",
+  "phase": "GAP-5 passive outcome — controller instance v1 closed",
+  "date": "2026-07-18",
+  "document": "docs/diagnostics/15-gap5-passive-outcome.md",
+  "prerequisite_tag": "gap5-preregistration-frozen",
+  "active_poc_executed": false,
+  "outcome_statement": "H5 controller instance v1 is inactive under the preregistered operationalization. The inactivity is not caused by implementation errors. It is caused by the mismatch between the temporal support of the mechanistic burst (~0.4 s) and the operational signal (EWMA tau=1 s).",
+  "outcome_statement_es": "v1 no se activa porque la operacionalizacion de Gamma_bar no preserva el fenomeno observado offline.",
+  "hypotheses": {
+    "H_impl": "partially_confirmed",
+    "H_ops_gamma_bar_detects_regime": "refuted",
+    "H5_PoC_adaptive_improves_filter": "not_tested"
+  },
+  "falsified_chain": "phenomenon -> Gamma_inst -> Gamma_bar (EWMA 1s) -> controller v1",
+  "not_falsified": [
+    "H5-PoC in abstract",
+    "F1 offline Gamma definition",
+    "EKF mechanistic model (GAP-3/GAP-4)"
+  ],
+  "profiles": {
+    "f1_bridge": {
+      "run_dir": "docs/benchmarks/gap5_adaptive_nhc/p0_passive_f1_bridge",
+      "filter_config": "pos-only GNSS (F1 equivalent)",
+      "duration_s": 331.26,
+      "gamma_offline_fix2_fix3": 19.65312975904548,
+      "gamma_inst_peak_burst": 18.14303,
+      "gamma_filtered_peak_burst": 9.965901,
+      "gamma_filtered_max_global": 10.922676,
+      "gamma_inst_peak_to_offline_ratio": 0.923,
+      "n_transitions": 0,
+      "time_frac_N1": 1.0,
+      "gamma_filtered_ever_reaches_12": false,
+      "gamma_inst_ever_reaches_12": true,
+      "burst_duration_s": 0.389,
+      "dwell_s_preregistered": 1.0
+    },
+    "gap5_poc": {
+      "run_dir": "docs/benchmarks/gap5_adaptive_nhc/p0_passive_validation",
+      "filter_config": "pos_vel + p_pv none (preregistered PoC config)",
+      "duration_s": 331.26,
+      "gamma_offline_fix2_fix3": 0.12874238839661678,
+      "gamma_inst_peak_burst": 7.96915,
+      "gamma_filtered_max_global": 10.922676,
+      "n_transitions": 0,
+      "time_frac_N1": 1.0,
+      "gamma_filtered_ever_reaches_12": false,
+      "gamma_inst_ever_reaches_12": false,
+      "config_regime_note": "Gamma offline ~150x lower than F1; mechanistic regime not visible in this filter config"
+    }
+  },
+  "central_finding": "Gamma is not a good real-time control variable in the form defined for v1. The issue is operationalization (offline diagnostic vs online control signal), not threshold miscalibration.",
+  "gap5_v1_status": "CLOSED",
+  "gap5_v2_scope": "observable selection — not parameter retune",
+  "gap5_v2_document": "docs/diagnostics/16-gap5-v2-observable-selection.md",
+  "gap5_v2_hypothesis": "H6-OBS: exists an internal EKF property whose observation identifies preregistered regime changes with stable meaning under C-F1 and C-PoC (property selection, not observable ranking)",
+  "gap5_v2_selection_criterion": "interpretability x invariance x locality (not earliest burst detection)",
+  "gap5_v2_version": "0.3",
+  "gap5_v2_paso0_falsifiability_required": true,
+  "gap5_v2_principle_observable_independent_of_controller": true,
+  "gap5_v2_post_completion_synthesis": "docs/diagnostics/17-lessons-ekf-regime-identification.md",
+  "reproduction": {
+    "run_f1_bridge": "python tools/run_gap5_p0_passive_validation.py --profile f1-bridge",
+    "run_gap5_poc": "python tools/run_gap5_p0_passive_validation.py --profile gap5-poc",
+    "audit": "python tools/audit_gap5_passive_controller_validation.py --run-dir <run_dir> --plot"
+  }
+}

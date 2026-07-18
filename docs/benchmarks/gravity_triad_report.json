@@ -1,0 +1,179 @@
+{
+  "experiment": "gravity_triad_audit",
+  "question": "Por que R_bn desarrolla ~4 deg error de inclinacion al entrar en dinamica mientras heading horizontal sigue coherente?",
+  "triad": "g_body_pred (EKF), g_body_ref (Orientation), g_body_meas (accel norm)",
+  "angles": [
+    "pred_ref",
+    "pred_meas",
+    "ref_meas"
+  ],
+  "diagnosis": {
+    "static_0_2s": {
+      "label": "static_0_2s",
+      "samples": 46,
+      "angle_pred_ref_deg_mean": 0.05486097120840719,
+      "angle_pred_ref_deg_median": 0.054269550127075364,
+      "angle_pred_meas_deg_mean": 0.09438045059824089,
+      "angle_ref_meas_deg_mean": 0.1311254347492302,
+      "a_lin_h_mean": 0.016151801630434785,
+      "corr_pred_ref_vs_a_lin_h": 0.07131739606745445,
+      "corr_pred_meas_vs_a_lin_h": 0.9999972483872914,
+      "corr_pred_ref_vs_pred_meas": 0.07151686661394563
+    },
+    "motion_2_10s": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "angle_pred_ref_deg_mean": 4.070822387547103,
+      "angle_pred_ref_deg_median": 0.6799990762847531,
+      "angle_pred_meas_deg_mean": 4.318391007816018,
+      "angle_ref_meas_deg_mean": 5.889385068868319,
+      "a_lin_h_mean": 0.7407221464244333,
+      "corr_pred_ref_vs_a_lin_h": 0.9168415469506216,
+      "corr_pred_meas_vs_a_lin_h": 0.9995741369866186,
+      "corr_pred_ref_vs_pred_meas": 0.9205031004907557
+    },
+    "cruise_11_25s": {
+      "label": "cruise_11_25s",
+      "samples": 1389,
+      "angle_pred_ref_deg_mean": 4.485202247313301,
+      "angle_pred_ref_deg_median": 3.7028277915239145,
+      "angle_pred_meas_deg_mean": 3.0299758205167127,
+      "angle_ref_meas_deg_mean": 4.504442432648883,
+      "a_lin_h_mean": 0.52219463024982,
+      "corr_pred_ref_vs_a_lin_h": 0.6574401780387984,
+      "corr_pred_meas_vs_a_lin_h": 0.9963334741373553,
+      "corr_pred_ref_vs_pred_meas": 0.6609633052367606
+    },
+    "jumps_static_to_motion": {
+      "angle_pred_ref_deg": 4.015961416338695,
+      "angle_pred_meas_deg": 4.2240105572177775,
+      "angle_ref_meas_deg": 5.758259634119089,
+      "a_lin_h": 0.7245703447939985
+    },
+    "hourly_motion_profile": [
+      {
+        "label": "t_2_3s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 0.061647007138967036,
+        "angle_pred_ref_deg_median": 0.06514316295086754,
+        "angle_pred_meas_deg_mean": 0.12224890022853746,
+        "angle_ref_meas_deg_mean": 0.12229524321481998,
+        "a_lin_h_mean": 0.02090990338383839,
+        "corr_pred_ref_vs_a_lin_h": -0.17551307173119718,
+        "corr_pred_meas_vs_a_lin_h": 0.9999878860416432,
+        "corr_pred_ref_vs_pred_meas": -0.17524947403722513
+      },
+      {
+        "label": "t_3_4s",
+        "samples": 100,
+        "angle_pred_ref_deg_mean": 0.0997927376004743,
+        "angle_pred_ref_deg_median": 0.08564610763296734,
+        "angle_pred_meas_deg_mean": 0.255759574328445,
+        "angle_ref_meas_deg_mean": 0.2610803187132802,
+        "a_lin_h_mean": 0.04372914130999999,
+        "corr_pred_ref_vs_a_lin_h": 0.460186265198095,
+        "corr_pred_meas_vs_a_lin_h": 0.9999774491259332,
+        "corr_pred_ref_vs_pred_meas": 0.4596263047285804
+      },
+      {
+        "label": "t_4_5s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 0.23352840062144278,
+        "angle_pred_ref_deg_median": 0.19441373092185016,
+        "angle_pred_meas_deg_mean": 0.5792634275556924,
+        "angle_ref_meas_deg_mean": 0.6000684696932125,
+        "a_lin_h_mean": 0.0991051830909091,
+        "corr_pred_ref_vs_a_lin_h": 0.6270685468649614,
+        "corr_pred_meas_vs_a_lin_h": 0.9999683739226471,
+        "corr_pred_ref_vs_pred_meas": 0.6258500241650138
+      },
+      {
+        "label": "t_5_6s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 0.3159613472163136,
+        "angle_pred_ref_deg_median": 0.27143021421310215,
+        "angle_pred_meas_deg_mean": 0.5754137673179185,
+        "angle_ref_meas_deg_mean": 0.6952257913180934,
+        "a_lin_h_mean": 0.09870734297979797,
+        "corr_pred_ref_vs_a_lin_h": 0.3967544795821721,
+        "corr_pred_meas_vs_a_lin_h": 0.9995781352308306,
+        "corr_pred_ref_vs_pred_meas": 0.3984459959937003
+      },
+      {
+        "label": "t_6_7s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 3.798406382296214,
+        "angle_pred_ref_deg_median": 1.574015512212299,
+        "angle_pred_meas_deg_mean": 6.599097866995494,
+        "angle_ref_meas_deg_mean": 7.377024397916619,
+        "a_lin_h_mean": 1.1335596404646464,
+        "corr_pred_ref_vs_a_lin_h": 0.8586627259270541,
+        "corr_pred_meas_vs_a_lin_h": 0.9984706815824482,
+        "corr_pred_ref_vs_pred_meas": 0.8551496606316162
+      },
+      {
+        "label": "t_7_8s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 13.214860675972536,
+        "angle_pred_ref_deg_median": 13.464582777702875,
+        "angle_pred_meas_deg_mean": 11.936490330690356,
+        "angle_ref_meas_deg_mean": 17.226675868836885,
+        "a_lin_h_mean": 2.0448715120505048,
+        "corr_pred_ref_vs_a_lin_h": 0.8384149027758158,
+        "corr_pred_meas_vs_a_lin_h": 0.9981384303888238,
+        "corr_pred_ref_vs_pred_meas": 0.8272376710633749
+      },
+      {
+        "label": "t_8_9s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 7.986981194344771,
+        "angle_pred_ref_deg_median": 7.619104589455778,
+        "angle_pred_meas_deg_mean": 7.055608334387844,
+        "angle_ref_meas_deg_mean": 10.533645146022561,
+        "a_lin_h_mean": 1.2072022401111113,
+        "corr_pred_ref_vs_a_lin_h": 0.43706600896489484,
+        "corr_pred_meas_vs_a_lin_h": 0.9947755240783852,
+        "corr_pred_ref_vs_pred_meas": 0.39897786894740006
+      },
+      {
+        "label": "t_9_10s",
+        "samples": 100,
+        "angle_pred_ref_deg_mean": 6.8672658620091775,
+        "angle_pred_ref_deg_median": 6.905499476486565,
+        "angle_pred_meas_deg_mean": 7.432823626826662,
+        "angle_ref_meas_deg_mean": 10.311251560269008,
+        "a_lin_h_mean": 1.27929243744,
+        "corr_pred_ref_vs_a_lin_h": 0.21572382876790852,
+        "corr_pred_meas_vs_a_lin_h": 0.9980095105858272,
+        "corr_pred_ref_vs_pred_meas": 0.21577103560136682
+      },
+      {
+        "label": "t_10_11s",
+        "samples": 99,
+        "angle_pred_ref_deg_mean": 5.859842659487145,
+        "angle_pred_ref_deg_median": 5.982799209068414,
+        "angle_pred_meas_deg_mean": 5.1280972633411945,
+        "angle_ref_meas_deg_mean": 8.030708380056577,
+        "a_lin_h_mean": 0.8745647739696969,
+        "corr_pred_ref_vs_a_lin_h": 0.3828243112245892,
+        "corr_pred_meas_vs_a_lin_h": 0.9976530805633125,
+        "corr_pred_ref_vs_pred_meas": 0.35800804270594433
+      }
+    ],
+    "likely_mechanism": "ekf_tilt_diverges_from_orientation_in_dynamic_regime",
+    "notes": {
+      "static_triad_agreement_deg": {
+        "pred_ref": 0.05486097120840719,
+        "pred_meas": 0.09438045059824089,
+        "ref_meas": 0.1311254347492302
+      },
+      "ref_meas_jump_expected_in_dynamics": true,
+      "cannot_be_heading_only": "pred<->ref usa solo inclinacion (yaw no afecta g_body); salto con pred_ref bajo en estatico descarta offset de marco estatico."
+    },
+    "interpretation": "Estatico: pred, ref y meas coinciden (~0.05-0.13 deg). En dinamica fuerte pred<->ref crece (EKF != Android). ref<->meas tambien crece (accel != gravedad); eso no implica que EKF este bien."
+  },
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\gravity_triad_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\gravity_triad_analysis.png"
+  }
+}

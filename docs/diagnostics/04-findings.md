@@ -2,6 +2,8 @@
 
 Tabla de veredictos por hipótesis. Valores numéricos de referencia: predict-only + H9a, primeros 60 s, `data/real_run/`.
 
+> **Full filter:** métricas de replay con GNSS/NHC/ZUPT (H3–H8, GAP-3) están **condicionadas** por política ZUPT legacy `forced_time` hasta re-run con `imu_stationary` — [11-replay-zupt-provenance.md](11-replay-zupt-provenance.md). La tabla siguiente en régimen estático/dinámico proviene principalmente de **predict-only** (no afectado).
+
 ## Matriz de eliminación
 
 | Hipótesis | Estado | Evidencia |

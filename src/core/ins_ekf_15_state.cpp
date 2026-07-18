@@ -169,8 +169,28 @@ void InsEkf15State::predict(
     (void)ins_ekf_predict(&ekf_, &imu);
 
     if (run_zupt_after_predict_) {
-        (void)ins_ekf_update_zupt(&ekf_);
+        const float vel_before_zupt[3] = {
+            ekf_.vel_[0],
+            ekf_.vel_[1],
+            ekf_.vel_[2],
+        };
+        if (ins_ekf_update_zupt(&ekf_)) {
+            ekf_.vel_pipeline_audit_last_.zupt_applied = true;
+            for (uint8_t i = 0U; i < 3U; ++i) {
+                ekf_.vel_pipeline_audit_last_.vel_after_zupt[i] = ekf_.vel_[i];
+                ekf_.vel_pipeline_audit_last_.dv_zupt[i] =
+                    ekf_.vel_[i] - vel_before_zupt[i];
+            }
+        }
         run_zupt_after_predict_ = false;
+    }
+
+    if (!ekf_.vel_pipeline_audit_last_.zupt_applied) {
+        for (uint8_t i = 0U; i < 3U; ++i) {
+            ekf_.vel_pipeline_audit_last_.vel_after_zupt[i] =
+                ekf_.vel_pipeline_audit_last_.vel_after_nhc[i];
+            ekf_.vel_pipeline_audit_last_.dv_zupt[i] = 0.0f;
+        }
     }
 }
 
@@ -199,6 +219,46 @@ void InsEkf15State::update_gnss(const double pos_ned_m[3], const float std_dev_m
     gps.position = vector3d_make(lat_deg, lon_deg, alt_m);
     gps.timestamp_ms = static_cast<uint32_t>(timestamp_s_ * 1000.0);
     gps.satellites = 12U;
+
+    if (std_dev_m != nullptr && std_dev_m[0] > 0.0f) {
+        ekf_.gnss_pos_var_m2 = std_dev_m[0] * std_dev_m[0];
+    }
+
+    (void)ins_ekf_update_gnss(&ekf_, &gps);
+}
+
+void InsEkf15State::update_gnss_with_velocity(
+    const double pos_ned_m[3],
+    const float std_dev_m[3],
+    float speed_mps,
+    float course_deg,
+    bool has_velocity_obs)
+{
+    if (!ekf_.initialized || pos_ned_m == nullptr) {
+        return;
+    }
+
+    float lat_deg = 0.0f;
+    float lon_deg = 0.0f;
+    float alt_m = 0.0f;
+    geodesy::ned_to_lla(
+        ekf_.ref_lat_deg,
+        ekf_.ref_lon_deg,
+        ekf_.ref_alt_m,
+        static_cast<float>(pos_ned_m[0]),
+        static_cast<float>(pos_ned_m[1]),
+        static_cast<float>(pos_ned_m[2]),
+        &lat_deg,
+        &lon_deg,
+        &alt_m);
+
+    GpsSample gps{};
+    gps.fix_valid = true;
+    gps.position = vector3d_make(lat_deg, lon_deg, alt_m);
+    gps.timestamp_ms = static_cast<uint32_t>(timestamp_s_ * 1000.0);
+    gps.satellites = 12U;
+    gps.speed_mps = has_velocity_obs ? speed_mps : 0.0f;
+    gps.course_deg = has_velocity_obs ? course_deg : 0.0f;
 
     if (std_dev_m != nullptr && std_dev_m[0] > 0.0f) {
         ekf_.gnss_pos_var_m2 = std_dev_m[0] * std_dev_m[0];

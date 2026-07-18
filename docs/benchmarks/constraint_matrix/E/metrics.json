@@ -1,0 +1,31 @@
+{
+  "experiment_id": "E",
+  "config": {
+    "label": "free_reference",
+    "constraint_policy": "disabled",
+    "nhc_policy": "disabled",
+    "zupt": "OFF",
+    "nhc": "OFF"
+  },
+  "gnss_accept_count": 56,
+  "gnss_reject_count": 275,
+  "final_drift_m": 23365.742,
+  "vel_h_mean_t_9_11s": 8.6128578040201,
+  "vel_h_mean_t_30_35s": 6.232654949596774,
+  "vel_h_median_t_30_35s": 6.547865,
+  "sum_dv_norm_by_source": {
+    "gnss": 79.907067165403,
+    "predict": 508.434129524341
+  },
+  "bias_ax_at_10s": 0.189944,
+  "gnss_nis_mean": 23.71004449244713,
+  "gnss_nis_median_accepted": 0.2074455,
+  "gnss_innov_h_mean": 7844.2460511631425,
+  "gnss_innov_h_mean_accepted": 7.668530517857143,
+  "P_pv_frob_gnss_pre_mean": 134080.48040399514,
+  "P_vv_frob_gnss_pre_mean": 2482.410250289928,
+  "pipeline_tick_mean_abs_dv_pred": 0.01460139580654974,
+  "pipeline_tick_mean_abs_dv_nhc": 0.0,
+  "pipeline_tick_mean_abs_dv_zupt": 0.0,
+  "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\E"
+}

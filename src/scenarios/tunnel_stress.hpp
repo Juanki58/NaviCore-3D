@@ -4,7 +4,7 @@
 
 #include "sensor_types.hpp"
 
-struct InsEkfFilter;
+class INaviFilter;
 struct TelemetryInterface;
 
 /** Fases cronológicas del escenario reproducible TUNNEL_STRESS. */
@@ -56,7 +56,7 @@ struct TunnelStressResult {
 };
 
 typedef void (*TunnelStressNavEmitFn)(
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     uint32_t timestamp_ms,
     const GpsSample *gps,
     bool dead_reckoning);

@@ -14,7 +14,7 @@
 | `TotalAcceleration.csv` | Aceleración total incl. gravedad (m/s²) | Comparación con Gravity.csv |
 | `Metadata.csv` | Metadatos de grabación | Descubrimiento `t0` |
 
-**Nota:** `Accelerometer.csv` (sin “Uncalibrated”) contiene aceleración lineal en **g**, no comparable directamente con `TotalAcceleration.csv`.
+**Nota:** En el Patrón Oro (`data/real_run/`, Sensor Logger 1.61.0), `Accelerometer.csv` verifica la identidad `Uncalibrated ≈ Gravity + Accelerometer` cuando se interpreta en **m/s²** (ver [07-signal-traceability.md](07-signal-traceability.md)). No usar `Accelerometer.csv` como entrada del replay.
 
 ## Pipeline de ingestión
 

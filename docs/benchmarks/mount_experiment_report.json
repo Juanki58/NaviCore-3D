@@ -1,0 +1,29 @@
+{
+  "h0": {
+    "label": "H0 legacy Euler",
+    "mount_mode": "legacy_euler",
+    "output_csv": "docs\\benchmarks\\real_run_output_h0.csv",
+    "horizontal_rmse_m": 2310.552267245517,
+    "error_h_final_m": 4514.210358816296,
+    "nis_moving_mean": 179961.39529136184,
+    "att_rmse_deg": {
+      "roll": 143.5739261877341,
+      "pitch": 11.923081484190007,
+      "yaw": 97.97617062168612
+    }
+  },
+  "h1": {
+    "label": "H1 Rodrigues",
+    "mount_mode": "calibration_file",
+    "output_csv": "docs\\benchmarks\\real_run_output_h1.csv",
+    "calibration": "calibration\\imu_mount.json",
+    "horizontal_rmse_m": 2351.0703276770173,
+    "error_h_final_m": 4586.706563337214,
+    "nis_moving_mean": 197010.9503161809,
+    "att_rmse_deg": {
+      "roll": 6.55246847670133,
+      "pitch": 4.386787692138585,
+      "yaw": 102.47081769449234
+    }
+  }
+}

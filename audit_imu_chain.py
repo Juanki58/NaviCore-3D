@@ -676,8 +676,9 @@ def audit_wahba_kabsch(
     g_median = median_vec3(accels)
     g_norm = vec3_normalize(g_median)
 
+    primary_body_target = "vehicle body FRD +Z down (Rodrigues; see 08-body-frame-contract)"
     body_targets = {
-        "body Z+ (EKF down)": (0.0, 0.0, GRAVITY),
+        primary_body_target: (0.0, 0.0, GRAVITY),
         "body Z-": (0.0, 0.0, -GRAVITY),
         "body X+": (GRAVITY, 0.0, 0.0),
         "body Y+": (0.0, GRAVITY, 0.0),
@@ -732,7 +733,7 @@ def audit_wahba_kabsch(
     print(f"{'Variante':22s} {'err mediana':>12s} {'ang vs Kabsch':>14s}")
     for variant in MOUNT_VARIANTS:
         matrix = build_mount_matrix(variant)
-        err = gravity_alignment_error(matrix, g_median, body_targets["body Z+ (EKF down)"])
+        err = gravity_alignment_error(matrix, g_median, body_targets[primary_body_target])
         angle = rotation_angle_deg(matrix, best_kabsch[1])
         print(f"{variant.name:22s} {err:12.4f} {angle:13.2f} deg")
 
@@ -807,7 +808,7 @@ def audit_wahba_kabsch(
     )
     best_perm_err = float("inf")
     best_perm_name = ""
-    target = body_targets["body Z+ (EKF down)"]
+    target = body_targets[primary_body_target]
     for perm_name, perm in permutations.items():
         for sign in signs:
             remapped = tuple(g_median[perm[i]] * sign[i] for i in range(3))

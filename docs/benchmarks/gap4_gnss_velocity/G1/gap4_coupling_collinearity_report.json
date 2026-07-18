@@ -1,0 +1,97 @@
+{
+  "experiment": "GAP-4 pos+vel coupling \u2014 collinearity check (3 points)",
+  "note_g1_accepts": "G1 pos+vel: 8 accepts only; fix#7 is best available non-fix#2 point (t\u224810.6s, not deep regime). fix#56 @ t\u224858s (G2 vel-only) breaks time\u2013innovation collinearity: \u2016y_pos\u2016\u2248214 m >> fix#2.",
+  "fixes": [
+    {
+      "arm": "G1_actual",
+      "gps_index": 2,
+      "timestamp_s": 5.664433479,
+      "regime": {
+        "P_vv_frob_pre": 89.59877777,
+        "P_pv_frob_pre": 140.0564575,
+        "P_pv_over_P_vv": 1.5631514289126223,
+        "innov_h_m": 29.260845,
+        "y_pos_norm_3d_m": 39.644925721049376,
+        "seconds_since_run_start": 5.664433479
+      },
+      "check1_S_pos_vel": {
+        "frob_error_S_vs_P": 0.0,
+        "P_pos_vel_NN": 140.02306087936913,
+        "pass": true
+      },
+      "check2_K": {
+        "K_vel_vel_diag_5d": [
+          0.962813694485729,
+          0.003701926112851449
+        ],
+        "k_vel_max_reference": 0.964973,
+        "K_match": true,
+        "Joseph_P_vv_rel_error": 0.501176368836037,
+        "Joseph_pass": false
+      },
+      "delta_v_decomposition_NE": {
+        "y_pos_norm_m": 39.644925721049376,
+        "y_vel_NE_mps": [
+          -0.115804,
+          0.387835
+        ],
+        "dv_from_pos_NE_mps": [
+          -0.24472804764493633,
+          -0.0026618153216863083
+        ],
+        "dv_from_vel_NE_mps": [
+          -0.11155016413603576,
+          0.0014514086721746115
+        ],
+        "dv_total_NE_mps": [
+          -0.3562782117809721,
+          -0.0012104066495116968
+        ],
+        "dv_logged_NE_mps": [
+          -0.091434,
+          -0.001477
+        ],
+        "magnitude_pos_mps": 0.24474252300102856,
+        "magnitude_vel_mps": 0.11155960606738526,
+        "cross_term_fraction": 0.6868960442109382,
+        "cross_dominates": true,
+        "cross_over_y_pos": 0.006173363136636755
+      },
+      "truth_terrain": {
+        "err_vel_pre_mps": 0.404754016308329,
+        "err_vel_post_mps": 0.4384295108219818,
+        "delta_err_vel_mps": 0.03367549451365276,
+        "vel_improves": false,
+        "counterfactual": false
+      },
+      "alignment_cross_vs_error": {
+        "err_pre_NE_mps": [
+          -0.11580341804493388,
+          0.38783421985022587
+        ],
+        "err_pre_norm_mps": 0.404754016308329,
+        "cos_dv_pos_err_pre": 0.2756698791351994,
+        "cos_dv_pos_correction_dir": -0.2756698791351994,
+        "proj_dv_pos_on_correction_mps": -0.06746814173493731,
+        "cross_pulls_with_error": true,
+        "cross_aids_correction": false
+      },
+      "alignment_logged_total": {
+        "err_pre_NE_mps": [
+          -0.11580341804493388,
+          0.38783421985022587
+        ],
+        "err_pre_norm_mps": 0.404754016308329,
+        "cos_dv_pos_err_pre": 0.27059437620098675,
+        "cos_dv_pos_correction_dir": -0.27059437620098675,
+        "proj_dv_pos_on_correction_mps": -0.0247447540463,
+        "cross_pulls_with_error": true,
+        "cross_aids_correction": false
+      }
+    }
+  ],
+  "collinearity_analysis": {
+    "n": 1,
+    "note": "need >=3 points"
+  }
+}

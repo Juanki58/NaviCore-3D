@@ -1,0 +1,207 @@
+{
+  "experiment": "GAP-3.8 constraint policy matrix",
+  "note": "No GNSS velocity — causal isolation of ZUPT/NHC replay policies",
+  "experiment_provenance": {
+    "documentation": "docs/diagnostics/11-replay-zupt-provenance.md",
+    "validity_by_exp": {
+      "A": "CONDITIONED (forced_time legacy baseline)",
+      "B": "VALID_FOR_ZUPT_ISOLATION",
+      "C": "VALID_FOR_GPS_STOP_POLICY",
+      "D": "VALID_IMU_STATIONARY_REFERENCE",
+      "E": "VALID_FREE_REFERENCE"
+    },
+    "historical_note": "All H9→GAP-3.7 full-filter runs without explicit policy are CONDITIONED until re-run with imu_stationary",
+    "causal_readings": {
+      "A_to_B": "ZUPT forced_time causes low v_nominal (controlled causal experiment)",
+      "B_to_E": "NHC ON keeps 7 GNSS accepts; NHC OFF yields 56 accepts — NHC dominates GNSS acceptance, not ZUPT alone",
+      "C_vs_D": "Different stationary detectors; compare only after temporal instrumentation (reason/window/confidence)"
+    },
+    "next_priority": "GAP-3.9 NHC block audit (innov/S/NIS/K/dx/dv/P) with ZUPT OFF before GNSS+velocity"
+  },
+  "experiments": [
+    {
+      "experiment_id": "A",
+      "config": {
+        "label": "baseline",
+        "constraint_policy": "forced_time",
+        "nhc_policy": "enabled",
+        "zupt": "actual",
+        "nhc": "ON"
+      },
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "final_drift_m": 4568.103,
+      "vel_h_mean_t_9_11s": 0.015073854271356784,
+      "vel_h_mean_t_30_35s": 1.0909361754032258,
+      "vel_h_median_t_30_35s": 1.264955,
+      "sum_dv_norm_by_source": {
+        "gnss": 2.0712093716e-05,
+        "nhc": 207.89381443446803,
+        "predict": 359.6176543953105,
+        "zupt": 12.90382401357845
+      },
+      "bias_ax_at_10s": -1.019169,
+      "gnss_nis_mean": null,
+      "gnss_nis_median_accepted": null,
+      "gnss_innov_h_mean": null,
+      "gnss_innov_h_mean_accepted": null,
+      "P_pv_frob_gnss_pre_mean": null,
+      "P_vv_frob_gnss_pre_mean": null,
+      "pipeline_tick_mean_abs_dv_pred": 0.009980413476269073,
+      "pipeline_tick_mean_abs_dv_nhc": 0.006233134177953969,
+      "pipeline_tick_mean_abs_dv_zupt": 0.00038173093335048343,
+      "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\A"
+    },
+    {
+      "experiment_id": "B",
+      "config": {
+        "label": "isolate_zupt",
+        "constraint_policy": "disabled",
+        "nhc_policy": "enabled",
+        "zupt": "OFF",
+        "nhc": "ON"
+      },
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "final_drift_m": 4701.532,
+      "vel_h_mean_t_9_11s": 1.218077311557789,
+      "vel_h_mean_t_30_35s": 10.217741056451613,
+      "vel_h_median_t_30_35s": 10.1824115,
+      "sum_dv_norm_by_source": {
+        "gnss": 7.262315191000001,
+        "nhc": 456.1948637533274,
+        "predict": 382.72076238010817
+      },
+      "bias_ax_at_10s": 0.697719,
+      "gnss_nis_mean": null,
+      "gnss_nis_median_accepted": null,
+      "gnss_innov_h_mean": null,
+      "gnss_innov_h_mean_accepted": null,
+      "P_pv_frob_gnss_pre_mean": null,
+      "P_vv_frob_gnss_pre_mean": null,
+      "pipeline_tick_mean_abs_dv_pred": 0.010626444121139094,
+      "pipeline_tick_mean_abs_dv_nhc": 0.013687365302707257,
+      "pipeline_tick_mean_abs_dv_zupt": 0.0,
+      "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\B"
+    },
+    {
+      "experiment_id": "C",
+      "config": {
+        "label": "gps_stationary",
+        "constraint_policy": "gps_stop",
+        "nhc_policy": "enabled",
+        "zupt": "GPS stationary",
+        "nhc": "ON"
+      },
+      "gnss_accept_count": 8,
+      "gnss_reject_count": 323,
+      "final_drift_m": 4851.358,
+      "vel_h_mean_t_9_11s": 1.0908672663316583,
+      "vel_h_mean_t_30_35s": 2.8024008427419353,
+      "vel_h_median_t_30_35s": 2.7057145,
+      "sum_dv_norm_by_source": {
+        "gnss": 0.720938610349637,
+        "nhc": 313.8988342287818,
+        "predict": 352.192722673336,
+        "zupt": 11.22038683656293
+      },
+      "bias_ax_at_10s": 0.496907,
+      "gnss_nis_mean": 3635.6726386193354,
+      "gnss_nis_median_accepted": 3.8479339999999995,
+      "gnss_innov_h_mean": 1876.3727042749247,
+      "gnss_innov_h_mean_accepted": 45.846894,
+      "P_pv_frob_gnss_pre_mean": 31.701901330731026,
+      "P_vv_frob_gnss_pre_mean": 2.036958463515485,
+      "pipeline_tick_mean_abs_dv_pred": 0.009725046337120716,
+      "pipeline_tick_mean_abs_dv_nhc": 0.0094485460901644,
+      "pipeline_tick_mean_abs_dv_zupt": 0.0003394411342074866,
+      "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\C"
+    },
+    {
+      "experiment_id": "D",
+      "config": {
+        "label": "imu_stationary",
+        "constraint_policy": "imu_stationary",
+        "nhc_policy": "enabled",
+        "zupt": "IMU stationary",
+        "nhc": "ON"
+      },
+      "gnss_accept_count": 7,
+      "gnss_reject_count": 324,
+      "final_drift_m": 4532.252,
+      "vel_h_mean_t_9_11s": 0.028934763819095478,
+      "vel_h_mean_t_30_35s": 0.07229003427419355,
+      "vel_h_median_t_30_35s": 0.0600035,
+      "sum_dv_norm_by_source": {
+        "gnss": 2.6582436136e-05,
+        "nhc": 75.33026644561858,
+        "predict": 314.1384716109212,
+        "zupt": 134.87760484616314
+      },
+      "bias_ax_at_10s": -0.672837,
+      "gnss_nis_mean": 187825.55762541693,
+      "gnss_nis_median_accepted": 3.123897,
+      "gnss_innov_h_mean": 1831.939186513595,
+      "gnss_innov_h_mean_accepted": 27.924125142857143,
+      "P_pv_frob_gnss_pre_mean": 0.003410650898138459,
+      "P_vv_frob_gnss_pre_mean": 0.00801256377198127,
+      "pipeline_tick_mean_abs_dv_pred": 0.00844526332062625,
+      "pipeline_tick_mean_abs_dv_nhc": 0.0021418091984981777,
+      "pipeline_tick_mean_abs_dv_zupt": 0.0037888218750125563,
+      "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\D"
+    },
+    {
+      "experiment_id": "E",
+      "config": {
+        "label": "free_reference",
+        "constraint_policy": "disabled",
+        "nhc_policy": "disabled",
+        "zupt": "OFF",
+        "nhc": "OFF"
+      },
+      "gnss_accept_count": 56,
+      "gnss_reject_count": 275,
+      "final_drift_m": 23365.742,
+      "vel_h_mean_t_9_11s": 8.6128578040201,
+      "vel_h_mean_t_30_35s": 6.232654949596774,
+      "vel_h_median_t_30_35s": 6.547865,
+      "sum_dv_norm_by_source": {
+        "gnss": 79.907067165403,
+        "predict": 508.434129524341
+      },
+      "bias_ax_at_10s": 0.189944,
+      "gnss_nis_mean": 23.71004449244713,
+      "gnss_nis_median_accepted": 0.2074455,
+      "gnss_innov_h_mean": 7844.2460511631425,
+      "gnss_innov_h_mean_accepted": 7.668530517857143,
+      "P_pv_frob_gnss_pre_mean": 134080.48040399514,
+      "P_vv_frob_gnss_pre_mean": 2482.410250289928,
+      "pipeline_tick_mean_abs_dv_pred": 0.01460139580654974,
+      "pipeline_tick_mean_abs_dv_nhc": 0.0,
+      "pipeline_tick_mean_abs_dv_zupt": 0.0,
+      "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\E"
+    }
+  ],
+  "causal_comparison_vs_A": {
+    "B": {
+      "delta_vel_h_t_30_35s": 9.126804881048388,
+      "delta_gnss_accepts": 0,
+      "delta_gnss_innov_h_mean": 0.0
+    },
+    "C": {
+      "delta_vel_h_t_30_35s": 1.7114646673387095,
+      "delta_gnss_accepts": 1,
+      "delta_gnss_innov_h_mean": 1876.3727042749247
+    },
+    "D": {
+      "delta_vel_h_t_30_35s": -1.0186461411290324,
+      "delta_gnss_accepts": 0,
+      "delta_gnss_innov_h_mean": 1831.939186513595
+    },
+    "E": {
+      "delta_vel_h_t_30_35s": 5.1417187741935475,
+      "delta_gnss_accepts": 49,
+      "delta_gnss_innov_h_mean": 7844.2460511631425
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "experiment": "H7_gnss_chain_audit",
+  "parse_origin_deg": {
+    "lat": 41.192122,
+    "lon": 1.5191053,
+    "alt_m": 84.4000015258789
+  },
+  "ekf_seed_ref_deg": {
+    "lat": 41.3874,
+    "lon": 2.1686,
+    "alt_m": 12.0
+  },
+  "ekf_ref_expressed_in_parse_ned_m": {
+    "n": -21701.820991212204,
+    "e": -54234.9563979695,
+    "d": -72.4000015258789
+  },
+  "geo_audit": {
+    "samples": 331.0,
+    "nav_vs_independent_h_max_m": 13.571427489568498,
+    "nav_vs_independent_h_mean_m": 4.868591066507846,
+    "replay_vs_nav_h_max_m": 22.753618401199134,
+    "adapter_roundtrip_h_max_m": 0.5562484283582307,
+    "parse_vs_ekf_ref_h_max_m": 58418.50230313304,
+    "parse_vs_ekf_ref_h_at_origin_m": 58415.74727609219
+  },
+  "update_audit": {
+    "samples": 331,
+    "absurd_innov_h_threshold_m": 20.0,
+    "first_absurd": {
+      "timestamp_s": 13.268433571,
+      "gps_index": 10,
+      "innov_h_m": 20.144808,
+      "innov_n_m": -14.842773,
+      "innov_e_m": 13.620036,
+      "nis": 14.531813,
+      "gnss_accepted": false,
+      "z_n": -16.109665,
+      "hx_n": -1.266891,
+      "gps_pos_n": -16.192072
+    },
+    "first_reject": {
+      "timestamp_s": 13.268433571,
+      "gps_index": 10,
+      "innov_h_m": 20.144808,
+      "nis": 14.531813
+    },
+    "first_accept": {
+      "timestamp_s": 1.030678272,
+      "gps_index": 1,
+      "innov_h_m": 0.0,
+      "nis": 0.0
+    }
+  }
+}

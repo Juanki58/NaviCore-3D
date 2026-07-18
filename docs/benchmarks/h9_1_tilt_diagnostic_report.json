@@ -1,0 +1,76 @@
+{
+  "experiment": "H9.1_tilt_diagnostic",
+  "description": "Diagnostico observacional: ¿a_lin_h ~ g*sin(tilt_error) explica ~0.52 m/s^2?",
+  "static_phase_end_s": 30.0,
+  "gravity_mps2": 9.80665,
+  "g_sin_3deg_mps2": 0.5132404052898651,
+  "samples": 2872,
+  "mount_offset_deg": {
+    "roll": -2.5730358391554518,
+    "pitch": -49.830262785674535,
+    "yaw": 95.34734708156553
+  },
+  "static_phase": {
+    "a_lin_h_mean": 0.516322870821727,
+    "a_lin_h_median": 0.4331415,
+    "a_lin_h_std": 0.4475126049085382,
+    "a_lin_h_p95": 1.4476858,
+    "tilt_mag_deg_mean": 5.524065156964264,
+    "tilt_mag_deg_median": 4.4660548030449085,
+    "tilt_mag_deg_std": 4.796774181598571,
+    "tilt_mag_deg_p95": 16.655720239889575,
+    "predicted_a_h_mean": 0.9399423481771517,
+    "predicted_a_h_median": 0.7639809083036586,
+    "predicted_a_h_std": 0.8056658864849788,
+    "predicted_a_h_p95": 2.8223515876765313,
+    "implied_tilt_deg_mean": 3.022934799562422,
+    "implied_tilt_deg_median": 2.5314716011653835,
+    "implied_tilt_deg_std": 2.633734618849612,
+    "implied_tilt_deg_p95": 8.489193326322676,
+    "tilt_error_roll_deg_mean": 0.024660833534264293,
+    "tilt_error_roll_deg_median": 0.0,
+    "tilt_error_roll_deg_std": 3.2272060648175778,
+    "tilt_error_roll_deg_p95": 6.3029945818490285,
+    "tilt_error_pitch_deg_mean": 1.4934171502349505,
+    "tilt_error_pitch_deg_median": 0.0,
+    "tilt_error_pitch_deg_std": 6.393635623142393,
+    "tilt_error_pitch_deg_p95": 15.248372871265895,
+    "residual_a_h_mean": -0.4236194773554247,
+    "residual_a_h_median": -0.3710868625229774,
+    "residual_a_h_std": 0.7555355880668877,
+    "residual_a_h_p95": 0.5271199398288705,
+    "correlation_a_lin_h_vs_predicted": 0.38626320333835223
+  },
+  "hypothesis_test": {
+    "question": "Es a_lin_h horizontal el resultado de ~3 deg de error de inclinacion?",
+    "mean_a_lin_h_mps2": 0.516322870821727,
+    "median_a_lin_h_mps2": 0.4331415,
+    "mean_predicted_a_h_mps2": 0.9399423481771517,
+    "median_predicted_a_h_mps2": 0.7639809083036586,
+    "mean_tilt_error_mag_deg": 5.524065156964264,
+    "rms_tilt_error_deg": 7.316032969283098,
+    "rms_tilt_error_roll_deg": 3.2273002868505993,
+    "rms_tilt_error_pitch_deg": 6.565734632631089,
+    "mean_implied_tilt_from_a_lin_deg": 3.022934799562422,
+    "median_implied_tilt_from_a_lin_deg": 2.5314716011653835,
+    "magnitude_consistent_with_3deg_tilt": true,
+    "orientation_explains_residual": false,
+    "hypothesis_confirmed": false
+  },
+  "interpretation": "Magnitud coherente con ~3 deg (g*sin(3) ~ a_lin_h), pero Orientation no predice el residual tras alinear montaje. El leak horizontal existe en predict aunque roll/pitch EKF coincidan con Orientation: revisar R_bn vs acelerometro, o H9 predict-only.",
+  "recommended_next_experiments": [
+    {
+      "id": "H9_predict_only_isolation",
+      "description": "60 s: solo IMU predict, sin GPS/NHC/ZUPT. Si a_lin_h persiste, origen en propagacion; si desaparece, en actualizaciones."
+    },
+    {
+      "id": "H9_zupt_nhc_transition",
+      "description": "Medir si el residual en t=34.3 s (ZUPT-NHC) existia antes (ZUPT ocultaba) o lo introduce el cambio de regimen."
+    }
+  ],
+  "outputs": {
+    "tilt_audit_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9_1_tilt_audit.csv",
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9_1_tilt_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9_1_tilt_diagnostic_analysis.png"
+  }
+}

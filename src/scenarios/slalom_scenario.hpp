@@ -2,11 +2,11 @@
 
 #include "sensor_types.hpp"
 
-struct InsEkfFilter;
+class INaviFilter;
 struct TelemetryInterface;
 
 typedef void (*SlalomNavEmitFn)(
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     uint32_t timestamp_ms,
     const GpsSample *gps,
     bool dead_reckoning);

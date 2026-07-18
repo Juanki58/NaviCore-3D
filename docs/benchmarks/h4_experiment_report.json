@@ -1,0 +1,76 @@
+{
+  "consistency": {
+    "samples_moving": 304.0,
+    "mean_innovation_h_m": 2011.767082457237,
+    "mean_sqrt_P_h_m": 3.0795445265239785,
+    "mean_error_over_sigma_h": 610.7151748178745,
+    "median_error_over_sigma_h": 661.9671670756818,
+    "mean_nees_n": 52394.29008449671,
+    "mean_nees_e": 143765.73645257895,
+    "mean_nis": 197010.9503161809,
+    "pct_nees_n_gt_11": 99.67105263157895,
+    "pct_nees_e_gt_11": 88.48684210526315
+  },
+  "p0_sweep": [
+    {
+      "p0_scale": 1.0,
+      "horizontal_rmse_m": 2351.0703276770173,
+      "error_h_final_m": 4586.706563337214,
+      "gnss_accept_pct": 3.0211480362537766,
+      "gnss_accept_count": 10,
+      "gnss_reject_count": 321,
+      "nis_moving_mean": 197010.9503161809,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_1x.csv"
+    },
+    {
+      "p0_scale": 2.0,
+      "horizontal_rmse_m": 2279.287534214161,
+      "error_h_final_m": 4484.031186388734,
+      "gnss_accept_pct": 3.0211480362537766,
+      "gnss_accept_count": 10,
+      "gnss_reject_count": 321,
+      "nis_moving_mean": 176414.26084111515,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_2p0x.csv"
+    },
+    {
+      "p0_scale": 5.0,
+      "horizontal_rmse_m": 2330.643444271696,
+      "error_h_final_m": 4549.824025820864,
+      "gnss_accept_pct": 3.323262839879154,
+      "gnss_accept_count": 11,
+      "gnss_reject_count": 320,
+      "nis_moving_mean": 182242.78134433881,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_5p0x.csv"
+    },
+    {
+      "p0_scale": 10.0,
+      "horizontal_rmse_m": 2316.9976658961605,
+      "error_h_final_m": 4537.117151909133,
+      "gnss_accept_pct": 3.323262839879154,
+      "gnss_accept_count": 11,
+      "gnss_reject_count": 320,
+      "nis_moving_mean": 177523.89237391777,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_10p0x.csv"
+    },
+    {
+      "p0_scale": 20.0,
+      "horizontal_rmse_m": 2311.2926229378804,
+      "error_h_final_m": 4534.031607764123,
+      "gnss_accept_pct": 3.323262839879154,
+      "gnss_accept_count": 11,
+      "gnss_reject_count": 320,
+      "nis_moving_mean": 175043.30297463157,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_20p0x.csv"
+    },
+    {
+      "p0_scale": 50.0,
+      "horizontal_rmse_m": 2311.810473621144,
+      "error_h_final_m": 4531.133987903312,
+      "gnss_accept_pct": 3.6253776435045317,
+      "gnss_accept_count": 12,
+      "gnss_reject_count": 319,
+      "nis_moving_mean": 182227.9937760888,
+      "output_csv": "docs\\benchmarks\\h4_output_p0_50p0x.csv"
+    }
+  ]
+}

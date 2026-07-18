@@ -1,10 +1,14 @@
 #include "super_tunnel_benchmark.hpp"
 
+#include "geodesy.hpp"
 #include "ins_ekf.hpp"
+#include "ins_ekf_15_state.hpp"
+#include "interfaces/INaviFilter.hpp"
 #include "sensors_sim.hpp"
 
 #include <cmath>
 #include <cstdio>
+#include <memory>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -288,15 +292,16 @@ void gps_truth_to_ned_m(
         return;
     }
 
-    const float dlat_m = (gps_truth->position.x - ref_lat_deg) * NAVICORE_METERS_PER_DEG_LAT;
-    const float lat_rad = (ref_lat_deg + gps_truth->position.x) * 0.5f
-        * (static_cast<float>(M_PI) / 180.0f);
-    const float dlon_m = (gps_truth->position.y - ref_lon_deg)
-        * NAVICORE_METERS_PER_DEG_LAT * std::cos(lat_rad);
-
-    *north_m = dlat_m;
-    *east_m = dlon_m;
-    *down_m = ref_alt_m - gps_truth->position.z;
+    geodesy::lla_to_ned(
+        ref_lat_deg,
+        ref_lon_deg,
+        ref_alt_m,
+        gps_truth->position.x,
+        gps_truth->position.y,
+        gps_truth->position.z,
+        north_m,
+        east_m,
+        down_m);
 }
 
 void gps_truth_velocity_ned_mps(const GpsSample *gps_truth, float vel_ned[3])
@@ -313,13 +318,14 @@ void gps_truth_velocity_ned_mps(const GpsSample *gps_truth, float vel_ned[3])
 
 void outage_rms_accumulate_sample(
     OutageRmsAccumulator *acc,
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     float truth_n_m,
     float truth_e_m,
     float truth_d_m,
     const float truth_vel_ned[3],
     float truth_yaw_rad)
 {
+    const InsEkfFilter *ekf = navi_filter_try_get_ins_ekf(filter);
     if (acc == NULL || ekf == NULL || truth_vel_ned == NULL) {
         return;
     }
@@ -362,15 +368,18 @@ void outage_rms_finalize(const OutageRmsAccumulator *acc, SuperTunnelOutageRms *
     out->sample_count = acc->sample_count;
 }
 
-float ekf_horizontal_drift_m(
-    const InsEkfFilter *ekf,
+float filter_horizontal_drift_m(
+    const INaviFilter *filter,
     float truth_n_m,
     float truth_e_m)
 {
-    float est_ned[3] = {0.0f, 0.0f, 0.0f};
-    ins_ekf_get_position_ned(ekf, est_ned);
-    const float dn = est_ned[0] - truth_n_m;
-    const float de = est_ned[1] - truth_e_m;
+    if (filter == nullptr) {
+        return 0.0f;
+    }
+
+    const NaviState state = filter->get_state();
+    const float dn = static_cast<float>(state.pos_ned[0]) - truth_n_m;
+    const float de = static_cast<float>(state.pos_ned[1]) - truth_e_m;
     return std::sqrt((dn * dn) + (de * de));
 }
 
@@ -389,17 +398,6 @@ void super_tunnel_sanitize_imu(ImuSample *imu)
     imu->valid = true;
 }
 
-void super_tunnel_seed_velocity_from_gps(InsEkfFilter *ekf, const GpsSample *gps)
-{
-    if (ekf == NULL || gps == NULL) {
-        return;
-    }
-
-    const float course_rad = static_cast<float>(gps->course_deg * M_PI / 180.0);
-    ekf->vel_[0] = gps->speed_mps * std::cos(course_rad);
-    ekf->vel_[1] = gps->speed_mps * std::sin(course_rad);
-    ekf->vel_[2] = 0.0f;
-}
 
 bool is_constant_velocity_cruise(const ImuSample *imu)
 {
@@ -532,7 +530,9 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
         &sensors.imu,
         config.imu_mode == SUPER_TUNNEL_IMU_DIRTY_FULL);
 
-    InsEkfFilter ekf{};
+    std::unique_ptr<INaviFilter> nav_filter = create_default_navi_filter();
+    InsEkf15State *filter_impl = dynamic_cast<InsEkf15State *>(nav_filter.get());
+    INaviFilter *filter = nav_filter.get();
     bool ekf_seeded = false;
     OutageRmsAccumulator outage_rms{};
     NhcSummaryAccumulator nhc_window_stats{};
@@ -578,35 +578,41 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
             gps.satellites = 0U;
         }
 
-        if (gps.fix_valid && !ekf_seeded) {
-            const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
-            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
-            ekf.nhc_lateral_var_m2 = lateral_std * lateral_std;
-            ekf.nhc_vertical_var_m2 = vertical_std * vertical_std;
-            super_tunnel_seed_velocity_from_gps(&ekf, &gps);
-            ref_lat_deg = gps.position.x;
-            ref_lon_deg = gps.position.y;
-            ref_alt_m = gps.position.z;
-            ekf_seeded = true;
+        if (gps.fix_valid && !ekf_seeded && filter_impl != nullptr) {
+            if (filter_impl->seed_from_gnss_sample(gps, NAVICORE_DOMAIN_AIR)) {
+                filter_impl->set_nhc_measurement_stds(lateral_std, vertical_std);
+                ref_lat_deg = gps.position.x;
+                ref_lon_deg = gps.position.y;
+                ref_alt_m = gps.position.z;
+                ekf_seeded = true;
 
-            if (config.verbose) {
-                std::printf(
-                    "SUPER_TUNNEL: EKF init | policy=%u | R_lat=%.3f m/s | R_vert=%.3f m/s | IMU=%u\n",
-                    static_cast<unsigned>(config.nhc_policy),
-                    lateral_std,
-                    vertical_std,
-                    static_cast<unsigned>(config.imu_mode));
+                if (config.verbose) {
+                    std::printf(
+                        "SUPER_TUNNEL: %s init | policy=%u | R_lat=%.3f m/s | R_vert=%.3f m/s | IMU=%u\n",
+                        filter->get_filter_name().c_str(),
+                        static_cast<unsigned>(config.nhc_policy),
+                        lateral_std,
+                        vertical_std,
+                        static_cast<unsigned>(config.imu_mode));
+                }
             }
         }
 
-        if (ekf_seeded && imu.valid) {
+        if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
             const bool allow_nhc =
                 nhc_allowed_this_tick(config.nhc_policy, gps_outage, gps.fix_valid, &imu);
             const bool constant_vel = is_constant_velocity_cruise(&imu);
-            ins_ekf_set_nhc_enabled(&ekf, allow_nhc);
+            const float nhc_lateral = allow_nhc ? lateral_std : 0.0f;
+            const float nhc_vertical = allow_nhc ? vertical_std : 0.0f;
+            filter->apply_constraints(false, nhc_lateral, nhc_vertical);
+            filter_impl->sync_simulation_clock_ms(t_ms);
 
+            InsEkfFilter &ekf = filter_impl->native();
             const uint32_t nhc_before = ins_ekf_nhc_update_count(&ekf);
-            ins_ekf_predict(&ekf, &imu);
+            filter->predict(
+                static_cast<double>(kEkfStepMs) * 0.001,
+                imu.accel_mps2,
+                imu.gyro_radps);
             const uint32_t nhc_after = ins_ekf_nhc_update_count(&ekf);
 
             if (nhc_after > nhc_before) {
@@ -642,7 +648,7 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
                     gps_truth.course_deg * M_PI / 180.0);
                 outage_rms_accumulate_sample(
                     &outage_rms,
-                    &ekf,
+                    filter,
                     truth_n,
                     truth_e,
                     truth_d,
@@ -662,7 +668,7 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
                     &truth_n,
                     &truth_e,
                     &truth_d);
-                result.drift_exit_tunnel_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                result.drift_exit_tunnel_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 if (config.verbose) {
                     std::printf(
                         "SUPER_TUNNEL: salida tunel @ %.1f s | deriva=%.2f m | NHC updates=%u\n",
@@ -673,12 +679,13 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
             }
 
             if (gps.fix_valid) {
-                (void)ins_ekf_update_gnss(&ekf, &gps);
+                (void)filter_impl->update_gnss_from_sample(gps);
             }
         }
     }
 
-    if (ekf_seeded) {
+    if (ekf_seeded && filter != nullptr && filter_impl != nullptr) {
+        const InsEkfFilter &ekf = filter_impl->native();
         GpsSample final_truth{};
         (void)gps_simulator_get_truth(&sensors.gps, &final_truth);
 
@@ -693,7 +700,7 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
             &truth_n,
             &truth_e,
             &truth_d);
-        result.drift_final_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+        result.drift_final_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
         result.nhc_updates = ins_ekf_nhc_update_count(&ekf);
         outage_rms_finalize(&outage_rms, &result.outage_rms);
         ins_ekf_get_nhc_innovation_max(

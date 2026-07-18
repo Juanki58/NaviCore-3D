@@ -1,0 +1,65 @@
+{
+  "experiment": "rb_forward_heading_verification",
+  "formula": "u_body=(1,0,0), u_nav=R_bn*u_body, heading_error=GPS_bearing-heading(u_nav_h)",
+  "diagnosis": {
+    "static_0_2s": {
+      "label": "static_0_2s",
+      "samples": 46,
+      "heading_error_deg_mean": 38.64277408194766,
+      "heading_error_deg_median": 38.79743411656638,
+      "heading_error_deg_std": 8.62965207025231,
+      "yaw_vs_bearing_error_deg_mean": 38.64277408194766,
+      "forward_tilt_from_horizontal_deg_mean": 0.9339602608695651,
+      "a_lin_h_mean": 0.016151801630434785,
+      "gravity_angle_deg_mean": 0.09214708695652174,
+      "gps_bearing_deg_circular_mean": 38.64393537503886,
+      "forward_heading_deg_circular_mean": 0.0010811956521700338,
+      "corr_heading_error_vs_a_lin_h": -0.2028486926620608,
+      "corr_heading_error_vs_gravity_angle": -0.19815074940038294
+    },
+    "motion_2_10s": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "heading_error_deg_mean": -1.1937759854249783,
+      "heading_error_deg_median": 22.942760688626024,
+      "heading_error_deg_std": 107.95255879187805,
+      "yaw_vs_bearing_error_deg_mean": -1.1937759854249805,
+      "forward_tilt_from_horizontal_deg_mean": 1.0117669382871537,
+      "a_lin_h_mean": 0.7407221464244333,
+      "gravity_angle_deg_mean": 4.317784651133501,
+      "gps_bearing_deg_circular_mean": 190.32915109525538,
+      "forward_heading_deg_circular_mean": 1.4010350980782424,
+      "corr_heading_error_vs_a_lin_h": -0.13366132092789462,
+      "corr_heading_error_vs_gravity_angle": -0.13473367923704668
+    },
+    "cruise_straight": {
+      "label": "cruise_11.4_25.4s",
+      "samples": 1389,
+      "heading_error_deg_mean": 135.31421281840315,
+      "heading_error_deg_median": 135.53110600000002,
+      "heading_error_deg_std": 3.3466624457344443,
+      "yaw_vs_bearing_error_deg_mean": 135.31421281840315,
+      "forward_tilt_from_horizontal_deg_mean": 0.7685477804175666,
+      "a_lin_h_mean": 0.52219463024982,
+      "gravity_angle_deg_mean": 3.0298819755219584,
+      "gps_bearing_deg_circular_mean": 134.76734348469313,
+      "forward_heading_deg_circular_mean": 359.4529043379577,
+      "corr_heading_error_vs_a_lin_h": 0.2848064862974317,
+      "corr_heading_error_vs_gravity_angle": 0.27885001886931454
+    },
+    "jumps_static_to_motion": {
+      "heading_error_deg": -39.836550067372634,
+      "yaw_vs_bearing_error_deg": -39.836550067372634,
+      "forward_tilt_from_horizontal_deg": 0.07780667741758862,
+      "gravity_angle_deg": 4.22563756417698,
+      "a_lin_h": 0.7245703447939985
+    },
+    "forward_axis_equals_yaw_axis_in_static": true,
+    "likely_mechanism": "rbn_yaw_uninitialized_vs_gps_bearing",
+    "interpretation_notes": "heading_error = GPS_bearing - heading(R_bn * e_x). Si crece en dinamica mientras bearing es estable, el eje longitudinal body no coincide con la direccion fisica del vehiculo segun R_bn."
+  },
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\rb_forward_heading_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\rb_forward_heading_analysis.png"
+  }
+}

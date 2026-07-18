@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "updated_at_utc": "2026-07-18T05:53:00Z",
+  "discovery": "Between H9 revisions and GAP-3.7, replay armed ZUPT when t<=30s OR gps_speed<=0.1 m/s (forced_time). No IMU stationary criterion.",
+  "validity_rule": "All full-filter experiments run with forced_time (explicit or default) are CONDITIONED until re-run with --constraint-policy imu_stationary.",
+  "documentation": "docs/diagnostics/11-replay-zupt-provenance.md",
+  "rerun_baseline_cli": {
+    "constraint_policy": "imu_stationary",
+    "nhc_policy": "enabled",
+    "imu_stationary_accel_dev_mps2": 0.5,
+    "imu_stationary_gyro_radps": 0.05
+  },
+  "conditioned_campaigns": [
+    {
+      "id": "H3-H8_full_filter",
+      "artifact_glob": "docs/benchmarks/h[3-8]*",
+      "zupt_policy": "forced_time_implicit"
+    },
+    {
+      "id": "GAP-3.1-GAP-3.7",
+      "artifact_glob": "docs/benchmarks/gap3_*",
+      "exclude_glob": "docs/benchmarks/constraint_matrix/**",
+      "zupt_policy": "forced_time_implicit"
+    },
+    {
+      "id": "GAP-3.8_A",
+      "artifact_dir": "docs/benchmarks/constraint_matrix/A",
+      "zupt_policy": "forced_time_explicit"
+    }
+  ],
+  "exempt_campaigns": [
+    {
+      "id": "H9_predict_only",
+      "reason": "--predict-only disables ZUPT/NHC/GNSS updates"
+    },
+    {
+      "id": "GAP-3.8_B_E",
+      "artifact_dir": "docs/benchmarks/constraint_matrix",
+      "reason": "Explicit non-legacy constraint policies"
+    }
+  ]
+}

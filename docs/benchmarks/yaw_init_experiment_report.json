@@ -1,0 +1,36 @@
+{
+  "h0": {
+    "label": "H0 yaw=0",
+    "yaw_init_mode": "zero_yaw",
+    "output_csv": "docs\\benchmarks\\real_run_output_yaw_h0.csv",
+    "instrumentation_csv": "docs\\benchmarks\\yaw_init_instrumentation_h0.csv",
+    "horizontal_rmse_m": 2351.0703276770173,
+    "error_h_final_m": 4586.706563337214,
+    "nis_moving_mean": 197010.9503161809,
+    "att_rmse_deg": {
+      "roll": 6.55246847670133,
+      "pitch": 4.386787692138585,
+      "yaw": 102.47081769449234
+    },
+    "gnss_accept_pct": 3.0211480362537766,
+    "gnss_reject_count": 321,
+    "convergence_time_s": null
+  },
+  "h2": {
+    "label": "H2 GNSS stable heading",
+    "yaw_init_mode": "gnss_stable_heading",
+    "output_csv": "docs\\benchmarks\\real_run_output_yaw_h2.csv",
+    "instrumentation_csv": "docs\\benchmarks\\yaw_init_instrumentation_h2.csv",
+    "horizontal_rmse_m": 2302.156372522472,
+    "error_h_final_m": 4518.8154428068165,
+    "nis_moving_mean": 186328.8692041875,
+    "att_rmse_deg": {
+      "roll": 6.527710152534355,
+      "pitch": 4.441967104040361,
+      "yaw": 103.28317497588525
+    },
+    "gnss_accept_pct": 3.0211480362537766,
+    "gnss_reject_count": 321,
+    "convergence_time_s": null
+  }
+}

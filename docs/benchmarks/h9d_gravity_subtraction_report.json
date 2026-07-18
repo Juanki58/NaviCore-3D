@@ -1,0 +1,81 @@
+{
+  "experiment": "H9d_gravity_subtraction_chain_audit",
+  "question": "Donde a_body -> R_bn -> restar g introduce a_lin_h horizontal ficticio?",
+  "diagnosis": {
+    "static_0_2s": {
+      "label": "static_0_2s",
+      "samples": 46,
+      "t_start_s": 1.532875061,
+      "t_end_s": 1.991698146,
+      "a_lin_h_mean_mps2": 0.016151801630434785,
+      "a_nav_pre_g_h_mean_mps2": 0.016151801630434785,
+      "residual_body_h_mean_mps2": 0.016163347826086954,
+      "gravity_alignment_error_deg_mean": 0.09214708695652174,
+      "body_axis0_to_nav_h_mean_mps2": 0.15630001799999999,
+      "body_axis1_to_nav_h_mean_mps2": 0.01132012354347826,
+      "body_axis2_to_nav_h_mean_mps2": 0.16006517391304345,
+      "pitch_deg_mean": 0.9339602608695651,
+      "corr_a_lin_h_vs_a_nav_pre_g_h": 1.0,
+      "corr_a_lin_h_vs_alignment_error": 0.9979848004223907,
+      "corr_a_lin_h_vs_body_axis0_nav_h": -0.4688117117672737,
+      "corr_a_lin_h_vs_body_axis1_nav_h": 0.059992474976603184,
+      "corr_a_lin_h_vs_body_axis2_nav_h": -0.07919518792423295
+    },
+    "motion_2_10s": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "t_start_s": 2.001782179,
+      "t_end_s": 9.99843502,
+      "a_lin_h_mean_mps2": 0.7407221464244333,
+      "a_nav_pre_g_h_mean_mps2": 0.7407221464244333,
+      "residual_body_h_mean_mps2": 0.7403855730478589,
+      "gravity_alignment_error_deg_mean": 4.317784651133501,
+      "body_axis0_to_nav_h_mean_mps2": 0.2615789864231738,
+      "body_axis1_to_nav_h_mean_mps2": 0.7107575092707809,
+      "body_axis2_to_nav_h_mean_mps2": 0.1798291347607053,
+      "pitch_deg_mean": 1.0117669382871537,
+      "corr_a_lin_h_vs_a_nav_pre_g_h": 1.0,
+      "corr_a_lin_h_vs_alignment_error": 0.9995736453361962,
+      "corr_a_lin_h_vs_body_axis0_nav_h": 0.4706896735339044,
+      "corr_a_lin_h_vs_body_axis1_nav_h": 0.9542755478943623,
+      "corr_a_lin_h_vs_body_axis2_nav_h": 0.7530496620537005
+    },
+    "full_0_60s": {
+      "label": "full_0_60s",
+      "samples": 5798,
+      "t_start_s": 1.532875061,
+      "t_end_s": 59.996906281,
+      "a_lin_h_mean_mps2": 0.9340809843289065,
+      "a_nav_pre_g_h_mean_mps2": 0.9340809843289065,
+      "residual_body_h_mean_mps2": 0.9328813157985514,
+      "gravity_alignment_error_deg_mean": 5.41745387909624,
+      "body_axis0_to_nav_h_mean_mps2": 0.5140555051040013,
+      "body_axis1_to_nav_h_mean_mps2": 0.7649323877167988,
+      "body_axis2_to_nav_h_mean_mps2": 0.33613994118661605,
+      "pitch_deg_mean": 0.18118037098999656,
+      "corr_a_lin_h_vs_a_nav_pre_g_h": 1.0,
+      "corr_a_lin_h_vs_alignment_error": 0.9987204390392445,
+      "corr_a_lin_h_vs_body_axis0_nav_h": 0.6956497668670795,
+      "corr_a_lin_h_vs_body_axis1_nav_h": 0.8175082327145815,
+      "corr_a_lin_h_vs_body_axis2_nav_h": 0.4467525038460234
+    },
+    "jumps_static_to_motion": {
+      "a_lin_h_mps2": 0.7245703447939985,
+      "a_nav_pre_g_h_mps2": 0.7245703447939985,
+      "gravity_alignment_error_deg": 4.22563756417698
+    },
+    "body_axis_correlations_motion_2_10s": {
+      "body_axis0": 0.4706896735339044,
+      "body_axis1": 0.9542755478943623,
+      "body_axis2": 0.7530496620537005
+    },
+    "dominant_body_axis_in_motion": "body_axis1",
+    "corr_h9c_delta_pitch_vs_a_lin_h_motion": 0.9162233059152504,
+    "likely_mechanism": "horizontal_a_nav_before_gravity_subtraction_dominates"
+  },
+  "interpretation": "horizontal_a_nav_before_gravity_subtraction_dominates",
+  "artifacts": {
+    "csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9d_gravity_subtraction.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9d_gravity_subtraction_analysis.png"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "joseph_fix2": {
+    "observed_pre_P_vv_frob": 89.59877777,
+    "observed_post_P_vv_frob": 61.99828339,
+    "observed_drop": 27.60049438,
+    "observed_drop_frac": 0.30804543395503065,
+    "joseph_block_only_pred_P_vv_frob": 58.70455236541014,
+    "joseph_block_only_drop": 30.89422540458986,
+    "joseph_block_only_error_vs_obs_post": -3.29373102458986,
+    "joseph_full15_approx_pred_P_vv_frob": 58.703765608539626,
+    "joseph_full15_approx_drop": 30.89501216146037,
+    "joseph_full15_error_vs_obs_post": -3.294517781460371,
+    "cov_prop_pre_P_vv_frob": 89.59877777,
+    "cov_prop_post_P_vv_frob": 61.99828339,
+    "block_only_reproduces_drop": true,
+    "full15_reproduces_drop": true,
+    "drop_pred_block": 30.89422540458986,
+    "drop_pred_full15": 30.89501216146037,
+    "verdict": "joseph_algebra_consistent",
+    "note": "Pos-vel block Joseph reproduces P_vv drop; ~3 frob residual vs post likely att/bias cross-coupling (K rows not in JSONL)."
+  },
+  "tick_stats": {
+    "n_ticks": 38,
+    "duration_s": 0.37310981799999965,
+    "P_vv_start": 61.99828339,
+    "P_vv_end": 2.496057034,
+    "total_P_vv_drop": 59.502226355999994,
+    "sum_delta_P_vv_predict": 3.189932581000007,
+    "sum_delta_P_vv_nhc": -62.69215893700001,
+    "predict_net_fraction_of_drop": 0.05361030630878815,
+    "nhc_net_fraction_of_drop": -1.0536103063087883,
+    "mean_dP_vv_dt_per_s": -156.03138352371013,
+    "max_dP_vv_dt_per_s": -2736.0631517589463,
+    "top5_nhc_ticks_by_abs_delta_P_vv": [
+      {
+        "tick": 3,
+        "imu_seq": 413,
+        "timestamp_s": 5.692540646,
+        "delta_P_vv_nhc": -28.044420239999997,
+        "nhc_dx_vel_norm_mps": 0.9495002031,
+        "nhc_nis": 0.03215044364,
+        "vel_h_mps": 0.454996
+      },
+      {
+        "tick": 2,
+        "imu_seq": 412,
+        "timestamp_s": 5.682456493,
+        "delta_P_vv_nhc": -9.921260830000001,
+        "nhc_dx_vel_norm_mps": 5.656188011,
+        "nhc_nis": 3.225168467,
+        "vel_h_mps": 1.386765
+      },
+      {
+        "tick": 4,
+        "imu_seq": 414,
+        "timestamp_s": 5.702624321,
+        "delta_P_vv_nhc": -8.42931938,
+        "nhc_dx_vel_norm_mps": 0.107045196,
+        "nhc_nis": 0.001368540223,
+        "vel_h_mps": 0.361538
+      },
+      {
+        "tick": 5,
+        "imu_seq": 415,
+        "timestamp_s": 5.712708473,
+        "delta_P_vv_nhc": -4.035545350000001,
+        "nhc_dx_vel_norm_mps": 0.04652797058,
+        "nhc_nis": 0.0005457234802,
+        "vel_h_mps": 0.328114
+      },
+      {
+        "tick": 6,
+        "imu_seq": 416,
+        "timestamp_s": 5.722792625,
+        "delta_P_vv_nhc": -2.375820159,
+        "nhc_dx_vel_norm_mps": 0.02725808509,
+        "nhc_nis": 0.000322745007,
+        "vel_h_mps": 0.314077
+      }
+    ],
+    "top1_tick_share_of_nhc_drop": 0.4473353720069223,
+    "top3_ticks_share_of_nhc_drop": 0.7400447079294686,
+    "erosion_pattern": "bursty"
+  }
+}

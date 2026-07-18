@@ -1,0 +1,115 @@
+{
+  "experiment": "H9c_orientation_reference_audit",
+  "question": "Cuando aparece a_lin_h ~0.9 m/s2, se desvia el EKF de Orientation.csv (actitud) o solo la metrica basada en acelerometro?",
+  "configuration": {
+    "predict_only_end_s": 60.0,
+    "h9a_gravity_tilt_init": true,
+    "reference": "C:\\NaviCore-3D\\data\\real_run\\Orientation.csv",
+    "mount_offset_window_s": 2.0
+  },
+  "diagnosis": {
+    "static_0_2s": {
+      "label": "static_0_2s",
+      "samples": 46,
+      "t_start_s": 1.532875061,
+      "t_end_s": 1.991698146,
+      "a_lin_h_mean_mps2": 0.016151807515961687,
+      "a_lin_h_median_mps2": 0.016462395302173617,
+      "delta_roll_deg_mean": 0.0032587507644926154,
+      "delta_pitch_deg_mean": -0.004716575109542453,
+      "delta_tilt_mag_deg_mean": 0.05486724520275776,
+      "delta_tilt_mag_deg_at_end": 0.03897816503211157,
+      "gravity_alignment_error_deg_mean": 0.09240765217391304,
+      "gravity_alignment_error_deg_median": 0.09484999999999999,
+      "corr_delta_pitch_vs_a_lin_h": -0.6599521946717359,
+      "corr_delta_tilt_vs_a_lin_h": 0.07129293188284419,
+      "corr_gravity_err_vs_a_lin_h": 0.9979578571898333,
+      "corr_gravity_err_vs_delta_pitch": -0.6429832193537894
+    },
+    "motion_2_10s": {
+      "label": "motion_2_10s",
+      "samples": 794,
+      "t_start_s": 2.001782179,
+      "t_end_s": 9.99843502,
+      "a_lin_h_mean_mps2": 0.7407221516005342,
+      "a_lin_h_median_mps2": 0.4283295184997143,
+      "delta_roll_deg_mean": -0.1483140725200979,
+      "delta_pitch_deg_mean": 3.9539487962806583,
+      "delta_tilt_mag_deg_mean": 4.071353389734229,
+      "delta_tilt_mag_deg_at_end": 5.988234518616396,
+      "gravity_alignment_error_deg_mean": 4.318119146095718,
+      "gravity_alignment_error_deg_median": 2.5249055,
+      "corr_delta_pitch_vs_a_lin_h": 0.9160962182609799,
+      "corr_delta_tilt_vs_a_lin_h": 0.9168389642864482,
+      "corr_gravity_err_vs_a_lin_h": 0.9995734927534614,
+      "corr_gravity_err_vs_delta_pitch": 0.919757099906928
+    },
+    "full_0_60s": {
+      "label": "full_0_60s",
+      "samples": 5798,
+      "t_start_s": 1.532875061,
+      "t_end_s": 59.996906281,
+      "a_lin_h_mean_mps2": 0.9340809877764811,
+      "a_lin_h_median_mps2": 0.7911178553752292,
+      "delta_roll_deg_mean": 5.79274950778472,
+      "delta_pitch_deg_mean": 1.22541554265017,
+      "delta_tilt_mag_deg_mean": 8.2446913638552,
+      "delta_tilt_mag_deg_at_end": 6.012508442924764,
+      "gravity_alignment_error_deg_mean": 5.41792099051397,
+      "gravity_alignment_error_deg_median": 4.5655725,
+      "corr_delta_pitch_vs_a_lin_h": 0.20237324650730745,
+      "corr_delta_tilt_vs_a_lin_h": 0.8002851197975648,
+      "corr_gravity_err_vs_a_lin_h": 0.9987199576353608,
+      "corr_gravity_err_vs_delta_pitch": 0.21131498381758781
+    },
+    "jumps_static_to_motion": {
+      "delta_tilt_mag_deg": 4.016486144531472,
+      "a_lin_h_mps2": 0.7245703440845725,
+      "gravity_alignment_error_deg": 4.225711493921805
+    },
+    "correlations_motion_2_10s": {
+      "delta_pitch_vs_a_lin_h": 0.9160962182609799,
+      "delta_tilt_vs_a_lin_h": 0.9168389642864482,
+      "gravity_err_vs_delta_pitch": 0.919757099906928
+    },
+    "cruise_windows": [
+      {
+        "t_start_s": 11.4,
+        "t_end_s": 25.4,
+        "duration_s": 14.0,
+        "speed_mean_mps": 6.03,
+        "speed_std_mps": 0.61,
+        "bearing_std_deg": 1.44,
+        "source": "manual_stable_speed_11_25s",
+        "score": 0.0,
+        "metrics": {
+          "label": "cruise_0",
+          "samples": 1389,
+          "t_start_s": 11.400122643,
+          "t_end_s": 25.397192001,
+          "a_lin_h_mean_mps2": 0.5221946333778348,
+          "a_lin_h_median_mps2": 0.4334870129092681,
+          "delta_roll_deg_mean": 3.4991867130232848,
+          "delta_pitch_deg_mean": -2.3716102201765943,
+          "delta_tilt_mag_deg_mean": 4.4858747754072335,
+          "delta_tilt_mag_deg_at_end": 10.735663621164331,
+          "gravity_alignment_error_deg_mean": 3.0301408704103676,
+          "gravity_alignment_error_deg_median": 2.530103,
+          "corr_delta_pitch_vs_a_lin_h": -0.5399881552880699,
+          "corr_delta_tilt_vs_a_lin_h": 0.657448840666621,
+          "corr_gravity_err_vs_a_lin_h": 0.9963325326772395,
+          "corr_gravity_err_vs_delta_pitch": -0.5353281110464281
+        }
+      }
+    ],
+    "cruise_verdict": "both_large_in_cruise",
+    "likely_mechanism": "attitude_diverges_from_orientation_when_a_lin_appears"
+  },
+  "interpretation": "attitude_diverges_from_orientation_when_a_lin_appears",
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9c_orientation_merged.csv",
+    "ekf_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9c_ekf_state.csv",
+    "accel_gravity_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9c_accel_gravity.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9c_orientation_ref_analysis.png"
+  }
+}

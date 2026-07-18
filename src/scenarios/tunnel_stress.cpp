@@ -1,6 +1,9 @@
 #include "tunnel_stress.hpp"
 
+#include "geodesy.hpp"
 #include "ins_ekf.hpp"
+#include "ins_ekf_15_state.hpp"
+#include "interfaces/INaviFilter.hpp"
 #include "mission.hpp"
 #include "NavState.h"
 #include "sensors_sim.hpp"
@@ -9,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <memory>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -54,26 +58,30 @@ void gps_truth_to_ned_m(
         return;
     }
 
-    const float dlat_m = (gps_truth->position.x - ref_lat_deg) * NAVICORE_METERS_PER_DEG_LAT;
-    const float lat_rad = (ref_lat_deg + gps_truth->position.x) * 0.5f
-        * (static_cast<float>(M_PI) / 180.0f);
-    const float dlon_m = (gps_truth->position.y - ref_lon_deg)
-        * NAVICORE_METERS_PER_DEG_LAT * std::cos(lat_rad);
-
-    *north_m = dlat_m;
-    *east_m = dlon_m;
-    *down_m = ref_alt_m - gps_truth->position.z;
+    geodesy::lla_to_ned(
+        ref_lat_deg,
+        ref_lon_deg,
+        ref_alt_m,
+        gps_truth->position.x,
+        gps_truth->position.y,
+        gps_truth->position.z,
+        north_m,
+        east_m,
+        down_m);
 }
 
-float ekf_horizontal_drift_m(
-    const InsEkfFilter *ekf,
+float filter_horizontal_drift_m(
+    const INaviFilter *filter,
     float truth_n_m,
     float truth_e_m)
 {
-    float est_ned[3] = {0.0f, 0.0f, 0.0f};
-    ins_ekf_get_position_ned(ekf, est_ned);
-    const float dn = est_ned[0] - truth_n_m;
-    const float de = est_ned[1] - truth_e_m;
+    if (filter == nullptr) {
+        return 0.0f;
+    }
+
+    const NaviState state = filter->get_state();
+    const float dn = static_cast<float>(state.pos_ned[0]) - truth_n_m;
+    const float de = static_cast<float>(state.pos_ned[1]) - truth_e_m;
     return std::sqrt((dn * dn) + (de * de));
 }
 
@@ -116,40 +124,30 @@ void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu, uint32_t sim
     imu->valid = true;
 }
 
-void seed_velocity_from_gps(InsEkfFilter *ekf, const GpsSample *gps)
-{
-    if (ekf == NULL || gps == NULL) {
-        return;
-    }
 
-    const float course_rad = static_cast<float>(gps->course_deg * M_PI / 180.0);
-    ekf->vel_[0] = gps->speed_mps * std::cos(course_rad);
-    ekf->vel_[1] = gps->speed_mps * std::sin(course_rad);
-    ekf->vel_[2] = 0.0f;
-}
-
-void apply_gps_glitch_from_ekf(
+void apply_gps_glitch_from_filter(
     GpsSample *gps,
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     float offset_east_m)
 {
+    const InsEkfFilter *ekf = navi_filter_try_get_ins_ekf(filter);
     if (gps == NULL || ekf == NULL || !ekf->initialized || offset_east_m == 0.0f) {
         return;
     }
 
-    float est_ned[3] = {0.0f, 0.0f, 0.0f};
-    ins_ekf_get_position_ned(ekf, est_ned);
+    const NaviState state = filter->get_state();
 
-    const float lat_deg = ekf->ref_lat_deg + (est_ned[0] / NAVICORE_METERS_PER_DEG_LAT);
-    const float lat_rad = lat_deg * (static_cast<float>(M_PI) / 180.0f);
-    const float meters_per_deg_lon = NAVICORE_METERS_PER_DEG_LAT * std::cos(lat_rad);
-    const float lon_deg =
-        ekf->ref_lon_deg + (est_ned[1] / meters_per_deg_lon) + (offset_east_m / meters_per_deg_lon);
-    const float alt_m = ekf->ref_alt_m - est_ned[2];
+    const geodesy::LLA ref = geodesy::lla(ekf->ref_lat_deg, ekf->ref_lon_deg, ekf->ref_alt_m);
+    const geodesy::NED ned{
+        static_cast<float>(state.pos_ned[0]),
+        static_cast<float>(state.pos_ned[1]) + offset_east_m,
+        static_cast<float>(state.pos_ned[2]),
+    };
+    const geodesy::LLA point = geodesy::ned_to_lla(ned, ref);
 
-    gps->position.x = lat_deg;
-    gps->position.y = lon_deg;
-    gps->position.z = alt_m;
+    gps->position.x = point.lat_deg;
+    gps->position.y = point.lon_deg;
+    gps->position.z = point.alt_m;
 }
 
 void apply_vehicle_profile(SensorsSimulation *sensors, TunnelStressPhase phase)
@@ -241,7 +239,9 @@ void TunnelStressScenario::run(
     sensors.imu.commanded_forward_accel_mps2 = 0.0f;
     sensors.imu.commanded_yaw_rate_radps = 0.0f;
 
-    InsEkfFilter ekf{};
+    std::unique_ptr<INaviFilter> nav_filter = create_default_navi_filter();
+    InsEkf15State *filter_impl = dynamic_cast<InsEkf15State *>(nav_filter.get());
+    INaviFilter *filter = nav_filter.get();
     bool ekf_seeded = false;
     bool glitch_applied = false;
     TunnelStressPhase last_logged_phase = TunnelStressPhase::NOMINAL_GPS;
@@ -258,6 +258,7 @@ void TunnelStressScenario::run(
     TelemetryEkfTick ekf_tick{};
     TelemetryBindings bindings{};
     bindings.ekf_tick = &ekf_tick;
+    bindings.ekf = (filter_impl != nullptr) ? navi_filter_try_get_ins_ekf(filter) : nullptr;
     bindings.scenario_id = TELEM_SCENARIO_TUNNEL_STRESS;
     if (telemetry != NULL) {
         telemetry->bind_sources(&bindings);
@@ -306,7 +307,7 @@ void TunnelStressScenario::run(
 
         const bool gps_restored = (t_ms >= TUNNEL_STRESS_GPS_OFF_END_MS) && gps_truth.fix_valid;
         if (gps_restored && !glitch_applied && t_ms == TUNNEL_STRESS_GPS_GLITCH_MS && ekf_seeded) {
-            apply_gps_glitch_from_ekf(&gps, &ekf, TUNNEL_STRESS_GPS_GLITCH_OFFSET_M);
+            apply_gps_glitch_from_filter(&gps, filter, TUNNEL_STRESS_GPS_GLITCH_OFFSET_M);
             glitch_applied = true;
         }
 
@@ -323,22 +324,23 @@ void TunnelStressScenario::run(
             last_logged_phase = phase;
         }
 
-        if (gps.fix_valid && !ekf_seeded) {
-            const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
-            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
-            ins_ekf_set_nhc_enabled(&ekf, false);
-            seed_velocity_from_gps(&ekf, &gps);
-            ref_lat_deg = gps.position.x;
-            ref_lon_deg = gps.position.y;
-            ref_alt_m = gps.position.z;
-            ekf_seeded = true;
+        if (gps.fix_valid && !ekf_seeded && filter_impl != nullptr) {
+            if (filter_impl->seed_from_gnss_sample(gps, NAVICORE_DOMAIN_AIR)) {
+                filter_impl->set_nhc_measurement_stds(0.0f, 0.0f);
+                ref_lat_deg = gps.position.x;
+                ref_lon_deg = gps.position.y;
+                ref_alt_m = gps.position.z;
+                ekf_seeded = true;
+                bindings.ekf = navi_filter_try_get_ins_ekf(filter);
 
-            if (t_ms == 0U) {
-                std::printf(
-                    "TUNNEL_STRESS: EKF inicializado | ref=(%.6f, %.6f) | v=%.1f m/s\n",
-                    ref_lat_deg,
-                    ref_lon_deg,
-                    TUNNEL_STRESS_CRUISE_SPEED_MPS);
+                if (t_ms == 0U) {
+                    std::printf(
+                        "TUNNEL_STRESS: Filtro %s inicializado | ref=(%.6f, %.6f) | v=%.1f m/s\n",
+                        filter->get_filter_name().c_str(),
+                        ref_lat_deg,
+                        ref_lon_deg,
+                        TUNNEL_STRESS_CRUISE_SPEED_MPS);
+                }
             }
         }
 
@@ -347,21 +349,27 @@ void TunnelStressScenario::run(
         float tick_innov_ned[3] = {0.0f, 0.0f, 0.0f};
         bool zupt_this_cycle = false;
 
-        if (ekf_seeded && imu.valid) {
-            ins_ekf_set_nhc_enabled(&ekf, nhc_active);
-            ins_ekf_predict(&ekf, &imu);
-
-            if (zupt_active) {
-                zupt_this_cycle = ins_ekf_update_zupt(&ekf);
-            }
+        if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
+            const float nhc_lateral = nhc_active ? NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS : 0.0f;
+            const float nhc_vertical = nhc_active ? NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS : 0.0f;
+            filter->apply_constraints(zupt_active, nhc_lateral, nhc_vertical);
+            filter_impl->sync_simulation_clock_ms(t_ms);
+            filter->predict(
+                static_cast<double>(kEkfStepMs) * 0.001,
+                imu.accel_mps2,
+                imu.gyro_radps);
+            zupt_this_cycle = zupt_active;
 
             if (gps.fix_valid) {
                 gnss_update_this_cycle = true;
-                const bool accepted = ins_ekf_update_gnss(&ekf, &gps);
-                tick_nis = ins_ekf_last_nis(&ekf);
-                ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
-                if (accepted) {
-                    ins_ekf_clear_outlier_flag(&ekf);
+                const bool accepted = filter_impl->update_gnss_from_sample(gps);
+                const InsEkfFilter *ekf_native = navi_filter_try_get_ins_ekf(filter);
+                tick_nis = (ekf_native != nullptr) ? ins_ekf_last_nis(ekf_native) : 0.0f;
+                if (ekf_native != nullptr) {
+                    ins_ekf_get_gnss_innovation(ekf_native, tick_innov_ned);
+                }
+                if (accepted && ekf_native != nullptr) {
+                    ins_ekf_clear_outlier_flag(const_cast<InsEkfFilter *>(ekf_native));
                 }
 
                 if (glitch_applied && t_ms == TUNNEL_STRESS_GPS_GLITCH_MS) {
@@ -384,18 +392,17 @@ void TunnelStressScenario::run(
             (void)truth_d;
 
             if (t_ms == TUNNEL_STRESS_GPS_OFF_START_MS) {
-                result.drift_at_gps_loss_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                result.drift_at_gps_loss_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 std::printf(
                     "TUNNEL_STRESS: GPS APAGADO | deriva=%.2f m | NHC=ON\n",
                     result.drift_at_gps_loss_m);
             }
 
             if (t_ms == TUNNEL_STRESS_ZUPT_START_MS) {
-                result.drift_at_zupt_start_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
-                float vel_ned[3] = {0.0f, 0.0f, 0.0f};
-                ins_ekf_get_velocity_ned(&ekf, vel_ned);
+                result.drift_at_zupt_start_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
+                const NaviState navi = filter->get_state();
                 const float speed_mps = std::sqrt(
-                    (vel_ned[0] * vel_ned[0]) + (vel_ned[1] * vel_ned[1]));
+                    (navi.vel_body[0] * navi.vel_body[0]) + (navi.vel_body[1] * navi.vel_body[1]));
                 std::printf(
                     "TUNNEL_STRESS: PARADA EN SECO | deriva=%.2f m | |v|=%.2f m/s\n",
                     result.drift_at_zupt_start_m,
@@ -404,31 +411,33 @@ void TunnelStressScenario::run(
 
             if (phase == TunnelStressPhase::TRAFFIC_LIGHT_STOP
                 && sensors.gps.speed_mps <= kZuptSpeedThresholdMps) {
-                float vel_ned[3] = {0.0f, 0.0f, 0.0f};
-                ins_ekf_get_velocity_ned(&ekf, vel_ned);
+                const NaviState navi = filter->get_state();
                 const float speed_mps = std::sqrt(
-                    (vel_ned[0] * vel_ned[0]) + (vel_ned[1] * vel_ned[1]) + (vel_ned[2] * vel_ned[2]));
+                    (navi.vel_body[0] * navi.vel_body[0])
+                    + (navi.vel_body[1] * navi.vel_body[1])
+                    + (navi.vel_body[2] * navi.vel_body[2]));
                 if (speed_mps > result.max_vel_during_zupt_mps) {
                     result.max_vel_during_zupt_mps = speed_mps;
                 }
             }
 
             if (t_ms == TUNNEL_STRESS_ZUPT_END_MS) {
+                const InsEkfFilter *ekf_native = navi_filter_try_get_ins_ekf(filter);
                 std::printf(
                     "TUNNEL_STRESS: FIN ZUPT | updates=%u | max|v|=%.3f m/s\n",
-                    ins_ekf_zupt_update_count(&ekf),
+                    (ekf_native != nullptr) ? ins_ekf_zupt_update_count(ekf_native) : 0U,
                     result.max_vel_during_zupt_mps);
             }
 
             if (t_ms == TUNNEL_STRESS_RESUME_START_MS) {
-                result.drift_at_resume_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                result.drift_at_resume_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 std::printf(
                     "TUNNEL_STRESS: REANUDACION MARCHA (sin GPS) | deriva=%.2f m\n",
                     result.drift_at_resume_m);
             }
 
             if (t_ms == TUNNEL_STRESS_GPS_OFF_END_MS) {
-                result.drift_at_gps_return_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                result.drift_at_gps_return_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 std::printf(
                     "TUNNEL_STRESS: SALIDA TUNEL — GPS restaurado | deriva=%.2f m\n",
                     result.drift_at_gps_return_m);
@@ -448,7 +457,8 @@ void TunnelStressScenario::run(
             }
         }
 
-        if (ekf_seeded) {
+        if (ekf_seeded && filter != nullptr) {
+            const InsEkfFilter *ekf_native = navi_filter_try_get_ins_ekf(filter);
             float truth_n = 0.0f;
             float truth_e = 0.0f;
             float truth_d = 0.0f;
@@ -463,23 +473,25 @@ void TunnelStressScenario::run(
             (void)truth_d;
 
             NavState nav_state{};
-            ins_ekf_export_nav_state(
-                &ekf,
-                &nav_state,
-                t_ms,
-                gps.fix_valid ? &gps : NULL);
+            if (ekf_native != nullptr) {
+                ins_ekf_export_nav_state(
+                    ekf_native,
+                    &nav_state,
+                    t_ms,
+                    gps.fix_valid ? &gps : NULL);
+            }
             if (gps_outage) {
                 nav_state.mode = NAV_MODE_DEAD_RECKONING;
             }
 
             if (telemetry != NULL) {
-                bindings.ekf = &ekf;
+                bindings.ekf = ekf_native;
                 ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
                 ekf_tick.nis = tick_nis;
                 ekf_tick.innov_ned[0] = tick_innov_ned[0];
                 ekf_tick.innov_ned[1] = tick_innov_ned[1];
                 ekf_tick.innov_ned[2] = tick_innov_ned[2];
-                const float drift_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                const float drift_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 bindings.drift_m = drift_m;
                 bindings.drift_valid = true;
 
@@ -495,7 +507,7 @@ void TunnelStressScenario::run(
             }
 
             if (emit_nav != NULL) {
-                emit_nav(&ekf, t_ms, gps.fix_valid ? &gps : NULL, gps_outage);
+                emit_nav(filter, t_ms, gps.fix_valid ? &gps : NULL, gps_outage);
             }
 
             if (telemetry != NULL && (t_ms % 2000U) == 0U) {
@@ -511,7 +523,7 @@ void TunnelStressScenario::run(
                     &truth_e,
                     &truth_d);
                 (void)truth_d;
-                const float drift_m = ekf_horizontal_drift_m(&ekf, truth_n, truth_e);
+                const float drift_m = filter_horizontal_drift_m(filter, truth_n, truth_e);
                 std::printf(
                     "[t=%5.1fs] fase=%s mode=%s nhc=%s zupt=%s gnss=%s nis=%.2f drift=%.2f m\n",
                     static_cast<float>(t_ms) * 0.001f,
@@ -520,7 +532,7 @@ void TunnelStressScenario::run(
                     nhc_active ? "ON" : "OFF",
                     zupt_this_cycle ? "TICK" : (zupt_active ? "ARM" : "OFF"),
                     gnss_update_this_cycle
-                        ? (ins_ekf_outlier_detected(&ekf) ? "REJ" : "OK")
+                        ? ((ekf_native != nullptr && ins_ekf_outlier_detected(ekf_native)) ? "REJ" : "OK")
                         : "SKIP",
                     gnss_update_this_cycle ? tick_nis : 0.0f,
                     drift_m);
@@ -528,11 +540,14 @@ void TunnelStressScenario::run(
         }
     }
 
-    if (ekf_seeded) {
-        result.nhc_updates = ins_ekf_nhc_update_count(&ekf);
-        result.zupt_updates = ins_ekf_zupt_update_count(&ekf);
-        result.gnss_accepts = ins_ekf_gnss_accept_count(&ekf);
-        result.gnss_rejects = ins_ekf_gnss_reject_count(&ekf);
+    if (ekf_seeded && filter != nullptr) {
+        const InsEkfFilter *ekf_native = navi_filter_try_get_ins_ekf(filter);
+        if (ekf_native != nullptr) {
+            result.nhc_updates = ins_ekf_nhc_update_count(ekf_native);
+            result.zupt_updates = ins_ekf_zupt_update_count(ekf_native);
+            result.gnss_accepts = ins_ekf_gnss_accept_count(ekf_native);
+            result.gnss_rejects = ins_ekf_gnss_reject_count(ekf_native);
+        }
     }
 
     std::printf("----------------------------------------------------------------\n");

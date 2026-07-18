@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstring>
 #include <chrono>
+#include <memory>
 
 #include "telemetry_udp.hpp"
 #include "telemetry_file_logger.hpp"
@@ -23,6 +24,8 @@
 #include "guidance.hpp"
 #include "mission.hpp"
 #include "ins_ekf.hpp"
+#include "ins_ekf_15_state.hpp"
+#include "interfaces/INaviFilter.hpp"
 #include "waypoint.hpp"
 #include "sensors_sim.hpp"
 #include "inertial_replay.hpp"
@@ -79,11 +82,12 @@ TelemetryUdpSender *g_navigation_state_udp = nullptr;
 TelemetryFileLogger *g_navigation_state_file_logger = nullptr;
 
 void emit_ekf_navigation_state(
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     uint32_t timestamp_ms,
     const GpsSample *gps,
     bool dead_reckoning)
 {
+    const InsEkfFilter *ekf = navi_filter_try_get_ins_ekf(filter);
     if (ekf == NULL || !ekf->initialized) {
         return;
     }
@@ -119,13 +123,13 @@ void simulation_tick_broadcast(
     TelemetryInterface *telemetry,
     const NavState &nav_state,
     MissionState mission,
-    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
     uint32_t timestamp_ms,
     const GpsSample *gps,
     bool dead_reckoning)
 {
     telemetry->broadcast(nav_state, mission);
-    emit_ekf_navigation_state(ekf, timestamp_ms, gps, dead_reckoning);
+    emit_ekf_navigation_state(filter, timestamp_ms, gps, dead_reckoning);
 }
 
 constexpr SensorScenario kSelectedScenario = SCENARIO_ODOM_LOSS;
@@ -2079,7 +2083,9 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
     DeadReckoningFilter nav{};
     dead_reckoning_init(&nav, start_pos, NAVICORE_DOMAIN_AIR);
 
-    InsEkfFilter ekf{};
+    std::unique_ptr<INaviFilter> nav_filter = create_default_navi_filter();
+    InsEkf15State *filter_impl = dynamic_cast<InsEkf15State *>(nav_filter.get());
+    INaviFilter *filter = nav_filter.get();
     bool ekf_seeded = false;
 
     SystemHealthMonitor health{};
@@ -2165,19 +2171,25 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
         float cov_pos_e_m2 = 999.0f;
         float cov_pos_d_m2 = 999.0f;
 
-        if (gps.fix_valid && !ekf_seeded) {
-            const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
-            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
-            ekf_seeded = true;
+        if (gps.fix_valid && !ekf_seeded && filter_impl != nullptr) {
+            if (filter_impl->seed_from_gnss_sample(gps, NAVICORE_DOMAIN_AIR)) {
+                ekf_seeded = true;
+            }
         }
-        if (ekf_seeded && imu.valid) {
-            ekf.predict(imu, kEkfDtS);
+        if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
+            InsEkfFilter &ekf = filter_impl->native();
+            filter_impl->sync_simulation_clock_ms(t_ms);
+            filter->predict(
+                static_cast<double>(kEkfDtS),
+                imu.accel_mps2,
+                imu.gyro_radps);
             cov_pos_n_m2 = ins_ekf_get_covariance_flat(&ekf, 0U);
             cov_pos_e_m2 = ins_ekf_get_covariance_flat(&ekf, 16U);
             cov_pos_d_m2 = ins_ekf_get_covariance_flat(&ekf, 32U);
             if (gps_dr_eval.allow_gnss_update) {
                 gnss_update_this_cycle = true;
-                const bool accepted = ekf.update_gnss(gps, &tick_nis);
+                const bool accepted = filter_impl->update_gnss_from_sample(gps);
+                tick_nis = ins_ekf_last_nis(&ekf);
                 gnss_nis_rejected = !accepted;
                 ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
                 if (accepted) {
@@ -2235,7 +2247,7 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
         (void)health_score;
         (void)health_mode;
 
-        bindings.ekf = ekf_seeded ? &ekf : NULL;
+        bindings.ekf = (ekf_seeded && filter_impl != nullptr) ? &filter_impl->native() : NULL;
         bindings.pid = pid_plant.telemetry.active ? &pid_plant.telemetry : NULL;
         bindings.guidance = &guidance_errors;
         ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
@@ -2249,7 +2261,7 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
             telemetry,
             nav.state,
             mission_state,
-            ekf_seeded ? &ekf : NULL,
+            ekf_seeded ? filter : NULL,
             t_ms,
             &gps,
             gps_dr_eval.dead_reckoning_active);
@@ -2280,8 +2292,12 @@ void run_mission_clean_scenario(TelemetryInterface *telemetry)
         nav.state.position.y,
         nav.state.position.z,
         mission.home_valid ? 1U : 0U,
-        ekf_seeded ? ins_ekf_gnss_accept_count(&ekf) : 0U,
-        ekf_seeded ? ins_ekf_gnss_reject_count(&ekf) : 0U);
+        ekf_seeded && filter_impl != nullptr
+            ? ins_ekf_gnss_accept_count(&filter_impl->native())
+            : 0U,
+        ekf_seeded && filter_impl != nullptr
+            ? ins_ekf_gnss_reject_count(&filter_impl->native())
+            : 0U);
 }
 
 void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_path)
@@ -2291,7 +2307,9 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
         return;
     }
 
-    InsEkfFilter ekf{};
+    std::unique_ptr<INaviFilter> nav_filter = create_default_navi_filter();
+    InsEkf15State *filter_impl = dynamic_cast<InsEkf15State *>(nav_filter.get());
+    INaviFilter *filter = nav_filter.get();
     bool ekf_seeded = false;
 
     DeadReckoningFilter nav{};
@@ -2353,20 +2371,18 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
             t_ms,
             has_gnss);
 
-        if (has_gnss && !ekf_seeded) {
-            float yaw_rad = 0.0f;
-            if (gps.course_deg != 0.0f) {
-                yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
+        if (has_gnss && !ekf_seeded && filter_impl != nullptr) {
+            if (filter_impl->seed_from_gnss_sample(gps, NAVICORE_DOMAIN_AIR)) {
+                dead_reckoning_init(&nav, gps.position, NAVICORE_DOMAIN_AIR);
+                ekf_seeded = true;
+                std::printf(
+                    "REPLAY: %s inicializado @ t=%.3f s | ref=(%.6f, %.6f, %.1f m)\n",
+                    filter->get_filter_name().c_str(),
+                    static_cast<float>(t_ms) * 0.001f,
+                    gps.position.x,
+                    gps.position.y,
+                    gps.position.z);
             }
-            ins_ekf_init(&ekf, gps.position, yaw_rad, NAVICORE_DOMAIN_AIR);
-            dead_reckoning_init(&nav, gps.position, NAVICORE_DOMAIN_AIR);
-            ekf_seeded = true;
-            std::printf(
-                "REPLAY: EKF inicializado @ t=%.3f s | ref=(%.6f, %.6f, %.1f m)\n",
-                static_cast<float>(t_ms) * 0.001f,
-                gps.position.x,
-                gps.position.y,
-                gps.position.z);
         }
 
         bool gnss_update_this_cycle = false;
@@ -2374,13 +2390,19 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
         float tick_innov_ned[3] = {0.0f, 0.0f, 0.0f};
         bool gnss_nis_rejected = false;
 
-        if (ekf_seeded && imu.valid) {
-            ekf.predict(imu, dt_s);
+        if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
+            InsEkfFilter &ekf = filter_impl->native();
+            filter_impl->sync_simulation_clock_ms(t_ms);
+            filter->predict(
+                static_cast<double>(dt_s),
+                imu.accel_mps2,
+                imu.gyro_radps);
             ++predict_ticks;
 
             if (gps_dr_eval.allow_gnss_update) {
                 gnss_update_this_cycle = true;
-                const bool accepted = ekf.update_gnss(gps, &tick_nis);
+                const bool accepted = filter_impl->update_gnss_from_sample(gps);
+                tick_nis = ins_ekf_last_nis(&ekf);
                 gnss_nis_rejected = !accepted;
                 ins_ekf_get_gnss_innovation(&ekf, tick_innov_ned);
                 if (accepted) {
@@ -2401,7 +2423,7 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
             }
         }
 
-        bindings.ekf = ekf_seeded ? &ekf : NULL;
+        bindings.ekf = (ekf_seeded && filter_impl != nullptr) ? &filter_impl->native() : NULL;
         ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
         ekf_tick.nis = tick_nis;
         ekf_tick.innov_ned[0] = tick_innov_ned[0];
@@ -2413,7 +2435,7 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
             telemetry,
             nav.state,
             MISSION_STATE_INIT,
-            ekf_seeded ? &ekf : NULL,
+            ekf_seeded ? filter : NULL,
             t_ms,
             has_gnss ? &gps : NULL,
             gps_dr_eval.dead_reckoning_active);
@@ -2449,8 +2471,12 @@ void run_replay_scenario(TelemetryInterface *telemetry, const char *replay_csv_p
         gnss_update_ticks,
         gnss_skip_ticks,
         imu_gap_ticks,
-        ekf_seeded ? ins_ekf_gnss_accept_count(&ekf) : 0U,
-        ekf_seeded ? ins_ekf_gnss_reject_count(&ekf) : 0U);
+        ekf_seeded && filter_impl != nullptr
+            ? ins_ekf_gnss_accept_count(&filter_impl->native())
+            : 0U,
+        ekf_seeded && filter_impl != nullptr
+            ? ins_ekf_gnss_reject_count(&filter_impl->native())
+            : 0U);
 }
 
 } // namespace

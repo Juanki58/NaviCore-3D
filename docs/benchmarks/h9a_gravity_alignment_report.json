@@ -1,0 +1,167 @@
+{
+  "experiment": "H9a_gravity_alignment_audit",
+  "hypothesis": {
+    "statement": "Si a_lin_h horizontal proviene exclusivamente de error inicial de actitud, H9a debe colapsar a_lin_h de ~0.9 m/s2 a ~0.03-0.05 m/s2 inmediatamente",
+    "quantitative_prediction": {
+      "before_a_lin_h_mps2": "~0.94",
+      "after_a_lin_h_mps2": "0.03-0.05"
+    },
+    "h9a_collapsed_immediately": true,
+    "h9a_sustained_over_60s": false,
+    "h9a_hypothesis_initial_attitude_only": false,
+    "h9a_hypothesis_confirmed": false
+  },
+  "geometric_error_analysis": {
+    "gravity_mps2": 9.80665,
+    "g_sin_3deg_mps2": 0.5132404052898651,
+    "alignment_error_grows_over_time": true,
+    "cheap_check_first_2s": {
+      "baseline": {
+        "label": "baseline_first_2s",
+        "samples": 95.0,
+        "t_start_s": 1.038665771,
+        "t_end_s": 1.991698146,
+        "gravity_alignment_error_deg_mean": 0.9329240210526317,
+        "gravity_alignment_error_deg_median": 0.9417,
+        "gravity_alignment_error_deg_p95": 1.0525748,
+        "a_lin_h_mean_mps2": 0.15966166315789473,
+        "a_lin_h_median_mps2": 0.161046,
+        "a_lin_h_p95_mps2": 0.180079,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.1596702210526316,
+        "implied_tilt_from_a_lin_deg_mean": 0.9328738315789473,
+        "roll_deg_mean": -0.0012328315789473683,
+        "pitch_deg_mean": -0.006538168421052633,
+        "correlation_alignment_error_vs_a_lin_h": 0.999972564499778
+      },
+      "with_h9a": {
+        "label": "h9a_first_2s",
+        "samples": 46.0,
+        "t_start_s": 1.532875061,
+        "t_end_s": 1.991698146,
+        "gravity_alignment_error_deg_mean": 0.09240765217391304,
+        "gravity_alignment_error_deg_median": 0.09484999999999999,
+        "gravity_alignment_error_deg_p95": 0.146375,
+        "a_lin_h_mean_mps2": 0.016151804347826086,
+        "a_lin_h_median_mps2": 0.016463,
+        "a_lin_h_p95_mps2": 0.02509525,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.01581636956521739,
+        "implied_tilt_from_a_lin_deg_mean": 0.0943677608695652,
+        "roll_deg_mean": -0.055184260869565224,
+        "pitch_deg_mean": 0.9339602608695651,
+        "correlation_alignment_error_vs_a_lin_h": 0.9979581023447993
+      }
+    },
+    "static_0_30s": {
+      "baseline": {
+        "label": "baseline_0_30s",
+        "samples": 2872.0,
+        "t_start_s": 1.038665771,
+        "t_end_s": 29.995704651,
+        "gravity_alignment_error_deg_mean": 4.1689197089136485,
+        "gravity_alignment_error_deg_median": 3.1590765000000003,
+        "gravity_alignment_error_deg_p95": 9.98485675,
+        "a_lin_h_mean_mps2": 0.7162899042479108,
+        "a_lin_h_median_mps2": 0.5442335,
+        "a_lin_h_p95_mps2": 1.722559649999998,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.7114503955431756,
+        "implied_tilt_from_a_lin_deg_mean": 4.197767644846796,
+        "roll_deg_mean": 0.4880074965181059,
+        "pitch_deg_mean": -1.3499616082869081,
+        "correlation_alignment_error_vs_a_lin_h": 0.998827743554008
+      },
+      "with_h9a": {
+        "label": "h9a_0_30s",
+        "samples": 2823.0,
+        "t_start_s": 1.532875061,
+        "t_end_s": 29.995704651,
+        "gravity_alignment_error_deg_mean": 4.041812080056677,
+        "gravity_alignment_error_deg_median": 3.167926,
+        "gravity_alignment_error_deg_p95": 10.123795200000007,
+        "a_lin_h_mean_mps2": 0.6945860775770458,
+        "a_lin_h_median_mps2": 0.545914,
+        "a_lin_h_p95_mps2": 1.7273898000000005,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.6897310230251504,
+        "implied_tilt_from_a_lin_deg_mean": 4.070746410910379,
+        "roll_deg_mean": 0.4932659397803755,
+        "pitch_deg_mean": -0.19450889408430747,
+        "correlation_alignment_error_vs_a_lin_h": 0.9988606304710036
+      }
+    },
+    "full_0_60s": {
+      "baseline": {
+        "label": "baseline_0_60s",
+        "samples": 5847.0,
+        "t_start_s": 1.038665771,
+        "t_end_s": 59.996906281,
+        "gravity_alignment_error_deg_mean": 5.432698062938258,
+        "gravity_alignment_error_deg_median": 4.616303,
+        "gravity_alignment_error_deg_p95": 12.6463044,
+        "a_lin_h_mean_mps2": 0.9369008871216009,
+        "a_lin_h_median_mps2": 0.795561,
+        "a_lin_h_p95_mps2": 2.1859338,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.9261140246280143,
+        "implied_tilt_from_a_lin_deg_mean": 5.497131768086198,
+        "roll_deg_mean": 1.7386734426201471,
+        "pitch_deg_mean": -0.6888796008209338,
+        "correlation_alignment_error_vs_a_lin_h": 0.998686711553771
+      },
+      "with_h9a": {
+        "label": "h9a_0_60s",
+        "samples": 5798.0,
+        "t_start_s": 1.532875061,
+        "t_end_s": 59.996906281,
+        "gravity_alignment_error_deg_mean": 5.41792099051397,
+        "gravity_alignment_error_deg_median": 4.5655725,
+        "gravity_alignment_error_deg_p95": 12.945934849999999,
+        "a_lin_h_mean_mps2": 0.9340809796481545,
+        "a_lin_h_median_mps2": 0.791118,
+        "a_lin_h_p95_mps2": 2.2435683499999994,
+        "predicted_a_lin_h_from_angle_mean_mps2": 0.9233572499137633,
+        "implied_tilt_from_a_lin_deg_mean": 5.482020290789928,
+        "roll_deg_mean": 1.250061880303553,
+        "pitch_deg_mean": 0.18118037098999656,
+        "correlation_alignment_error_vs_a_lin_h": 0.9987199568525928
+      }
+    },
+    "h9a_post_init_first_ticks": {
+      "label": "h9a_first_30_ticks_post_init",
+      "samples": 30.0,
+      "t_start_s": 1.532875061,
+      "t_end_s": 1.830353975,
+      "gravity_alignment_error_deg_mean": 0.09828776666666668,
+      "gravity_alignment_error_deg_median": 0.10466149999999999,
+      "gravity_alignment_error_deg_p95": 0.1488814,
+      "a_lin_h_mean_mps2": 0.017149166666666663,
+      "a_lin_h_median_mps2": 0.018175499999999997,
+      "a_lin_h_p95_mps2": 0.0254862,
+      "predicted_a_lin_h_from_angle_mean_mps2": 0.016822800000000002,
+      "implied_tilt_from_a_lin_deg_mean": 0.10019473333333336,
+      "roll_deg_mean": -0.055330333333333336,
+      "pitch_deg_mean": 0.9325903999999999,
+      "correlation_alignment_error_vs_a_lin_h": 0.9981972086328168
+    },
+    "geometric_misalignment_likely": true,
+    "angle_error_explains_a_lin_h": true,
+    "baseline_vs_h9a_60s_a_lin_delta_mps2": -0.0028199074734464036
+  },
+  "first_tick_comparison": {
+    "baseline": {
+      "timestamp_s": 1.038665771,
+      "gravity_alignment_error_deg": 0.998188,
+      "a_lin_h_mps2": 0.170921,
+      "implied_tilt_deg": 0.998667
+    },
+    "h9a_first_post_init": {
+      "timestamp_s": 1.532875061,
+      "gravity_alignment_error_deg": 0.044235,
+      "a_lin_h_mps2": 0.00754,
+      "implied_tilt_deg": 0.044051
+    }
+  },
+  "interpretation": "a_lin_h es geometrico (corr~1 con angle error) pero NO solo actitud inicial: H9a colapsa al instante (0.008 m/s2) y vuelve a ~0.94 m/s2 en 60 s. El error pasa de ~1 deg (2 s) a ~5.5 deg (60 s): priorizar propagacion de actitud (H9b).",
+  "artifacts": {
+    "baseline_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9a_alignment_baseline.csv",
+    "h9a_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\h9a_alignment_with_init.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\h9a_gravity_alignment_analysis.png"
+  }
+}

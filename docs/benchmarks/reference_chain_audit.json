@@ -1,0 +1,145 @@
+{
+  "experiment": "reference_chain_audit",
+  "purpose": "Validar cadena Sensor->R_mount->Body->Android->NED->EKF con ancla estatica",
+  "chain": [
+    "Sensor (Accelerometer/Gravity CSV)",
+    "R_mount (calibracion)",
+    "Body (FRD/NED EKF)",
+    "Android Orientation (fusion AHRS)",
+    "NED",
+    "EKF R_bn"
+  ],
+  "diagnosis": {
+    "static_anchor_s": [
+      0.0,
+      2.0
+    ],
+    "interpretation_notes": [
+      "Ancla estatica: Android, acelerometro y EKF coinciden (~0.05 deg).",
+      "No afirmar 'EKF equivocado'; medir divergencia entre estimadores.",
+      "Si L1 es constante, R_mount es geometrico y no explica el salto.",
+      "Si L5 crece en dinamica, Android separa gravedad de aceleracion especifica."
+    ],
+    "links": [
+      {
+        "link": "L1_sensor_to_body_R_mount",
+        "description": "v_body = R_mount * v_sensor (calibracion estatica)",
+        "expected": "constant_geometric",
+        "unit": "mps2",
+        "static_anchor_mean": 4.418736089443812e-07,
+        "motion_2_10_mean": 4.555679913087273e-07,
+        "cruise_11_25_mean": 4.714905399050856e-07,
+        "jump_static_to_motion": 1.3694382364346113e-08,
+        "regime_dependent": false,
+        "verdict": "constant_geometric"
+      },
+      {
+        "link": "L2_body_EKF_vs_body_Android_tilt",
+        "description": "Inclinacion g_body: EKF vs Orientation (offset estatico)",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.05486097120840719,
+        "motion_2_10_mean": 4.070822387547103,
+        "cruise_11_25_mean": 4.485202247313301,
+        "jump_static_to_motion": 4.015961416338695,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L2b_ekf_android_drift_from_static_anchor",
+        "description": "Desviacion relativa EKF-Android respecto ancla 0-2 s",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.0005914210813318283,
+        "motion_2_10_mean": 4.0165528374200274,
+        "cruise_11_25_mean": 4.4309326971862255,
+        "jump_static_to_motion": 4.015961416338696,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L3_body_EKF_vs_accel_tilt",
+        "description": "Inclinacion g_body: EKF vs acelerometro normalizado",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.09438045059824089,
+        "motion_2_10_mean": 4.318391007816018,
+        "cruise_11_25_mean": 3.0299758205167127,
+        "jump_static_to_motion": 4.2240105572177775,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L4_android_vs_accel_tilt",
+        "description": "Inclinacion g_body: Orientation vs acelerometro",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.1311254347492302,
+        "motion_2_10_mean": 5.889385068868319,
+        "cruise_11_25_mean": 4.504442432648883,
+        "jump_static_to_motion": 5.758259634119089,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L5_android_gravity_vs_total_accel_sensor",
+        "description": "Gravity.csv vs TotalAcceleration.csv (marco sensor; fusion Android vs IMU total)",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.09134388708154138,
+        "motion_2_10_mean": 1.9365075642409477,
+        "cruise_11_25_mean": 2.082839771008143,
+        "jump_static_to_motion": 1.8451636771594064,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L6_android_gravity_vs_ekf_body",
+        "description": "R_mount*Gravity.csv vs g_body EKF",
+        "expected": "estimator_pair",
+        "unit": "deg",
+        "static_anchor_mean": 0.01998199092265259,
+        "motion_2_10_mean": 2.556337870538579,
+        "cruise_11_25_mean": 1.6330440564561657,
+        "jump_static_to_motion": 2.5363558796159267,
+        "regime_dependent": true,
+        "verdict": "estimators_diverge_in_dynamics"
+      },
+      {
+        "link": "L7_convention_bridge_drift",
+        "description": "Drift del puente R_ekf^T R_android respecto ancla estatica",
+        "expected": "constant_geometric",
+        "unit": "deg",
+        "static_anchor_mean": 0.06571848595778187,
+        "motion_2_10_mean": 4.999096563192737,
+        "cruise_11_25_mean": 3.3675764865311106,
+        "jump_static_to_motion": 4.933378077234955,
+        "regime_dependent": true,
+        "verdict": "not_constant_check_model"
+      }
+    ],
+    "regime_dependent_links": [
+      "L2_body_EKF_vs_body_Android_tilt",
+      "L2b_ekf_android_drift_from_static_anchor",
+      "L3_body_EKF_vs_accel_tilt",
+      "L4_android_vs_accel_tilt",
+      "L5_android_gravity_vs_total_accel_sensor",
+      "L6_android_gravity_vs_ekf_body",
+      "L7_convention_bridge_drift"
+    ],
+    "constant_links": [
+      "L1_sensor_to_body_R_mount"
+    ],
+    "android_fusion_hypothesis": "android_separates_gravity_from_total_accel_during_dynamics",
+    "solid_facts_h0_h9d": {
+      "static_triad_agreement_deg": 0.05486097120840719,
+      "mount_residual_static_mps2": 4.418736089443812e-07,
+      "problem_onset": "acceleration_regime_not_time_not_turning",
+      "heading_eliminated": true
+    }
+  },
+  "artifacts": {
+    "merged_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\reference_chain_merged.csv",
+    "plot_png": "C:\\NaviCore-3D\\docs\\benchmarks\\reference_chain_analysis.png"
+  }
+}

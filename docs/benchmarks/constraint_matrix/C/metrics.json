@@ -1,0 +1,33 @@
+{
+  "experiment_id": "C",
+  "config": {
+    "label": "gps_stationary",
+    "constraint_policy": "gps_stop",
+    "nhc_policy": "enabled",
+    "zupt": "GPS stationary",
+    "nhc": "ON"
+  },
+  "gnss_accept_count": 8,
+  "gnss_reject_count": 323,
+  "final_drift_m": 4851.358,
+  "vel_h_mean_t_9_11s": 1.0908672663316583,
+  "vel_h_mean_t_30_35s": 2.8024008427419353,
+  "vel_h_median_t_30_35s": 2.7057145,
+  "sum_dv_norm_by_source": {
+    "gnss": 0.720938610349637,
+    "nhc": 313.8988342287818,
+    "predict": 352.192722673336,
+    "zupt": 11.22038683656293
+  },
+  "bias_ax_at_10s": 0.496907,
+  "gnss_nis_mean": 3635.6726386193354,
+  "gnss_nis_median_accepted": 3.8479339999999995,
+  "gnss_innov_h_mean": 1876.3727042749247,
+  "gnss_innov_h_mean_accepted": 45.846894,
+  "P_pv_frob_gnss_pre_mean": 31.701901330731026,
+  "P_vv_frob_gnss_pre_mean": 2.036958463515485,
+  "pipeline_tick_mean_abs_dv_pred": 0.009725046337120716,
+  "pipeline_tick_mean_abs_dv_nhc": 0.0094485460901644,
+  "pipeline_tick_mean_abs_dv_zupt": 0.0003394411342074866,
+  "artifacts_dir": "C:\\NaviCore-3D\\docs\\benchmarks\\constraint_matrix\\C"
+}

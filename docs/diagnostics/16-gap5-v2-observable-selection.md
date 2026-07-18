@@ -1,6 +1,6 @@
 # GAP-5 v2 — Selección del observable de régimen (preregistración)
 
-**Estado:** **CONGELADA** (v1.0) — tag `gap5-v2-observable-preregistration-frozen`  
+**Estado:** **CONGELADA** (v1.1) — tag `gap5-v2-observable-preregistration-v1.1`  
 **Fecha congelación:** 2026-07-18  
 **Prerequisito:** [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md) (v1 **CERRADA**)  
 **Paso 0 congelado:** [paso0_property_justification.md](../benchmarks/gap5_v2_observable_selection/paso0_property_justification.md)  
@@ -151,16 +151,56 @@ Incluye por candidato: qué observa, **qué no observa**, escala temporal, depen
 
 ## 5. Paso 1 — Caracterización experimental (no ranking)
 
-Tras Paso 0 congelado, ejecutar benchmark **passive / audit only**. Por cada candidato Oi, responder preguntas de **caracterización**:
+Tras Paso 0 congelado, ejecutar benchmark **passive / audit only**. Por cada candidato Oi, responder preguntas de **caracterización**.
+
+### 5.0 Tres tipos de resultado (no confundir)
+
+| Tipo | Pregunta que responde | Ejemplo en la cadena |
+|------|----------------------|----------------------|
+| **Científico** | ¿La hipótesis sobre la propiedad era correcta? | H6-OBS, H7-MIN |
+| **Ingeniería** | ¿Mejora RMSE / accepts / O1–O3? | GAP-5 v3+ (fuera de v2) |
+| **Metodológico** | ¿Esta operacionalización sirve para responder la pregunta? | **Γ̄ v1** — refutación de operacionalización, no de F1 ni del EKF |
+
+Un resultado **metodológico** no es un fracaso científico. Γ̄ pertenece a la tercera fila.
+
+### 5.1 Test del protocolo (pre-benchmark, sin scripts)
+
+**Pregunta:** ¿C1–C6 son realmente **discriminativas**? Si cinco observables obtuvieran la **misma** caracterización en todas, ¿qué concluiríamos?
+
+| Escenario | Conclusión | Acción |
+|-----------|------------|--------|
+| **A** — Igualdad en C1–C6 respondidas solo sí/no, sin perfil por régimen | No podríamos decidir nada útil | **Refinar protocolo** (demasiado grueso) |
+| **B** — Igualdad en **C7 perfiles R0–R4** pese a Paso 0 con predicciones distintas | Los candidatos son colineales en estos ejes **o** los ejes no capturan las propiedades | **Resultado metodológico válido** → H7-MIN, nuevos ejes, o refutación del conjunto O1–O5 |
+| **C** — Perfiles C7 distintos entre Oi (esperado) | El protocolo discrimina | Proceder con benchmark |
+
+**Veredicto pre-benchmark (con datos passive v1, sin script nuevo):** escenario **C** es lo esperado — al menos **C3** ya discrimina (Γ offline 19.7 vs 0.13 entre configs); **C7** debe discriminar **R1 vs R2** (O1 pico en burst ~0.4 s vs O4 elevación post-fix#3 en F1.2). Si el benchmark posterior colapsa todo a igualdad, es escenario **B** (resultado importante), no fallo del experimento.
+
+**Regla:** ejecutar benchmark solo si el test A está descartado (usar C7, no solo C1–C6 binarios).
+
+### 5.2 Preguntas C1–C7
 
 | Pregunta | Qué evalúa |
 |----------|------------|
-| **C1** ¿Detecta R1 (burst) con latencia acotada? | Sensibilidad al evento mecanicista |
-| **C2** ¿Permanece estable / interpretable dentro de R2? | No confundir pico con régimen sostenido |
-| **C3** ¿Conserva **significado** entre C-F1 y C-PoC? | **Invarianza** (criterio central post-v1) |
-| **C4** ¿Tiene memoria excesiva para el soporte de R1 (~0.4 s)? | Operacionalización vs fenómeno bursty |
-| **C5** ¿Necesita conocer el futuro? | Causalidad para control en tiempo real |
-| **C6** ¿Es puramente local (por tick / ventana causal)? | Implementabilidad online |
+| **C1** ¿Señal distinguible en **R1** (ventana burst ~0.4 s)? | Sensibilidad al evento mecanicista (no «antes que otros») |
+| **C2** ¿Comportamiento en **R2** coherente con Paso 0 (p.ej. consistencia ↓)? | Régimen sostenido vs pico aislado |
+| **C3** ¿Conserva **significado** mecanicista C-F1 ↔ C-PoC? | Invarianza (central post-v1) |
+| **C4** ¿Memoria / suavizado incompatible con soporte de R1? | Operacionalización vs burst |
+| **C5** ¿Causal (sin futuro)? | Control en tiempo real |
+| **C6** ¿Local (tick o ventana causal)? | Implementabilidad online |
+| **C7** **Perfil R0–R4** — ¿matriz observada coincide con predicción Paso 0? | **Discriminación principal** entre candidatos |
+
+**Respuesta C7:** por cada Oi, tabla `{R0, R1, R2, R3, R4} → {bajo \| pico \| alto \| meseta \| N/A}` en C-F1 y C-PoC por separado. Dos observables con el mismo vector C7 en ambas configs → empate (escenario B).
+
+**Predicciones Paso 0 (orientativas — el benchmark las contrasta, no las impone):**
+
+| | R0 | R1 | R2 | R3 | R4 |
+|---|----|----|----|----|-----|
+| O1 Γ_inst | bajo | **pico** | ↓ | ? | meseta |
+| O3 ‖P_pv‖/P_vv | medio | ? | ↑ | **pico** | bajo |
+| O4 Λ_N | bajo | bajo/↗ | **alto** | alto | meseta |
+| O5 dΛ_N/dt | ~0 | ↗ | **pico** | ? | ~0 |
+
+Si O1 y O4 comparten perfil idéntico en C7, o C3–C6 son todos «sí», el protocolo estaba demasiado grueso (escenario A).
 
 **Prohibido como criterio de selección primario:**
 
@@ -203,34 +243,38 @@ Passive v1: Γ perdió significado (19.7 → 0.13 offline). Eso es **lección**,
 
 ---
 
-## 8. Criterios formales (sin RMSE)
+## 8. Dimensiones de caracterización (sin score durante el análisis)
 
-| ID | Criterio | Operacionalización | Peso |
-|----|----------|-------------------|------|
-| **I1 — Interpretabilidad** | Enlace explícito propiedad → cadena predict→P→update (Paso 0) | Cualitativo + referencia GAP-3/4 | **Alto** |
-| **I2 — Invarianza config** | Orden de magnitud, signo y **significado** mecanicista consistentes C-F1 ↔ C-PoC | C3 | **Alto** |
-| **I3 — Localidad** | Causal, por tick o ventana causal; C5=C6 | C6 | **Alto** |
-| **S1 — Identificación R1** | Señal distinguible en ventana burst | C1 | Medio |
-| **S2 — Comportamiento R2/R4** | Estable o monótono según propiedad esperada | C2 | Medio |
-| **S3 — Memoria acotada** | Soporte temporal compatible con R1 (~0.4 s) si la propiedad es bursty | C4 | Medio |
+Durante todo el benchmark, mantener **dimensiones separadas**. Por cada Oi × config, documentar:
 
-**Función de selección (orientativa, no numérica rígida):**
+| Dimensión | Fuente |
+|-----------|--------|
+| Interpretabilidad (I1) | Paso 0 + trazabilidad GAP-3/4 |
+| Invarianza (I2) | C3 |
+| Localidad (I3) | C5, C6 |
+| Perfil régimen (S*) | **C7** |
+| Comportamiento R1 / R2 / R4 | C1, C2 |
 
-```
-score ≈ interpretabilidad × invariancia × localidad
-```
+**Prohibido durante la fase de caracterización:**
 
-Sensibilidad (S*) modula pero **no domina**. Un controlador puede compensar latencia; **no** puede compensar invarianza rota.
+- Calcular **score global** o producto `interpretabilidad × invarianza × localidad`.
+- Rankings o «ganador provisional» antes del informe completo.
+
+Un índice agregado, aunque orientativo, invita a optimizar el número en lugar de leer los perfiles. La **síntesis** (§9) solo al final, **si hace falta** tomar una decisión entre propiedades que ya están completamente caracterizadas.
 
 **Prohibido como criterio primario:** RMSE, accepts, drift, «primer pico».
 
 ---
 
-## 9. Criterio de selección (ganador)
+## 9. Síntesis y decisión (solo al cierre del informe)
+
+**Orden obligatorio:**
+
+1. Caracterización **completa** de cada Oi (propiedad, cuándo cambia / no cambia, configs que conservan o pierden significado).
+2. Veredicto por Oi: hipótesis Paso 0 **confirmada / refutada / operacionalización refutada** (tipo metodológico).
+3. **Solo entonces**, si hace falta elegir una propiedad para v3: sintetizar trade-offs en prosa — dimensiones separadas, sin score único salvo que se documente explícitamente como resumen narrativo.
 
 **No se elige** el observable que detecte antes el burst.
-
-**Se elige** la propiedad cuya observación maximiza **interpretabilidad × invarianza × localidad** y permite identificar R1–R4 con operacionalización causal validable en passive (fase posterior, análoga v1).
 
 | Resultado | Acción |
 |-----------|--------|
@@ -254,7 +298,7 @@ Sensibilidad (S*) modula pero **no domina**. Un controlador puede compensar late
 ```
 docs/benchmarks/gap5_v2_observable_selection/
   paso0_property_justification.md    # tabla §4 congelada
-  observable_characterization.json   # respuestas C1–C6, I1–S3 por Oi × config
+  observable_characterization.json   # C1–C7, perfiles, veredictos; sin score agregado
   observable_characterization.md
   figures/                           # series temporales por régimen
 ```
@@ -295,7 +339,8 @@ Script previsto (post-tag): `tools/audit_gap5_v2_observable_selection.py`
 4. Declarar «ganador» mid-run o por gráfico único.
 5. Lenguaje de «mejor observable» / leaderboard.
 6. **Inferir validez del observable desde éxito/fallo del controlador** (§0.1).
-7. **Discutir políticas de control, umbrales o palanca NHC** en documentación, issues o informes v2 (§0.2).
+7. **Discutir políticas de control, umbrales o palanca NHC** (§0.2).
+8. Calcular score global o ranking **antes** de caracterización completa (§8).
 
 ---
 
@@ -326,9 +371,10 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 
 | Campo | Valor |
 |-------|-------|
-| Versión | **1.0** |
+| Versión | **1.1** |
 | Estado | **CONGELADA** |
-| Tag Git | `gap5-v2-observable-preregistration-frozen` |
+| Tag Git | `gap5-v2-observable-preregistration-v1.1` (supersedes v1.0 tag para ejecución benchmark) |
+| Tag Git v1.0 | `gap5-v2-observable-preregistration-frozen` (histórico) |
 | Hipótesis principal | H6-OBS (§2) |
 | Hipótesis exploratoria | H7-MIN (§2.1) |
 | Paso 0 | Catálogo congelado en `paso0_property_justification.md` |
@@ -345,3 +391,4 @@ Escribir la síntesis antes de (1–3) reinterpreta experimentos para encajar un
 | 0.2 | 2026-07-18 | H6-OBS reformulada (propiedad, no ranking); Paso 0 conceptual; caracterización C1–C6; invarianza config |
 | **0.3** | **2026-07-18** | §0.1 observable≠controlador; Paso 0 + falsabilidad; §12 síntesis post-v2 |
 | **1.0** | **2026-07-18** | **CONGELADA** — §0.2 solo observables; catálogo Paso 0; H7-MIN; tag `gap5-v2-observable-preregistration-frozen` |
+| **1.1** | **2026-07-18** | Test protocolo §5.1; C7 perfiles R0–R4; tres tipos resultado §5.0; prohibido score hasta §9 |

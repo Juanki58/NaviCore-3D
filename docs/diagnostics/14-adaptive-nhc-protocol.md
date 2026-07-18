@@ -1,6 +1,6 @@
 # GAP-5 — Política NHC adaptativa (preregistración)
 
-**Estado:** **CONGELADA** (v1.0) — no ejecutado; hook replay **prohibido** hasta tag `gap5-preregistration-frozen`  
+**Estado:** **CONGELADA** (v1.0) — tag `gap5-preregistration-frozen`; hook replay autorizado post-tag  
 **Fecha congelación:** 2026-07-18  
 **Prerequisito:** tag `gap4-diagnostic-complete`; [13-gap4-gnss-velocity-protocol.md](13-gap4-gnss-velocity-protocol.md) §10 congelado; [12-gap3-synthesis.md](12-gap3-synthesis.md)
 
@@ -102,19 +102,11 @@ F1 mostró fenómenos **bursty**; un burst aislado no debe cambiar N al instante
 
 **Prohibido en PoC:** umbrales evaluados sobre Γ de un solo tick o de un solo update NHC.
 
-### 3.2 Histeresis (umbrales distintos subir / bajar)
+### 3.2 Histeresis (mecanismo del controlador, no hipótesis)
 
-Evitar oscilación N=1 ↔ N=5 ↔ N=10 en el borde de umbral.
+Evitar oscilación N=1 ↔ N=5 ↔ N=10 en el borde de umbral. Las transiciones usan **umbrales distintos al subir y al bajar** (ver §4.1 instancia inicial) más **dwell** (§3.3).
 
-| Transición | Condición sobre **Γ̄** |
-|------------|------------------------|
-| 1 → 5 | Γ̄ **>** 12 durante dwell |
-| 5 → 10 | Γ̄ **>** 22 durante dwell |
-| 10 → 5 | Γ̄ **<** 18 durante dwell |
-| 5 → 1 | Γ̄ **<** 8 durante dwell |
-| 10 → 1 | *(no permitido directo)* — debe pasar por 5 |
-
-Umbrales ad hoc; no optimizar en PoC.
+**Prohibido en PoC:** evaluar política sin histeresis (chatter invalidaría la comparación con B0).
 
 ### 3.3 Permanencia mínima (dwell)
 
@@ -126,23 +118,55 @@ Umbrales ad hoc; no optimizar en PoC.
 
 ## 4. Experimento PoC (único pre-implementación)
 
-**Objetivo:** prueba de concepto de **control adaptativo por régimen** — no calibración final.
+**Objetivo:** prueba de concepto de **control adaptativo por régimen** — no calibración final de umbrales.
 
-**Hipótesis H5-PoC:** si la autoridad NHC se reduce cuando **Γ̄** indica desequilibrio NHC/predict (con histeresis y dwell), el filtro **no empeora** outcomes obligatorios y **mejora** métricas deseables vs B0.
+### 4.0 Hipótesis (científica)
 
-### 4.1 Política P0 (tabla efectiva)
+> **H5-PoC:** Existe una política adaptativa de NHC, accionada por una señal mecanicista interna (Γ̄), que **mejora simultáneamente** los objetivos obligatorios (O1–O3) respecto a B0 y mejora al menos una métrica deseable (D*).
 
-Estado del controlador: **N ∈ {1, 5, 10}** (`--nhc-every-n-ticks`).
+Equivalente operativo:
+
+> *Adaptive NHC driven by Γ̄ improves the estimator* (sin romper accepts ni RMSE).
+
+**No es parte de la hipótesis:**
+
+- que **12** o **22** sean los umbrales correctos;
+- que **Γ** sea la señal óptima de control (solo la señal PoC);
+- la forma exacta de la tabla de transiciones.
+
+Cambiar 22 → 20 en un futuro PoC **no cambia H5-PoC**; cambia la **instancia del controlador** (v2).
+
+### 4.1 Política P0 — instancia inicial del controlador (no hipótesis)
+
+Estado del controlador: **N ∈ {1, 5, 10}** (`--nhc-every-n-ticks`). Estado inicial: **N = 1**.
+
+**Bandas objetivo** (después de histeresis + dwell sobre Γ̄ §3.1):
+
+| Régimen Γ̄ | N efectivo |
+|------------|------------|
+| Γ̄ **<** 8 | 1 |
+| 12 **≤** Γ̄ **<** 22 | 5 |
+| Γ̄ **≥** 22 | 10 |
+
+*(Banda 8–12: zona muerta de histeresis — no forzar transición.)*
+
+**Transiciones preregistradas** (condición sostenida durante **T_dwell** §3.3):
+
+| Transición | Condición sobre Γ̄ |
+|------------|-------------------|
+| 1 → 5 | Γ̄ **>** 12 |
+| 5 → 10 | Γ̄ **≥** 22 |
+| 10 → 5 | Γ̄ **<** 18 |
+| 5 → 1 | Γ̄ **<** 8 |
+| 10 → 1 | *(no directo)* — vía 5 |
+
+Estos números son **Initial controller parameters** para el PoC v1.0. No optimizar post-hoc tras ver P0.
 
 | N | Significado |
 |---|-------------|
 | 1 | NHC cada tick (autoridad plena) |
 | 5 | NHC cada 5 ticks |
 | 10 | NHC cada 10 ticks |
-
-Transiciones: §3.2 + §3.3 sobre **Γ̄** (§3.1).
-
-Estado inicial al arrancar replay: **N = 1**.
 
 ### 4.2 Baselines comparativos
 
@@ -181,10 +205,30 @@ Evaluados P0 vs B0 en cohorte G1 (primeros 8 accepts con speed, o ventana prereg
 
 **Interpretación mixta prohibida:** si D1 mejora 80 % pero O2 falla → **PoC fallido**, no «parcialmente prometedor».
 
+#### Nivel 3 — Diagnóstico del controlador (no criterio de éxito)
+
+Registrar siempre en P0 (`controller_audit.csv` + agregados en informe JSON):
+
+| Métrica | Uso |
+|---------|-----|
+| **Tiempo en N=1 / N=5 / N=10** (% replay) | ¿Política casi estática o activa? |
+| **Número de transiciones** | ¿Chatter pese a histeresis/dwell? |
+| **Duración media por estado N** | ¿Permanencia en régimen debilitado? |
+
+Dos PoC pueden cumplir O1–O3 con historias distintas:
+
+| Caso | RMSE | Actividad controlador |
+|------|------|------------------------|
+| A | OK | N=10 el **95 %** del tiempo |
+| B | OK | N=1 **55 %**, N=5 **35 %**, N=10 **10 %** |
+
+Ambos pasan endpoints obligatorios; el diagnóstico distingue *«casi siempre debilitado»* vs *«modulación fina»*.
+
 ### 4.4 Implementación permitida (post-freeze)
 
 - **Solo capa replay:** hook que actualiza `ins_ekf_set_nhc_every_n_ticks()` según máquina de estados §3–§4.
 - **Logging obligatorio del controlador:** por tick o cada 100 ms: `Gamma_inst`, `Gamma_bar`, `N_current`, `N_pending`, `dwell_s`, `transition_reason`.
+- **Agregados post-run (P0):** `time_frac_N1`, `time_frac_N5`, `time_frac_N10`, `n_transitions`, `mean_dwell_N1_s`, `mean_dwell_N5_s`, `mean_dwell_N10_s`.
 - **Prohibido:** cambios `ins_ekf.cpp` (Joseph/GNSS/update); P_pv; Q/R globales; retocar umbrales post-hoc tras ver P0.
 
 ### 4.5 Artefactos
@@ -198,7 +242,7 @@ docs/benchmarks/gap5_adaptive_nhc/
   controller_audit.csv    # lazo cerrado — trazabilidad
 ```
 
-Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` (**implementar solo tras tag freeze**).
+Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` (implementar post-tag).
 
 ---
 
@@ -234,7 +278,9 @@ gap4-diagnostic-complete
   §11 P_pv (separado; no mezclar brazos)
 ```
 
-**Regla:** una hipótesis, una palanca (NHC frecuencia), un experimento, una interpretación. No ajustar umbrales, ventanas ni criterios tras ver P0.
+**Regla:** una hipótesis (§4.0), una palanca (NHC frecuencia), un experimento, una interpretación.
+
+**Regla post-tag:** no modificar este protocolo v1.0. Retune de umbrales (p.ej. 22→20) = **controlador v2** + documento v1.1 + nuevo tag; **H5-PoC no cambia**.
 
 ---
 
@@ -243,9 +289,11 @@ gap4-diagnostic-complete
 | Campo | Valor |
 |-------|-------|
 | Versión | **1.0** |
-| Estado | **CONGELADA** |
-| Cambios permitidos | typos, clarificaciones sin alterar hipótesis/endpoints/umbrales |
-| Cambios que requieren v1.1 + nuevo tag | señal de control, T_w, T_dwell, histeresis, criterios O/D |
+| Estado | **CONGELADA** — tag `gap5-preregistration-frozen` |
+| Hipótesis congelada | H5-PoC (§4.0) + criterios O/D |
+| Instancia congelada | Initial controller (§4.1) — parámetros numéricos, no la hipótesis |
+| Cambios permitidos sin v1.1 | typos |
+| Cambios que requieren v1.1 + nuevo tag | señal de control, T_w, T_dwell, bandas/transiciones, criterios O/D |
 
 ---
 
@@ -254,4 +302,4 @@ gap4-diagnostic-complete
 | Versión | Fecha | Notas |
 |---------|-------|-------|
 | 0.1 | 2026-07-18 | Borrador inicial post-freeze GAP-4 |
-| **1.0** | **2026-07-18** | **Congelada:** disclaimer Γ, Γ̄ 1 s, histeresis, dwell 1 s, jerarquía O/D |
+| **1.0** | **2026-07-18** | Congelada: disclaimer Γ, Γ̄ 1 s, histeresis, dwell, jerarquía O/D, hipótesis vs controlador, diagnóstico actividad |

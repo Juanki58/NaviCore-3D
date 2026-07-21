@@ -136,7 +136,7 @@ Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent i
 | Forced **spoof-like** injection in replay (teleport / velocity lie) | Shows the new detector before field RF |
 | PPK2 current | Edge/low-power claim |
 
-**Bottom line:** same architecture; reposition under civil GPS-denied resilience; consistency/spoof gate **shipped (v1)**; next credibility is **measured power + field outage**, not another slogan.
+**Bottom line:** same architecture; civil GPS-denied resilience; consistency gate **shipped**; **MC / NHC / Allan tooling / EKF v2 A/B already banked in Evidence**. Next external credibility: **measured power (PPK2) + field outage**, not another slogan.
 
 ---
 
@@ -151,12 +151,26 @@ Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent i
 | **Frames** | Nav: **NED**. Body: **FRD** (+X forward, +Y right, +Z down). Quaternions: Hamilton. | Nav: **NED**. Cuerpo: **FRD**. Cuaterniones: Hamilton. |
 | **Coordinates (NavState API)** | Permanent 3D axes: **X = latitude**, **Y = longitude**, **Z = altitude (air) / hydrostatic pressure (sea)**. | Ejes 3D permanentes: **X = latitud**, **Y = longitud**, **Z = altitud / presión hidrostática**. |
 | **Host modes** | (1) Synthetic stress sim `NaviCore3D_Sim`. (2) Real vehicle replay `NaviCore3D_Replay`. | (1) Simulador de estrés. (2) Replay de vehículo real. |
+| **Scientific rigor (banked)** | **Monte Carlo N=100**, **NHC experiment matrix** (GAP-3), **Allan IEEE 952 tooling**, EKF v2 A/B on real drives — see [Evidence](#evidence--published-results). | **MC N=100**, **matriz NHC**, **Allan IEEE 952 (herramienta)**, EKF v2 A/B en trazas reales — ver [Evidence](#evidence--published-results). |
 
 ---
 
 ## Evidence — published results
 
 Numbers below are from **artefacts already in the repo** (not aspirational). Reproduce from the linked paths. Gaps called out honestly.
+
+### Scientific rigor scorecard (what is already done)
+
+This is the leap in method — not just “scenarios that look good.” Artefacts live under `docs/monte_carlo/`, `docs/nhc_experiments/`, and `analyze_allan.py`.
+
+| Campaign | Status | Headline result | Artefacts / how to reproduce |
+|----------|--------|-----------------|------------------------------|
+| **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 · mean exit drift **13.0 m** · p95 **16.1 m** · **0%** diverge (>30 m) | `docs/monte_carlo/run_0000…0099` · `python run_monte_carlo.py --runs 100` |
+| **NHC matrix** (super-tunnel + R/G arms) | **Done** (GAP-3 closed) | NHC-off baseline **493 m** exit; `B_always` **1408 m** — naive high-rate NHC can **hurt** | [`docs/nhc_experiments/manifest.json`](docs/nhc_experiments/manifest.json) · `NaviCore3D_Sim.exe --nhc-experiments` |
+| **Allan variance** (IEEE Std 952) | **Tooling done** · fit publish pending | Overlapping σ_A(τ) → ARW/VRW, BI, RRW; Q today = engineering σ_a/σ_g | [`analyze_allan.py`](analyze_allan.py) · needs multi-hour `docs/imu_static_log.csv` |
+| **EKF v2 vs v1** (3 phone drives) | **Done** | Accept 2–10% → **100%**; drift km → **~35 / 38 / 110 m** | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) |
+
+**Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: PPK2 mA, Pico outage curve, Allan **fit** from hours of static IMU (tool already ships).
 
 ### EKF v2 vs v1 — real phone drives (NHC-off shell)
 
@@ -186,6 +200,8 @@ Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_
 | p95 / p99 | 16.1 / 18.5 m |
 | Divergence rate (drift > 30 m) | **0%** |
 
+**Why it matters:** distributional claim (mean/std/p95/diverge), not a single lucky seed. Re-run anytime; CSVs are in-repo.
+
 ### NHC — what the matrix actually showed
 
 Not a marketing “NHC always helps” claim. Super-tunnel + R-sweep artefacts in [`docs/nhc_experiments/`](docs/nhc_experiments/) (`manifest.json`):
@@ -193,22 +209,28 @@ Not a marketing “NHC always helps” claim. Super-tunnel + R-sweep artefacts i
 | Condition | Drift @ tunnel exit | Drift final (post-GNSS) |
 |-----------|--------------------:|------------------------:|
 | **A — NHC off** (baseline) | **493 m** | **~2 m** (reacquire) |
-| Best G-arm (`G_l10_v10`) | 758 m | 887 m |
-| `B_always` (NHC every tick) | 1408 m | 1554 m |
+| Best G-arm (`G_l10_v10`) | **758 m** | **887 m** |
+| `B_always` (NHC every tick) | **1408 m** | **1554 m** |
+
+G-arm dose-response (lateral/vertical σ variants) is fully tabulated in the manifest — every published arm **worse** than NHC-off at exit.
 
 **Finding (GAP-3 closed):** naive high-rate NHC over-observes body velocity, compresses `P_vv`, and can **worsen** coasting vs NHC-off; dose-response N=1…20 documented. Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”.
 
 Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md).
 
-### Allan variance (IEEE 952) — tooling ready, fit pending publish
+### Allan variance (IEEE 952) — methodology shipped
 
 | Item | Status |
 |------|--------|
-| Tool | [`analyze_allan.py`](analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW |
+| Tool | [`analyze_allan.py`](analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW (IEEE Std 952-1997) |
 | Shipped Q scalars | σ_a = **0.05 m/s²**, σ_g = **0.002 rad/s** (car-log / mount order of magnitude in `ins_ekf.hpp`) |
-| **Published ARW/BI table from multi-hour static IMU** | **Not yet** — needs `docs/imu_static_log.csv` (hours) then run Allan and paste IEEE units here |
+| **Published ARW/BI table from multi-hour static IMU** | **Pending data** — commit `docs/imu_static_log.csv` (hours), run Allan, paste IEEE units into this section |
 
-Until that table exists, treat Q as **engineering defaults**, not a certified IMU datasheet.
+```powershell
+python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
+```
+
+**Honest framing:** the **pipeline** for replacing Q folklore with IEEE numbers is done and documented; the **published fit table** waits on a multi-hour static log. Until then, treat Q as engineering defaults — not a certified IMU datasheet.
 
 ### Integrity / spoof (software only)
 
@@ -319,7 +341,7 @@ Host tests assert **policy**. On-target checklist (unplug IMU, UART flood, UPS/I
 |-----|----------------|
 | PPK2 current on Pico 2 W | “Ultra-low power” stays architectural until measured |
 | Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware |
-| Allan fit from hours of static IMU | Replace Q folklore with IEEE numbers |
+| Allan **fit** table from hours of static IMU | Tool ships; paste IEEE ARW/BI here after `imu_static_log.csv` |
 | Logged lab fault-injection campaign | Host policy covered; fill `docs/benchmarks/fault_injection/` after bank run |
 | Field + PPK2 artefacts published | Coast curve + mA/mW table still empty — needed before “going viral” |
 
@@ -941,13 +963,14 @@ python audit_imu_chain.py --export-calibration calibration\imu_mount.json
 
 ### Allan variance (IMU noise → Q)
 
+Methodology and CLI are **shipped** — see [Evidence scorecard](#scientific-rigor-scorecard-what-is-already-done). Remaining work is a multi-hour static CSV, not the algorithm.
+
 ```powershell
 # Needs multi-hour static IMU CSV (see analyze_allan.py header for columns)
 python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
 ```
 
-Published ARW / bias-instability numbers belong in [Evidence](#evidence--published-results) once a static log is committed. Until then, process-noise defaults remain the σ_a / σ_g macros in `ins_ekf.hpp`.
-
+Until the fit table is pasted into Evidence, process-noise defaults remain the σ_a / σ_g macros in `ins_ekf.hpp`.
 ### Monte Carlo
 
 ```powershell
@@ -1076,10 +1099,10 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 
 | Phase | Target |
 |-------|--------|
-| **Done** | ESKF · evidence · spoof · fuzz · fault-policy · **NavMode matrix** · ext-WDT API · IMU vigilante API · CI |
+| **Done** | **MC N=100 · NHC matrix (GAP-3) · Allan IEEE tooling** · EKF v2 A/B · spoof · fuzz · NavMode · fault-policy · CI |
 | **Now** | A3 domain Q/R profiles · expand error-path cover · harden cppcheck findings |
 | **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
-| **Also pending** | Allan publish from static IMU hours · WCET S0–S7 on-board (protocol ready) |
+| **Also pending** | Allan **fit** publish (static IMU hours) · WCET S0–S7 on-board (protocol ready) |
 | **Visibility** | Repo on GitHub · Unity demo local · communities **with** field+PPK2 when ready |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).

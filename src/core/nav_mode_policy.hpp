@@ -1,9 +1,10 @@
 /**
  * @file nav_mode_policy.hpp
- * @brief Explicit NavMode selection + confidence (integrator-facing contract).
+ * @brief Maps generic estimate facts → NavMode product façade.
  *
- * Production Pico path (`ins_ekf_export_nav_state`) must call this — do not
- * fork mode logic elsewhere without updating docs/NAV_MODE_DEGRADATION.md.
+ * Normative Pico/EKF path. Generic vocabulary: EstimateMode / MEAS_REJECT_*
+ * (docs/ESTIMATE_ENGINE_VS_NAV_VOCAB.md). Do not fork mode logic elsewhere
+ * without updating docs/NAV_MODE_DEGRADATION.md.
  */
 #pragma once
 

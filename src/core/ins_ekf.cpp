@@ -473,7 +473,7 @@ float f_state_jacobian_entry(
         return 1.0f;
     }
 
-    if (k >= INS_ERR_VEL_N && k < INS_ERR_VEL_N + 3U && c >= INS_ERR_POS_N && c < INS_ERR_POS_N + 3U) {
+    if (k >= INS_ERR_VEL_N && k < INS_ERR_VEL_N + 3U && c < INS_ERR_POS_N + 3U) {
         if (k == (INS_ERR_VEL_N + (c - INS_ERR_POS_N))) {
             return dt_s;
         }
@@ -901,7 +901,7 @@ static void gnss_store_k_audit_n(
     for (uint8_t r = 0U; r < kDim; ++r) {
         for (uint8_t c = 0U; c < n_meas; ++c) {
             const float k_abs = std::fabs(k_gain[r][c]);
-            if (r >= INS_ERR_POS_N && r < INS_ERR_POS_N + 3U) {
+            if (r < INS_ERR_POS_N + 3U) {
                 k_pos = fmaxf(k_pos, k_abs);
             } else if (r >= INS_ERR_VEL_N && r < INS_ERR_VEL_N + 3U) {
                 k_vel = fmaxf(k_vel, k_abs);
@@ -1939,7 +1939,7 @@ bool InsEkfFilter::update_nhc()
         for (uint8_t c = 0U; c < 2U; ++c) {
             k_max = fmaxf(k_max, fabsf(k_gain[r][c]));
         }
-        if (r >= INS_ERR_POS_N && r <= INS_ERR_POS_D) {
+        if (r <= INS_ERR_POS_D) {
             k_pos = fmaxf(k_pos, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
         } else if (r >= INS_ERR_VEL_N && r <= INS_ERR_VEL_D) {
             k_vel = fmaxf(k_vel, fmaxf(fabsf(k_gain[r][0]), fabsf(k_gain[r][1])));
@@ -3633,6 +3633,11 @@ uint32_t ins_ekf_gnss_reject_count(const InsEkfFilter *filter)
     return filter->gnss_reject_count;
 }
 
+/*
+ * Product façade export: NED→LLA + nav_mode_select.
+ * Estimate-engine facts stay in the filter; NavState is the navigation ABI
+ * (see docs/ESTIMATE_ENGINE_VS_NAV_VOCAB.md).
+ */
 void ins_ekf_export_nav_state(
     const InsEkfFilter *filter,
     NavState *out_state,

@@ -1,0 +1,63 @@
+{
+  "tool": "cppcheck",
+  "status": "ok",
+  "exit_code": 0,
+  "xml": "docs/benchmarks/static_analysis/cppcheck_triage_a5.xml",
+  "issue_count": 38,
+  "top_ids": [
+    [
+      "normalCheckLevelMaxBranches",
+      12
+    ],
+    [
+      "memsetClassFloat",
+      9
+    ],
+    [
+      "compareValueOutOfTypeRangeError",
+      3
+    ],
+    [
+      "passedByValue",
+      3
+    ],
+    [
+      "unsignedPositive",
+      3
+    ],
+    [
+      "checkersReport",
+      1
+    ],
+    [
+      "constParameterPointer",
+      1
+    ],
+    [
+      "constVariable",
+      1
+    ],
+    [
+      "constVariablePointer",
+      1
+    ],
+    [
+      "dangerousTypeCast",
+      1
+    ],
+    [
+      "knownConditionTrueFalse",
+      1
+    ],
+    [
+      "redundantAssignment",
+      1
+    ],
+    [
+      "variableScope",
+      1
+    ]
+  ],
+  "scope": "src/core",
+  "flags": "--enable=all --std=c++17"
+}

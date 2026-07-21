@@ -183,10 +183,11 @@ enum InsEkfNhcJacobianMode : uint8_t {
 #define NAVICORE_INS_EKF_CONSISTENCY_MAX_VEL_JUMP_MPS 35.0f
 #endif
 
-/** gnss_last_reject_reason: 1=NIS, 2=S singular, 3=physical inconsistency (spoof-suspect). */
-#define INS_EKF_GNSS_REJECT_NIS 1U
-#define INS_EKF_GNSS_REJECT_S_SINGULAR 2U
-#define INS_EKF_GNSS_REJECT_INCONSISTENT 3U
+/** gnss_last_reject_reason — aliases of MEAS_REJECT_* (generic integrity taxonomy). */
+#include "meas_reject.hpp"
+#define INS_EKF_GNSS_REJECT_NIS MEAS_REJECT_NIS
+#define INS_EKF_GNSS_REJECT_S_SINGULAR MEAS_REJECT_S_SINGULAR
+#define INS_EKF_GNSS_REJECT_INCONSISTENT MEAS_REJECT_INCONSISTENT
 
 #ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET
 /* H-ATT-b1/c: fracción de dx_att_z NHC rechazada en aplicación (0 = off). */

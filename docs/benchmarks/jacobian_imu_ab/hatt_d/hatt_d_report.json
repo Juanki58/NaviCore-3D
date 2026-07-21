@@ -1,0 +1,526 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md \u00a713.21",
+  "intervention": "H-ATT-d att_z unobs columns",
+  "timestamp": "2026-07-19T15:28:26+02:00",
+  "seed": 71,
+  "T2": 3.736646e-06,
+  "tmax": 0.65,
+  "packs": {
+    "ctrl": {
+      "mode": "ctrl",
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 53.999
+        },
+        "B": {
+          "cell": "B",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 53.999
+        },
+        "C": {
+          "cell": "C",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        },
+        "D": {
+          "cell": "D",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "tunnel_exit_m": 152.09
+        },
+        "B": {
+          "cell": "B",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "tunnel_exit_m": 487.1
+        },
+        "C": {
+          "cell": "C",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "tunnel_exit_m": 17.41
+        },
+        "D": {
+          "cell": "D",
+          "mode": "ctrl",
+          "tag": "ctrl",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "tunnel_exit_m": 15.86
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\ctrl_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\ctrl_cellC_nhc_block_audit.csv"
+      }
+    },
+    "c_l1": {
+      "mode": "c_l1",
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "max_lateral_m": 95.818207
+        },
+        "B": {
+          "cell": "B",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "max_lateral_m": 95.818207
+        },
+        "C": {
+          "cell": "C",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        },
+        "D": {
+          "cell": "D",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.468337814e-05,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "tunnel_exit_m": 80.98
+        },
+        "B": {
+          "cell": "B",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01071879081,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "tunnel_exit_m": 363.65
+        },
+        "C": {
+          "cell": "C",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.46589291e-05,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "tunnel_exit_m": 17.41
+        },
+        "D": {
+          "cell": "D",
+          "mode": "c_l1",
+          "tag": "c-L-l1",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01070984453,
+            "thr": 3.736646022e-06,
+            "lambda": 1.0,
+            "mode": "forget"
+          },
+          "fired": true,
+          "tunnel_exit_m": 1570.34
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\c_l1_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\c_l1_cellC_nhc_block_audit.csv"
+      }
+    },
+    "d_unobs": {
+      "mode": "d_unobs",
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "max_lateral_m": 40.101284
+        },
+        "B": {
+          "cell": "B",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "max_lateral_m": 40.101284
+        },
+        "C": {
+          "cell": "C",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        },
+        "D": {
+          "cell": "D",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "fire": null,
+          "fired": false,
+          "max_lateral_m": 0.377
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.468337814e-05,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "tunnel_exit_m": 391.26
+        },
+        "B": {
+          "cell": "B",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01071879081,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "tunnel_exit_m": 410.1
+        },
+        "C": {
+          "cell": "C",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.46589291e-05,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "tunnel_exit_m": 326.92
+        },
+        "D": {
+          "cell": "D",
+          "mode": "d_unobs",
+          "tag": "d-E",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01070984453,
+            "thr": 3.736646022e-06,
+            "mode": "unobs"
+          },
+          "fired": true,
+          "tunnel_exit_m": 330.74
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\d_unobs_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_d\\d_unobs_cellC_nhc_block_audit.csv"
+      }
+    }
+  },
+  "scores": {
+    "P1": {
+      "pass": false,
+      "A_ctrl": 53.999,
+      "A_d": 40.101284,
+      "A_c_l1": 95.818207,
+      "improve_vs_ctrl": 1.3465653618472666,
+      "threshold": "<= 2.0 m AND >= 10.0x vs ctrl"
+    },
+    "P2_slalom": {
+      "pass": true,
+      "rho": 1.2,
+      "cells": {
+        "C": {
+          "control": 0.377,
+          "interv": 0.377,
+          "ratio": 1.0,
+          "pass": true
+        },
+        "D": {
+          "control": 0.377,
+          "interv": 0.377,
+          "ratio": 1.0,
+          "pass": true
+        }
+      }
+    },
+    "P2_tunnel": {
+      "pass": false,
+      "rho": 1.2,
+      "cells": {
+        "A": {
+          "control": 152.09,
+          "interv": 391.26,
+          "ratio": 2.5725557235847196,
+          "pass": false
+        },
+        "B": {
+          "control": 487.1,
+          "interv": 410.1,
+          "ratio": 0.8419215766783001,
+          "pass": true
+        },
+        "C": {
+          "control": 17.41,
+          "interv": 326.92,
+          "ratio": 18.777713957495692,
+          "pass": false
+        },
+        "D": {
+          "control": 15.86,
+          "interv": 330.74,
+          "ratio": 20.853720050441364,
+          "pass": false
+        }
+      }
+    },
+    "P3_pattvel": {
+      "max_abs_dP_onset": 0.009626875166,
+      "max_abs_dP_late": 0.011670841835000001,
+      "ratio_late_over_onset": 1.2123188089338521,
+      "threshold_5x_onset": 0.04813437583,
+      "pass": true,
+      "mean_abs_dP_late": 0.01087412925488889
+    },
+    "P3_pattvel_neg_ref": {
+      "max_abs_dP_onset": 1.0380055999999714e-05,
+      "max_abs_dP_late": 0.0026945440330000004,
+      "ratio_late_over_onset": 259.58858343346844,
+      "threshold_5x_onset": 5.190027999999857e-05,
+      "pass": false,
+      "mean_abs_dP_late": 0.0005210956946444444
+    },
+    "P3_C_nofire": {
+      "pass": true,
+      "fire_C": null
+    },
+    "P4_joseph_deficit": {
+      "pass": false,
+      "d_unobs": {
+        "n": 45,
+        "sum_joseph_deficit": 0.011894857158999997,
+        "sum_abs_joseph_deficit": 0.011894857158999997,
+        "dP_end": -0.008931327959999999,
+        "dP_start": -0.009626875166
+      },
+      "c_l1": {
+        "n": 45,
+        "sum_joseph_deficit": 0.0022935593740000034,
+        "sum_abs_joseph_deficit": 0.0022935593740000034,
+        "dP_end": 0.0026945440330000004,
+        "dP_start": 1.0380055999999714e-05
+      },
+      "ratio_d_over_c_l1": 5.1861997966310245,
+      "threshold": "sum_abs_deficit_d <= 0.25 * c_l1"
+    },
+    "fire_A": {
+      "t_s": 0.39,
+      "sumabs": 4.04993034e-06,
+      "thr": 3.736646022e-06,
+      "mode": "unobs"
+    },
+    "fire_ok": true,
+    "HATT_d_PASS": false
+  }
+}

@@ -1,0 +1,16 @@
+$ C:\Program Files\CMake\bin\cmake.EXE -S C:\NaviCore-3D -B C:\NaviCore-3D\build_coverage -G MinGW Makefiles -DCMAKE_BUILD_TYPE=Debug -DNAVICORE_ENABLE_COVERAGE=ON -DNAVICORE_ENABLE_SANITIZERS=OFF
+exit=0
+
+--- stdout ---
+-- The CXX compiler identification is GNU 16.1.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Users/juanc/AppData/Local/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin/c++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (3.4s)
+-- Generating done (0.2s)
+-- Build files have been written to: C:/NaviCore-3D/build_coverage
+
+--- stderr ---
+

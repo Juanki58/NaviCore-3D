@@ -1,0 +1,7 @@
+experiment_id,nhc_policy,imu_mode,drift_exit_m,drift_final_m,nhc_updates,innov_max_norm_mps,anatomy_csv,trace_csv
+A,off,ideal,299.072144,2.086304,0,0.000000,docs/benchmarks/super_tunnel_bd_rerun/A_anatomy.csv,
+A_dirty,off,dirty_full,303.635620,2.086498,0,0.000000,docs/benchmarks/super_tunnel_bd_rerun/A_dirty_anatomy.csv,
+B,constant_vel_only,ideal,995.251648,1083.319824,4500,6.018973,docs/benchmarks/super_tunnel_bd_rerun/B_anatomy.csv,docs/benchmarks/super_tunnel_bd_rerun/B_trace.csv
+B_dirty,constant_vel_only,dirty_full,1220.814697,1307.013062,4500,7.189699,docs/benchmarks/super_tunnel_bd_rerun/B_dirty_anatomy.csv,docs/benchmarks/super_tunnel_bd_rerun/B_dirty_trace.csv
+N_always,always,ideal,1421.555786,1984.709229,6001,6.920076,docs/benchmarks/super_tunnel_bd_rerun/N_always_anatomy.csv,docs/benchmarks/super_tunnel_bd_rerun/N_always_trace.csv
+N_always_dirty,always,dirty_full,1327.375732,1452.199951,6001,25.246962,docs/benchmarks/super_tunnel_bd_rerun/N_always_dirty_anatomy.csv,docs/benchmarks/super_tunnel_bd_rerun/N_always_dirty_trace.csv

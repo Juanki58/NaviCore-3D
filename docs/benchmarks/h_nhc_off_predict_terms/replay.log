@@ -1,0 +1,61 @@
+REAL_RUN_REPLAY: filtro=InsEkf15State
+REAL_RUN_REPLAY: entrada=C:\NaviCore-3D\docs\benchmarks\real_run_19082026_baseline\real_run_replay.csv
+REAL_RUN_REPLAY: salida=C:\NaviCore-3D\docs\benchmarks\h_nhc_off_predict_terms\replay_output.csv
+REAL_RUN_REPLAY: montaje=calibration:C:\NaviCore-3D\calibration\imu_mount.json
+REAL_RUN_REPLAY: yaw_init=H0_zero_yaw
+REAL_RUN_REPLAY: H9a gravity tilt init (min_samples=50 window=2.0 s)
+REAL_RUN_REPLAY: constraint_policy=disabled nhc_policy=disabled nhc_every_n=1 static_end=30.0s gps_thresh=0.10 m/s
+REAL_RUN_REPLAY: NHC_sigma lateral=0.500 vertical=1.000 m/s
+REAL_RUN_REPLAY: gap3_gnss_nis_audit=C:\NaviCore-3D\docs\benchmarks\h_nhc_off_predict_terms\gnss_nis_audit.csv
+REAL_RUN_REPLAY: h8_propagation_audit=C:\NaviCore-3D\docs\benchmarks\h_nhc_off_predict_terms\h8_propagation.csv
+REAL_RUN_REPLAY: gnss_obs_mode=pos_vel | sigma_vel=1.50 m/s | p_pv_policy=none
+REAL_RUN_REPLAY: H8 geodesy validation omitida (Location.csv no disponible)
+REAL_RUN_REPLAY: inicializado @ t=2.672 s | ref NED=(0.000, 0.000, -0.000) m
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.218067 thr=15.086000 innov=[-30.928,-0.000,27.367,0.000,0.000] contrib=[0.122,0.000,0.096,0.000,0.000] S_diag=[7818.560,7818.560,7823.560,0.000,0.000] decision=accept reason=0
+REAL_RUN_REPLAY: H9a gravity tilt init @ t=3.174 s | samples=50 | mean_a_body=(-3.390, -7.395, 6.270) | mean_w_body=(-0.00595, -0.25955, 0.19958) | roll=-49.71 pitch=19.27 deg
+GNSS_NIS_DECISION t_ms=4293 n_meas=5 NIS_used=12.479980 thr=15.086000 innov=[-32.375,20.549,27.327,-0.911,8.315] contrib=[0.233,0.079,0.169,-0.293,12.292] S_diag=[4415.618,4402.429,4406.071,49.785,8.039] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=4.301356 gnss_nis_gate=12.479980 gnss_nis_pos3d=0.283114 thr=15.086000 contrib=[0.233,0.079,0.169,-0.293,12.292] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=5291 n_meas=5 NIS_used=2.729268 thr=15.086000 innov=[-27.058,20.516,38.204,4.106,-0.883] contrib=[0.337,0.180,0.604,1.537,0.070] S_diag=[2410.004,2407.460,2412.481,11.078,8.047] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=5.301356 gnss_nis_gate=2.729268 gnss_nis_pos3d=0.592547 thr=15.086000 contrib=[0.337,0.180,0.604,1.537,0.070] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=6299 n_meas=5 NIS_used=6.848274 thr=15.086000 innov=[-25.731,16.278,39.689,2.469,-6.598] contrib=[0.433,0.207,0.929,0.590,4.689] S_diag=[1625.390,1624.894,1637.456,9.164,9.153] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=6.301356 gnss_nis_gate=6.848274 gnss_nis_pos3d=1.034883 thr=15.086000 contrib=[0.433,0.207,0.929,0.590,4.689] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=7298 n_meas=5 NIS_used=6.764540 thr=15.086000 innov=[-29.296,19.136,39.846,-5.759,-0.630] contrib=[0.611,0.307,1.234,4.603,0.010] S_diag=[1222.869,1223.194,1254.202,7.032,11.490] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=7.301355 gnss_nis_gate=6.764540 gnss_nis_pos3d=1.711118 thr=15.086000 contrib=[0.611,0.307,1.234,4.603,0.010] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=8296 n_meas=5 NIS_used=12.374733 thr=15.086000 innov=[-28.645,20.903,39.392,-6.326,3.629] contrib=[1.781,0.975,3.027,4.820,1.771] S_diag=[406.446,406.063,472.995,8.904,10.182] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=8.301355 gnss_nis_gate=12.374733 gnss_nis_pos3d=2.227700 thr=15.086000 contrib=[1.781,0.975,3.027,4.820,1.771] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=9294 n_meas=5 NIS_used=8.228077 thr=15.086000 innov=[-27.057,21.871,27.995,-2.671,5.316] contrib=[1.937,1.136,1.413,0.515,3.227] S_diag=[366.236,365.560,472.614,9.592,7.868] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=9.301355 gnss_nis_gate=8.228077 gnss_nis_pos3d=4.475490 thr=15.086000 contrib=[1.937,1.136,1.413,0.515,3.227] accepted=1 reject_reason=0
+[t=  10.0 s] rows=1000 imu=993 gps=7 drift=14.64 m
+GNSS_NIS_DECISION t_ms=10293 n_meas=5 NIS_used=5.690550 thr=15.086000 innov=[-24.864,20.227,10.994,0.300,1.136] contrib=[3.170,2.010,0.358,0.047,0.106] S_diag=[199.810,199.730,331.234,6.504,7.038] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=10.301355 gnss_nis_gate=5.690550 gnss_nis_pos3d=3.033091 thr=15.086000 contrib=[3.170,2.010,0.358,0.047,0.106] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=11291 n_meas=5 NIS_used=5.421557 thr=15.086000 innov=[-23.706,17.707,-1.777,-0.948,-1.859] contrib=[2.838,1.748,0.004,0.120,0.711] S_diag=[193.685,193.492,301.801,6.001,6.059] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=11.301354 gnss_nis_gate=5.421557 gnss_nis_pos3d=4.383867 thr=15.086000 contrib=[2.838,1.748,0.004,0.120,0.711] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=12299 n_meas=5 NIS_used=7.275072 thr=15.086000 innov=[-23.243,18.959,-6.915,-3.848,0.087] contrib=[2.540,1.922,0.186,2.642,-0.016] S_diag=[189.886,189.880,280.772,5.306,6.929] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=12.301354 gnss_nis_gate=7.275072 gnss_nis_pos3d=4.804613 thr=15.086000 contrib=[2.540,1.922,0.186,2.642,-0.016] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=13298 n_meas=5 NIS_used=10.231161 thr=15.086000 innov=[-20.343,15.455,-10.594,-3.109,-3.694] contrib=[2.531,1.935,0.522,2.337,2.907] S_diag=[145.539,145.564,226.665,4.861,6.774] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=13.301354 gnss_nis_gate=10.231161 gnss_nis_pos3d=3.843853 thr=15.086000 contrib=[2.531,1.935,0.522,2.337,2.907] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=14296 n_meas=5 NIS_used=14.069138 thr=15.086000 innov=[-18.648,13.446,-11.095,-4.645,-3.763] contrib=[2.690,2.057,0.846,5.426,3.050] S_diag=[106.773,107.025,172.180,3.930,6.264] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=14.301354 gnss_nis_gate=14.069138 gnss_nis_pos3d=4.228094 thr=15.086000 contrib=[2.690,2.057,0.846,5.426,3.050] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=15294 n_meas=5 NIS_used=13.540594 thr=15.086000 innov=[-15.715,10.914,-11.045,-4.730,-3.227] contrib=[2.712,1.993,1.244,5.432,2.160] S_diag=[74.110,74.484,121.104,3.684,5.380] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=15.301354 gnss_nis_gate=13.540594 gnss_nis_pos3d=4.283288 thr=15.086000 contrib=[2.712,1.993,1.244,5.432,2.160] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=16292 n_meas=5 NIS_used=9.653086 thr=15.086000 innov=[-12.031,8.526,-10.631,-3.455,-1.840] contrib=[2.579,1.835,1.681,2.710,0.849] S_diag=[47.866,48.139,77.460,3.827,4.331] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=16.301353 gnss_nis_gate=9.653086 gnss_nis_pos3d=4.179753 thr=15.086000 contrib=[2.579,1.835,1.681,2.710,0.849] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=17301 n_meas=5 NIS_used=5.272913 thr=15.086000 innov=[-7.828,5.486,-8.861,-1.314,-1.642] contrib=[1.523,0.990,1.526,0.345,0.889] S_diag=[38.258,38.279,54.134,3.662,3.565] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=17.301353 gnss_nis_gate=5.272913 gnss_nis_pos3d=3.409703 thr=15.086000 contrib=[1.523,0.990,1.526,0.345,0.889] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=18299 n_meas=5 NIS_used=5.871017 thr=15.086000 innov=[-6.316,3.312,-6.447,-3.417,-1.786] contrib=[0.780,0.445,1.022,3.039,0.585] S_diag=[36.042,36.347,45.825,3.554,5.023] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=18.301353 gnss_nis_gate=5.871017 gnss_nis_pos3d=2.366478 thr=15.086000 contrib=[0.780,0.445,1.022,3.039,0.585] accepted=1 reject_reason=0
+GNSS_NIS_DECISION t_ms=19297 n_meas=5 NIS_used=11.285184 thr=15.086000 innov=[-5.804,4.882,-5.741,-4.282,3.639] contrib=[0.534,0.476,0.919,5.303,4.054] S_diag=[35.409,35.655,42.715,5.030,4.985] decision=accept reason=0
+GNSS_NIS_AUDIT_COMPARE t_s=19.301353 gnss_nis_gate=11.285184 gnss_nis_pos3d=2.470822 thr=15.086000 contrib=[0.534,0.476,0.919,5.303,4.054] accepted=1 reject_reason=0
+[t=  20.1 s] rows=2000 imu=1983 gps=17 drift=20.13 m
+GNSS_NIS_DECISION t_ms=20296 n_meas=5 NIS_used=36.459000 thr=15.086000 innov=[-4.134,8.919,-4.591,-1.182,10.242] contrib=[0.347,0.925,0.672,0.923,33.592] S_diag=[36.047,34.536,41.813,7.326,3.428] decision=reject reason=1
+GNSS_NIS_AUDIT_COMPARE t_s=20.301353 gnss_nis_gate=36.459000 gnss_nis_pos3d=3.398398 thr=15.086000 contrib=[0.347,0.925,0.672,0.923,33.592] accepted=0 reject_reason=1
+----------------------------------------------------------------
+ REAL_RUN_REPLAY resumen
+  Filas procesadas: 2092 (IMU=2073, GPS=18)
+  Duracion:         21.00 s
+  Filtro activo:    si
+  GNSS aceptadas:   17 | rechazadas: 1 (94.4% aceptadas)
+  Ultimo GPS NED:   (112.537, 189.411, 17.704) m
+  Deriva final H:   22.783 m
+  Estado final NED: (91.838, 179.894, 47.428) m
+----------------------------------------------------------------

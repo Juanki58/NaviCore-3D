@@ -7,6 +7,7 @@ evalúa métricas desde los CSV de telemetría y emite un reporte PASS/FAIL.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import math
@@ -89,6 +90,7 @@ class BenchmarkResult:
     sim_exit_code: int = 0
     csv_path: Path | None = None
     error: str = ""
+    stdout: str = ""
 
     @property
     def passed(self) -> bool:
@@ -406,7 +408,23 @@ def print_evolution_report(history: list[dict[str, Any]]) -> None:
     print()
 
 
-def run_simulator(scenario: str) -> subprocess.CompletedProcess[str]:
+DEFAULT_BENCHMARK_SEED = 71
+
+
+def run_simulator(
+    scenario: str,
+    *,
+    seed: int = DEFAULT_BENCHMARK_SEED,
+    imu_mode: str = "dirty",
+    nhc_jacobian: str = "correct",
+    nhc_att_z_forget: float | None = None,
+    nhc_att_z_forget_gate: float | None = None,
+    nhc_att_z_forget_tmax: float | None = None,
+    nhc_att_z_forget_grace: int | None = None,
+    nhc_att_z_forget_gate_norm: bool = False,
+    nhc_att_z_unobs: bool = False,
+    env: dict | None = None,
+) -> subprocess.CompletedProcess[str]:
     binary = sim_binary_path()
     if not binary.is_file():
         raise FileNotFoundError(
@@ -414,23 +432,49 @@ def run_simulator(scenario: str) -> subprocess.CompletedProcess[str]:
             "Compile con: cmake --build build --target NaviCore3D_Sim"
         )
 
-    command = [str(binary), "--scenario", scenario, "--no-udp"]
+    command = [
+        str(binary),
+        "--scenario",
+        scenario,
+        "--no-udp",
+        "--seed",
+        str(seed),
+        "--imu-mode",
+        imu_mode,
+        "--nhc-jacobian",
+        nhc_jacobian,
+    ]
+    if nhc_att_z_forget is not None:
+        command.extend(["--nhc-att-z-forget", f"{nhc_att_z_forget:g}"])
+    if nhc_att_z_forget_gate is not None:
+        command.extend(["--nhc-att-z-forget-gate", f"{nhc_att_z_forget_gate:.9g}"])
+    if nhc_att_z_forget_tmax is not None:
+        command.extend(["--nhc-att-z-forget-tmax", f"{nhc_att_z_forget_tmax:g}"])
+    if nhc_att_z_forget_grace is not None:
+        command.extend(["--nhc-att-z-forget-grace", str(int(nhc_att_z_forget_grace))])
+    if nhc_att_z_forget_gate_norm:
+        command.append("--nhc-att-z-forget-gate-norm")
+    if nhc_att_z_unobs:
+        command.append("--nhc-att-z-unobs")
+    print("RUN:", " ".join(command))
     return subprocess.run(
         command,
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
 
-def archive_csv(scenario: str) -> Path | None:
+def archive_csv(scenario: str, archive_suffix: str = "") -> Path | None:
     source = resolve_csv_path()
     if source is None:
         return None
 
     BENCHMARKS_DIR.mkdir(parents=True, exist_ok=True)
-    destination = BENCHMARKS_DIR / f"{scenario.lower()}_telemetry.csv"
+    suffix = f"_{archive_suffix}" if archive_suffix else ""
+    destination = BENCHMARKS_DIR / f"{scenario.lower()}{suffix}_telemetry.csv"
     shutil.copy2(source, destination)
     return destination
 
@@ -575,18 +619,46 @@ def evaluate_tunnel(csv_path: Path, stdout: str) -> list[MetricResult]:
     ]
 
 
-def run_benchmark(name: str, scenario: str) -> BenchmarkResult:
+def run_benchmark(
+    name: str,
+    scenario: str,
+    *,
+    seed: int = DEFAULT_BENCHMARK_SEED,
+    imu_mode: str = "dirty",
+    nhc_jacobian: str = "correct",
+    nhc_att_z_forget: float | None = None,
+    nhc_att_z_forget_gate: float | None = None,
+    nhc_att_z_forget_tmax: float | None = None,
+    nhc_att_z_forget_grace: int | None = None,
+    nhc_att_z_forget_gate_norm: bool = False,
+    nhc_att_z_unobs: bool = False,
+    archive_suffix: str = "",
+    env: dict | None = None,
+) -> BenchmarkResult:
     result = BenchmarkResult(name=name, scenario=scenario)
 
     try:
-        completed = run_simulator(scenario)
+        completed = run_simulator(
+            scenario,
+            seed=seed,
+            imu_mode=imu_mode,
+            nhc_jacobian=nhc_jacobian,
+            nhc_att_z_forget=nhc_att_z_forget,
+            nhc_att_z_forget_gate=nhc_att_z_forget_gate,
+            nhc_att_z_forget_tmax=nhc_att_z_forget_tmax,
+            nhc_att_z_forget_grace=nhc_att_z_forget_grace,
+            nhc_att_z_forget_gate_norm=nhc_att_z_forget_gate_norm,
+            nhc_att_z_unobs=nhc_att_z_unobs,
+            env=env,
+        )
         result.sim_exit_code = completed.returncode
+        result.stdout = completed.stdout or ""
         if completed.returncode != 0:
             tail = (completed.stderr or completed.stdout or "").strip()
             result.error = f"Simulador terminó con código {completed.returncode}\n{tail}"
             return result
 
-        csv_path = archive_csv(scenario)
+        csv_path = archive_csv(scenario, archive_suffix=archive_suffix)
         if csv_path is None or not csv_path.is_file():
             result.error = (
                 "No se encontró CSV de telemetría tras la simulación. "
@@ -595,7 +667,7 @@ def run_benchmark(name: str, scenario: str) -> BenchmarkResult:
             return result
 
         result.csv_path = csv_path
-        stdout = completed.stdout or ""
+        stdout = result.stdout
         if scenario == "SLALOM":
             result.metrics = evaluate_slalom(csv_path, stdout)
         else:
@@ -654,6 +726,43 @@ def print_report(results: list[BenchmarkResult]) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Suite de benchmarks SLALOM / TUNNEL_STRESS")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=DEFAULT_BENCHMARK_SEED,
+        help=f"Semilla RNG fija (default {DEFAULT_BENCHMARK_SEED}; obligatoria para comparaciones)",
+    )
+    parser.add_argument(
+        "--imu-mode",
+        choices=["ideal", "dirty"],
+        default="dirty",
+        help="Modo IMU TUNNEL_STRESS (SLALOM es siempre ideal cinematico)",
+    )
+    parser.add_argument(
+        "--nhc-jacobian",
+        choices=["correct", "legacy"],
+        default="correct",
+        help="Filas H actitud NHC: correct (post-bf2bfbd) o legacy (bug de signo)",
+    )
+    parser.add_argument(
+        "--archive-suffix",
+        default="",
+        help="Sufijo para CSV archivado (p. ej. ideal_seed71)",
+    )
+    parser.add_argument(
+        "--skip-history",
+        action="store_true",
+        help="No actualizar docs/benchmarks/history.json (usar en brazos A/B)",
+    )
+    parser.add_argument(
+        "--scenario",
+        choices=["SLALOM", "TUNNEL_STRESS", "all"],
+        default="all",
+        help="Ejecutar un escenario o ambos",
+    )
+    args = parser.parse_args()
+
     git_meta = read_git_metadata()
 
     print("Ejecutando suite autónoma de benchmarks...")
@@ -661,32 +770,50 @@ def main() -> int:
     print(f"Simulador:   {sim_binary_path()}")
     print(f"Commit:      {git_meta.commit_hash} — {git_meta.commit_message}")
     print(f"Timestamp:   {git_meta.timestamp}")
+    print(f"Seed:        {args.seed}")
+    print(f"IMU mode:    {args.imu_mode}")
+    print(f"NHC Jacobian:{args.nhc_jacobian}")
 
     benchmarks = [
         ("Benchmark 1 — Slalom", "SLALOM"),
         ("Benchmark 2 — Túnel (TUNNEL_STRESS)", "TUNNEL_STRESS"),
     ]
+    if args.scenario != "all":
+        benchmarks = [item for item in benchmarks if item[1] == args.scenario]
 
-    results = [run_benchmark(name, scenario) for name, scenario in benchmarks]
+    results = [
+        run_benchmark(
+            name,
+            scenario,
+            seed=args.seed,
+            imu_mode=args.imu_mode,
+            nhc_jacobian=args.nhc_jacobian,
+            archive_suffix=args.archive_suffix,
+        )
+        for name, scenario in benchmarks
+    ]
     print_report(results)
 
-    history_metrics = extract_history_metrics(results)
-    if history_metrics is not None:
-        history = upsert_history_record(git_meta, history_metrics)
-        print(
-            colorize(
-                f"Histórico actualizado: {HISTORY_PATH.relative_to(REPO_ROOT)}",
-                ANSI_GREEN,
-            )
-        )
-        print_evolution_report(history)
+    if args.skip_history:
+        print(colorize("Histórico no actualizado (--skip-history).", ANSI_BOLD))
     else:
-        print(
-            colorize(
-                "Histórico no actualizado: no se pudieron extraer métricas de ambos benchmarks.",
-                ANSI_RED,
+        history_metrics = extract_history_metrics(results)
+        if history_metrics is not None:
+            history = upsert_history_record(git_meta, history_metrics)
+            print(
+                colorize(
+                    f"Histórico actualizado: {HISTORY_PATH.relative_to(REPO_ROOT)}",
+                    ANSI_GREEN,
+                )
             )
-        )
+            print_evolution_report(history)
+        else:
+            print(
+                colorize(
+                    "Histórico no actualizado: no se pudieron extraer métricas de ambos benchmarks.",
+                    ANSI_RED,
+                )
+            )
 
     return 0 if all(item.passed for item in results) else 1
 

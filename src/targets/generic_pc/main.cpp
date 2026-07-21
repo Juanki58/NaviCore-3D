@@ -2493,8 +2493,25 @@ int main(int argc, char *argv[])
     bool slalom = false;
     bool run_tests = false;
     bool nhc_experiments = false;
+    bool nhc_bd_rerun = false;
     bool has_cli_seed = false;
     uint32_t simulation_seed = 0U;
+    TunnelStressImuMode tunnel_imu_mode = TunnelStressImuMode::DIRTY_FULL;
+    bool has_cli_imu_mode = false;
+    InsEkfNhcJacobianMode nhc_jacobian_mode = INS_EKF_NHC_JACOBIAN_CORRECT;
+    bool has_cli_nhc_jacobian = false;
+    float nhc_att_z_forget = 0.0f;
+    bool has_cli_nhc_att_z_forget = false;
+    float nhc_att_z_forget_gate = 0.0f;
+    bool has_cli_nhc_att_z_forget_gate = false;
+    float nhc_att_z_forget_tmax = NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_TMAX_S;
+    bool has_cli_nhc_att_z_forget_tmax = false;
+    bool nhc_att_z_unobs = false;
+    bool has_cli_nhc_att_z_unobs = false;
+    uint32_t nhc_att_z_forget_grace = NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GRACE_TICKS;
+    bool has_cli_nhc_att_z_forget_grace = false;
+    bool nhc_att_z_forget_gate_norm = false;
+    bool has_cli_nhc_att_z_forget_gate_norm = false;
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--no-udp") == 0) {
@@ -2503,12 +2520,19 @@ int main(int argc, char *argv[])
             run_tests = true;
         } else if (std::strcmp(argv[i], "--nhc-experiments") == 0) {
             nhc_experiments = true;
+        } else if (std::strcmp(argv[i], "--nhc-bd-rerun") == 0) {
+            nhc_bd_rerun = true;
         } else if (std::strcmp(argv[i], "--super-tunnel") == 0) {
             super_tunnel = true;
         } else if (std::strcmp(argv[i], "--scenario") == 0) {
             if (i + 1 >= argc) {
                 std::printf("ERROR: --scenario requiere un nombre (p. ej. TUNNEL_STRESS)\n");
-                std::printf("Uso: NaviCore3D_Sim --scenario TUNNEL_STRESS [--no-udp] [--seed N]\n");
+                std::printf(
+                    "Uso: NaviCore3D_Sim --scenario TUNNEL_STRESS [--no-udp] [--seed N] "
+                    "[--imu-mode ideal|dirty] [--nhc-jacobian correct|legacy] "
+                    "[--nhc-att-z-forget LAMBDA] [--nhc-att-z-forget-gate T] "
+                    "[--nhc-att-z-forget-tmax S] [--nhc-att-z-forget-grace N] "
+                    "[--nhc-att-z-forget-gate-norm] [--nhc-att-z-unobs]\n");
                 return 1;
             }
             scenario_name = argv[i + 1];
@@ -2521,6 +2545,103 @@ int main(int argc, char *argv[])
             simulation_seed = static_cast<uint32_t>(std::strtoul(argv[i + 1], nullptr, 10));
             has_cli_seed = true;
             ++i;
+        } else if (std::strcmp(argv[i], "--imu-mode") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --imu-mode requiere ideal|dirty\n");
+                return 1;
+            }
+            const char *mode_text = argv[i + 1];
+            if (std::strcmp(mode_text, "ideal") == 0) {
+                tunnel_imu_mode = TunnelStressImuMode::IDEAL;
+            } else if (
+                std::strcmp(mode_text, "dirty") == 0
+                || std::strcmp(mode_text, "dirty_full") == 0) {
+                tunnel_imu_mode = TunnelStressImuMode::DIRTY_FULL;
+            } else {
+                std::printf("ERROR: --imu-mode invalido: %s (usa ideal|dirty)\n", mode_text);
+                return 1;
+            }
+            has_cli_imu_mode = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-jacobian") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --nhc-jacobian requiere correct|legacy\n");
+                return 1;
+            }
+            if (!ins_ekf_parse_nhc_jacobian_mode(argv[i + 1], &nhc_jacobian_mode)) {
+                std::printf(
+                    "ERROR: --nhc-jacobian invalido: %s (usa correct|legacy)\n", argv[i + 1]);
+                return 1;
+            }
+            has_cli_nhc_jacobian = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-forget") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --nhc-att-z-forget requiere LAMBDA en [0,1]\n");
+                return 1;
+            }
+            char *end = nullptr;
+            const float parsed = std::strtof(argv[i + 1], &end);
+            if (end == argv[i + 1] || parsed < 0.0f || parsed > 1.0f) {
+                std::printf(
+                    "ERROR: --nhc-att-z-forget invalido: %s (usa float en [0,1])\n",
+                    argv[i + 1]);
+                return 1;
+            }
+            nhc_att_z_forget = parsed;
+            has_cli_nhc_att_z_forget = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-forget-gate") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --nhc-att-z-forget-gate requiere T>=0 (rad, 0=off)\n");
+                return 1;
+            }
+            char *end = nullptr;
+            const float parsed = std::strtof(argv[i + 1], &end);
+            if (end == argv[i + 1] || parsed < 0.0f) {
+                std::printf(
+                    "ERROR: --nhc-att-z-forget-gate invalido: %s\n", argv[i + 1]);
+                return 1;
+            }
+            nhc_att_z_forget_gate = parsed;
+            has_cli_nhc_att_z_forget_gate = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-forget-tmax") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --nhc-att-z-forget-tmax requiere S>=0 (segundos)\n");
+                return 1;
+            }
+            char *end = nullptr;
+            const float parsed = std::strtof(argv[i + 1], &end);
+            if (end == argv[i + 1] || parsed < 0.0f) {
+                std::printf(
+                    "ERROR: --nhc-att-z-forget-tmax invalido: %s\n", argv[i + 1]);
+                return 1;
+            }
+            nhc_att_z_forget_tmax = parsed;
+            has_cli_nhc_att_z_forget_tmax = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-unobs") == 0) {
+            nhc_att_z_unobs = true;
+            has_cli_nhc_att_z_unobs = true;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-forget-grace") == 0) {
+            if (i + 1 >= argc) {
+                std::printf("ERROR: --nhc-att-z-forget-grace requiere N>=0 (ticks NHC)\n");
+                return 1;
+            }
+            char *end = nullptr;
+            const unsigned long parsed = std::strtoul(argv[i + 1], &end, 10);
+            if (end == argv[i + 1]) {
+                std::printf(
+                    "ERROR: --nhc-att-z-forget-grace invalido: %s\n", argv[i + 1]);
+                return 1;
+            }
+            nhc_att_z_forget_grace = static_cast<uint32_t>(parsed);
+            has_cli_nhc_att_z_forget_grace = true;
+            ++i;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-forget-gate-norm") == 0) {
+            nhc_att_z_forget_gate_norm = true;
+            has_cli_nhc_att_z_forget_gate_norm = true;
         } else if (std::strcmp(argv[i], "--csv-out") == 0) {
             if (i + 1 >= argc) {
                 std::printf("ERROR: --csv-out requiere la ruta del archivo CSV\n");
@@ -2552,6 +2673,12 @@ int main(int argc, char *argv[])
         }
     }
     sensors_simulation_set_default_seed(simulation_seed);
+    ins_ekf_set_default_nhc_jacobian_mode(nhc_jacobian_mode);
+    ins_ekf_set_default_nhc_att_z_forget(nhc_att_z_forget);
+    ins_ekf_set_default_nhc_att_z_forget_gate(nhc_att_z_forget_gate, nhc_att_z_forget_tmax);
+    ins_ekf_set_default_nhc_att_z_forget_grace_ticks(nhc_att_z_forget_grace);
+    ins_ekf_set_default_nhc_att_z_forget_gate_norm(nhc_att_z_forget_gate_norm);
+    ins_ekf_set_default_nhc_att_z_unobs(nhc_att_z_unobs);
 
     if (scenario_name != NULL) {
         if (std::strcmp(scenario_name, "TUNNEL_STRESS") == 0) {
@@ -2569,16 +2696,55 @@ int main(int argc, char *argv[])
         return run_regression_suite();
     }
 
+    if (nhc_bd_rerun) {
+        return run_super_tunnel_bd_isolation_rerun();
+    }
     if (nhc_experiments) {
         return run_super_tunnel_nhc_experiments();
     }
 
     std::printf("NaviCore-3D — Simulador PC (Fase 2: Guiado 3D + Mision)\n");
     std::printf("Semilla RNG: %u%s\n", simulation_seed, has_cli_seed ? "" : " (reloj del sistema)");
+    std::printf(
+        "NHC Jacobian: %s%s\n",
+        ins_ekf_nhc_jacobian_mode_name(nhc_jacobian_mode),
+        has_cli_nhc_jacobian ? "" : " (default correct)");
+    std::printf(
+        "NHC att_z forget (H-ATT λ): %.3f%s\n",
+        static_cast<double>(nhc_att_z_forget),
+        has_cli_nhc_att_z_forget ? "" : " (default 0 = off)");
+    std::printf(
+        "NHC att_z forget gate (H-ATT-c T): %.6e%s\n",
+        static_cast<double>(nhc_att_z_forget_gate),
+        has_cli_nhc_att_z_forget_gate ? "" : " (default 0 = ungated)");
+    std::printf(
+        "NHC att_z forget tmax: %.3f s%s\n",
+        static_cast<double>(nhc_att_z_forget_tmax),
+        has_cli_nhc_att_z_forget_tmax ? "" : " (default)");
+    std::printf(
+        "NHC att_z unobs (H-ATT-d): %s%s\n",
+        nhc_att_z_unobs ? "ON" : "off",
+        has_cli_nhc_att_z_unobs ? "" : " (default off)");
+    std::printf(
+        "NHC att_z forget grace (cand1 E1): %u ticks%s\n",
+        static_cast<unsigned>(nhc_att_z_forget_grace),
+        has_cli_nhc_att_z_forget_grace ? "" : " (default 0)");
+    std::printf(
+        "NHC att_z forget gate norm (cand1 E2): %s%s\n",
+        nhc_att_z_forget_gate_norm ? "ON" : "off",
+        has_cli_nhc_att_z_forget_gate_norm ? "" : " (default off)");
     if (tunnel_stress) {
         std::printf("Modo: TUNNEL_STRESS (perfil multi-fase reproducible)\n");
+        std::printf(
+            "IMU mode: %s%s\n",
+            tunnel_stress_imu_mode_name(tunnel_imu_mode),
+            has_cli_imu_mode ? "" : " (default dirty_full)");
     } else if (slalom) {
         std::printf("Modo: SLALOM (seguimiento en curvas cerradas)\n");
+        if (has_cli_imu_mode && tunnel_imu_mode != TunnelStressImuMode::IDEAL) {
+            std::printf(
+                "AVISO: SLALOM usa IMU ideal cinematica; --imu-mode dirty no aplica a este escenario\n");
+        }
     } else if (super_tunnel) {
         std::printf("Modo: SUPER_TUNNEL (NHC vs sin NHC)\n");
     } else if (replay_csv_path != NULL) {
@@ -2624,7 +2790,8 @@ int main(int argc, char *argv[])
     }
 
     if (tunnel_stress) {
-        run_tunnel_stress_scenario(&telemetry, emit_ekf_navigation_state, simulation_seed);
+        run_tunnel_stress_scenario(
+            &telemetry, emit_ekf_navigation_state, simulation_seed, tunnel_imu_mode);
     } else if (slalom) {
         run_slalom_scenario(&telemetry, emit_ekf_navigation_state);
     } else if (super_tunnel) {

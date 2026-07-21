@@ -1,0 +1,234 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md \u00a713.22",
+  "timestamp": "2026-07-19T15:37:31+02:00",
+  "T2": 3.736646e-06,
+  "cells": [
+    {
+      "scenario": "SLALOM",
+      "cell": "A",
+      "jac": "correct",
+      "imu": "ideal",
+      "n_rows": 2501,
+      "t0_abs_dx": 7.541888181e-08,
+      "t0_sumabs": 7.541888181e-08,
+      "t0_Pzz": 0.0304627791,
+      "t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "t0_sumabs_over_T2": 0.020183576878837334,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 0.400000006,
+        "tick": 41,
+        "sumabs": 4.049930424909e-06,
+        "P_att_zz": 0.005020714831,
+        "sumabs_over_Pzz": 0.0008066441853863181
+      },
+      "post_med_abs_dx": 4.487015985e-07,
+      "grace_guess_tick": 1,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_slalom_cellA_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "SLALOM",
+      "cell": "B",
+      "jac": "correct",
+      "imu": "dirty",
+      "n_rows": 2501,
+      "t0_abs_dx": 7.541888181e-08,
+      "t0_sumabs": 7.541888181e-08,
+      "t0_Pzz": 0.0304627791,
+      "t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "t0_sumabs_over_T2": 0.020183576878837334,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 0.400000006,
+        "tick": 41,
+        "sumabs": 4.049930424909e-06,
+        "P_att_zz": 0.005020714831,
+        "sumabs_over_Pzz": 0.0008066441853863181
+      },
+      "post_med_abs_dx": 4.487015985e-07,
+      "grace_guess_tick": 1,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_slalom_cellB_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "SLALOM",
+      "cell": "C",
+      "jac": "legacy",
+      "imu": "ideal",
+      "n_rows": 2501,
+      "t0_abs_dx": 7.54188676e-08,
+      "t0_sumabs": 7.54188676e-08,
+      "t0_Pzz": 0.0304627791,
+      "t0_sumabs_over_Pzz": 2.475771082881929e-06,
+      "t0_sumabs_over_T2": 0.020183573075961705,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 1.210000038,
+        "tick": 122,
+        "sumabs": 3.769231991833401e-06,
+        "P_att_zz": 0.009906318039,
+        "sumabs_over_Pzz": 0.0003804876824057517
+      },
+      "post_med_abs_dx": 6.9398296e-09,
+      "grace_guess_tick": 4,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_slalom_cellC_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "SLALOM",
+      "cell": "D",
+      "jac": "legacy",
+      "imu": "dirty",
+      "n_rows": 2501,
+      "t0_abs_dx": 7.54188676e-08,
+      "t0_sumabs": 7.54188676e-08,
+      "t0_Pzz": 0.0304627791,
+      "t0_sumabs_over_Pzz": 2.475771082881929e-06,
+      "t0_sumabs_over_T2": 0.020183573075961705,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 1.210000038,
+        "tick": 122,
+        "sumabs": 3.769231991833401e-06,
+        "P_att_zz": 0.009906318039,
+        "sumabs_over_Pzz": 0.0003804876824057517
+      },
+      "post_med_abs_dx": 6.9398296e-09,
+      "grace_guess_tick": 4,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_slalom_cellD_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "TUNNEL_STRESS",
+      "cell": "A",
+      "jac": "correct",
+      "imu": "ideal",
+      "n_rows": 2000,
+      "t0_abs_dx": 1.468337814e-05,
+      "t0_sumabs": 1.468337814e-05,
+      "t0_Pzz": 0.8804525137,
+      "t0_sumabs_over_Pzz": 1.667708128663839e-05,
+      "t0_sumabs_over_T2": 3.9295609324511873,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 10.0,
+        "tick": 1,
+        "sumabs": 1.468337814e-05,
+        "P_att_zz": 0.8804525137,
+        "sumabs_over_Pzz": 1.667708128663839e-05
+      },
+      "post_med_abs_dx": 0.0001157128354,
+      "grace_guess_tick": 1,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_tunnel_stress_cellA_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "TUNNEL_STRESS",
+      "cell": "B",
+      "jac": "correct",
+      "imu": "dirty",
+      "n_rows": 2000,
+      "t0_abs_dx": 0.01071879081,
+      "t0_sumabs": 0.01071879081,
+      "t0_Pzz": 0.8794099689,
+      "t0_sumabs_over_Pzz": 0.012188616446328756,
+      "t0_sumabs_over_T2": 2868.559347072214,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 10.0,
+        "tick": 1,
+        "sumabs": 0.01071879081,
+        "P_att_zz": 0.8794099689,
+        "sumabs_over_Pzz": 0.012188616446328756
+      },
+      "post_med_abs_dx": 0.0002955843229,
+      "grace_guess_tick": 32,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_tunnel_stress_cellB_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "TUNNEL_STRESS",
+      "cell": "C",
+      "jac": "legacy",
+      "imu": "ideal",
+      "n_rows": 2000,
+      "t0_abs_dx": 1.46589291e-05,
+      "t0_sumabs": 1.46589291e-05,
+      "t0_Pzz": 0.8804525137,
+      "t0_sumabs_over_Pzz": 1.6649312565873137e-05,
+      "t0_sumabs_over_T2": 3.9230178882345292,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 10.0,
+        "tick": 1,
+        "sumabs": 1.46589291e-05,
+        "P_att_zz": 0.8804525137,
+        "sumabs_over_Pzz": 1.6649312565873137e-05
+      },
+      "post_med_abs_dx": 2.73205405e-08,
+      "grace_guess_tick": 2,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_tunnel_stress_cellC_nhc_block_audit.csv"
+    },
+    {
+      "scenario": "TUNNEL_STRESS",
+      "cell": "D",
+      "jac": "legacy",
+      "imu": "dirty",
+      "n_rows": 2000,
+      "t0_abs_dx": 0.01070984453,
+      "t0_sumabs": 0.01070984453,
+      "t0_Pzz": 0.8794099689,
+      "t0_sumabs_over_Pzz": 0.012178443398130099,
+      "t0_sumabs_over_T2": 2866.165146497688,
+      "cross_T2": {
+        "crosses": true,
+        "t_s": 10.0,
+        "tick": 1,
+        "sumabs": 0.01070984453,
+        "P_att_zz": 0.8794099689,
+        "sumabs_over_Pzz": 0.012178443398130099
+      },
+      "post_med_abs_dx": 1.979361969e-06,
+      "grace_guess_tick": 2,
+      "audit": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\cand1_gate_e12\\ctrl_tunnel_stress_cellD_nhc_block_audit.csv"
+    }
+  ],
+  "slalom_A_tick39": {
+    "t_s": 0.380000025,
+    "sumabs": 3.440380425109e-06,
+    "P_att_zz": 0.004970801994,
+    "sumabs_over_Pzz": 0.0006921177768218704,
+    "sumabs_over_T2": 0.92071350219127
+  },
+  "scale_comparison": {
+    "A": {
+      "tunnel_t0_sumabs_over_T2": 3.9295609324511873,
+      "tunnel_t0_sumabs_over_Pzz": 1.667708128663839e-05,
+      "slalom_A_t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "slalom_A_tick39_sumabs_over_Pzz": 0.0006921177768218704,
+      "ratio_tunnel_t0_Pnorm_vs_slalom_onset_Pnorm": 0.024095727411045174,
+      "grace_guess_tick": 1
+    },
+    "B": {
+      "tunnel_t0_sumabs_over_T2": 2868.559347072214,
+      "tunnel_t0_sumabs_over_Pzz": 0.012188616446328756,
+      "slalom_A_t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "slalom_A_tick39_sumabs_over_Pzz": 0.0006921177768218704,
+      "ratio_tunnel_t0_Pnorm_vs_slalom_onset_Pnorm": 17.61061029568921,
+      "grace_guess_tick": 32
+    },
+    "C": {
+      "tunnel_t0_sumabs_over_T2": 3.9230178882345292,
+      "tunnel_t0_sumabs_over_Pzz": 1.6649312565873137e-05,
+      "slalom_A_t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "slalom_A_tick39_sumabs_over_Pzz": 0.0006921177768218704,
+      "ratio_tunnel_t0_Pnorm_vs_slalom_onset_Pnorm": 0.024055606030414317,
+      "grace_guess_tick": 2
+    },
+    "D": {
+      "tunnel_t0_sumabs_over_T2": 2866.165146497688,
+      "tunnel_t0_sumabs_over_Pzz": 0.012178443398130099,
+      "slalom_A_t0_sumabs_over_Pzz": 2.47577154935283e-06,
+      "slalom_A_tick39_sumabs_over_Pzz": 0.0006921177768218704,
+      "ratio_tunnel_t0_Pnorm_vs_slalom_onset_Pnorm": 17.595911860626074,
+      "grace_guess_tick": 2
+    }
+  },
+  "recommended_grace_N_ticks": 32,
+  "note": "E1: skip accumulate+evaluate for first N NHC ticks. E2 only if P-normalized ratios tunnel-t0 vs slalom-onset are O(1)."
+}

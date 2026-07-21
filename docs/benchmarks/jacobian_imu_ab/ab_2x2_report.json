@@ -1,0 +1,141 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md",
+  "timestamp": "2026-07-19T00:08:38+02:00",
+  "seed": 71,
+  "cells": {
+    "A": {
+      "cell": "A",
+      "nhc_jacobian": "correct",
+      "imu_mode": "ideal",
+      "seed": 71,
+      "slalom_note": "SLALOM IMU is always kinematic ideal; imu_mode flag does not apply",
+      "slalom_max_lateral_m": 53.999,
+      "slalom_pass": false,
+      "tunnel_exit_m": 152.09,
+      "tunnel_exit_pass": false,
+      "tunnel_zupt_speed_mps": 2.266,
+      "tunnel_zupt_pass": false,
+      "tunnel_recovery": "TIMEOUT",
+      "tunnel_recovery_pass": false,
+      "tunnel_pass": false,
+      "overall_pass": false,
+      "errors": {
+        "slalom": null,
+        "tunnel": null
+      }
+    },
+    "B": {
+      "cell": "B",
+      "nhc_jacobian": "correct",
+      "imu_mode": "dirty",
+      "seed": 71,
+      "slalom_note": "SLALOM IMU is always kinematic ideal; imu_mode flag does not apply",
+      "slalom_max_lateral_m": 53.999,
+      "slalom_pass": false,
+      "tunnel_exit_m": 487.1,
+      "tunnel_exit_pass": false,
+      "tunnel_zupt_speed_mps": 1.241,
+      "tunnel_zupt_pass": false,
+      "tunnel_recovery": "TIMEOUT",
+      "tunnel_recovery_pass": false,
+      "tunnel_pass": false,
+      "overall_pass": false,
+      "errors": {
+        "slalom": null,
+        "tunnel": null
+      }
+    },
+    "C": {
+      "cell": "C",
+      "nhc_jacobian": "legacy",
+      "imu_mode": "ideal",
+      "seed": 71,
+      "slalom_note": "SLALOM IMU is always kinematic ideal; imu_mode flag does not apply",
+      "slalom_max_lateral_m": 0.377,
+      "slalom_pass": false,
+      "tunnel_exit_m": 17.41,
+      "tunnel_exit_pass": false,
+      "tunnel_zupt_speed_mps": 0.215,
+      "tunnel_zupt_pass": false,
+      "tunnel_recovery": "TIMEOUT",
+      "tunnel_recovery_pass": false,
+      "tunnel_pass": false,
+      "overall_pass": false,
+      "errors": {
+        "slalom": null,
+        "tunnel": null
+      }
+    },
+    "D": {
+      "cell": "D",
+      "nhc_jacobian": "legacy",
+      "imu_mode": "dirty",
+      "seed": 71,
+      "slalom_note": "SLALOM IMU is always kinematic ideal; imu_mode flag does not apply",
+      "slalom_max_lateral_m": 0.377,
+      "slalom_pass": false,
+      "tunnel_exit_m": 15.86,
+      "tunnel_exit_pass": false,
+      "tunnel_zupt_speed_mps": 0.241,
+      "tunnel_zupt_pass": false,
+      "tunnel_recovery": "TIMEOUT",
+      "tunnel_recovery_pass": false,
+      "tunnel_pass": false,
+      "overall_pass": false,
+      "errors": {
+        "slalom": null,
+        "tunnel": null
+      }
+    }
+  },
+  "matrix": {
+    "seed": 71,
+    "limits": {
+      "slalom_m": 0.15,
+      "tunnel_exit_m": 15.0,
+      "zupt_mps": 0.01
+    },
+    "rows": {
+      "correct_jacobian": {
+        "ideal": {
+          "cell": "A",
+          "slalom_m": 53.999,
+          "tunnel_exit_m": 152.09,
+          "pass": false
+        },
+        "dirty": {
+          "cell": "B",
+          "slalom_m": 53.999,
+          "tunnel_exit_m": 487.1,
+          "pass": false
+        }
+      },
+      "legacy_bug_jacobian": {
+        "ideal": {
+          "cell": "C",
+          "slalom_m": 0.377,
+          "tunnel_exit_m": 17.41,
+          "pass": false
+        },
+        "dirty": {
+          "cell": "D",
+          "slalom_m": 0.377,
+          "tunnel_exit_m": 15.86,
+          "pass": false
+        }
+      }
+    }
+  },
+  "preregistered_reading": {
+    "path": "PATH_3_A_ALSO_FAILS",
+    "instruction": "A tambi\u00e9n falla: problema posterior/independiente (o no solo Jacobian\u00d7dirty). Acotar con git bisect entre \u00faltimo PASS (~0.12m/11m) y HEAD. Si C tambi\u00e9n falla, el signo H no es causa suficiente de este FAIL.",
+    "a_pass": false,
+    "b_tunnel_pass": false,
+    "c_pass": false,
+    "d_tunnel_pass": false,
+    "a_tunnel_exit_pass": false,
+    "c_tunnel_exit_pass": false,
+    "session": "NOT_CLOSED \u2014 no interpretar m\u00e1s all\u00e1 de esta tabla"
+  },
+  "discipline": "No interpretar m\u00e1s all\u00e1 de preregistered_reading hasta nueva instrucci\u00f3n"
+}

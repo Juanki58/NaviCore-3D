@@ -1,0 +1,191 @@
+{
+  "window_s": [
+    1.54,
+    1.64
+  ],
+  "break_s": 1.59,
+  "ideal_slalom_gyro_xy_zero": true,
+  "note": "Ideal SLALOM: measured gyro=(0,0,\u03c9z). Pitch/roll rates in predict come from \u2212bias_g and/or quaternion composition with non-level q_att_.",
+  "arms": {
+    "ctrl": {
+      "pre": {
+        "n": 6,
+        "mean_dyaw_deg": 1.8370173591269066,
+        "mean_pitch_deg": 0.6192432356808082,
+        "mean_roll_deg": -2.076819218603866,
+        "end_dyaw_deg": 2.0923253039078316,
+        "end_pitch_deg": -0.0858863734901104,
+        "end_roll_deg": -3.2290182460187804,
+        "sum_pred_pitch_mrad": 0.6966614628566483,
+        "sum_pred_yaw_mrad": -8.478236528176572,
+        "sum_pred_roll_mrad": -2.3940834630029753,
+        "sum_dx_y_mrad": -17.62866146285665,
+        "sum_dx_z_mrad": 15.197236528176933,
+        "sum_dpitch_telem_mrad": -16.932,
+        "sum_dyaw_telem_mrad": 6.719000000000364,
+        "mean_abs_w_corr_x": 0.04888783333333333,
+        "mean_abs_w_corr_y": 0.009224666666666666,
+        "mean_omega_z": -0.16744683333333332,
+        "mean_bias_gz": -0.013759
+      },
+      "post": {
+        "n": 5,
+        "mean_dyaw_deg": 0.9402999581846301,
+        "mean_pitch_deg": -1.1225503713762115,
+        "mean_roll_deg": -4.546981603002311,
+        "end_dyaw_deg": 0.04086334075503628,
+        "end_pitch_deg": -1.3867870473346446,
+        "end_roll_deg": -5.34529515811399,
+        "sum_pred_pitch_mrad": -3.352571143003911,
+        "sum_pred_yaw_mrad": -7.078709477441588,
+        "sum_pred_roll_mrad": -3.066365990632489,
+        "sum_dx_y_mrad": -19.352428856996088,
+        "sum_dx_z_mrad": -37.608290522558555,
+        "sum_dpitch_telem_mrad": -22.705000000000002,
+        "sum_dyaw_telem_mrad": -44.68700000000014,
+        "mean_abs_w_corr_x": 0.0804172,
+        "mean_abs_w_corr_y": 0.0015128,
+        "mean_omega_z": -0.17860519999999996,
+        "mean_bias_gz": -0.005194200000000001
+      },
+      "full": {
+        "n": 11,
+        "mean_dyaw_deg": 1.429418540516781,
+        "mean_pitch_deg": -0.1724811311632917,
+        "mean_roll_deg": -3.199620302421341,
+        "end_dyaw_deg": 0.04086334075503628,
+        "end_pitch_deg": -1.3867870473346446,
+        "end_roll_deg": -5.34529515811399,
+        "sum_pred_pitch_mrad": -2.6559096801472624,
+        "sum_pred_yaw_mrad": -15.55694600561816,
+        "sum_pred_roll_mrad": -5.460449453635464,
+        "sum_dx_y_mrad": -36.98109031985274,
+        "sum_dx_z_mrad": -22.411053994381618,
+        "sum_dpitch_telem_mrad": -39.63699999999999,
+        "sum_dyaw_telem_mrad": -37.967999999999776,
+        "mean_abs_w_corr_x": 0.06321936363636364,
+        "mean_abs_w_corr_y": 0.0057192727272727265,
+        "mean_omega_z": -0.17251881818181816,
+        "mean_bias_gz": -0.00986590909090909
+      }
+    },
+    "latch": {
+      "pre": {
+        "n": 6,
+        "mean_dyaw_deg": 0.06450557481360931,
+        "mean_pitch_deg": 0.9909973517548573,
+        "mean_roll_deg": 0.14237046279342405,
+        "end_dyaw_deg": 0.07998293584933577,
+        "end_pitch_deg": 1.3749841167549495,
+        "end_roll_deg": 0.1899355090858679,
+        "sum_pred_pitch_mrad": 0.5094562964227521,
+        "sum_pred_yaw_mrad": -9.43499999999986,
+        "sum_pred_roll_mrad": -0.736705719537577,
+        "sum_dx_y_mrad": 12.928543703577247,
+        "sum_dx_z_mrad": 0.0,
+        "sum_dpitch_telem_mrad": 13.437999999999999,
+        "sum_dyaw_telem_mrad": -9.43499999999986,
+        "mean_abs_w_corr_x": 0.011153166666666665,
+        "mean_abs_w_corr_y": 0.009189999999999999,
+        "mean_omega_z": -0.16744683333333332,
+        "mean_bias_gz": -0.011062666666666667
+      },
+      "post": {
+        "n": 5,
+        "mean_dyaw_deg": 0.11334997247230719,
+        "mean_pitch_deg": 2.267148158709057,
+        "mean_roll_deg": 0.1426091952080619,
+        "end_dyaw_deg": 0.14147472958002677,
+        "end_pitch_deg": 3.048250061655006,
+        "end_roll_deg": -0.004640958140559669,
+        "sum_pred_pitch_mrad": 0.8541796051468463,
+        "sum_pred_yaw_mrad": -7.808999999999955,
+        "sum_pred_roll_mrad": -1.3082157213502166,
+        "sum_dx_y_mrad": 28.349820394853154,
+        "sum_dx_z_mrad": 0.0,
+        "sum_dpitch_telem_mrad": 29.204,
+        "sum_dyaw_telem_mrad": -7.808999999999955,
+        "mean_abs_w_corr_x": 0.0248596,
+        "mean_abs_w_corr_y": 0.0192422,
+        "mean_omega_z": -0.17860519999999996,
+        "mean_bias_gz": -0.024543799999999998
+      },
+      "full": {
+        "n": 11,
+        "mean_dyaw_deg": 0.08670757374938108,
+        "mean_pitch_deg": 1.5710659003704028,
+        "mean_roll_deg": 0.14247897752735034,
+        "end_dyaw_deg": 0.14147472958002677,
+        "end_pitch_deg": 3.048250061655006,
+        "end_roll_deg": -0.004640958140559669,
+        "sum_pred_pitch_mrad": 1.3636359015695985,
+        "sum_pred_yaw_mrad": -17.243999999999815,
+        "sum_pred_roll_mrad": -2.044921440887794,
+        "sum_dx_y_mrad": 41.2783640984304,
+        "sum_dx_z_mrad": 0.0,
+        "sum_dpitch_telem_mrad": 42.641999999999996,
+        "sum_dyaw_telem_mrad": -17.243999999999815,
+        "mean_abs_w_corr_x": 0.017383363636363634,
+        "mean_abs_w_corr_y": 0.01375918181818182,
+        "mean_omega_z": -0.17251881818181816,
+        "mean_bias_gz": -0.017190454545454547
+      }
+    }
+  },
+  "pitch_budget": {
+    "latch": {
+      "sum_pred_pitch_mrad": 1.3636359015695985,
+      "sum_dx_y_mrad": 41.2783640984304,
+      "sum_dpitch_telem_mrad": 42.641999999999996,
+      "pred_share_of_telem": 0.03197870413136341,
+      "nhc_share_of_telem": 0.9680212958686367
+    },
+    "ctrl": {
+      "sum_pred_pitch_mrad": -2.6559096801472624,
+      "sum_dx_y_mrad": -36.98109031985274,
+      "sum_dpitch_telem_mrad": -39.63699999999999,
+      "pred_share_of_telem": 0.06700581981853478,
+      "nhc_share_of_telem": 0.9329941801814654
+    }
+  },
+  "yaw_budget": {
+    "latch": {
+      "sum_pred_yaw_mrad": -17.243999999999815,
+      "sum_dx_z_mrad": 0.0,
+      "sum_dyaw_telem_mrad": -17.243999999999815
+    },
+    "ctrl": {
+      "sum_pred_yaw_mrad": -15.55694600561816,
+      "sum_dx_z_mrad": -22.411053994381618,
+      "sum_dyaw_telem_mrad": -37.967999999999776
+    }
+  },
+  "latch_minus_ctrl": {
+    "sum_pred_pitch_mrad": 4.01954558171686,
+    "sum_dx_y_mrad": 78.25945441828314,
+    "sum_pred_yaw_mrad": -1.6870539943816543,
+    "end_d_pitch_deg": 4.4350371089896505,
+    "end_d_dyaw_deg": 0.10061138882499049,
+    "end_d_roll_deg": 5.34065419997343,
+    "start_d_pitch_deg": -0.24717399281943708,
+    "start_d_dyaw_deg": -1.2932230393897624
+  },
+  "co_timing": {
+    "corr_latch_dyaw_growth_vs_pitch_growth": 0.9996427578605596,
+    "corr_ctrl_dyaw_growth_vs_pitch_growth": 0.6924714728153234,
+    "corr_latch_minus_ctrl_pred_yaw_vs_pred_pitch": 0.21643086101703882,
+    "latch_pitch_growth_deg": 2.362304989324384,
+    "latch_dyaw_growth_deg": 0.08946368214354519,
+    "ctrl_pitch_growth_deg": -2.3199061124847034,
+    "ctrl_dyaw_growth_deg": -1.3043707460712077
+  },
+  "verdict": {
+    "label": "NHC_PITCH_STILL_DOMINATES",
+    "reading": "Pitch state change still mostly from NHC dx_y, contrary to the predict-coupling reading \u2014 revisit (3) or budgeting assumptions.",
+    "next": "Re-check telem vs NHC timing alignment; reconsider (3).",
+    "latch_yaw_predict_dominated": true,
+    "latch_pitch_pred_share": 0.03197870413136341,
+    "corr_yaw_pitch_growth_latch": 0.9996427578605596
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_state_att_predict_154_164.png"
+}

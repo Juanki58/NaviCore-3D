@@ -17,9 +17,10 @@ Documentación técnica del pipeline experimental usado para auditar consistenci
 | [reference/CONSISTENCY_AUDIT.md](reference/CONSISTENCY_AUDIT.md) | Auditoría de consistencia |
 | [reference/REDUNDANCY_INVENTORY.md](reference/REDUNDANCY_INVENTORY.md) | Redundancias (solo listado) |
 | [reference/STATE_OF_KNOWLEDGE.md](reference/STATE_OF_KNOWLEDGE.md) | Conocimiento consolidado (K1–K15) |
-| [reference/OPEN_QUESTIONS.md](reference/OPEN_QUESTIONS.md) | Preguntas abiertas (OQ1–OQ7) |
-| [reference/DECISION_LOG.md](reference/DECISION_LOG.md) | Decisiones (D1–D21) |
+| [reference/DECISION_LOG.md](reference/DECISION_LOG.md) | Decisiones (D1–D22) |
+| [reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md) | **Patrón transversal** — Γ̄ / cand1 (propiedad ≠ operacionalización) |
 | [reference/RESEARCH_MAP.md](reference/RESEARCH_MAP.md) | Mapa fases → outcome / tag |
+| [reference/OPEN_QUESTIONS.md](reference/OPEN_QUESTIONS.md) | OQ1–OQ9 (OQ7 cerrada; OQ8/OQ9 abiertas, **sin** experimento inmediato — D22) |
 
 Índice (3 niveles: baselines / programa / en curso): [reference/README.md](reference/README.md)
 
@@ -47,6 +48,12 @@ Cerrar la **trazabilidad de señales** y verificar **conformidad con el [Body Fr
 | **[15-gap5-passive-outcome.md](15-gap5-passive-outcome.md)** | **GAP-5 passive CONGELADO** — outcome v1; cierre instancia Γ̄ |
 | **[16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md)** | **GAP-5 v2 CONGELADA** (v1.2) — propiedad → observable → caracterización → **modelo régimen** |
 | **[11-replay-zupt-provenance.md](11-replay-zupt-provenance.md)** | **Proveniencia ZUPT legacy** — qué runs están condicionados |
+| **[16-super-tunnel-ieee952-rerun-protocol.md](16-super-tunnel-ieee952-rerun-protocol.md)** | IEEE-952 / super_tunnel — cerrado; causa NHC ALWAYS |
+| **[17-conditional-constraints-architecture.md](17-conditional-constraints-architecture.md)** | **Arquitectura única** ZUPT+NHC: disparo por estado, no reloj/ALWAYS |
+| **[18-jacobian-imu-ab-protocol.md](18-jacobian-imu-ab-protocol.md)** | Jacobiano × IMU — early-loop cerrado; H-ATT-d abierta; cand1 no generaliza |
+| **[19-ekf-explorer-protocol.md](19-ekf-explorer-protocol.md)** | **EKF Explorer** (Unity+Cesium) — instrumento científico; session pack v1 |
+| **[20-h-seed-v-protocol.md](20-h-seed-v-protocol.md)** | **H-seed-v** — seed `v←GNSS`; H1 corrido (P1 PASS; course−yaw no) |
+| **[21-h-seed-yaw-protocol.md](21-h-seed-yaw-protocol.md)** | **H-seed-yaw (H2)** — v+yaw:=course; preregistro + auditoría yaw; sin implementar |
 
 ## ⚠ Aviso de validez (Jul 2026)
 
@@ -54,10 +61,13 @@ Entre **H9** y **GAP-3.7**, el replay aplicaba ZUPT con `t≤30 s` OR `gps_speed
 
 ## Pregunta operativa actual
 
-**Pausa estratégica** antes del benchmark H6 — ver [reference/RESEARCH_STATUS.md](reference/RESEARCH_STATUS.md).
+**Pausa D22 (2026-07-19):** estabilizar documentación tras Stage I + cierre de generalización cand1. **No** abrir OQ8 experimental, cand2, ni GAP-5 v3 de inmediato.  
+Patrón: [reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md). Estado: [reference/RESEARCH_STATUS.md](reference/RESEARCH_STATUS.md).
 
-Cadena cerrada: GAP-3 → GAP-4 → GAP-5 v1 → G-ext (K14/K15).  
-**Siguiente (cuando se abra):** GAP-5 v2 — [16-gap5-v2-observable-selection.md](16-gap5-v2-observable-selection.md) (preregistrada v1.2; **no ejecutada**). Solo observables — prohibido controlador en v2. **No mezclar** con §11 P_pv.
+**Instrumento (en construcción):** [19-ekf-explorer-protocol.md](19-ekf-explorer-protocol.md) · `ekf_explorer/` — Unity+Cesium como plataforma de observación (session packs), no demo.
+
+Cadena EKF cerrada a nivel Stage I: GAP-3 → GAP-4 → GAP-5 v1 → G-ext → H6 parcial.  
+Hilo Jacobiano: mecanismo early cerrado; instrumento cand1 dominio-caracterizado; H-ATT-d abierta.
 
 ---
 

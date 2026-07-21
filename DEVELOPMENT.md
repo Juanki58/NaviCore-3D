@@ -2,6 +2,8 @@
 
 > **NOTA PARA LA IA / CURSOR AGENT:** Al iniciar una nueva sesión de desarrollo, lee este archivo obligatoriamente. Aquí se detalla la arquitectura exacta, el último commit verificado y los siguientes pasos pendientes para evitar regresiones de código o pérdida de contexto.
 
+> **Investigación EKF:** [`EVIDENCE_STRENGTH_AUDIT.md`](docs/diagnostics/reference/EVIDENCE_STRENGTH_AUDIT.md) — OQ1 abierta; pausa **cerrada** (D17); H6 justificado por insuficiencia de evidencia para discriminar candidatos. Ejecutar solo v1.2 sin editar. No controlador.
+
 ---
 
 ## 🏗️ 1. Arquitectura del Sistema (Estado Actual)
@@ -115,7 +117,11 @@ NaviCore-3D/
 
 ---
 
-## 🛠️ 3. Próximos Pasos Inmediatos (Pendiente de Ejecución)
+## 🛠️ 3. Próximos Pasos Inmediatos
+
+> **Fuente de verdad del producto:** [`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md)  
+> (PPK2 Pico → campo → Artemis · A3–A5 código · visibilidad con datos).  
+> La campaña WCET S0–S7 (§1b P3) sigue siendo **hardware RT**, no el único “siguiente paso” del proyecto.
 
 ### FASE A: Robustez y Física Real (Corto Plazo)
 

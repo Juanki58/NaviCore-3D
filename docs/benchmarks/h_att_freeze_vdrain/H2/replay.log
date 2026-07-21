@@ -1,0 +1,30 @@
+REAL_RUN_REPLAY: filtro=InsEkf15State
+REAL_RUN_REPLAY: entrada=C:\NaviCore-3D\docs\benchmarks\real_run_19082026_baseline\real_run_replay.csv
+REAL_RUN_REPLAY: salida=C:\NaviCore-3D\docs\benchmarks\h_att_freeze_vdrain\H2\out.csv
+REAL_RUN_REPLAY: montaje=calibration:C:\NaviCore-3D\calibration\imu_mount.json
+REAL_RUN_REPLAY: yaw_init=H0_zero_yaw
+REAL_RUN_REPLAY: H9a gravity tilt init (min_samples=50 window=2.0 s)
+REAL_RUN_REPLAY: constraint_policy=disabled nhc_policy=enabled nhc_every_n=1 static_end=30.0s gps_thresh=0.10 m/s
+REAL_RUN_REPLAY: NHC_sigma lateral=0.500 vertical=1.000 m/s
+REAL_RUN_REPLAY: seed_velocity=gnss pending (apply on first GPS with speed>=3.0 + course from Î”pos)
+REAL_RUN_REPLAY: gnss_obs_mode=pos_vel | sigma_vel=1.50 m/s | p_pv_policy=none
+REAL_RUN_REPLAY: H8 geodesy validation omitida (Location.csv no disponible)
+REAL_RUN_REPLAY: inicializado @ t=2.672 s | ref NED=(0.000, 0.000, -0.000) m
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.218067 thr=15.086000 innov=[-30.928,-0.000,27.367,0.000,0.000] contrib=[0.122,0.000,0.096,0.000,0.000] S_diag=[7818.560,7818.560,7823.560,0.000,0.000] decision=accept reason=0
+REAL_RUN_REPLAY: H9a gravity tilt init @ t=3.174 s | samples=50 | mean_a_body=(-3.390, -7.395, 6.270) | mean_w_body=(-0.00595, -0.25955, 0.19958) | roll=-49.71 pitch=19.27 deg
+REAL_RUN_REPLAY: H-seed-yaw applied @ t=4.301 s | yaw:=course=93.6 deg (roll/pitch preserved)
+REAL_RUN_REPLAY: H-seed-v applied @ t=4.301 s | speed=8.38 m/s course=93.6 deg |Î”pos|=20.6 m | +yaw
+GNSS_NIS_DECISION t_ms=4293 n_meas=3 NIS_used=0.505151 thr=15.086000 innov=[-32.407,20.565,27.406,0.000,0.000] contrib=[0.239,0.096,0.170,0.000,0.000] S_diag=[4401.938,4399.700,4404.887,0.000,0.000] decision=accept reason=0
+REAL_RUN_REPLAY: YAW_CHASE deg | before=-1.980 after_seed=93.615 after_update=93.534 after_pred1=107.496 after_pred2=127.087 | t_seed=4.301 t_upd=4.301(gnss_accept) t_p1=4.303 t_p2=4.313
+GNSS_NIS_DECISION t_ms=5291 n_meas=3 NIS_used=1.121582 thr=15.086000 innov=[-16.384,32.124,37.369,0.000,0.000] contrib=[0.112,0.430,0.580,0.000,0.000] S_diag=[2402.448,2401.696,2406.713,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=6299 n_meas=3 NIS_used=1.864251 thr=15.086000 innov=[-11.643,37.686,38.231,0.000,0.000] contrib=[0.084,0.879,0.902,0.000,0.000] S_diag=[1617.178,1616.043,1621.031,0.000,0.000] decision=accept reason=0
+----------------------------------------------------------------
+ REAL_RUN_REPLAY resumen
+  Filas procesadas: 647 (IMU=642, GPS=4)
+  Duracion:         6.50 s
+  Filtro activo:    si
+  GNSS aceptadas:   4 | rechazadas: 0 (100.0% aceptadas)
+  Ultimo GPS NED:   (8.518, 36.513, 11.600) m
+  Deriva final H:   42.784 m
+  Estado final NED: (-11.896, -1.087, 0.643) m
+----------------------------------------------------------------

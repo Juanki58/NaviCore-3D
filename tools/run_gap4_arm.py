@@ -39,7 +39,7 @@ ARM_CONFIG = {
     "G1": {"gnss_obs_mode": "pos_vel", "out_subdir": "G1"},
 }
 
-PPV_POLICIES = ("none", "gap_le_1s", "zero", "cos_pos", "cos_tot")
+PPV_POLICIES = ("none", "gap_le_1s", "zero", "cos_pos", "cos_tot", "innov_h")
 
 T_FIX3 = 6.053678513
 

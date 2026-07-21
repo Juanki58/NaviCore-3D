@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+    <cppcheck version="2.20.0"/>
+    <errors>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/command_ingestor.cpp">
+            <location file="C:/NaviCore-3D/src/core/command_ingestor.cpp" line="0" column="0"/>
+        </error>
+        <error id="dangerousTypeCast" severity="warning" msg="Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast" verbose="Potentially invalid type conversion in old-style C cast, clarify/fix with C++ cast" cwe="398" file0="C:/NaviCore-3D/src/core/command_ingestor.cpp">
+            <location file="C:/NaviCore-3D/src/core/command_ingestor.cpp" line="197" column="28"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/divergence_guard.cpp">
+            <location file="C:/NaviCore-3D/src/core/divergence_guard.cpp" line="0" column="0"/>
+        </error>
+        <error id="constParameterPointer" severity="style" msg="Parameter &apos;filter&apos; can be declared as pointer to const" verbose="Parameter &apos;filter&apos; can be declared as pointer to const" cwe="398" file0="C:/NaviCore-3D/src/core/divergence_guard.cpp">
+            <location file="C:/NaviCore-3D/src/core/divergence_guard.cpp" line="73" column="26" info="Parameter &apos;filter&apos; can be declared as pointer to const"/>
+            <symbol>filter</symbol>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/flight_recorder.cpp">
+            <location file="C:/NaviCore-3D/src/core/flight_recorder.cpp" line="0" column="0"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/flight_recorder.cpp">
+            <location file="C:/NaviCore-3D/src/core/flight_recorder.cpp" line="44" column="5"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/fusion.cpp">
+            <location file="C:/NaviCore-3D/src/core/fusion.cpp" line="0" column="0"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/geometry_guard.cpp">
+            <location file="C:/NaviCore-3D/src/core/geometry_guard.cpp" line="0" column="0"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/guidance.cpp">
+            <location file="C:/NaviCore-3D/src/core/guidance.cpp" line="0" column="0"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/guidance.cpp">
+            <location file="C:/NaviCore-3D/src/core/guidance.cpp" line="742" column="5"/>
+        </error>
+        <error id="variableScope" severity="style" msg="The scope of the variable &apos;errors&apos; can be reduced." verbose="The scope of the variable &apos;errors&apos; can be reduced. Warning: Be careful when fixing this message, especially when there are inner loops. Here is an example where cppcheck will write that the scope for &apos;i&apos; can be reduced:\012void f(int x)\012{\012    int i = 0;\012    if (x) {\012        // it&apos;s safe to move &apos;int i = 0;&apos; here\012        for (int n = 0; n &lt; 10; ++n) {\012            // it is possible but not safe to move &apos;int i = 0;&apos; here\012            do_something(&amp;i);\012        }\012    }\012}\012When you see this message it is always safe to reduce the variable scope 1 level." cwe="398" file0="C:/NaviCore-3D/src/core/guidance.cpp">
+            <location file="C:/NaviCore-3D/src/core/guidance.cpp" line="407" column="20"/>
+            <symbol>errors</symbol>
+        </error>
+        <error id="passedByValue" severity="performance" msg="Function parameter &apos;origin&apos; should be passed by const reference." verbose="Parameter &apos;origin&apos; is passed by value. It could be passed as a const reference which is usually faster and recommended in C++." cwe="398" file0="C:/NaviCore-3D/src/core/guidance.cpp">
+            <location file="C:/NaviCore-3D/src/core/guidance.cpp" line="369" column="14" info="Function parameter &apos;origin&apos; should be passed by const reference."/>
+            <symbol>origin</symbol>
+        </error>
+        <error id="passedByValue" severity="performance" msg="Function parameter &apos;destination&apos; should be passed by const reference." verbose="Parameter &apos;destination&apos; is passed by value. It could be passed as a const reference which is usually faster and recommended in C++." cwe="398" file0="C:/NaviCore-3D/src/core/guidance.cpp">
+            <location file="C:/NaviCore-3D/src/core/guidance.cpp" line="370" column="14" info="Function parameter &apos;destination&apos; should be passed by const reference."/>
+            <symbol>destination</symbol>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="0" column="0"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="2307" column="5"/>
+        </error>
+        <error id="compareValueOutOfTypeRangeError" severity="style" msg="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." verbose="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." cwe="398" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="499" column="62"/>
+        </error>
+        <error id="compareValueOutOfTypeRangeError" severity="style" msg="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." verbose="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." cwe="398" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="950" column="22"/>
+        </error>
+        <error id="compareValueOutOfTypeRangeError" severity="style" msg="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." verbose="Comparing expression of type &apos;unsigned char&apos; against value 0. Condition is always true." cwe="398" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="1988" column="18"/>
+        </error>
+        <error id="wrongPrintfScanfArgNum" severity="warning" msg="fprintf format string requires 20 parameters but 21 are given." verbose="fprintf format string requires 20 parameters but 21 are given." cwe="685" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="3412" column="5"/>
+        </error>
+        <error id="unsignedPositive" severity="style" msg="Unsigned expression &apos;c&apos; can&apos;t be negative so it is unnecessary to test it." verbose="Unsigned expression &apos;c&apos; can&apos;t be negative so it is unnecessary to test it." cwe="570" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="499" column="59" info="Unsigned positive"/>
+            <symbol>c</symbol>
+        </error>
+        <error id="unsignedPositive" severity="style" msg="Unsigned expression &apos;r&apos; can&apos;t be negative so it is unnecessary to test it." verbose="Unsigned expression &apos;r&apos; can&apos;t be negative so it is unnecessary to test it." cwe="570" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="950" column="19" info="Unsigned positive"/>
+            <symbol>r</symbol>
+        </error>
+        <error id="unsignedPositive" severity="style" msg="Unsigned expression &apos;r&apos; can&apos;t be negative so it is unnecessary to test it." verbose="Unsigned expression &apos;r&apos; can&apos;t be negative so it is unnecessary to test it." cwe="570" file0="C:/NaviCore-3D/src/core/ins_ekf.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf.cpp" line="1988" column="15" info="Unsigned positive"/>
+            <symbol>r</symbol>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/ins_ekf_15_state.cpp">
+            <location file="C:/NaviCore-3D/src/core/ins_ekf_15_state.cpp" line="26" column="10"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/mission.cpp">
+            <location file="C:/NaviCore-3D/src/core/mission.cpp" line="0" column="0"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/mission.cpp">
+            <location file="C:/NaviCore-3D/src/core/mission.cpp" line="259" column="5"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/mission.cpp">
+            <location file="C:/NaviCore-3D/src/core/mission.cpp" line="281" column="5"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/mission.cpp">
+            <location file="C:/NaviCore-3D/src/core/mission.cpp" line="321" column="5"/>
+        </error>
+        <error id="memsetClassFloat" severity="portability" msg="Using memset() on struct which contains a floating point number." verbose="Using memset() on struct which contains a floating point number. This is not portable because memset() sets each byte of a block of memory to a specific value and the actual representation of a floating-point value is implementation defined. Note: In case of an IEEE754-1985 compatible implementation setting all bits to zero results in the value 0.0." cwe="758" file0="C:/NaviCore-3D/src/core/mission.cpp">
+            <location file="C:/NaviCore-3D/src/core/mission.cpp" line="414" column="5"/>
+        </error>
+        <error id="normalCheckLevelMaxBranches" severity="information" msg="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." verbose="Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches." file0="C:/NaviCore-3D/src/core/navigation_cortex.cpp">
+            <location file="C:/NaviCore-3D/src/core/navigation_cortex.cpp" line="0" column="0"/>
+        </error>
+        <error id="knownConditionTrueFalse" severity="style" msg="Condition &apos;!open_unity_socket()&apos; is always false" verbose="Condition &apos;!open_unity_socket()&apos; is always false" cwe="570" file0="C:/NaviCore-3D/src/core/telemetry_interface.cpp">
+            <location file="C:/NaviCore-3D/src/core/telemetry_interface.cpp" line="217" column="41" info="Condition &apos;!open_unity_socket()&apos; is always false"/>
+            <location file="C:/NaviCore-3D/src/core/telemetry_interface.cpp" line="217" column="59" info="Calling function &apos;open_unity_socket&apos; returns 1"/>
+        </error>
+        <error id="passedByValue" severity="performance" msg="Function parameter &apos;wp&apos; should be passed by const reference." verbose="Parameter &apos;wp&apos; is passed by value. It could be passed as a const reference which is usually faster and recommended in C++." cwe="398" file0="C:/NaviCore-3D/src/core/waypoint.cpp">
+            <location file="C:/NaviCore-3D/src/core/waypoint.cpp" line="44" column="66" info="Function parameter &apos;wp&apos; should be passed by const reference."/>
+            <symbol>wp</symbol>
+        </error>
+        <error id="checkersReport" severity="information" msg="Active checkers: 173/186 (use --checkers-report=&lt;filename&gt; to see details)" verbose="Active checkers: 173/186 (use --checkers-report=&lt;filename&gt; to see details)"/>
+    </errors>
+</results>

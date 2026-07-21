@@ -1,0 +1,2 @@
+version,device name,recording epoch time,recording time,recording timezone,platform,appVersion,device id,sensors,sampleRateMs,standardisation,platform version
+3,CPH2791,1784298582373,2026-07-17_14-29-42,Europe/Madrid,android,1.61.0,3dc7c4ae-dc9e-45a8-84ce-e7513a8afa89,Accelerometer|Gravity|Gyroscope|Orientation|Location|WiFi|Annotation|TotalAcceleration|GyroscopeUncalibrated|AccelerometerUncalibrated,10|10|10|10|0|40000||10|10|10,false,36

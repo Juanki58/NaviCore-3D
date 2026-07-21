@@ -1,0 +1,27 @@
+{
+  "t_fire_s": 0.400000006,
+  "t_end_s": 1.54,
+  "n_ticks": 117,
+  "first_sign_disagree_s": 1.13,
+  "ctrl_ky0_zero_cross_s": 1.14,
+  "latch_ky0_zero_cross_s": 1.13,
+  "first_rd_ky0_10pct_s": 1.1,
+  "first_rd_ky0_50pct_s": 1.13,
+  "first_rd_pyy_10pct_s": null,
+  "max_step_frac_of_dky0_range": 0.19148197404234585,
+  "max_step_t_s": 1.54,
+  "growth_early_ptp_dky0": 9.651877999999805e-06,
+  "growth_late_ptp_dky0": 0.0065598373770000004,
+  "corr_abs_dky0_vs_cum_withheld_z": 0.9841287225168239,
+  "corr_abs_dky0_vs_abs_dpyy": 0.9757795983327063,
+  "end_ky0_c": -0.001224705484,
+  "end_ky0_l": 0.005343384575,
+  "end_pyy_c": 0.005992661696,
+  "end_pyy_l": 0.00597161334,
+  "verdict": {
+    "label": "KY0_GRADUAL_P_DIVERGENCE",
+    "reading": "K_y0 latch\u2212ctrl diverges gradually from early after latch fire; the late sign split is the symptom, not a discrete jump. Consistent with Joseph/P accumulation under withheld dx_att_z (same family as channel-cut \u2192 cov dynamics shift).",
+    "next": "If GRADUAL: the design target is early P/att dynamics under open Z, not the 1.55 sign flip. Map which P terms (yy / cross / zz) track \u0394K_y0."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_ky0_trajectory_onset.png"
+}

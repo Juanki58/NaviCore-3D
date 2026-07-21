@@ -1,0 +1,13 @@
+{
+  "tool": "coverage",
+  "status": "ok",
+  "regression_exit": 1,
+  "gcda_count": 11,
+  "line_cover_pct_core_linked": 50.0,
+  "lines_exec": 1705,
+  "lines_total": 3401,
+  "note": "Regression-linked TUs only; fusion/guards not in navicore_regression_test",
+  "build_dir": "build_coverage",
+  "txt": "docs/benchmarks/static_analysis/coverage_core.txt",
+  "html": "docs/benchmarks/static_analysis/coverage_html/index.html"
+}

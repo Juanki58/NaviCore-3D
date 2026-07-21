@@ -1,6 +1,8 @@
 build/
+build_asan/
+build_coverage/
+build_pico2/
 src/targets/pico2_hardware/wifi_config.h
-build-pico2/
 __pycache__/
 *.pyc
 *.obj
@@ -10,9 +12,25 @@ __pycache__/
 *.dll
 *.so
 *.dylib
+*.gcda
+*.gcno
+*.gcov
 CMakeCache.txt
 CMakeFiles/
 Makefile
 cmake_install.cmake
 *.rsp
+
+# Local / regenerable bulk (GitHub 100 MB file limit + repo size)
 telemetry_log.csv
+_tmp_*.py
+*.zip
+ekf_explorer/
+data/real_run/_peek_0717/
+docs/benchmarks/static_analysis/coverage_html/
+**/nhc_block_audit.csv
+**/cov_step_audit.csv
+**/kinematic_identity_audit*.csv
+**/constraint_pipeline_audit.csv
+**/tick_stage_audit*.csv
+**/gnss_k_block.jsonl

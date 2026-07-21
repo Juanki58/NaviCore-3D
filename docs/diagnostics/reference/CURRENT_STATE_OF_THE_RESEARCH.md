@@ -2,9 +2,18 @@
 
 **Documento:** artículo interno de consolidación (no README, no protocolo).  
 **Rol del autor de esta pasada:** editor científico — ordenar lo existente, no generar conocimiento nuevo.  
-**Fecha:** 2026-07-18  
+**Fecha:** 2026-07-19 (addendum D22 / patrón operacionalización)  
 **Métricas:** [RESEARCH_METRICS.md](RESEARCH_METRICS.md) — X=15, Y=11, Z=7, V=2, P=3, R=4  
-**Fase actual:** **Stage I CERRADA (D21)** — baseline de identificación de régimen congelado; GAP-5 v3 no abierta  
+**Fase actual:** **Stage I CERRADA (D21)** · **pausa D22** · GAP-5 v3 / OQ8 experimental **no** abiertos  
+
+**Frase de fase:** *Ya no estamos intentando descubrir qué ocurre; estamos construyendo herramientas fiables para observar algo que ya sabemos que existe.*
+
+| Línea | Estado |
+|-------|--------|
+| EKF / identificación de regímenes (Stage I) | **Cerrada** metodológicamente — modelo parcial |
+| cand1 / H-ATT-d | **Acotada, abierta** — acotado el espacio de *instrumentos* para contrastar H-ATT-d, no la hipótesis |
+
+Patrón transversal: [OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md).
 
 ---
 

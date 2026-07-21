@@ -72,10 +72,23 @@ void print_usage(const char *program_name)
         "         [--gap3-vel-source-audit-csv <csv>]\n"
         "         [--gap3-imu-constraint-audit-csv <csv>]\n"
         "         [--gap3-constraint-pipeline-audit-csv <csv>]\n"
-        "         [--constraint-policy auto|forced_time|gps_stop|imu_stationary|disabled]\n"
+        "         [--kinematic-identity-audit-csv <csv>]\n"
+        "         [--tick-stage-audit-csv <csv>]\n"
+        "         [--seed-velocity zero|gnss]\n"
+        "         [--seed-yaw-from-course]\n"
+        "         [--nhc-att-z-unobs-immediate]\n"
+        "         [--nhc-att-unobs-immediate]\n"
+        "         [--nhc-att-coherence-gate]\n"
+        "         [--nhc-att-gate-vmin-mps <m/s>]\n"
+        "         [--nhc-att-gate-yaw-max-deg <deg>]\n"
+        "         [--nhc-att-gate-hold-s <s>]\n"
+        "         [--freeze-attitude-after-seed]\n"
+        "         --constraint-policy forced_time|gps_stop|imu_stationary|disabled\n"
         "         [--nhc-policy enabled|disabled]\n"
+        "         [--ekf-core v1|v2]\n"
+        "         [--v2-polish]\n"
         "         [--gnss-obs-mode pos|pos_vel|vel_only]\n"
-        "         [--p-pv-policy none|gap_le_1s|zero|cos_pos|cos_tot]\n"
+        "         [--p-pv-policy none|gap_le_1s|zero|cos_pos|cos_tot|innov_h]\n"
         "         [--gnss-vel-std-mps <m/s>]\n"
         "         [--nhc-every-n-ticks <N>]\n"
         "         [--adaptive-nhc off|passive|active]\n"
@@ -107,7 +120,10 @@ void print_usage(const char *program_name)
         "  Salida por defecto:        %s\n"
         "  Calibracion por defecto:   %s\n"
         "  Montaje por defecto:       legacy (H0)\n"
-        "  Yaw inicial por defecto:   zero (H0)\n",
+        "  Yaw inicial por defecto:   zero (H0)\n"
+        "  Constraint policy:         REQUIRED (no silent default; auto retired)\n"
+        "    forced_time = legacy clock/GPS ZUPT — only for intentional reproduction\n"
+        "    disabled / imu_stationary / gps_stop = scientific baselines\n",
         program_name,
         kDefaultInputCsv,
         kDefaultOutputCsv,
@@ -136,6 +152,8 @@ int main(int argc, char *argv[])
     const char *gap3_vel_source_audit_csv = nullptr;
     const char *gap3_imu_constraint_audit_csv = nullptr;
     const char *gap3_constraint_pipeline_audit_csv = nullptr;
+    const char *kinematic_identity_audit_csv = nullptr;
+    const char *tick_stage_audit_csv = nullptr;
     const char *h8_propagation_audit_csv = nullptr;
     const char *h9_tilt_audit_csv = nullptr;
     bool predict_only_mode = false;
@@ -162,7 +180,8 @@ int main(int argc, char *argv[])
     bool gnss_ref_lat_set = false;
     bool gnss_ref_lon_set = false;
     bool gnss_ref_alt_set = false;
-    ReplayConstraintPolicy constraint_policy = ReplayConstraintPolicy::FORCED_TIME;
+    ReplayConstraintPolicy constraint_policy = ReplayConstraintPolicy::DISABLED;
+    bool constraint_policy_set = false;
     ReplayNhcPolicy nhc_policy = ReplayNhcPolicy::ENABLED;
     ReplayGnssObsMode gnss_obs_mode = ReplayGnssObsMode::POS;
     ReplayPpvPolicy ppv_policy = ReplayPpvPolicy::NONE;
@@ -170,6 +189,18 @@ int main(int argc, char *argv[])
     uint32_t nhc_every_n_ticks = 1U;
     AdaptiveNhcMode adaptive_nhc_mode = AdaptiveNhcMode::OFF;
     const char *adaptive_nhc_controller_audit_csv = nullptr;
+    ReplaySeedVelocityMode seed_velocity_mode = ReplaySeedVelocityMode::ZERO;
+    float seed_velocity_min_speed_mps = 3.0f;
+    bool seed_yaw_from_course = false;
+    bool nhc_att_z_unobs_immediate = false;
+    bool nhc_att_unobs_immediate = false;
+    bool nhc_att_coherence_gate = false;
+    float nhc_att_gate_vmin_mps = 5.0f;
+    float nhc_att_gate_yaw_max_deg = 15.0f;
+    float nhc_att_gate_hold_s = 2.5f;
+    bool freeze_attitude_after_seed = false;
+    InsEkfCoreVersion ekf_core = INS_EKF_CORE_V1;
+    bool v2_polish = false;
     float static_phase_end_s = 30.0f;
     float moving_speed_threshold_mps = 0.1f;
     float imu_stationary_accel_dev_mps2 = 0.5f;
@@ -298,6 +329,55 @@ int main(int argc, char *argv[])
                 return 1;
             }
             gap3_constraint_pipeline_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--kinematic-identity-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            kinematic_identity_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--tick-stage-audit-csv") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            tick_stage_audit_csv = argv[++i];
+        } else if (std::strcmp(argv[i], "--seed-velocity") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!replay_parse_seed_velocity_mode(argv[++i], &seed_velocity_mode)) {
+                std::printf("ERROR: --seed-velocity invalido (zero|gnss): %s\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--seed-yaw-from-course") == 0) {
+            seed_yaw_from_course = true;
+        } else if (std::strcmp(argv[i], "--nhc-att-z-unobs-immediate") == 0) {
+            nhc_att_z_unobs_immediate = true;
+        } else if (std::strcmp(argv[i], "--nhc-att-unobs-immediate") == 0) {
+            nhc_att_unobs_immediate = true;
+        } else if (std::strcmp(argv[i], "--nhc-att-coherence-gate") == 0) {
+            nhc_att_coherence_gate = true;
+        } else if (std::strcmp(argv[i], "--nhc-att-gate-vmin-mps") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            nhc_att_gate_vmin_mps = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--nhc-att-gate-yaw-max-deg") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            nhc_att_gate_yaw_max_deg = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--nhc-att-gate-hold-s") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            nhc_att_gate_hold_s = static_cast<float>(std::atof(argv[++i]));
+        } else if (std::strcmp(argv[i], "--freeze-attitude-after-seed") == 0) {
+            freeze_attitude_after_seed = true;
         } else if (std::strcmp(argv[i], "--constraint-policy") == 0) {
             if (i + 1 >= argc) {
                 print_usage(argv[0]);
@@ -307,6 +387,15 @@ int main(int argc, char *argv[])
                 std::printf("ERROR: --constraint-policy invalido: %s\n", argv[i]);
                 return 1;
             }
+            if (constraint_policy == ReplayConstraintPolicy::AUTO) {
+                std::printf(
+                    "ERROR: --constraint-policy auto esta retirado (alias silencioso de "
+                    "forced_time).\n"
+                    "       Usa forced_time solo para reproducir legacy a proposito, o "
+                    "disabled|imu_stationary|gps_stop para ciencia.\n");
+                return 1;
+            }
+            constraint_policy_set = true;
         } else if (std::strcmp(argv[i], "--nhc-policy") == 0) {
             if (i + 1 >= argc) {
                 print_usage(argv[0]);
@@ -316,6 +405,17 @@ int main(int argc, char *argv[])
                 std::printf("ERROR: --nhc-policy invalido: %s\n", argv[i]);
                 return 1;
             }
+        } else if (std::strcmp(argv[i], "--ekf-core") == 0) {
+            if (i + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            if (!ins_ekf_core_version_parse(argv[++i], &ekf_core)) {
+                std::printf("ERROR: --ekf-core invalido: %s (usa v1|v2)\n", argv[i]);
+                return 1;
+            }
+        } else if (std::strcmp(argv[i], "--v2-polish") == 0) {
+            v2_polish = true;
         } else if (std::strcmp(argv[i], "--gnss-obs-mode") == 0) {
             if (i + 1 >= argc) {
                 print_usage(argv[0]);
@@ -519,6 +619,17 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (!constraint_policy_set) {
+        std::printf(
+            "ERROR: --constraint-policy es obligatorio (sin default silencioso).\n"
+            "       Antes el default era forced_time (ZUPT por reloj) — trampa conocida.\n"
+            "       Pasa disabled|imu_stationary|gps_stop, o forced_time solo para "
+            "reproduccion legacy intencional.\n"
+            "       Ver docs/diagnostics/11-replay-zupt-provenance.md\n");
+        print_usage(argv[0]);
+        return 1;
+    }
+
     const bool gnss_ref_partial =
         gnss_ref_lat_set || gnss_ref_lon_set || gnss_ref_alt_set;
     if (gnss_ref_partial
@@ -546,6 +657,20 @@ int main(int argc, char *argv[])
     config.gap3_vel_source_audit_csv_path = gap3_vel_source_audit_csv;
     config.gap3_imu_constraint_audit_csv_path = gap3_imu_constraint_audit_csv;
     config.gap3_constraint_pipeline_audit_csv_path = gap3_constraint_pipeline_audit_csv;
+    config.kinematic_identity_audit_csv_path = kinematic_identity_audit_csv;
+    config.tick_stage_audit_csv_path = tick_stage_audit_csv;
+    config.seed_velocity_mode = seed_velocity_mode;
+    config.seed_velocity_min_speed_mps = seed_velocity_min_speed_mps;
+    config.seed_yaw_from_course = seed_yaw_from_course;
+    config.nhc_att_z_unobs_immediate = nhc_att_z_unobs_immediate;
+    config.nhc_att_unobs_immediate = nhc_att_unobs_immediate;
+    config.nhc_att_coherence_gate = nhc_att_coherence_gate;
+    config.nhc_att_gate_vmin_mps = nhc_att_gate_vmin_mps;
+    config.nhc_att_gate_yaw_max_deg = nhc_att_gate_yaw_max_deg;
+    config.nhc_att_gate_hold_s = nhc_att_gate_hold_s;
+    config.freeze_attitude_after_seed = freeze_attitude_after_seed;
+    config.ekf_core = ekf_core;
+    config.v2_polish = v2_polish;
     config.h8_propagation_audit_csv_path = h8_propagation_audit_csv;
     config.h9_tilt_audit_csv_path = h9_tilt_audit_csv;
     config.predict_only_mode = predict_only_mode;

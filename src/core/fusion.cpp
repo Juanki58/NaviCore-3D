@@ -78,9 +78,7 @@ static void dead_reckoning_apply_position_delta(NavState *state, float north_m, 
 
 static float dead_reckoning_confidence_from_fix_age(uint32_t fix_age_ms)
 {
-    const float age_s = (float)fix_age_ms * 0.001f;
-    const float quality = 0.75f - (age_s * 0.05f);
-    return clampf(quality, 0.15f, 0.75f);
+    return nav_confidence_quality_from_fix_age_ms(fix_age_ms);
 }
 
 static void dead_reckoning_set_dead_reckoning_confidence(DeadReckoningFilter *filter)
@@ -439,6 +437,12 @@ bool dead_reckoning_update_imu(
 {
     if (filter == NULL || imu == NULL || !imu->valid) {
         return false;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        if (!isfinite(imu->accel_mps2[i]) || !isfinite(imu->gyro_radps[i])) {
+            return false;
+        }
     }
 
     dead_reckoning_bias_calibration_step(filter, imu);

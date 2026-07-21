@@ -1,0 +1,24 @@
+{
+  "ctrl": {
+    "n_B": 280,
+    "P1_fail_frac": 1.0,
+    "P1_n_valid": 168,
+    "P2_t_s": null,
+    "P3_first_fail_t_s": 5.523398399,
+    "speed_max_B": 0.301893651
+  },
+  "H1": {
+    "n_B": 280,
+    "P1_fail_frac": 0.0,
+    "P1_n_valid": 168,
+    "P2_t_s": 4.303259373,
+    "P3_first_fail_t_s": 4.303259373,
+    "speed_max_B": 10.96846962
+  },
+  "gates": {
+    "P1_speed_vs_gps": true,
+    "P2_v_reaches_frac_gps": false,
+    "P3_course_yaw_delay": false
+  },
+  "PASS": false
+}

@@ -1,0 +1,252 @@
+{
+  "omega_stats_0.39_2.5": {
+    "argmax_abs_omega_t": 2.0,
+    "argmax_abs_omega": 0.216,
+    "abs_omega_at_2.0": 0.216,
+    "onset_half_peak_toward_2s_t": 1.3399999999999999
+  },
+  "prior_anchors": {
+    "interior_omega_peak_t": 2.0,
+    "xcorr_tau_peak_focus_0_8s": 1.93,
+    "xcorr_tau_peak_analysis_0_20s": 1.96,
+    "max_abs_ddrift_dt_in_1.3_2.0": 1.61,
+    "note": "From slalom_a_vs_c_omega_burstiness / omega_xcorr (seed 71)."
+  },
+  "break_candidates": {
+    "first_cos_lt_0.9_sustain3": {
+      "t": 1.540000081,
+      "abs_omega_meas_or_truth": 0.162024,
+      "abs_omega_truth": 0.16202399006056703,
+      "frac_of_peak_at_2s": 0.7501111111111112,
+      "dt_to_omega_peak_2s": 0.4599999189999999
+    },
+    "first_cos_lt_0.5_sustain3": {
+      "t": 1.590000033,
+      "abs_omega_meas_or_truth": 0.172732,
+      "abs_omega_truth": 0.17273188518885832,
+      "frac_of_peak_at_2s": 0.7996851851851852,
+      "dt_to_omega_peak_2s": 0.4099999670000001
+    },
+    "first_cos_lt_0.0_sustain3": {
+      "t": 1.610000134,
+      "abs_omega_meas_or_truth": 0.17672,
+      "abs_omega_truth": 0.1767203378953373,
+      "frac_of_peak_at_2s": 0.8181481481481481,
+      "dt_to_omega_peak_2s": 0.3899998659999999
+    },
+    "first_roll5_median_cos_lt_0.5_sustain3": {
+      "t": 1.590000033,
+      "abs_omega_meas_or_truth": 0.172732,
+      "abs_omega_truth": 0.17273188518885832,
+      "frac_of_peak_at_2s": 0.7996851851851852,
+      "dt_to_omega_peak_2s": 0.4099999670000001
+    },
+    "first_roll5_median_cos_lt_0.0_sustain3": {
+      "t": 1.610000134,
+      "abs_omega_meas_or_truth": 0.17672,
+      "abs_omega_truth": 0.1767203378953373,
+      "frac_of_peak_at_2s": 0.8181481481481481,
+      "dt_to_omega_peak_2s": 0.3899998659999999
+    },
+    "max_single_step_cos_drop": {
+      "t": 1.820000052,
+      "dcos": -0.5830118798670332,
+      "abs_omega_meas_or_truth": 0.207423,
+      "abs_omega_truth": 0.20742343485211814,
+      "frac_of_peak_at_2s": 0.9602916666666667,
+      "dt_to_omega_peak_2s": 0.17999994800000008
+    }
+  },
+  "coincidence": {
+    "primary_break_def": "first rolling-median(5) cos<0.5 sustained 3 samples",
+    "t_break": 1.590000033,
+    "dt_break_minus_1.5_bin": 0.09000003299999992,
+    "dt_omega_peak_minus_break": 0.4099999670000001,
+    "dt_break_minus_ddrift_peak_1.61": -0.019999967000000174,
+    "break_at_frac_of_omega_peak": 0.7996851851851852,
+    "omega_onset_half_peak_t": 1.3399999999999999,
+    "dt_break_minus_omega_onset": 0.25000003300000007
+  },
+  "omega_conditioned_phases": {
+    "low_omega": {
+      "label": "low_|w|<0.5*peak2",
+      "n": 67,
+      "t_span": [
+        0.670000017,
+        1.330000043
+      ],
+      "median_cos": 0.9939233681733293,
+      "mean_cos": 0.9944449119977906,
+      "frac_cos_lt_0": 0.0,
+      "mean_innov_c": 0.008239701197829675,
+      "mean_innov_l": 0.005872713777052883,
+      "mean_norm_ratio": 0.729767126991632,
+      "sum_dx_bias_gz_c": -0.00102089217492291,
+      "sum_dx_bias_gz_l": -0.00087069834146228
+    },
+    "high_omega": {
+      "label": "high_|w|>=0.5*peak2",
+      "n": 145,
+      "t_span": [
+        0.390000015,
+        2.5
+      ],
+      "median_cos": 0.972332077498368,
+      "mean_cos": 0.4890940683747254,
+      "frac_cos_lt_0": 0.2482758620689655,
+      "mean_innov_c": 0.21620670469901984,
+      "mean_innov_l": 0.39148581988482123,
+      "mean_norm_ratio": 2.467831024629063,
+      "sum_dx_bias_gz_c": 0.012944715326363997,
+      "sum_dx_bias_gz_l": -0.0294421787993372
+    },
+    "clock_early": {
+      "label": "clock_[0.39,1.5)",
+      "n": 111,
+      "t_span": [
+        0.390000015,
+        1.490000129
+      ],
+      "median_cos": 0.9922442442597692,
+      "mean_cos": 0.990627112513271,
+      "frac_cos_lt_0": 0.0,
+      "mean_innov_c": 0.021617554756648116,
+      "mean_innov_l": 0.012882557783528923,
+      "mean_norm_ratio": 0.7275967121194545,
+      "sum_dx_bias_gz_c": -0.005995586059896911,
+      "sum_dx_bias_gz_l": -0.004251453473821481
+    },
+    "clock_late": {
+      "label": "clock_[1.5,2.0]",
+      "n": 51,
+      "t_span": [
+        1.500000119,
+        2.0
+      ],
+      "median_cos": -0.6504652617921272,
+      "mean_cos": -0.2014716425723755,
+      "frac_cos_lt_0": 0.5882352941176471,
+      "mean_innov_c": 0.3127223185644742,
+      "mean_innov_l": 0.7902027490748242,
+      "mean_norm_ratio": 5.011997196171667,
+      "sum_dx_bias_gz_c": 0.01443442804053,
+      "sum_dx_bias_gz_l": -0.022502121518700003
+    }
+  },
+  "verdict": {
+    "label": "BREAK_ON_RISING_LIMB_COLOCATED_WITH_PRIOR_DDRIFT_PEAK",
+    "reading": "Fine break at t=1.590s is NOT the arbitrary 1.5 bin and NOT the ||w|| peak at 2.0s. It sits on the rising limb of the first interior turn (|w|/peak\u22480.80, 0.41s before peak), and coincides with the prior A\u00d7C max|d\u0394drift/dt| at 1.61s (\u0394=-0.020s). Early post-latch (desc+valley): latch innov smaller, cos\u22481 \u2014 freeze-Z helps while no new turn. After break on rising limb: composition flips and latch innov/bias explode. K_bias decompose should be conditioned on interior-turn rising limb (post omega zero-x @1s / post-break), not crude |w|>threshold (polluted by t=0 descending limb) and not clock-only [1.5,2]."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_innov_break_vs_omega.png",
+  "refined": {
+    "break": {
+      "t_break": 1.590000033,
+      "on_rising_limb_interior_turn": true,
+      "abs_omega_at_break": 0.17273189191154492,
+      "frac_of_peak_at_break": 0.7996846896106394,
+      "dt_to_omega_peak_2s": 0.4099999670000001,
+      "dt_to_prior_ddrift_rate_peak_1.61": -0.019999967000000174,
+      "dt_to_omega_zero_crossing_1.0": 0.5900000329999999,
+      "dt_to_halfpeak_onset_1.34": 0.25000003299999984,
+      "crude_high_omega_gate_polluted": "Yes: |w|>=0.5*peak includes descending limb from t=0 peak (median cos stays ~1). Must condition on interior-turn rising limb, not |w| alone."
+    },
+    "phases": {
+      "desc_limb_0peak": {
+        "label": "desc_limb_[0.39,1.0) from t=0 peak",
+        "n": 61,
+        "t_span": [
+          0.390000015,
+          0.990000069
+        ],
+        "median_cos": 0.99609410831768,
+        "mean_cos": 0.9929134359230924,
+        "frac_cos_lt_0": 0.0,
+        "mean_innov_c": 0.0011365151083749287,
+        "mean_innov_l": 0.0008395703981062538,
+        "mean_norm_ratio": 0.7657763844793629,
+        "sum_dx_bias_gz_c": -2.2841915359099992e-06,
+        "sum_dx_bias_gz_l": -7.660322013479998e-06,
+        "mean_abs_omega": 0.09725142105799724
+      },
+      "valley_post_zero": {
+        "label": "valley_[1.0,1.34) after omega zero-x",
+        "n": 34,
+        "t_span": [
+          1.0,
+          1.330000043
+        ],
+        "median_cos": 0.9923242242886499,
+        "mean_cos": 0.9921331190642237,
+        "frac_cos_lt_0": 0.0,
+        "mean_innov_c": 0.014401793464298592,
+        "mean_innov_l": 0.010223231102864522,
+        "mean_norm_ratio": 0.7258508522372069,
+        "sum_dx_bias_gz_c": -0.000981799884361,
+        "sum_dx_bias_gz_l": -0.000837804317118,
+        "mean_abs_omega": 0.05470350915303096
+      },
+      "rise_half_to_peak": {
+        "label": "rise_[1.34,2.0] half-peak\u2192peak",
+        "n": 67,
+        "t_span": [
+          1.340000033,
+          2.0
+        ],
+        "median_cos": 0.3889444476950369,
+        "mean_cos": 0.08036283698939799,
+        "frac_cos_lt_0": 0.44776119402985076,
+        "mean_innov_c": 0.26551340933401646,
+        "mean_innov_l": 0.6168880666418787,
+        "mean_norm_ratio": 3.9549821435926606,
+        "sum_dx_bias_gz_c": 0.00942292605653,
+        "sum_dx_bias_gz_l": -0.025908110353390003,
+        "mean_abs_omega": 0.17908636341136155
+      },
+      "rise_pre_break": {
+        "label": "rise_pre_break_[1.34,1.590)",
+        "n": 25,
+        "t_span": [
+          1.340000033,
+          1.580000043
+        ],
+        "median_cos": 0.972332077498368,
+        "mean_cos": 0.935655174989466,
+        "frac_cos_lt_0": 0.0,
+        "mean_innov_c": 0.26254829762373744,
+        "mean_innov_l": 0.1350969260806948,
+        "mean_norm_ratio": 0.5516433042643094,
+        "sum_dx_bias_gz_c": -0.014112278732599999,
+        "sum_dx_bias_gz_l": -0.012353731414290001,
+        "mean_abs_omega": 0.14192876347378636
+      },
+      "rise_post_break": {
+        "label": "rise_post_break_[1.590,2.0]",
+        "n": 42,
+        "t_span": [
+          1.590000033,
+          2.0
+        ],
+        "median_cos": -0.8146454686054496,
+        "mean_cos": -0.42873974515349955,
+        "frac_cos_lt_0": 0.7142857142857143,
+        "mean_innov_c": 0.267278356780611,
+        "mean_innov_l": 0.9036685074521073,
+        "mean_norm_ratio": 5.9807790717642995,
+        "sum_dx_bias_gz_c": 0.02353520478913,
+        "sum_dx_bias_gz_l": -0.013554378939100001,
+        "mean_abs_omega": 0.2012039824218229
+      }
+    },
+    "verdict": {
+      "label": "BREAK_ON_RISING_LIMB_COLOCATED_WITH_PRIOR_DDRIFT_PEAK",
+      "reading": "Fine break at t=1.590s is NOT the arbitrary 1.5 bin and NOT the ||w|| peak at 2.0s. It sits on the rising limb of the first interior turn (|w|/peak\u22480.80, 0.41s before peak), and coincides with the prior A\u00d7C max|d\u0394drift/dt| at 1.61s (\u0394=-0.020s). Early post-latch (desc+valley): latch innov smaller, cos\u22481 \u2014 freeze-Z helps while no new turn. After break on rising limb: composition flips and latch innov/bias explode. K_bias decompose should be conditioned on interior-turn rising limb (post omega zero-x @1s / post-break), not crude |w|>threshold (polluted by t=0 descending limb) and not clock-only [1.5,2]."
+    },
+    "implication": {
+      "early_latch_smaller_innov": "Confirmed in desc+valley (+ rise_pre): freeze-Z reduces innov \u2014 consistent with cutting attitude feedback contribution.",
+      "cost_appears_with_new_turn": "Cost appears when rising limb of first interior turn is underway (~1.59), not at latch instant (0.39).",
+      "k_bias_decompose_conditioning": "Compare ticks in rise_post_break (or t\u2208[t_break,2.0]) vs pre-break post-latch; do NOT use undifferentiated |w|>=0.5*peak.",
+      "xcorr_tau_1.93": "xcorr \u03c4_peak\u22481.93\u20131.96 is a LAG of drift-rate behind omega, not the break time. Break@1.59 precedes omega peak@2.0; compatible with stimulus onset\u2192innov break\u2192later drift coupling."
+    },
+    "figure": "docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_innov_break_vs_omega.png"
+  }
+}

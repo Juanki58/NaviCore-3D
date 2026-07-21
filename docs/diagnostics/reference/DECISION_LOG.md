@@ -236,3 +236,14 @@
 | Date | 2026-07-18 |
 | Evidence | [STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md](STAGE_I_REGIME_IDENTIFICATION_CLOSURE.md) |
 | Suggested tag | `stage-I-regime-identification-closed` |
+
+---
+
+### D22 — Pause after cand1 generalization close; consolidate methodology (no new experiment)
+
+| Campo | Valor |
+|-------|-------|
+| Decision | After closing cand1 as a **multi-domain gate** (not after refuting H-ATT-d): **do not** open OQ8 reformulated, cand2, T₂-hunt, or GAP-5 v3 immediately. Freeze transversal pattern doc [OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md) (Γ̄ = Case A, cand1 = Case B). Stabilization: links, traceability, breathe. |
+| Reason | Two scientific closures in sequence (Stage I instrument lessons + cand1 domain-of-validity). Next value is protecting methodology as program knowledge, not starting another line while structure is freshly written. |
+| Date | 2026-07-19 |
+| Evidence | [CAND1_GENERALIZATION_REVIEW.md](../../benchmarks/jacobian_imu_ab/CAND1_GENERALIZATION_REVIEW.md) · [OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md) · protocolo §13.22 |

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "REF_19082026_v2",
+    "provenance": "docs/benchmarks/ekf_v2_ab_3routes/REF_19082026/v2",
+    "median_m": 34.67223697478236,
+    "p95_m": 120.14721903772435,
+    "max_m": 219.83337163850695,
+    "n": 681,
+    "png": "C:\\NaviCore-3D\\docs\\benchmarks\\ekf_v2_unity_visual\\REF_19082026_v2_pink_yellow.png"
+  },
+  {
+    "name": "real_run_19082026_nhc_off",
+    "provenance": "docs/benchmarks/h_nhc_policy_ab/B_nhc_disabled",
+    "median_m": 71164.43624119731,
+    "p95_m": 270195.6791218909,
+    "max_m": 312205.0837547632,
+    "n": 681,
+    "png": "C:\\NaviCore-3D\\docs\\benchmarks\\ekf_v2_unity_visual\\real_run_19082026_nhc_off_pink_yellow.png"
+  },
+  {
+    "name": "ALT_16072026_v2",
+    "provenance": "docs/benchmarks/ekf_v2_ab_3routes/ALT_16072026/v2",
+    "median_m": 30.090508223786692,
+    "p95_m": 48.65131951703091,
+    "max_m": 64.8943631278747,
+    "n": 331,
+    "png": "C:\\NaviCore-3D\\docs\\benchmarks\\ekf_v2_unity_visual\\ALT_16072026_v2_pink_yellow.png"
+  },
+  {
+    "name": "JUL17_20260717_v2",
+    "provenance": "docs/benchmarks/ekf_v2_ab_3routes/JUL17_20260717/v2",
+    "median_m": 33.82628628548969,
+    "p95_m": 57.46274792470451,
+    "max_m": 156.55691030518327,
+    "n": 715,
+    "png": "C:\\NaviCore-3D\\docs\\benchmarks\\ekf_v2_unity_visual\\JUL17_20260717_v2_pink_yellow.png"
+  }
+]

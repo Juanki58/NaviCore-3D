@@ -63,6 +63,8 @@ struct SuperTunnelRunConfig {
     float nhc_vertical_std_override_mps;
     bool verbose;
     const char *nhc_trace_csv_path;
+    /* Tick anatomy (P_vv/P_pv/drift); written for every seeded tick when non-null. */
+    const char *anatomy_csv_path;
 };
 
 SuperTunnelPassResult super_tunnel_run_pass(
@@ -77,3 +79,5 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
 
 void run_super_tunnel_nhc_benchmark();
 int run_super_tunnel_nhc_experiments();
+/** Preregistered B/B_dirty (+ N_always) isolation rerun; see docs/diagnostics/16-*.md */
+int run_super_tunnel_bd_isolation_rerun();

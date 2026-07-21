@@ -1,0 +1,107 @@
+{
+  "H2": {
+    "t_end_s": 677.12121582,
+    "n_B": 66626,
+    "yaw_chase": {
+      "before": -1.98,
+      "after_seed": 93.615,
+      "after_update": 93.534,
+      "after_pred1": 107.496,
+      "after_pred2": 127.087,
+      "dyaw_seed_to_pred1": 13.881,
+      "dyaw_pred1_to_pred2": 19.591000000000008
+    },
+    "residual_h_final": 8545.259765625,
+    "residual_h_max": 8594.549804688,
+    "residual_h_p50": 4860.8435058595005,
+    "residual_h_p95": 8556.74365234375,
+    "residual_h_at_6s": 34.466388702,
+    "residual_h_at_60s": 532.115356445,
+    "residual_h_at_300s": 4226.109863281,
+    "t_sep_s": 5.301555157,
+    "P3_first_fail_t_s": 4.323426723,
+    "course_yaw_ok_to_fail_count": 25,
+    "course_yaw_fail_frac": 0.3469185040258861,
+    "speed_vs_gps_fail_frac": 0.42351809877051994,
+    "gnss_accept": 7,
+    "gnss_reject": 674,
+    "gnss_accept_rate": 0.010279001468428781,
+    "residual_h_max_after_60s": 8594.549804688,
+    "residual_h_final_vs_at_60s": 8013.14440918,
+    "course_yaw_fail_frac_after_60s": 0.3084369769960293
+  },
+  "H2ua": {
+    "t_end_s": 677.12121582,
+    "n_B": 66626,
+    "yaw_chase": {
+      "before": -0.645,
+      "after_seed": 93.615,
+      "after_update": 93.571,
+      "after_pred1": 91.765,
+      "after_pred2": 92.712,
+      "dyaw_seed_to_pred1": -1.8499999999999943,
+      "dyaw_pred1_to_pred2": 0.9470000000000027
+    },
+    "residual_h_final": 8676.877929688,
+    "residual_h_max": 8754.189453125,
+    "residual_h_p50": 5004.1398925785,
+    "residual_h_p95": 8704.45654296875,
+    "residual_h_at_6s": 18.623209,
+    "residual_h_at_60s": 544.067932129,
+    "residual_h_at_300s": 4291.796386719,
+    "t_sep_s": 6.309934616,
+    "P3_first_fail_t_s": 6.188929081,
+    "course_yaw_ok_to_fail_count": 30,
+    "course_yaw_fail_frac": 0.6397554741153645,
+    "speed_vs_gps_fail_frac": 0.667181811937633,
+    "gnss_accept": 7,
+    "gnss_reject": 674,
+    "gnss_accept_rate": 0.010279001468428781,
+    "residual_h_max_after_60s": 8754.189453125,
+    "residual_h_final_vs_at_60s": 8132.809997559,
+    "course_yaw_fail_frac_after_60s": 0.6399074881008245
+  },
+  "side_effects": {
+    "gnss_accept_rate_drop_gt_5pp": false,
+    "residual_final_worse": false,
+    "late_course_yaw_worse": true
+  },
+  "FULL_RUN_H2ua_not_worse": false,
+  "compare": {
+    "residual_h_final": {
+      "H2": 8545.259765625,
+      "H2ua": 8676.877929688,
+      "better": "H2"
+    },
+    "residual_h_max": {
+      "H2": 8594.549804688,
+      "H2ua": 8754.189453125,
+      "better": "H2"
+    },
+    "t_sep_s": {
+      "H2": 5.301555157,
+      "H2ua": 6.309934616,
+      "better": "H2ua"
+    },
+    "gnss_accept_rate": {
+      "H2": 0.010279001468428781,
+      "H2ua": 0.010279001468428781,
+      "better": "tie"
+    },
+    "P3_first_fail_t_s": {
+      "H2": 4.323426723,
+      "H2ua": 6.188929081
+    },
+    "course_yaw_fail_frac": {
+      "H2": 0.3469185040258861,
+      "H2ua": 0.6397554741153645,
+      "better": "H2"
+    },
+    "course_yaw_fail_frac_after_60s": {
+      "H2": 0.3084369769960293,
+      "H2ua": 0.6399074881008245,
+      "better": "H2"
+    }
+  },
+  "interpretation": "Full H2ua shows a regression or side effect vs H2 \u2014 do not adopt policy yet; inspect side_effects."
+}

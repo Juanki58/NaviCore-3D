@@ -1,8 +1,8 @@
 {
   "suite": "NaviCore-3D",
-  "generated_at": "2026-07-16T17:39:20",
-  "result": "FAIL",
-  "failure_count": 10,
+  "generated_at": "2026-07-21T21:56:37",
+  "result": "OK",
+  "failure_count": 0,
   "tests": [
     {
       "name": "ins_ekf_gravity_compensation",
@@ -12,140 +12,39 @@
       }
     },
     {
-      "name": "nhc_predict_counter",
+      "name": "gnss_physical_inconsistency_spoof",
       "passed": true,
       "metrics": {
-        "nhc_updates": { "value": 10.000000, "unit": "count" },
-        "nhc_innovation_max_lateral_mps": { "value": 0.000000, "unit": "m/s" },
-        "nhc_innovation_max_vertical_mps": { "value": 0.000000, "unit": "m/s" },
-        "nhc_innovation_max_norm_mps": { "value": 0.000000, "unit": "m/s" }
+        "spoof_innov_h_m": { "value": 468.767883, "unit": "m" }
       }
     },
     {
-      "name": "nhc_jacobian_fd",
+      "name": "imu_nan_reject",
       "passed": true,
       "metrics": {
-        "nhc_jacobian_max_abs_err": { "value": 0.004194, "unit": "1" }
+        "nan_reject": { "value": 1.000000, "unit": "bool" }
       }
     },
     {
-      "name": "super_tunnel_nhc_isolation",
-      "passed": false,
+      "name": "waypoint_full_ingest_reject",
+      "passed": true,
       "metrics": {
-        "dirty_nhc_off_exit_m": { "value": 303.641846, "unit": "m" },
-        "dirty_nhc_on_exit_m": { "value": 1327.363892, "unit": "m" },
-        "no_scale_nhc_off_exit_m": { "value": 296.769653, "unit": "m" },
-        "no_scale_nhc_on_exit_m": { "value": 1433.557495, "unit": "m" }
+        "waypoint_cap": { "value": 64.000000, "unit": "slots" }
       }
     },
     {
-      "name": "super_tunnel_nhc_regression",
-      "passed": false,
-      "cases": [
-        {
-          "nhc_enabled": false,
-          "gps_outage": {
-            "start_s": 10.0,
-            "end_s": 55.0
-          },
-          "drift_exit_tunnel_m": 309.198090,
-          "drift_final_m": 2.073890,
-          "nhc_updates": 0,
-          "outage_rms": {
-            "position_m": 122.507492,
-            "velocity_mps": 8.087907,
-            "yaw_deg": 1.841893,
-            "sample_count": 4500
-          },
-          "nhc_innovation_max_mps": {
-            "lateral": 0.000000,
-            "vertical": 0.000000,
-            "norm": 0.000000
-          }
-        },
-        {
-          "nhc_enabled": true,
-          "gps_outage": {
-            "start_s": 10.0,
-            "end_s": 55.0
-          },
-          "drift_exit_tunnel_m": 1383.552612,
-          "drift_final_m": 1491.822021,
-          "nhc_updates": 6001,
-          "outage_rms": {
-            "position_m": 874.869507,
-            "velocity_mps": 26.411856,
-            "yaw_deg": 102.332863,
-            "sample_count": 4500
-          },
-          "nhc_innovation_max_mps": {
-            "lateral": 3.342239,
-            "vertical": 8.691887,
-            "norm": 8.693485
-          }
-        }
-      ]
+      "name": "time_guard_wcet",
+      "passed": true,
+      "metrics": {
+        "wcet_penalty": { "value": 40.000000, "unit": "pts" }
+      }
     },
     {
-      "name": "TC_03_Constant_Slope",
-      "passed": false,
-      "case":         {
-          "nhc_enabled": true,
-          "scenario": {
-            "grade_percent": 10.0,
-            "pitch_deg": 5.710593,
-            "speed_mps": 25.0
-          },
-          "gps_outage": {
-            "start_s": 15.0,
-            "end_s": 30.0
-          },
-          "drift_exit_outage_m": 216.889114,
-          "drift_final_m": 479.729736,
-          "nhc_updates": 4001,
-          "outage_rms": {
-            "position_m": 239.325165,
-            "velocity_mps": 44.605087,
-            "velocity_d_mps": 15.780543,
-            "yaw_deg": 43.703167,
-            "sample_count": 1500
-          },
-          "nhc_innovation_max_mps": {
-            "lateral": 17.012003,
-            "vertical": 6.036708,
-            "norm": 18.051317
-          }
-        }
-    },
-    {
-      "name": "TC_04_Aggressive_Slalom",
-      "passed": false,
-      "case":         {
-          "nhc_enabled": true,
-          "scenario": {
-            "speed_kmh": 50.0,
-            "max_lateral_accel_mps2": 3.0,
-            "slalom_period_s": 4.0
-          },
-          "gps_outage": {
-            "start_s": 10.0,
-            "end_s": 20.0
-          },
-          "drift_exit_outage_m": 113.398178,
-          "drift_final_m": 124.461998,
-          "nhc_updates": 2501,
-          "outage_rms": {
-            "position_m": 101.777405,
-            "velocity_mps": 17.390236,
-            "yaw_deg": 14.492553,
-            "sample_count": 1000
-          },
-          "nhc_innovation_max_mps": {
-            "lateral": 2.296046,
-            "vertical": 1.461655,
-            "norm": 2.678683
-          }
-        }
+      "name": "geometry_guard_discontinuity",
+      "passed": true,
+      "metrics": {
+        "geom_step_m": { "value": 1111.142944, "unit": "m" }
+      }
     }
   ]
 }

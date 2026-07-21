@@ -1,0 +1,33 @@
+{
+  "status": "frozen_for_next_session",
+  "closed_today": [
+    "P_att_bias_CHAR_WEAK",
+    "K_bias_near_cancel_no_dominant_path",
+    "PATH_SCALE_TRACKS_INNOV"
+  ],
+  "open_question": "Why does NHC ||y|| explode at ~1.69-1.79 s?",
+  "framing_note": "Audit innov is NHC synthetic (z≡0 on body lat/vert), not GNSS. 'Anomalous measurement' does not apply as in GNSS.",
+  "window_s": [1.69, 1.79],
+  "first_look": "truth v_body lat/vert vs filter v_body (= -innov) in window [1.69, 1.79], ctrl vs latch",
+  "candidates": {
+    "A_cascade": {
+      "prior": "likely",
+      "claim": "Truth v_body lat/vert stays near 0; filter v_body diverges — state already degraded from attitude-Z loop (onset 1.34 → break 1.59 → innov lag).",
+      "falsify_if": "Truth ||v_body|| lat/vert also large in [1.69, 1.79]",
+      "if_confirmed": "Filter/state cascade — continue early-loop line; not a K/P intervention"
+    },
+    "B_nhc_too_rigid_for_slalom_turn": {
+      "prior": "less_likely_but_design_relevant",
+      "claim": "Truth itself has non-negligible body lateral/vertical velocity in the tight turn — real vehicle physics (sideslip / bank / imperfect non-holonomy), not a filter bug. NHC is penalizing legitimate motion.",
+      "falsify_if": "Truth ||v_body|| stays small while filter innov explodes",
+      "if_confirmed": "DESIGN conclusion, not bug hunt: NHC model too rigid for this scenario's turn dynamics. Sensible next lever = relax/gate NHC in that regime — do NOT chase another EKF-internal fault."
+    }
+  },
+  "arms": ["ctrl", "latch"],
+  "do_not": [
+    "Touch K_bias / path_scale / zero-P before A vs B",
+    "Reopen Z-family attack",
+    "Merge OQ9",
+    "If B: reinterpret as 'another bug to hunt'"
+  ]
+}

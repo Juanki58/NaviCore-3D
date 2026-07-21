@@ -1,0 +1,8 @@
+﻿REAL_RUN_REPLAY resumen
+  Filas procesadas: 79968 (IMU=79253, GPS=715)
+  Duracion:         799.76 s
+  Filtro activo:    si
+  GNSS aceptadas:   76 | rechazadas: 639 (10.6% aceptadas)
+  Ultimo GPS NED:   (-490.930, -2201.897, 13.898) m
+  Deriva final H:   332215.656 m
+  Estado final NED: (324745.781, -69939.125, -66568.883) m

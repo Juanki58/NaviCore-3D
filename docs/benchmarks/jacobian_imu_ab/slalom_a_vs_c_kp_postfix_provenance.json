@@ -1,0 +1,42 @@
+{
+  "purpose": "single clean post-memset-fix audit pair for K/P autopsy",
+  "seed": 71,
+  "sim_path": "C:\\NaviCore-3D\\build\\NaviCore3D_Sim.exe",
+  "sim_mtime_utc": "2026-07-18T22:41:14.758674+00:00",
+  "sim_sha256_16": "ad09fe5744d3f07b",
+  "fix_notes": "ins_ekf_init memset cleared nhc_block_audit_fp; SLALOM now binds audit FILE* after seed and re-binds each tick",
+  "cells": {
+    "A": {
+      "jacobian": "correct",
+      "audit_path": "slalom_cellA_jcorrect_imuideal_s71_nhc_block_audit.csv",
+      "wall_start_utc": "2026-07-18T22:47:17.223243+00:00",
+      "wall_end_utc": "2026-07-18T22:47:17.468189+00:00",
+      "elapsed_s": 0.24494647979736328,
+      "returncode": 0,
+      "audit_lines": 2502,
+      "audit_data_rows": 2501,
+      "audit_sha256_16": "0043ca54c5b9166c",
+      "audit_bytes": 3140966,
+      "stdout_has_nhc_block_audit": true,
+      "max_lateral_drift_m": 53.999,
+      "stderr_tail": ""
+    },
+    "C": {
+      "jacobian": "legacy",
+      "audit_path": "slalom_cellC_jlegacy_imuideal_s71_nhc_block_audit.csv",
+      "wall_start_utc": "2026-07-18T22:47:17.488866+00:00",
+      "wall_end_utc": "2026-07-18T22:47:17.716781+00:00",
+      "elapsed_s": 0.22791552543640137,
+      "returncode": 0,
+      "audit_lines": 2502,
+      "audit_data_rows": 2501,
+      "audit_sha256_16": "0ec5ee7237297061",
+      "audit_bytes": 3148476,
+      "stdout_has_nhc_block_audit": true,
+      "max_lateral_drift_m": 0.377,
+      "stderr_tail": ""
+    }
+  },
+  "deleted_prior_audits_before_run": true,
+  "audit_plumbing_ok": true
+}

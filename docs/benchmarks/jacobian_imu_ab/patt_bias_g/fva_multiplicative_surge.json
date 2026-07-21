@@ -1,0 +1,143 @@
+{
+  "window_s": [
+    1.34,
+    1.69
+  ],
+  "arms": {
+    "ctrl": {
+      "rise_pre_break": {
+        "n": 25,
+        "mean_a_horiz": 2.0061097766623166,
+        "max_a_horiz": 2.3990539754612707,
+        "mean_a_corr": 10.012751366970974,
+        "mean_datt_deg": 1.200167004013445,
+        "max_datt_deg": 3.848605004368009,
+        "mean_prod": 0.04620968065412608,
+        "max_prod": 0.16114644419142676,
+        "cross_start": 0.0015191024329572755,
+        "cross_end": -0.16181627783939145,
+        "delta_abs_cross": 0.16029717540643418,
+        "mean_d_abs_cross_dt": 0.6411887016257368,
+        "pearson_dabs_vs_prod": -0.13483329752018192,
+        "pearson_dabs_vs_a": 0.15032819153103638,
+        "pearson_dabs_vs_datt": -0.113488481990219
+      },
+      "surge_window": {
+        "n": 10,
+        "mean_a_horiz": 2.5429405766620805,
+        "max_a_horiz": 2.6512968902660807,
+        "mean_a_corr": 10.131225880421814,
+        "mean_datt_deg": 5.3261398439888294,
+        "max_datt_deg": 5.876410296539452,
+        "mean_prod": 0.2370650448730227,
+        "max_prod": 0.2667474979184247,
+        "cross_start": -0.06293513034428067,
+        "cross_end": 0.24714980273628628,
+        "delta_abs_cross": 0.18421467239200562,
+        "mean_d_abs_cross_dt": 0.8533352489689481,
+        "pearson_dabs_vs_prod": -0.16658823759604696,
+        "pearson_dabs_vs_a": -0.3177132356090361,
+        "pearson_dabs_vs_datt": -0.10742519697909578
+      },
+      "full": {
+        "n": 35,
+        "mean_a_horiz": 2.159490005233678,
+        "max_a_horiz": 2.6512968902660807,
+        "mean_a_corr": 10.046601227956927,
+        "mean_datt_deg": 2.379016386863555,
+        "max_datt_deg": 5.876410296539452,
+        "mean_prod": 0.10073978471666797,
+        "max_prod": 0.2667474979184247,
+        "cross_start": 0.0015191024329572755,
+        "cross_end": 0.24714980273628628,
+        "delta_abs_cross": 0.245630700303329,
+        "mean_d_abs_cross_dt": 0.7018020008666543,
+        "pearson_dabs_vs_prod": -0.025454338964545648,
+        "pearson_dabs_vs_a": 0.008348479989840493,
+        "pearson_dabs_vs_datt": -0.011309970481440532
+      }
+    },
+    "latch": {
+      "rise_pre_break": {
+        "n": 25,
+        "mean_a_horiz": 2.0061097766623166,
+        "max_a_horiz": 2.3990539754612707,
+        "mean_a_corr": 10.012751366970974,
+        "mean_datt_deg": 0.45135114896636463,
+        "max_datt_deg": 1.3903431551121381,
+        "mean_prod": 0.0171920331916318,
+        "max_prod": 0.05821560160056023,
+        "cross_start": -0.00395388839455002,
+        "cross_end": -0.25906869613444894,
+        "delta_abs_cross": 0.2551148077398989,
+        "mean_d_abs_cross_dt": 1.0204592309595957,
+        "pearson_dabs_vs_prod": 0.9943105911414979,
+        "pearson_dabs_vs_a": 0.837942244862356,
+        "pearson_dabs_vs_datt": 0.9920635312425637
+      },
+      "surge_window": {
+        "n": 10,
+        "mean_a_horiz": 2.5429405766620805,
+        "max_a_horiz": 2.6512968902660807,
+        "mean_a_corr": 10.131225880421814,
+        "mean_datt_deg": 3.3708361318140176,
+        "max_datt_deg": 5.165020348778331,
+        "mean_prod": 0.15112901527178457,
+        "max_prod": 0.23900542946187284,
+        "cross_start": -0.31406117138852596,
+        "cross_end": -1.640176624497245,
+        "delta_abs_cross": 1.3261154531087191,
+        "mean_d_abs_cross_dt": 13.811079283627961,
+        "pearson_dabs_vs_prod": 0.8372234204384154,
+        "pearson_dabs_vs_a": 0.8383922454783188,
+        "pearson_dabs_vs_datt": 0.8460239464756809
+      },
+      "full": {
+        "n": 35,
+        "mean_a_horiz": 2.159490005233678,
+        "max_a_horiz": 2.6512968902660807,
+        "mean_a_corr": 10.046601227956927,
+        "mean_datt_deg": 1.2854897154942657,
+        "max_datt_deg": 5.165020348778331,
+        "mean_prod": 0.055459742357389735,
+        "max_prod": 0.23900542946187284,
+        "cross_start": -0.00395388839455002,
+        "cross_end": -1.640176624497245,
+        "delta_abs_cross": 1.636222736102695,
+        "mean_d_abs_cross_dt": 4.674922103150557,
+        "pearson_dabs_vs_prod": 0.9663105442166218,
+        "pearson_dabs_vs_a": 0.785160555891108,
+        "pearson_dabs_vs_datt": 0.9684767426890213
+      }
+    }
+  },
+  "verdict": {
+    "label": "ATTITUDE_JUMP_DRIVEN_SURGE",
+    "reading": "Attitude error jumps in the surge window while |a| is already high/smooth \u2014 not primarily an accel spike; look at latch/composition-break attitude dynamics.",
+    "ratios": {
+      "a_horiz_mean_rise_vs_surge": [
+        2.0061097766623166,
+        2.5429405766620805
+      ],
+      "a_horiz_ratio_surge_over_rise": 1.2675979182420023,
+      "datt_mean_deg_rise_vs_surge": [
+        0.45135114896636463,
+        3.3708361318140176
+      ],
+      "datt_ratio_surge_over_rise": 7.468322922260286,
+      "prod_ratio_surge_over_rise": 8.790642362495346,
+      "delta_abs_cross_rise_vs_surge": [
+        0.2551148077398989,
+        1.3261154531087191
+      ],
+      "cross_growth_ratio": 5.198112429682066,
+      "pearson_dabs_vs_prod_surge": 0.8372234204384154,
+      "pearson_dabs_vs_a_surge": 0.8383922454783188,
+      "pearson_dabs_vs_datt_surge": 0.8460239464756809,
+      "pearson_dabs_vs_prod_full": 0.9663105442166218
+    },
+    "design_hint": "If multiplicative: consider gating/damping f_va when |a| high AND attitude error energy already elevated \u2014 conditional, not blind Z-forget. If attitude-jump driven: stay on attitude-loop early intervention. If not multiplicative: re-examine NHC feedback into vel during break.",
+    "note_a_smooth": "Truth |a_horiz|=3|cos(\u03c9t)| rises smoothly toward peak at t=2.0; expect no cliff in |a| at 1.59 \u2014 if surge is sharp, attitude-side or update-side discontinuity is the sharper factor."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_fva_multiplicative_surge.png"
+}

@@ -1,13 +1,21 @@
 #include "regression_suite.hpp"
 
 #include "ins_ekf.hpp"
+#include "geodesy.hpp"
 #include "constant_slope_benchmark.hpp"
 #include "slalom_benchmark.hpp"
 #include "super_tunnel_benchmark.hpp"
+#include "waypoint.hpp"
+#include "diagnostic.hpp"
+#include "time_guard.hpp"
+#include "geometry_guard.hpp"
+#include "command_ingestor.hpp"
+#include "fusion.hpp"
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 
 #ifndef M_PI
@@ -16,8 +24,9 @@
 
 namespace {
 
-constexpr int kRegressionTestCount = 7;
-constexpr int kMaxRegressionReports = 8;
+constexpr int kRegressionTestCount = 12;
+constexpr int kSafetyInjectTestCount = 6;
+constexpr int kMaxRegressionReports = 16;
 constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
 int g_failures = 0;
@@ -241,6 +250,187 @@ void test_ins_ekf_gravity_compensation(RegressionTestReport *report)
         (vel_ned[0] * vel_ned[0]) + (vel_ned[1] * vel_ned[1]) + (vel_ned[2] * vel_ned[2]));
     expect_less(speed_mps, 0.5f, "velocidad tras 1 s en reposo con IMU ideal");
     add_simple_metric(report, "final_speed_mps", speed_mps, "m/s");
+}
+
+void test_gnss_physical_inconsistency_rejects_spoof_jump(RegressionTestReport *report)
+{
+    /* SW-injected teleport on continuous track (short gap): fix_valid true → reason=3. */
+    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    InsEkfFilter ekf{};
+    ins_ekf_init(&ekf, origin, 0.0f, NAVICORE_DOMAIN_AIR);
+    ins_ekf_set_consistency_check_enabled(&ekf, true);
+    ins_ekf_set_gnss_obs_mode(&ekf, INS_EKF_GNSS_OBS_POS);
+    ekf.vel_[0] = 10.0f;
+    ekf.vel_[1] = 0.0f;
+    ekf.vel_[2] = 0.0f;
+
+    GpsSample good{};
+    good.fix_valid = true;
+    good.timestamp_ms = 50U;
+    good.position = origin;
+    good.speed_mps = 10.0f;
+    good.course_deg = 0.0f;
+    good.satellites = 12U;
+    expect_true(ins_ekf_update_gnss(&ekf, &good), "fix legítimo previo debe aceptarse");
+
+    for (uint32_t t_ms = 60U; t_ms <= 200U; t_ms += 10U) {
+        ImuSample imu = make_ideal_stationary_imu(t_ms);
+        imu.accel_mps2[0] = 0.0f;
+        (void)ins_ekf_predict(&ekf, &imu);
+    }
+
+    float lat = 0.0f;
+    float lon = 0.0f;
+    float alt = 0.0f;
+    geodesy::ned_to_lla(
+        ekf.ref_lat_deg,
+        ekf.ref_lon_deg,
+        ekf.ref_alt_m,
+        ekf.pos_[0] + 500.0f,
+        ekf.pos_[1],
+        ekf.pos_[2],
+        &lat,
+        &lon,
+        &alt);
+
+    GpsSample spoof{};
+    spoof.fix_valid = true;
+    spoof.timestamp_ms = 250U; /* ~200 ms gap → dentro de MAX_GAP_S */
+    spoof.position = vector3d_make(lat, lon, alt);
+    spoof.speed_mps = 10.0f;
+    spoof.course_deg = 0.0f;
+    spoof.satellites = 12U;
+
+    const bool accepted = ins_ekf_update_gnss(&ekf, &spoof);
+    expect_true(!accepted, "teleport 500 m con fix_valid debe rechazarse");
+    expect_true(
+        ekf.gnss_last_reject_reason == INS_EKF_GNSS_REJECT_INCONSISTENT,
+        "reject_reason debe ser INCONSISTENT (3)");
+    expect_true(ins_ekf_gnss_consistency_last_suspect(&ekf), "consistency suspect flag");
+    add_simple_metric(
+        report,
+        "spoof_innov_h_m",
+        ekf.gnss_consistency_last_innov_h_m,
+        "m");
+}
+
+void test_imu_nan_rejected_by_ekf_predict(RegressionTestReport *report)
+{
+    const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
+    InsEkfFilter ekf{};
+    ins_ekf_init(&ekf, origin, 0.0f, NAVICORE_DOMAIN_AIR);
+
+    ImuSample good = make_ideal_stationary_imu(10U);
+    expect_true(ins_ekf_predict(&ekf, &good), "IMU finito debe aceptarse");
+
+    const float pos_n_before = ekf.pos_[0];
+    ImuSample bad = make_ideal_stationary_imu(20U);
+    bad.accel_mps2[0] = NAN;
+    expect_true(!ins_ekf_predict(&ekf, &bad), "accel NaN debe rechazarse (fail-closed)");
+    expect_true(ekf.pos_[0] == pos_n_before, "estado no debe mutar tras NaN");
+
+    ImuSample bad_gyro = make_ideal_stationary_imu(30U);
+    bad_gyro.gyro_radps[2] = INFINITY;
+    expect_true(!ins_ekf_predict(&ekf, &bad_gyro), "gyro Inf debe rechazarse");
+
+    DeadReckoningFilter dr{};
+    dead_reckoning_init(&dr, origin, NAVICORE_DOMAIN_AIR);
+    ImuSample bad_dr = make_ideal_stationary_imu(40U);
+    bad_dr.accel_mps2[1] = NAN;
+    expect_true(
+        !dead_reckoning_update_imu(&dr, &bad_dr, nullptr),
+        "fusion DR también rechaza NaN");
+    add_simple_metric(report, "nan_reject", 1.0f, "bool");
+}
+
+void test_waypoint_buffer_full_and_ingest_reject(RegressionTestReport *report)
+{
+    StaticWaypointBuffer buf{};
+    expect_true(waypoint_buffer_init(&buf), "init buffer");
+
+    for (uint32_t i = 0U; i < NAVICORE_MAX_WAYPOINTS; ++i) {
+        const Waypoint wp = waypoint_make(
+            "WP",
+            vector3d_make(41.0f + static_cast<float>(i) * 0.0001f, 2.0f, 10.0f),
+            NAVICORE_DOMAIN_AIR,
+            25U,
+            6.0f);
+        expect_true(waypoint_buffer_push(&buf, wp), "push hasta capacidad");
+    }
+    expect_true(waypoint_buffer_is_full(&buf), "buffer debe estar lleno (64)");
+
+    SystemHealthMonitor mon{};
+    mon.health_score = DIAG_HEALTH_SCORE_MAX;
+    mon.mode = HEALTH_NOMINAL;
+
+    RadioCommandPacket pkt{};
+    pkt.magic = RADIO_CMD_MAGIC;
+    pkt.command_type = static_cast<uint8_t>(CMD_ADD_WAYPOINT);
+    pkt.sequence = 99U;
+    pkt.pos_x = 41.01f;
+    pkt.pos_y = 2.01f;
+    pkt.param = 12.0f;
+    pkt.checksum = command_ingestor_compute_checksum(&pkt);
+
+    float cruise = 0.0f;
+    expect_true(
+        !command_ingestor_parse(&pkt, &buf, &cruise, &mon),
+        "ADD_WAYPOINT con buffer lleno debe rechazarse (no overwrite vía radio)");
+    expect_true(buf.count == NAVICORE_MAX_WAYPOINTS, "count no cambia tras reject");
+    add_simple_metric(
+        report,
+        "waypoint_cap",
+        static_cast<float>(NAVICORE_MAX_WAYPOINTS),
+        "slots");
+}
+
+void test_time_guard_wcet_violation(RegressionTestReport *report)
+{
+    SystemHealthMonitor mon{};
+    mon.health_score = DIAG_HEALTH_SCORE_MAX;
+    mon.mode = HEALTH_NOMINAL;
+
+    const bool ok = time_guard_validate(
+        TIME_GUARD_DEFAULT_MAX_TICKS + 1U,
+        TIME_GUARD_DEFAULT_MAX_TICKS,
+        &mon);
+    expect_true(!ok, "exceder WCET debe devolver false");
+    expect_true(
+        mon.last_time_guard_error == TIME_GUARD_ERROR_WCET,
+        "código TIME_GUARD_ERROR_WCET");
+    expect_true(
+        mon.health_score == static_cast<uint8_t>(DIAG_HEALTH_SCORE_MAX - TIME_GUARD_WCET_PENALTY),
+        "penalización WCET al health_score");
+    add_simple_metric(report, "wcet_penalty", static_cast<float>(TIME_GUARD_WCET_PENALTY), "pts");
+}
+
+void test_geometry_guard_discontinuity(RegressionTestReport *report)
+{
+    StaticWaypointBuffer buf{};
+    expect_true(waypoint_buffer_init(&buf), "init");
+    const Waypoint origin_wp = waypoint_make(
+        "A",
+        vector3d_make(41.3874f, 2.1686f, 12.0f),
+        NAVICORE_DOMAIN_AIR,
+        25U,
+        6.0f);
+    expect_true(waypoint_buffer_push(&buf, origin_wp), "push A");
+
+    SystemHealthMonitor mon{};
+    mon.health_score = DIAG_HEALTH_SCORE_MAX;
+    mon.mode = HEALTH_NOMINAL;
+
+    /* ~0.01° lat ≈ 1.1 km >> 150 m step limit */
+    const bool ok = geometry_guard_validate_next(&buf, 41.3974f, 2.1686f, &mon);
+    expect_true(!ok, "salto espacial debe rechazarse");
+    expect_true(
+        mon.last_geometry_error == GEOMETRY_ERROR_DISCONTINUITY,
+        "GEOMETRY_ERROR_DISCONTINUITY");
+    expect_true(
+        mon.health_score
+            == static_cast<uint8_t>(DIAG_HEALTH_SCORE_MAX - GEOMETRY_GUARD_HEALTH_PENALTY),
+        "penalización geometry");
+    add_simple_metric(report, "geom_step_m", mon.last_geometry_step_m, "m");
 }
 
 void test_nhc_enabled_predict_increments_counter(RegressionTestReport *report)
@@ -737,6 +927,11 @@ int run_regression_suite()
     std::printf("============================\n");
 
     run_test("ins_ekf_gravity_compensation", test_ins_ekf_gravity_compensation);
+    run_test("gnss_physical_inconsistency_spoof", test_gnss_physical_inconsistency_rejects_spoof_jump);
+    run_test("imu_nan_reject", test_imu_nan_rejected_by_ekf_predict);
+    run_test("waypoint_full_ingest_reject", test_waypoint_buffer_full_and_ingest_reject);
+    run_test("time_guard_wcet", test_time_guard_wcet_violation);
+    run_test("geometry_guard_discontinuity", test_geometry_guard_discontinuity);
     run_test("nhc_predict_counter", test_nhc_enabled_predict_increments_counter);
     run_test("nhc_jacobian_fd", test_nhc_jacobian_fd);
     run_test("super_tunnel_nhc_isolation", test_super_tunnel_nhc_isolation);
@@ -749,6 +944,33 @@ int run_regression_suite()
 
     if (g_failures == 0) {
         std::printf("RESULT: OK (%d tests)\n", kRegressionTestCount);
+        return EXIT_SUCCESS;
+    }
+
+    std::printf("RESULT: FAIL (%d assertion failures)\n", g_failures);
+    return EXIT_FAILURE;
+}
+
+int run_regression_suite_safety_inject()
+{
+    g_failures = 0;
+    g_report_count = 0;
+
+    std::printf("NaviCore-3D safety-inject suite (CI)\n");
+    std::printf("====================================\n");
+
+    run_test("ins_ekf_gravity_compensation", test_ins_ekf_gravity_compensation);
+    run_test("gnss_physical_inconsistency_spoof", test_gnss_physical_inconsistency_rejects_spoof_jump);
+    run_test("imu_nan_reject", test_imu_nan_rejected_by_ekf_predict);
+    run_test("waypoint_full_ingest_reject", test_waypoint_buffer_full_and_ingest_reject);
+    run_test("time_guard_wcet", test_time_guard_wcet_violation);
+    run_test("geometry_guard_discontinuity", test_geometry_guard_discontinuity);
+
+    std::printf("====================================\n");
+    (void)export_regression_report_json();
+
+    if (g_failures == 0) {
+        std::printf("RESULT: OK (%d safety-inject tests)\n", kSafetyInjectTestCount);
         return EXIT_SUCCESS;
     }
 

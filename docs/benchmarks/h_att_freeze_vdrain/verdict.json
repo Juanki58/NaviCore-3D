@@ -1,0 +1,48 @@
+{
+  "H2": {
+    "n_ticks": 99,
+    "sum_dv_pred_n": 7.492884000000001,
+    "sum_dv_pred_e": 4.006340000000001,
+    "sum_dv_pred_h": 8.496709412063945,
+    "sum_dv_nhc_n": -9.129007,
+    "sum_dv_nhc_e": -11.853349,
+    "sum_dv_nhc_h": 14.9613051343073,
+    "v_first_after_nhc": [
+      1.386042,
+      8.269289,
+      8.384644
+    ],
+    "v_last_after_nhc": [
+      -2.192973,
+      0.51343,
+      2.252275
+    ],
+    "nhc_applied_frac": 1.0
+  },
+  "Freeze": {
+    "n_ticks": 99,
+    "sum_dv_pred_n": 0.19163899999999998,
+    "sum_dv_pred_e": 0.169949,
+    "sum_dv_pred_h": 0.25614091614187684,
+    "sum_dv_nhc_n": -0.03252900000000014,
+    "sum_dv_nhc_e": -1.0823569999999998,
+    "sum_dv_nhc_h": 1.0828457005917322,
+    "v_first_after_nhc": [
+      -1.400681,
+      8.249462,
+      8.367529
+    ],
+    "v_last_after_nhc": [
+      -0.397737,
+      7.448031,
+      7.458644
+    ],
+    "nhc_applied_frac": 1.0
+  },
+  "hypothesis": "velocity drain requires attitude rotation after seed",
+  "PASS_drain_requires_att_rotation": true,
+  "compare_sum_dv_nhc_h": {
+    "H2": 14.9613051343073,
+    "Freeze": 1.0828457005917322
+  }
+}

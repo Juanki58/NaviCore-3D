@@ -1,0 +1,778 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md \u00a713.22",
+  "timestamp": "2026-07-19T15:39:27+02:00",
+  "grace_N": 32,
+  "kappa": 0.00012266267590799028,
+  "T2": 3.736646e-06,
+  "arms": {
+    "E0": {
+      "tag": "E0",
+      "grace": 0,
+      "gate_norm": false,
+      "gate_thr": 3.736646e-06,
+      "slalom": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        }
+      },
+      "tunnel": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.468337814e-05
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01071879081
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 1.46589291e-05
+          },
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01070984453
+          },
+          "error": ""
+        }
+      }
+    },
+    "E1n1": {
+      "tag": "E1n1",
+      "grace": 1,
+      "gate_norm": false,
+      "gate_thr": 3.736646e-06,
+      "slalom": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 3.974511856e-06
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 3.974511856e-06
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        }
+      },
+      "tunnel": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.01,
+            "sumabs": 1.468461596e-05
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.01,
+            "sumabs": 0.0107383877
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.02,
+            "sumabs": 4.686387456e-06
+          },
+          "error": ""
+        }
+      }
+    },
+    "E1": {
+      "tag": "E1",
+      "grace": 32,
+      "gate_norm": false,
+      "gate_thr": 3.736646e-06,
+      "slalom": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.44,
+            "sumabs": 4.028297099e-06
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.44,
+            "sumabs": 4.028297099e-06
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        }
+      },
+      "tunnel": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.32,
+            "sumabs": 5.122632865e-05
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.32,
+            "sumabs": 0.0004683217267
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.33,
+            "sumabs": 5.171689736e-06
+          },
+          "error": ""
+        }
+      }
+    },
+    "E2": {
+      "tag": "E2",
+      "grace": 0,
+      "gate_norm": true,
+      "gate_thr": 0.00012266267590799028,
+      "slalom": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.39,
+            "sumabs": 4.04993034e-06
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        }
+      },
+      "tunnel": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.07,
+            "sumabs": 0.0001189626637
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01071879081
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": false,
+          "fire": null,
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.0,
+            "sumabs": 0.01070984453
+          },
+          "error": ""
+        }
+      }
+    },
+    "E1n1_E2": {
+      "tag": "E1n1_E2",
+      "grace": 1,
+      "gate_norm": true,
+      "gate_thr": 0.00012266267590799028,
+      "slalom": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.2,
+            "sumabs": 6.589507962e-07
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.2,
+            "sumabs": 6.589507962e-07
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.21,
+            "sumabs": 6.683569609e-07
+          },
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.21,
+            "sumabs": 6.683569609e-07
+          },
+          "error": ""
+        }
+      },
+      "tunnel": {
+        "A": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.01,
+            "sumabs": 1.468461596e-05
+          },
+          "error": ""
+        },
+        "B": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.01,
+            "sumabs": 0.0107383877
+          },
+          "error": ""
+        },
+        "C": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.06,
+            "sumabs": 7.032422644e-08
+          },
+          "error": ""
+        },
+        "D": {
+          "fired": true,
+          "fire": {
+            "t_s": 0.01,
+            "sumabs": 1.081999585e-06
+          },
+          "error": ""
+        }
+      }
+    }
+  },
+  "scores": {
+    "E0": {
+      "G1_tunnel_no_early_fire": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 1.468337814e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01071879081
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 1.46589291e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01070984453
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G1b_tunnel_nofire_within_tmax": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 1.468337814e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01071879081
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 1.46589291e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01070984453
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G2_slalom_A_039": {
+        "pass": true,
+        "fire": {
+          "t_s": 0.39,
+          "sumabs": 4.04993034e-06
+        }
+      },
+      "G3_slalom_C_nofire": {
+        "pass": true,
+        "fire": null
+      },
+      "PASS": false,
+      "PASS_strict_G1b": false
+    },
+    "E1n1": {
+      "G1_tunnel_no_early_fire": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.468461596e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 0.0107383877
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.02,
+              "sumabs": 4.686387456e-06
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G1b_tunnel_nofire_within_tmax": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.468461596e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 0.0107383877
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.02,
+              "sumabs": 4.686387456e-06
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G2_slalom_A_039": {
+        "pass": true,
+        "fire": {
+          "t_s": 0.39,
+          "sumabs": 3.974511856e-06
+        }
+      },
+      "G3_slalom_C_nofire": {
+        "pass": true,
+        "fire": null
+      },
+      "PASS": false,
+      "PASS_strict_G1b": false
+    },
+    "E1": {
+      "G1_tunnel_no_early_fire": {
+        "pass": true,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.32,
+              "sumabs": 5.122632865e-05
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.32,
+              "sumabs": 0.0004683217267
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.33,
+              "sumabs": 5.171689736e-06
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G1b_tunnel_nofire_within_tmax": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.32,
+              "sumabs": 5.122632865e-05
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.32,
+              "sumabs": 0.0004683217267
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.33,
+              "sumabs": 5.171689736e-06
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G2_slalom_A_039": {
+        "pass": false,
+        "fire": {
+          "t_s": 0.44,
+          "sumabs": 4.028297099e-06
+        }
+      },
+      "G3_slalom_C_nofire": {
+        "pass": true,
+        "fire": null
+      },
+      "PASS": false,
+      "PASS_strict_G1b": false
+    },
+    "E2": {
+      "G1_tunnel_no_early_fire": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.07,
+              "sumabs": 0.0001189626637
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01071879081
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01070984453
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G1b_tunnel_nofire_within_tmax": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.07,
+              "sumabs": 0.0001189626637
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01071879081
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": null,
+            "early_fail": false,
+            "fire_within_tmax": false
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.0,
+              "sumabs": 0.01070984453
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G2_slalom_A_039": {
+        "pass": true,
+        "fire": {
+          "t_s": 0.39,
+          "sumabs": 4.04993034e-06
+        }
+      },
+      "G3_slalom_C_nofire": {
+        "pass": true,
+        "fire": null
+      },
+      "PASS": false,
+      "PASS_strict_G1b": false
+    },
+    "E1n1_E2": {
+      "G1_tunnel_no_early_fire": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.468461596e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 0.0107383877
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": {
+              "t_s": 0.06,
+              "sumabs": 7.032422644e-08
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.081999585e-06
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G1b_tunnel_nofire_within_tmax": {
+        "pass": false,
+        "cells": {
+          "A": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.468461596e-05
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "B": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 0.0107383877
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          },
+          "C": {
+            "fire": {
+              "t_s": 0.06,
+              "sumabs": 7.032422644e-08
+            },
+            "early_fail": false,
+            "fire_within_tmax": true
+          },
+          "D": {
+            "fire": {
+              "t_s": 0.01,
+              "sumabs": 1.081999585e-06
+            },
+            "early_fail": true,
+            "fire_within_tmax": true
+          }
+        }
+      },
+      "G2_slalom_A_039": {
+        "pass": false,
+        "fire": {
+          "t_s": 0.2,
+          "sumabs": 6.589507962e-07
+        }
+      },
+      "G3_slalom_C_nofire": {
+        "pass": false,
+        "fire": {
+          "t_s": 0.21,
+          "sumabs": 6.683569609e-07
+        }
+      },
+      "PASS": false,
+      "PASS_strict_G1b": false
+    }
+  }
+}

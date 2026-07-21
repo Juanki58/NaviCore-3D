@@ -1,0 +1,309 @@
+{
+  "windows": {
+    "onset": [
+      0.4,
+      1.1
+    ],
+    "wide": [
+      0.4,
+      1.54
+    ]
+  },
+  "S_onset": {
+    "summary": {
+      "s_cond": {
+        "mean_rel\u0394": 4.9049963036019485e-06,
+        "max_rel\u0394": 1.8875625779631667e-05,
+        "mean_c": 3.935414650056338,
+        "mean_l": 3.935416204788733,
+        "end_c": 3.915631771,
+        "end_l": 3.915557861
+      },
+      "s_yy": {
+        "mean_rel\u0394": 3.337953613928417e-06,
+        "max_rel\u0394": 1.0776496581567604e-05,
+        "mean_c": 0.2672019659577466,
+        "mean_l": 0.26720120704788736,
+        "end_c": 0.2653175592,
+        "end_l": 0.2653170824
+      },
+      "s_yz": {
+        "mean_rel\u0394": 0.009403117758012105,
+        "max_rel\u0394": 0.2847682119117001,
+        "mean_c": -0.0002576155115747465,
+        "mean_l": -0.0002589797548712817,
+        "end_c": 0.0009949654341,
+        "end_l": 0.0009857863188
+      },
+      "s_zz": {
+        "mean_rel\u0394": 2.6675238565961397e-06,
+        "max_rel\u0394": 2.0769492235892103e-05,
+        "mean_c": 1.0515429285915496,
+        "mean_l": 1.0515403496338027,
+        "end_c": 1.038879514,
+        "end_l": 1.038857937
+      },
+      "s_inv_yy": {
+        "mean_rel\u0394": 3.3344712007703525e-06,
+        "max_rel\u0394": 1.076026135310202e-05,
+        "mean_c": 3.7427954304366193,
+        "mean_l": 3.7428061491830995,
+        "end_c": 3.769081593,
+        "end_l": 3.769088507
+      },
+      "s_inv_yz": {
+        "mean_rel\u0394": 0.009401115864103344,
+        "max_rel\u0394": 0.2847758188082107,
+        "mean_c": 0.0008904467467892958,
+        "mean_l": 0.0008953937711280284,
+        "end_c": -0.003609760199,
+        "end_l": -0.003576538991
+      },
+      "s_inv_zz": {
+        "mean_rel\u0394": 2.666378924816377e-06,
+        "max_rel\u0394": 2.0805340984614115e-05,
+        "mean_c": 0.9510618842816901,
+        "mean_l": 0.9510642625887322,
+        "end_c": 0.9625789523,
+        "end_l": 0.9625989795
+      }
+    },
+    "corrs": {
+      "corr_|dky0|_vs_|d_s_cond|": 0.7847396481358924,
+      "corr_|dky0|_vs_|d_s_yz|": 0.9618057106048673,
+      "corr_|dky0|_vs_|d_s_inv_yz|": 0.9617800830384745,
+      "corr_|dky0|_vs_|d_s_yy|": -0.17338244875264514,
+      "corr_|dky0|_vs_|d_s_zz|": 0.9882710714839801
+    },
+    "verdict": {
+      "label": "S_STABLE",
+      "reading": "S diagonals/cond essentially identical latch vs ctrl; s_yz absolute \u0394 max=9.18e-06 \u226a mean|s_yy|=2.67e-01 (rel\u0394 peaks near-zero are noise). Candidate (2) out \u2014 proceed to P_att\u2013vel.",
+      "max_rel\u0394_s_cond": 1.8875625779631667e-05,
+      "max_rel\u0394_s_yz": 0.2847682119117001,
+      "max_rel\u0394_s_inv_yz": 0.2847758188082107,
+      "max_abs_d_s_yz": 9.179115300000018e-06,
+      "max_abs_d_s_cond": 7.39100000002324e-05,
+      "syz_delta_over_mean_syy": 3.435272366765272e-05
+    }
+  },
+  "S_wide": {
+    "summary": {
+      "s_cond": {
+        "mean_rel\u0394": 0.0004362510727495887,
+        "max_rel\u0394": 0.008747801870753179,
+        "mean_c": 3.9300690153304343,
+        "mean_l": 3.9283637316,
+        "end_c": 3.956044674,
+        "end_l": 3.921437979
+      },
+      "s_yy": {
+        "mean_rel\u0394": 3.494517684047958e-05,
+        "max_rel\u0394": 0.0008050623730574428,
+        "mean_c": 0.26640908614086956,
+        "mean_l": 0.2664173240208696,
+        "end_c": 0.2651360035,
+        "end_l": 0.2653496265
+      },
+      "s_yz": {
+        "mean_rel\u0394": 0.035144230463505774,
+        "max_rel\u0394": 0.3686049141505976,
+        "mean_c": 0.0008102384355582,
+        "mean_l": 0.0007011517963316434,
+        "end_c": 0.005203977227,
+        "end_l": 0.003285765648
+      },
+      "s_zz": {
+        "mean_rel\u0394": 0.0003976575313453629,
+        "max_rel\u0394": 0.007852419342870348,
+        "mean_c": 1.0469899281565218,
+        "mean_l": 1.0465749813130434,
+        "end_c": 1.048718572,
+        "end_l": 1.040483594
+      },
+      "s_inv_yy": {
+        "mean_rel\u0394": 3.7629438377205564e-05,
+        "max_rel\u0394": 0.0008634102666463608,
+        "mean_c": 3.753908756486956,
+        "mean_l": 3.75378132486087,
+        "end_c": 3.772016764,
+        "end_l": 3.768759966
+      },
+      "s_inv_yz": {
+        "mean_rel\u0394": 0.034866313150326816,
+        "max_rel\u0394": 0.3641571560837814,
+        "mean_c": -0.0029645053961648692,
+        "mean_l": -0.002573970307520956,
+        "end_c": -0.01871759444,
+        "end_l": -0.01190144848
+      },
+      "s_inv_zz": {
+        "mean_rel\u0394": 0.0003949748374304617,
+        "max_rel\u0394": 0.007794508328526065,
+        "mean_c": 0.9552085726173913,
+        "mean_l": 0.9555883853304348,
+        "end_c": 0.9536375999,
+        "end_l": 0.9611291289
+      }
+    },
+    "corrs": {
+      "corr_|dky0|_vs_|d_s_cond|": 0.9990437630923259,
+      "corr_|dky0|_vs_|d_s_yz|": 0.999211788251452,
+      "corr_|dky0|_vs_|d_s_inv_yz|": 0.9990886757709595,
+      "corr_|dky0|_vs_|d_s_yy|": 0.9604034855459154,
+      "corr_|dky0|_vs_|d_s_zz|": 0.9993909035197178
+    },
+    "verdict": {
+      "label": "S_STABLE",
+      "reading": "S diagonals/cond essentially identical latch vs ctrl; s_yz absolute \u0394 max=1.92e-03 \u226a mean|s_yy|=2.66e-01 (rel\u0394 peaks near-zero are noise). Candidate (2) out \u2014 proceed to P_att\u2013vel.",
+      "max_rel\u0394_s_cond": 0.008747801870753179,
+      "max_rel\u0394_s_yz": 0.3686049141505976,
+      "max_rel\u0394_s_inv_yz": 0.3641571560837814,
+      "max_abs_d_s_yz": 0.0019182115789999998,
+      "max_abs_d_s_cond": 0.034606695000000354,
+      "syz_delta_over_mean_syy": 0.007200248335320306
+    }
+  },
+  "figure_s": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_s_onset_ky0.png",
+  "P_attvel_onset": {
+    "summary": {
+      "P_pre_att_y_vn": {
+        "mean_rel\u0394": 0.0007264343596617545,
+        "max_rel\u0394": 0.002480578081732927,
+        "end_c": 0.004174150992,
+        "end_l": 0.004184531048,
+        "ptp_d": 1.5062279999999897e-05
+      },
+      "P_pre_att_y_ve": {
+        "mean_rel\u0394": 5.1236895218294936e-05,
+        "max_rel\u0394": 0.0001936321120068238,
+        "end_c": 0.04257594422,
+        "end_l": 0.04256770015,
+        "ptp_d": 8.244070000003323e-06
+      },
+      "P_pre_att_y_vd": {
+        "mean_rel\u0394": 9.07514282867195e-06,
+        "max_rel\u0394": 2.246894088174795e-05,
+        "end_c": 0.06366512179,
+        "end_l": 0.06366655231,
+        "ptp_d": 2.6226100000026342e-06
+      },
+      "P_pre_att_z_vn": {
+        "mean_rel\u0394": 4.775059364724824e-06,
+        "max_rel\u0394": 3.9578732477681976e-05,
+        "end_c": 0.1199081391,
+        "end_l": 0.1199128851,
+        "ptp_d": 4.745999999999917e-06
+      },
+      "P_pre_att_z_ve": {
+        "mean_rel\u0394": 0.0005168008775517697,
+        "max_rel\u0394": 0.010461880234117494,
+        "end_c": 0.01021578722,
+        "end_l": 0.01022054814,
+        "ptp_d": 4.760920000001015e-06
+      },
+      "P_pre_att_z_vd": {
+        "mean_rel\u0394": 0.00019302741115115828,
+        "max_rel\u0394": 0.0006703710473912431,
+        "end_c": 0.007140889764,
+        "end_l": 0.007145680021,
+        "ptp_d": 4.79025700000045e-06
+      },
+      "P_pre_vel_att_frob": {
+        "mean_rel\u0394": 1.2803422882883856e-05,
+        "max_rel\u0394": 8.189419808581573e-05,
+        "end_c": 0.1602900475,
+        "end_l": 0.1603031754,
+        "ptp_d": 1.3135359999999485e-05
+      }
+    },
+    "corrs": {
+      "corr_|dky0|_vs_|d_P_pre_att_y_vn|": 0.5570311409028158,
+      "corr_|dky0|_vs_|d_P_pre_att_y_ve|": 0.9204509107673217,
+      "corr_|dky0|_vs_|d_P_pre_att_y_vd|": 0.2669488989742121,
+      "corr_|dky0|_vs_|d_P_pre_att_z_vn|": 0.9843355002767148,
+      "corr_|dky0|_vs_|d_P_pre_att_z_ve|": 0.9445065350763738,
+      "corr_|dky0|_vs_|d_P_pre_att_z_vd|": 0.8785824822517583,
+      "corr_|dky0|_vs_|d_P_pre_vel_att_frob|": 0.9777727198123423
+    },
+    "verdict": {
+      "label": "PATT_VEL_STABLE",
+      "reading": "P_att\u2013vel also stable \u2014 need H rows / other P paths (e.g. bias\u2013att).",
+      "best_corr": 0.9204509107673217
+    },
+    "best": "P_pre_att_y_ve"
+  },
+  "P_attvel_wide": {
+    "summary": {
+      "P_pre_att_y_vn": {
+        "mean_rel\u0394": 0.04266422545747646,
+        "max_rel\u0394": 0.5865439235489641,
+        "end_c": 0.001899389899,
+        "end_l": 0.004593933932,
+        "ptp_d": 0.0026992262570000006
+      },
+      "P_pre_att_y_ve": {
+        "mean_rel\u0394": 0.00134530350201619,
+        "max_rel\u0394": 0.01807966783356493,
+        "end_c": 0.06739684939,
+        "end_l": 0.06617833674,
+        "ptp_d": 0.0012185126500000032
+      },
+      "P_pre_att_y_vd": {
+        "mean_rel\u0394": 0.00043741363985620415,
+        "max_rel\u0394": 0.008046589491990577,
+        "end_c": 0.08025407791,
+        "end_l": 0.07960830629,
+        "ptp_d": 0.0006492286900000033
+      },
+      "P_pre_att_z_vn": {
+        "mean_rel\u0394": 0.0010744288324810944,
+        "max_rel\u0394": 0.01932798875173612,
+        "end_c": 0.1501840949,
+        "end_l": 0.1531440616,
+        "ptp_d": 0.002959966699999983
+      },
+      "P_pre_att_z_ve": {
+        "mean_rel\u0394": 0.004646549098999087,
+        "max_rel\u0394": 0.04988445510045255,
+        "end_c": 0.02776855603,
+        "end_l": 0.02922650427,
+        "ptp_d": 0.0014579482399999996
+      },
+      "P_pre_att_z_vd": {
+        "mean_rel\u0394": 0.008140888350067248,
+        "max_rel\u0394": 0.10214831527027783,
+        "end_c": 0.004652704112,
+        "end_l": 0.005182040855,
+        "ptp_d": 0.0005293367430000001
+      },
+      "P_pre_vel_att_frob": {
+        "mean_rel\u0394": 0.001083172232956812,
+        "max_rel\u0394": 0.017652211793509315,
+        "end_c": 0.1999540925,
+        "end_l": 0.2035471499,
+        "ptp_d": 0.003593064859999995
+      }
+    },
+    "corrs": {
+      "corr_|dky0|_vs_|d_P_pre_att_y_vn|": 0.9819106223617092,
+      "corr_|dky0|_vs_|d_P_pre_att_y_ve|": 0.9914568837293866,
+      "corr_|dky0|_vs_|d_P_pre_att_y_vd|": 0.9972405214519241,
+      "corr_|dky0|_vs_|d_P_pre_att_z_vn|": 0.9997812866355652,
+      "corr_|dky0|_vs_|d_P_pre_att_z_ve|": 0.9790879139369477,
+      "corr_|dky0|_vs_|d_P_pre_att_z_vd|": 0.9614402069530975,
+      "corr_|dky0|_vs_|d_P_pre_vel_att_frob|": 0.9981840751998587
+    },
+    "verdict": {
+      "label": "PATT_VEL_CARRIES_KY0",
+      "reading": "P_att_y\u2013vel diverges and tracks \u0394K_y0 (best P_pre_att_y_vd, corr=+0.997). Candidate (1): attitude\u2013velocity cross in P moves pitch gain without P_yy.",
+      "best_corr": 0.9972405214519241
+    },
+    "best": "P_pre_att_y_vd"
+  },
+  "figure_p": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_pattvel_onset_ky0.png",
+  "verdict": {
+    "label": "S_STABLE__PATT_VEL_STABLE",
+    "reading": "S diagonals/cond essentially identical latch vs ctrl; s_yz absolute \u0394 max=9.18e-06 \u226a mean|s_yy|=2.67e-01 (rel\u0394 peaks near-zero are noise). Candidate (2) out \u2014 proceed to P_att\u2013vel. P_att\u2013vel also stable \u2014 need H rows / other P paths (e.g. bias\u2013att).",
+    "next": "If PATT_VEL carries: freeze which component; design implication = open-Z keeps P_av bounded."
+  }
+}

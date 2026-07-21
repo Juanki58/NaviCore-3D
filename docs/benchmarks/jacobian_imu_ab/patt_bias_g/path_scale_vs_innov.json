@@ -1,0 +1,456 @@
+{
+  "windows": {
+    "ctrl": {
+      "R1": {
+        "n": 25,
+        "corr_path_scale_vs_innov": {
+          "n": 25,
+          "pearson": 0.9949701205519539,
+          "spearman": 1.0,
+          "mean_x": 0.0924330688266,
+          "mean_y": 0.26254824,
+          "ratio_mean_x_over_mean_y": 0.3520612776783421
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.3795414224034415,
+        "frac_var_path_explained_by_innov": 0.9818761645599036,
+        "mean_path_per_innov": 0.3057325900710384,
+        "median_path_per_innov": 0.29059104531377244,
+        "std_path_per_innov": 0.05465891430360034,
+        "sum_total": -0.014112278732599999,
+        "sum_via_vel": 1.148357207459,
+        "sum_via_att": -1.1624695132060001,
+        "path_scale_sumabs": 2.310826720665,
+        "mean_innov": 0.26254824,
+        "mean_path_scale": 0.0924330688266
+      },
+      "R2": {
+        "n": 15,
+        "corr_path_scale_vs_innov": {
+          "n": 15,
+          "pearson": 0.7014159452897784,
+          "spearman": 0.6928571428571427,
+          "mean_x": 0.1298263786900667,
+          "mean_y": 0.5290894666666666,
+          "ratio_mean_x_over_mean_y": 0.24537698606625077
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.2496775989370115,
+        "frac_var_path_explained_by_innov": 0.48875204050330623,
+        "mean_path_per_innov": 0.23528721496085855,
+        "median_path_per_innov": 0.23361759546693558,
+        "std_path_per_innov": 0.09581311511581081,
+        "sum_total": 0.021042130188799996,
+        "sum_via_vel": -0.09019157290100001,
+        "sum_via_att": 0.11123371687000004,
+        "path_scale_sumabs": 1.9473956803510002,
+        "mean_innov": 0.5290894666666666,
+        "mean_path_scale": 0.1298263786900667
+      },
+      "R3": {
+        "n": 27,
+        "corr_path_scale_vs_innov": {
+          "n": 27,
+          "pearson": 0.9944776578464812,
+          "spearman": 0.9957264957264956,
+          "mean_x": 0.019214872840703705,
+          "mean_y": 0.12182777777777776,
+          "ratio_mean_x_over_mean_y": 0.15772160660890452
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.14809146494552056,
+        "frac_var_path_explained_by_innov": 0.8768080280213344,
+        "mean_path_per_innov": 0.16712236695984373,
+        "median_path_per_innov": 0.1756028691198324,
+        "std_path_per_innov": 0.0194020693286849,
+        "sum_total": 0.00249307460033,
+        "sum_via_vel": -0.258154247429,
+        "sum_via_att": 0.26064731927,
+        "path_scale_sumabs": 0.518801566699,
+        "mean_innov": 0.12182777777777776,
+        "mean_path_scale": 0.019214872840703705
+      },
+      "full_rise": {
+        "n": 67,
+        "corr_path_scale_vs_innov": {
+          "n": 67,
+          "pearson": 0.8827671361284548,
+          "spearman": 0.9268896160906698,
+          "mean_x": 0.07129886518977614,
+          "mean_y": 0.26551340298507464,
+          "ratio_mean_x_over_mean_y": 0.26853207554943687
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.28915333385286857,
+        "frac_var_path_explained_by_innov": 0.7740573400546729,
+        "mean_path_per_innov": 0.23410338632991967,
+        "median_path_per_innov": 0.2165673625836366,
+        "std_path_per_innov": 0.08393138957618096,
+        "sum_total": 0.00942292605653,
+        "sum_via_vel": 0.8000113871290001,
+        "sum_via_att": -0.7905884770660001,
+        "path_scale_sumabs": 4.7770239677149995,
+        "mean_innov": 0.26551340298507464,
+        "mean_path_scale": 0.07129886518977614
+      }
+    },
+    "latch": {
+      "R1": {
+        "n": 25,
+        "corr_path_scale_vs_innov": {
+          "n": 25,
+          "pearson": 0.9998869365295084,
+          "spearman": 1.0,
+          "mean_x": 0.028243621670640002,
+          "mean_y": 0.135097,
+          "ratio_mean_x_over_mean_y": 0.20906179760201932
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.2147495977273514,
+        "frac_var_path_explained_by_innov": 0.9983973599391246,
+        "mean_path_per_innov": 0.19900570252429245,
+        "median_path_per_innov": 0.19993554155265247,
+        "std_path_per_innov": 0.013630862505842433,
+        "sum_total": -0.012353731414290001,
+        "sum_via_vel": 0.346868404184,
+        "sum_via_att": -0.359222137582,
+        "path_scale_sumabs": 0.706090541766,
+        "mean_innov": 0.135097,
+        "mean_path_scale": 0.028243621670640002
+      },
+      "R2": {
+        "n": 15,
+        "corr_path_scale_vs_innov": {
+          "n": 15,
+          "pearson": 0.9511354130603489,
+          "spearman": 0.9392857142857142,
+          "mean_x": 0.4203983473426666,
+          "mean_y": 1.4709071999999999,
+          "ratio_mean_x_over_mean_y": 0.285808885389008
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.2941405539249403,
+        "frac_var_path_explained_by_innov": 0.8857261155195564,
+        "mean_path_per_innov": 0.2720863657179789,
+        "median_path_per_innov": 0.25049957675859963,
+        "std_path_per_innov": 0.050557580738579085,
+        "sum_total": -0.039120520349500004,
+        "sum_via_vel": 3.13342731456,
+        "sum_via_att": -3.17254789558,
+        "path_scale_sumabs": 6.30597521014,
+        "mean_innov": 1.4709071999999999,
+        "mean_path_scale": 0.4203983473426666
+      },
+      "R3": {
+        "n": 27,
+        "corr_path_scale_vs_innov": {
+          "n": 27,
+          "pearson": 0.7654402840829073,
+          "spearman": 0.8888888888888888,
+          "mean_x": 0.058866828165718525,
+          "mean_y": 0.5885360370370369,
+          "ratio_mean_x_over_mean_y": 0.10002247009729669
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.09495013331563996,
+        "frac_var_path_explained_by_innov": 0.5851735050139233,
+        "mean_path_per_innov": 0.07407762815643235,
+        "median_path_per_innov": 0.0562579646932953,
+        "std_path_per_innov": 0.0638529096047172,
+        "sum_total": 0.025566141410399992,
+        "sum_via_vel": -0.2500137100837,
+        "sum_via_att": 0.2755798117691,
+        "path_scale_sumabs": 1.5894043604744,
+        "mean_innov": 0.5885360370370369,
+        "mean_path_scale": 0.058866828165718525
+      },
+      "full_rise": {
+        "n": 67,
+        "corr_path_scale_vs_innov": {
+          "n": 67,
+          "pearson": 0.8429502622762853,
+          "spearman": 0.8561337696544019,
+          "mean_x": 0.12838015093105076,
+          "mean_y": 0.6168881492537314,
+          "ratio_mean_x_over_mean_y": 0.2081092838083471
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.2167703110704939,
+        "frac_var_path_explained_by_innov": 0.7100606262426308,
+        "mean_path_per_innov": 0.1650228956582189,
+        "median_path_per_innov": 0.1923686782095872,
+        "std_path_per_innov": 0.09281646055042601,
+        "sum_total": -0.025908110353390003,
+        "sum_via_vel": 3.2302820086603004,
+        "sum_via_att": -3.2561902213928997,
+        "path_scale_sumabs": 8.601470112380401,
+        "mean_innov": 0.6168881492537314,
+        "mean_path_scale": 0.12838015093105076
+      }
+    }
+  },
+  "r3_sub2": {
+    "ctrl": {
+      "R3a1": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": 0.9998288829465558,
+          "spearman": 1.0,
+          "mean_x": 0.015936915896571428,
+          "mean_y": 0.08665742857142857,
+          "ratio_mean_x_over_mean_y": 0.18390709439797429
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.1837178572168102,
+        "frac_var_path_explained_by_innov": 0.9984961993100612,
+        "mean_path_per_innov": 0.1841039228103877,
+        "median_path_per_innov": 0.1837809861696827,
+        "std_path_per_innov": 0.0013126433529007321,
+        "sum_total": -0.00024688441772,
+        "sum_via_vel": -0.05590264918499999,
+        "sum_via_att": 0.055655762091,
+        "path_scale_sumabs": 0.111558411276,
+        "mean_innov": 0.08665742857142857,
+        "mean_path_scale": 0.015936915896571428
+      },
+      "R3a2": {
+        "n": 6,
+        "corr_path_scale_vs_innov": {
+          "n": 6,
+          "pearson": 0.9982548617835062,
+          "spearman": 0.942857142857143,
+          "mean_x": 0.012979064524833333,
+          "mean_y": 0.07087083333333333,
+          "ratio_mean_x_over_mean_y": 0.1831368972873185
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.18300663033129963,
+        "frac_var_path_explained_by_innov": 0.7745424543526563,
+        "mean_path_per_innov": 0.18326303717422257,
+        "median_path_per_innov": 0.1839716841856997,
+        "std_path_per_innov": 0.0027086589964128945,
+        "sum_total": 8.003917169999997e-06,
+        "sum_via_vel": -0.038933191448,
+        "sum_via_att": 0.038941195701000006,
+        "path_scale_sumabs": 0.077874387149,
+        "mean_innov": 0.07087083333333333,
+        "mean_path_scale": 0.012979064524833333
+      },
+      "R3b1": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": 0.9998735154690056,
+          "spearman": 1.0,
+          "mean_x": 0.017575360702,
+          "mean_y": 0.1074407142857143,
+          "ratio_mean_x_over_mean_y": 0.1635819420863333
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.16228114164247548,
+        "frac_var_path_explained_by_innov": 0.8950189222345383,
+        "mean_path_per_innov": 0.1649087184021567,
+        "median_path_per_innov": 0.16513868310539867,
+        "std_path_per_innov": 0.007368470812246301,
+        "sum_total": 0.0006929243536799999,
+        "sum_via_vel": -0.061167300676,
+        "sum_via_att": 0.061860224238,
+        "path_scale_sumabs": 0.123027524914,
+        "mean_innov": 0.1074407142857143,
+        "mean_path_scale": 0.017575360702
+      },
+      "R3b2": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": 0.9993054494548999,
+          "spearman": 1.0,
+          "mean_x": 0.029477320479999996,
+          "mean_y": 0.21506257142857144,
+          "ratio_mean_x_over_mean_y": 0.13706392648518237
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.13569193950096373,
+        "frac_var_path_explained_by_innov": 0.8739650705158659,
+        "mean_path_per_innov": 0.13851959948323356,
+        "median_path_per_innov": 0.1384189732096566,
+        "std_path_per_innov": 0.007414997022027329,
+        "sum_total": 0.0020390307472,
+        "sum_via_vel": -0.10215110612,
+        "sum_via_att": 0.10419013724000001,
+        "path_scale_sumabs": 0.20634124336,
+        "mean_innov": 0.21506257142857144,
+        "mean_path_scale": 0.029477320479999996
+      }
+    },
+    "latch": {
+      "R3a1": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": -0.2631010784293601,
+          "spearman": -0.5714285714285715,
+          "mean_x": 0.1833861314732857,
+          "mean_y": 1.7517102857142857,
+          "ratio_mean_x_over_mean_y": 0.10468976118302993
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.09426257367076726,
+        "frac_var_path_explained_by_innov": -0.5611325269704937,
+        "mean_path_per_innov": 0.12014307317799543,
+        "median_path_per_innov": 0.12536873436584958,
+        "std_path_per_innov": 0.06644649385401954,
+        "sum_total": 0.043349741025000006,
+        "sum_via_vel": -0.158447618683,
+        "sum_via_att": 0.20179732147,
+        "path_scale_sumabs": 1.283702920313,
+        "mean_innov": 1.7517102857142857,
+        "mean_path_scale": 0.1833861314732857
+      },
+      "R3a2": {
+        "n": 6,
+        "corr_path_scale_vs_innov": {
+          "n": 6,
+          "pearson": 0.944568232502973,
+          "spearman": 0.942857142857143,
+          "mean_x": 0.039392636100383335,
+          "mean_y": 0.3562463333333334,
+          "ratio_mean_x_over_mean_y": 0.11057695873468638
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.12619259139470035,
+        "frac_var_path_explained_by_innov": 0.3722177005900883,
+        "mean_path_per_innov": 0.09507337831341904,
+        "median_path_per_innov": 0.06860406865761899,
+        "std_path_per_innov": 0.08374205521032453,
+        "sum_total": -0.0144152168651,
+        "sum_via_vel": -0.120297145678,
+        "sum_via_att": 0.10588192800830001,
+        "path_scale_sumabs": 0.23635581660229998,
+        "mean_innov": 0.3562463333333334,
+        "mean_path_scale": 0.039392636100383335
+      },
+      "R3b1": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": 0.7381843239539759,
+          "spearman": 0.7857142857142859,
+          "mean_x": 0.008023161806857143,
+          "mean_y": 0.1448654285714286,
+          "ratio_mean_x_over_mean_y": 0.0553835506923667
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.05318753990887021,
+        "frac_var_path_explained_by_innov": 0.04410392614142222,
+        "mean_path_per_innov": 0.05728418807960938,
+        "median_path_per_innov": 0.060760305863738366,
+        "std_path_per_innov": 0.008644485875168655,
+        "sum_total": -0.0021685558459,
+        "sum_via_vel": 0.026996788103,
+        "sum_via_att": -0.029165344545000003,
+        "path_scale_sumabs": 0.056162132648000004,
+        "mean_innov": 0.1448654285714286,
+        "mean_path_scale": 0.008023161806857143
+      },
+      "R3b2": {
+        "n": 7,
+        "corr_path_scale_vs_innov": {
+          "n": 7,
+          "pearson": 0.6765995610107919,
+          "spearman": 0.5357142857142858,
+          "mean_x": 0.0018833558444428572,
+          "mean_y": 0.06813785714285715,
+          "ratio_mean_x_over_mean_y": 0.027640373845250695
+        },
+        "lin_gain_a_path_eq_a_times_innov": 0.02863147958020364,
+        "frac_var_path_explained_by_innov": 0.24145273562941638,
+        "mean_path_per_innov": 0.026809265934275035,
+        "median_path_per_innov": 0.023779224111205557,
+        "std_path_per_innov": 0.014469048335752984,
+        "sum_total": -0.0011998269036000001,
+        "sum_via_vel": 0.0017342661743,
+        "sum_via_att": -0.0029340931642000004,
+        "path_scale_sumabs": 0.0131834909111,
+        "mean_innov": 0.06813785714285715,
+        "mean_path_scale": 0.0018833558444428572
+      }
+    }
+  },
+  "latch_vs_ctrl_ppi": {
+    "R1": {
+      "ratio_mean_innov_L_over_C": 0.5145606765446228,
+      "ratio_mean_path_scale_L_over_C": 0.30555754589976536,
+      "ratio_mean_ppi_L_over_C": 0.6509142596739605,
+      "pearson_latch": 0.9998869365295084,
+      "pearson_ctrl": 0.9949701205519539,
+      "frac_var_explained_latch": 0.9983973599391246,
+      "frac_var_explained_ctrl": 0.9818761645599036
+    },
+    "R2": {
+      "ratio_mean_innov_L_over_C": 2.7800727337607176,
+      "ratio_mean_path_scale_L_over_C": 3.2381581584916552,
+      "ratio_mean_ppi_L_over_C": 1.156400978961998,
+      "pearson_latch": 0.9511354130603489,
+      "pearson_ctrl": 0.7014159452897784,
+      "frac_var_explained_latch": 0.8857261155195564,
+      "frac_var_explained_ctrl": 0.48875204050330623
+    },
+    "R3": {
+      "ratio_mean_innov_L_over_C": 4.830885433292292,
+      "ratio_mean_path_scale_L_over_C": 3.0636074801920286,
+      "ratio_mean_ppi_L_over_C": 0.4432538235545202,
+      "pearson_latch": 0.7654402840829073,
+      "pearson_ctrl": 0.9944776578464812,
+      "frac_var_explained_latch": 0.5851735050139233,
+      "frac_var_explained_ctrl": 0.8768080280213344
+    },
+    "full_rise": {
+      "ratio_mean_innov_L_over_C": 2.323378565143126,
+      "ratio_mean_path_scale_L_over_C": 1.8005917848670017,
+      "ratio_mean_ppi_L_over_C": 0.7049146030961453,
+      "pearson_latch": 0.8429502622762853,
+      "pearson_ctrl": 0.8827671361284548,
+      "frac_var_explained_latch": 0.7100606262426308,
+      "frac_var_explained_ctrl": 0.7740573400546729
+    }
+  },
+  "verdict": {
+    "label": "PATH_SCALE_TRACKS_INNOV",
+    "reading": "Per-tick path_scale follows \u2016y\u2016 closely in R2 under latch; path_per_innov stays ~stable vs ctrl. The R2 path_scale explosion is the same innov-magnitude explosion propagating through both H paths \u2014 not a separate K-coupling mechanism to attack. Intervention focus stays on why innov explodes at ~1.69\u20131.79s, not on cutting K_bias paths.",
+    "r2_ratios": {
+      "pearson_path_vs_innov_latch": 0.9511354130603489,
+      "innov_L_over_C": 2.7800727337607176,
+      "path_scale_L_over_C": 3.2381581584916552,
+      "ppi_L_over_C": 1.156400978961998,
+      "frac_var_explained_latch": 0.8857261155195564
+    },
+    "r3_sub2_homogeneous_via_att_sign": false,
+    "r3_sub2_latch": [
+      {
+        "sub": "R3a1",
+        "sum_total": 0.043349741025000006,
+        "sum_via_vel": -0.158447618683,
+        "sum_via_att": 0.20179732147,
+        "mean_innov": 1.7517102857142857,
+        "mean_path_scale": 0.1833861314732857,
+        "mean_ppi": 0.12014307317799543
+      },
+      {
+        "sub": "R3a2",
+        "sum_total": -0.0144152168651,
+        "sum_via_vel": -0.120297145678,
+        "sum_via_att": 0.10588192800830001,
+        "mean_innov": 0.3562463333333334,
+        "mean_path_scale": 0.039392636100383335,
+        "mean_ppi": 0.09507337831341904
+      },
+      {
+        "sub": "R3b1",
+        "sum_total": -0.0021685558459,
+        "sum_via_vel": 0.026996788103,
+        "sum_via_att": -0.029165344545000003,
+        "mean_innov": 0.1448654285714286,
+        "mean_path_scale": 0.008023161806857143,
+        "mean_ppi": 0.05728418807960938
+      },
+      {
+        "sub": "R3b2",
+        "sum_total": -0.0011998269036000001,
+        "sum_via_vel": 0.0017342661743,
+        "sum_via_att": -0.0029340931642000004,
+        "mean_innov": 0.06813785714285715,
+        "mean_path_scale": 0.0018833558444428572,
+        "mean_ppi": 0.026809265934275035
+      }
+    ],
+    "design": "If PATH_SCALE_TRACKS_INNOV: do not attack K_bias/path_scale; return to innov explosion mechanism at 1.69\u20131.79. If DIVERGES: preregister gain/coupling lever separately."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_path_scale_vs_innov.png"
+}

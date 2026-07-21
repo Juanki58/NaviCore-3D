@@ -1,0 +1,89 @@
+{
+  "phases": {
+    "post_early_0.39_1.5": {
+      "n": 111,
+      "median_cos": 0.9919131034755014,
+      "mean_cos": 0.9904643792303317,
+      "frac_cos_gt_0.9": 1.0,
+      "frac_cos_lt_0": 0.0,
+      "median_norm_ratio": 0.7357859531772576,
+      "mean_norm_ratio": 0.7277326519334942,
+      "mean_innov_c": 0.021617594594594596,
+      "mean_innov_l": 0.012882585585585585,
+      "mean_iy_c": 0.011494027027027029,
+      "mean_iy_l": 0.004490774774774774,
+      "mean_iz_c": -0.018015315315315316,
+      "mean_iz_l": -0.011998036036036034,
+      "mean_abs_delta_frac_y": 0.10925684626246467
+    },
+    "post_late_1.5_2.0": {
+      "n": 51,
+      "median_cos": -0.6504661339534886,
+      "mean_cos": -0.2014713843280093,
+      "frac_cos_gt_0.9": 0.1568627450980392,
+      "frac_cos_lt_0": 0.5882352941176471,
+      "median_norm_ratio": 1.642494269377743,
+      "mean_norm_ratio": 5.011994325256139,
+      "mean_innov_c": 0.3127223333333333,
+      "mean_innov_l": 0.7902028235294118,
+      "mean_iy_c": 0.02145027450980392,
+      "mean_iy_l": 0.26345474509803923,
+      "mean_iz_c": 0.10822807843137255,
+      "mean_iz_l": -0.13404374509803924,
+      "mean_abs_delta_frac_y": 0.3168056836951316
+    },
+    "post_full_0.39_2.0": {
+      "n": 162,
+      "median_cos": 0.9855836996117734,
+      "mean_cos": 0.6152253425545579,
+      "frac_cos_gt_0.9": 0.7345679012345679,
+      "frac_cos_lt_0": 0.18518518518518517,
+      "median_norm_ratio": 0.7376408228017708,
+      "mean_norm_ratio": 2.0764816972387714,
+      "mean_innov_c": 0.11326167901234568,
+      "mean_innov_l": 0.25759451234567904,
+      "mean_iy_c": 0.0146284012345679,
+      "mean_iy_l": 0.08601646913580246,
+      "mean_iz_c": 0.021727975308641973,
+      "mean_iz_l": -0.05041983333333334,
+      "mean_abs_delta_frac_y": 0.17459629508385985
+    }
+  },
+  "bias_escape_phases": {
+    "note": "Telem bias_gz slope and audit Σdx_bias_gz by phase — escape colocated with COMPOSITION_BREAK, not with early SAME_DIR.",
+    "early_0.39_1.5": {
+      "ctrl_slope": -0.002559,
+      "latch_slope": -0.001960,
+      "ctrl_sum_dx_bias_gz": -0.005996,
+      "latch_sum_dx_bias_gz": -0.004251,
+      "reading": "No latch-specific bias escape. Latch innov smaller; Σdx_bias similar/milder."
+    },
+    "late_1.5_2.0": {
+      "ctrl_slope": 0.040448,
+      "latch_slope": -0.016149,
+      "ctrl_sum_dx_bias_gz": 0.014434,
+      "latch_sum_dx_bias_gz": -0.022502,
+      "reading": "Bias escape (sign flip vs ctrl) colocated with innov COMPOSITION_BREAK."
+    }
+  },
+  "reading": {
+    "early_phase": "SAME_DIRECTION",
+    "early_scaled_up": false,
+    "late_phase": "COMPOSITION_BREAK",
+    "x2_mean_driven_by": "late_break",
+    "early_latch_vs_ctrl_innov": "latch_smaller_or_similar",
+    "overall": "NOT_TAUTOLOGICAL_UNIFORM_SCALE: early same-dir but not uniformly bigger; mean x2 dominated by late composition break (iz sign / cos collapse). Bias escape is late-colocated with the break — not early same-residual absorption."
+  },
+  "verdict": {
+    "label": "COMPOSITION_BREAK_DRIVES_BIAS_ESCAPE",
+    "not_tautology": "The aggregate innov ×2 (0.11→0.26) is NOT a uniform scale-up of the same residual. Early post-latch [0.39,1.5]: SAME direction, latch innov SMALLER — and no bias escape. Late [1.5,2.0]: direction BREAKS (median cos≈−0.65), latch innov ≫ ctrl, and nearly all latch bias_gz escape and Σ‖y‖ live here. Second reading wins for the interesting window.",
+    "implication_for_Z_family": "Does NOT reduce cleanly to “close Z → yaw residue → nearest channel absorbs”. Early after latch that tautology would predict larger same-dir innov; we see the opposite. Closing Z remains the wrong sole lever (family closed). Escape into bias is mediated by a late composition change — K_bias att/vel decompose is justified, scoped to [1.5,2.0]s.",
+    "do_not": [
+      "Treat aggregate innov×2 as sufficient mechanism without phase split",
+      "Skip K_bias decompose on tautology grounds — the late break argues for it",
+      "Preregister P_att_bias←0 (still unsupported)"
+    ],
+    "next": "Decompose K_bias into att vs vel pathways, emphasis on ticks in [1.5,2.0]s where composition breaks."
+  },
+  "figure": "docs/benchmarks/jacobian_imu_ab/patt_bias_g/fig_innov_composition_ctrl_vs_latch.png"
+}

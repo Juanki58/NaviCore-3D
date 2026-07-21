@@ -1,0 +1,316 @@
+{
+  "scenario": "SLALOM",
+  "seed": 71,
+  "comparison": "A (jcorrect+imuideal) vs C (jlegacy+imuideal)",
+  "inputs": {
+    "A": "docs/benchmarks/slalom_cellA_jcorrect_imuideal_s71_telemetry.csv",
+    "C": "docs/benchmarks/slalom_cellC_jlegacy_imuideal_s71_telemetry.csv"
+  },
+  "kinematics": {
+    "source": "src/scenarios/slalom_scenario.cpp + slalom_benchmark.hpp",
+    "TC04_SPEED_MPS": 13.88888888888889,
+    "TC04_MAX_LATERAL_ACCEL_MPS2": 3.0,
+    "TC04_SLALOM_PERIOD_S": 4.0,
+    "kSlalomOmegaRadps": 1.5707963267948966,
+    "kYawAmplitudeRad": 0.13750987083139757,
+    "formula": "phase = kSlalomOmegaRadps * t_s; yaw_rate = kYawAmplitudeRad * kSlalomOmegaRadps * cos(phase)"
+  },
+  "yaw_rate_csv": {
+    "A_all_zero": true,
+    "C_all_zero": true,
+    "dead": true,
+    "note": "CSV yaw_rate all zeros for SLALOM; omega_truth reconstructed from scenario kinematics. Secondary: finite-diff of filter yaw."
+  },
+  "burstiness_thresholds": {
+    "top3_share": 0.5,
+    "B": 0.25,
+    "rule": "bursty if top3_share > 0.5 OR B > 0.25"
+  },
+  "n_rows": 2501,
+  "duration_s": 25.0,
+  "burstiness": {
+    "window_1p3_2p0": {
+      "t0": 1.3,
+      "t1": 2.0,
+      "x_signed_delta_drift_A_minus_C": {
+        "n_intervals": 70,
+        "B": 0.08624274021099416,
+        "top3_share": 0.2263452009483755,
+        "sum_abs_dx": 1.5479100000000003,
+        "max_abs_dx": 0.133496,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 32,
+            "t_end_s": 1.6199999999999999,
+            "t_start_s": 1.6099999999999999,
+            "dx": -0.133496,
+            "abs_dx": 0.133496,
+            "share": 0.08624274021099416
+          },
+          {
+            "rank": 2,
+            "interval_i": 31,
+            "t_end_s": 1.6099999999999999,
+            "t_start_s": 1.5999999999999999,
+            "dx": -0.122388,
+            "abs_dx": 0.122388,
+            "share": 0.07906661239994571
+          },
+          {
+            "rank": 3,
+            "interval_i": 33,
+            "t_end_s": 1.63,
+            "t_start_s": 1.6199999999999999,
+            "dx": -0.094478,
+            "abs_dx": 0.094478,
+            "share": 0.06103584833743563
+          }
+        ]
+      },
+      "x_abs_drift_A": {
+        "n_intervals": 70,
+        "B": 0.08576082069174464,
+        "top3_share": 0.22503861144185183,
+        "sum_abs_dx": 1.5545910000000005,
+        "max_abs_dx": 0.13332300000000002,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 32,
+            "t_end_s": 1.6199999999999999,
+            "t_start_s": 1.6099999999999999,
+            "dx": -0.13332300000000002,
+            "abs_dx": 0.13332300000000002,
+            "share": 0.08576082069174464
+          },
+          {
+            "rank": 2,
+            "interval_i": 31,
+            "t_end_s": 1.6099999999999999,
+            "t_start_s": 1.5999999999999999,
+            "dx": -0.12221499999999999,
+            "abs_dx": 0.12221499999999999,
+            "share": 0.07861553296011617
+          },
+          {
+            "rank": 3,
+            "interval_i": 33,
+            "t_end_s": 1.63,
+            "t_start_s": 1.6199999999999999,
+            "dx": -0.094305,
+            "abs_dx": 0.094305,
+            "share": 0.06066225778999105
+          }
+        ]
+      }
+    },
+    "window_1p0_5p0": {
+      "t0": 1.0,
+      "t1": 5.0,
+      "x_signed_delta_drift_A_minus_C": {
+        "n_intervals": 400,
+        "B": 0.04128182778090329,
+        "top3_share": 0.098617819973937,
+        "sum_abs_dx": 26.790431999999996,
+        "max_abs_dx": 1.1059580000000002,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 239,
+            "t_end_s": 3.3899999999999997,
+            "t_start_s": 3.38,
+            "dx": -1.1059580000000002,
+            "abs_dx": 1.1059580000000002,
+            "share": 0.04128182778090329
+          },
+          {
+            "rank": 2,
+            "interval_i": 280,
+            "t_end_s": 3.8,
+            "t_start_s": 3.79,
+            "dx": -0.7959720000000003,
+            "abs_dx": 0.7959720000000003,
+            "share": 0.029711055051295943
+          },
+          {
+            "rank": 3,
+            "interval_i": 277,
+            "t_end_s": 3.77,
+            "t_start_s": 3.76,
+            "dx": 0.740084,
+            "abs_dx": 0.740084,
+            "share": 0.02762493714173777
+          }
+        ]
+      },
+      "x_abs_drift_A": {
+        "n_intervals": 400,
+        "B": 0.041240590598732585,
+        "top3_share": 0.09852645686333875,
+        "sum_abs_dx": 26.813874,
+        "max_abs_dx": 1.10582,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 239,
+            "t_end_s": 3.3899999999999997,
+            "t_start_s": 3.38,
+            "dx": -1.10582,
+            "abs_dx": 1.10582,
+            "share": 0.041240590598732585
+          },
+          {
+            "rank": 2,
+            "interval_i": 280,
+            "t_end_s": 3.8,
+            "t_start_s": 3.79,
+            "dx": -0.7958450000000004,
+            "abs_dx": 0.7958450000000004,
+            "share": 0.02968034383990916
+          },
+          {
+            "rank": 3,
+            "interval_i": 277,
+            "t_end_s": 3.77,
+            "t_start_s": 3.76,
+            "dx": 0.740211,
+            "abs_dx": 0.740211,
+            "share": 0.027605522424697007
+          }
+        ]
+      }
+    },
+    "whole_run": {
+      "t0": 0.0,
+      "t1": 25.0,
+      "x_signed_delta_drift_A_minus_C": {
+        "n_intervals": 2500,
+        "B": 0.0035565078297177927,
+        "top3_share": 0.008680485422713217,
+        "sum_abs_dx": 310.96740199999994,
+        "max_abs_dx": 1.1059580000000002,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 339,
+            "t_end_s": 3.3899999999999997,
+            "t_start_s": 3.38,
+            "dx": -1.1059580000000002,
+            "abs_dx": 1.1059580000000002,
+            "share": 0.0035565078297177927
+          },
+          {
+            "rank": 2,
+            "interval_i": 603,
+            "t_end_s": 6.029999999999999,
+            "t_start_s": 6.02,
+            "dx": 0.7974179999999995,
+            "abs_dx": 0.7974179999999995,
+            "share": 0.002564313799039295
+          },
+          {
+            "rank": 3,
+            "interval_i": 380,
+            "t_end_s": 3.8,
+            "t_start_s": 3.79,
+            "dx": -0.7959720000000003,
+            "abs_dx": 0.7959720000000003,
+            "share": 0.002559663793956128
+          }
+        ]
+      },
+      "x_abs_drift_A": {
+        "n_intervals": 2500,
+        "B": 0.0035557589806483846,
+        "top3_share": 0.008679448118887356,
+        "sum_abs_dx": 310.994082,
+        "max_abs_dx": 1.10582,
+        "bursty": false,
+        "classification_rule": "bursty if top3_share > 0.5 OR B > 0.25",
+        "dominating_ticks": [
+          {
+            "rank": 1,
+            "interval_i": 339,
+            "t_end_s": 3.3899999999999997,
+            "t_start_s": 3.38,
+            "dx": -1.10582,
+            "abs_dx": 1.10582,
+            "share": 0.0035557589806483846
+          },
+          {
+            "rank": 2,
+            "interval_i": 603,
+            "t_end_s": 6.029999999999999,
+            "t_start_s": 6.02,
+            "dx": 0.7975919999999999,
+            "abs_dx": 0.7975919999999999,
+            "share": 0.00256465330423876
+          },
+          {
+            "rank": 3,
+            "interval_i": 380,
+            "t_end_s": 3.8,
+            "t_start_s": 3.79,
+            "dx": -0.7958450000000004,
+            "abs_dx": 0.7958450000000004,
+            "share": 0.002559035834000212
+          }
+        ]
+      }
+    }
+  },
+  "coincidence": {
+    "at_max_abs_d_delta_dt_in_1p3_2p0": {
+      "t_s": 1.6099999999999999,
+      "abs_d_delta_dt": 12.79419999999999,
+      "d_delta_dt": -12.79419999999999,
+      "delta_drift_m": 0.215619,
+      "abs_delta_drift_m": 0.215619,
+      "abs_omega_truth": 0.17672033896380504,
+      "abs_omega_fd_A": 0.9611499999999893,
+      "abs_omega_fd_C": 0.17764999999999986
+    },
+    "at_max_abs_omega_truth_in_0_5": {
+      "t_s": 0.0,
+      "abs_omega_truth": 0.216,
+      "omega_truth": 0.216,
+      "abs_delta_drift_m": 0.0,
+      "delta_drift_m": 0.0,
+      "abs_d_delta_dt": 0.0,
+      "d_delta_dt": 0.0,
+      "note": "first argmax |omega| in 0-5 s is t=0 (cos phase); |omega| also peaks at T/2=2s, T=4s (tied amplitude)",
+      "tied_peak_times_s": [
+        0.0,
+        2.0,
+        4.0
+      ]
+    },
+    "at_first_interior_omega_peak_0_5": {
+      "t_s": 2.0,
+      "abs_omega_truth": 0.216,
+      "omega_truth": -0.216,
+      "abs_delta_drift_m": 0.48397700000000005,
+      "delta_drift_m": 0.48397700000000005,
+      "abs_d_delta_dt": 1.570850000000025,
+      "d_delta_dt": 1.570850000000025
+    },
+    "lag_1p0_5p0": {
+      "t_argmax_abs_omega_s": 2.0,
+      "t_argmax_abs_d_delta_dt_s": 3.38,
+      "lag_s_divergence_minus_omega": 1.38,
+      "definition": "lag = t(argmax |d(delta)/dt|) - t(argmax |omega_truth|) in [1,5] s; positive means divergence-rate peak after omega peak"
+    },
+    "omega_at_divergence_rate_peak_note": "Coincidence only: |omega| at max |d(delta)/dt| in 1.3-2 s; no causal attribution."
+  }
+}

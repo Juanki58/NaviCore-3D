@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 
 #ifndef M_PI
@@ -101,7 +102,11 @@ const char *nav_mode_name(NavMode mode)
     }
 }
 
-void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu, uint32_t sim_clock_ms)
+void prepare_imu_sample(
+    SensorsSimulation *sensors,
+    ImuSample *imu,
+    uint32_t sim_clock_ms,
+    TunnelStressImuMode imu_mode)
 {
     if (sensors == NULL || imu == NULL) {
         return;
@@ -120,7 +125,12 @@ void prepare_imu_sample(SensorsSimulation *sensors, ImuSample *imu, uint32_t sim
     imu->gyro_radps[0] = 0.0f;
     imu->gyro_radps[1] = 0.0f;
     imu->gyro_radps[2] = 0.0f;
-    imu_simulator_apply_measurement_model(&sensors->imu, imu, sim_clock_ms);
+    if (imu_mode == TunnelStressImuMode::IDEAL) {
+        imu->timestamp_ms = sim_clock_ms;
+    } else {
+        imu_simulator_apply_measurement_model(&sensors->imu, imu, sim_clock_ms);
+        imu->timestamp_ms = sim_clock_ms;
+    }
     imu->valid = true;
 }
 
@@ -221,10 +231,22 @@ bool tunnel_stress_gps_outage_at_ms(uint32_t t_ms)
     return (t_ms >= TUNNEL_STRESS_GPS_OFF_START_MS) && (t_ms < TUNNEL_STRESS_GPS_OFF_END_MS);
 }
 
+const char *tunnel_stress_imu_mode_name(TunnelStressImuMode mode)
+{
+    switch (mode) {
+    case TunnelStressImuMode::IDEAL:
+        return "ideal";
+    case TunnelStressImuMode::DIRTY_FULL:
+    default:
+        return "dirty_full";
+    }
+}
+
 void TunnelStressScenario::run(
     TelemetryInterface *telemetry,
     TunnelStressNavEmitFn emit_nav,
-    uint32_t seed)
+    uint32_t seed,
+    TunnelStressImuMode imu_mode)
 {
     const Vector3D origin = vector3d_make(41.3874f, 2.1686f, 12.0f);
 
@@ -264,10 +286,28 @@ void TunnelStressScenario::run(
         telemetry->bind_sources(&bindings);
     }
 
+    /* Optional NHC block audit (same env as SLALOM). Bind after seed — init clears FILE*. */
+    FILE *nhc_audit_fp = nullptr;
+    uint64_t nhc_audit_imu_seq = 0U;
+    const char *nhc_audit_path = std::getenv("NAVICORE_NHC_BLOCK_AUDIT_CSV");
+    if (nhc_audit_path != nullptr && nhc_audit_path[0] != '\0') {
+        nhc_audit_fp = std::fopen(nhc_audit_path, "w");
+        if (nhc_audit_fp == nullptr) {
+            std::printf("WARNING: no se pudo abrir NHC audit: %s\n", nhc_audit_path);
+        } else if (!ins_ekf_write_nhc_block_audit_header(nhc_audit_fp)) {
+            std::printf("WARNING: header NHC audit fallo: %s\n", nhc_audit_path);
+            std::fclose(nhc_audit_fp);
+            nhc_audit_fp = nullptr;
+        } else {
+            std::printf("NHC block audit: %s\n", nhc_audit_path);
+        }
+    }
+
     std::printf("\n");
     std::printf("================================================================\n");
     std::printf(" ESCENARIO: TUNNEL_STRESS — perfil reproducible (5 fases)\n");
     std::printf("  Semilla RNG: %u\n", seed);
+    std::printf("  IMU mode: %s\n", tunnel_stress_imu_mode_name(imu_mode));
     std::printf("  Duracion: %.0f s | Crucero: %.0f km/h (%.1f m/s)\n",
                 static_cast<float>(TUNNEL_STRESS_DURATION_MS) * 0.001f,
                 TUNNEL_STRESS_CRUISE_SPEED_MPS * 3.6f,
@@ -292,8 +332,10 @@ void TunnelStressScenario::run(
             continue;
         }
 
-        imu_simulator_step_bias_random_walk(&sensors.imu);
-        prepare_imu_sample(&sensors, &imu, t_ms);
+        if (imu_mode != TunnelStressImuMode::IDEAL) {
+            imu_simulator_step_bias_random_walk(&sensors.imu);
+        }
+        prepare_imu_sample(&sensors, &imu, t_ms, imu_mode);
         sensors_simulation_apply_step_faults(&sensors, &imu, &gps_meas);
 
         (void)gps_simulator_get_truth(&sensors.gps, &gps_truth);
@@ -332,6 +374,9 @@ void TunnelStressScenario::run(
                 ref_alt_m = gps.position.z;
                 ekf_seeded = true;
                 bindings.ekf = navi_filter_try_get_ins_ekf(filter);
+                if (nhc_audit_fp != nullptr) {
+                    ins_ekf_set_nhc_block_audit(&filter_impl->native(), nhc_audit_fp);
+                }
 
                 if (t_ms == 0U) {
                     std::printf(
@@ -352,6 +397,16 @@ void TunnelStressScenario::run(
         if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
             const float nhc_lateral = nhc_active ? NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS : 0.0f;
             const float nhc_vertical = nhc_active ? NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS : 0.0f;
+            InsEkfFilter &ekf = filter_impl->native();
+            if (nhc_audit_fp != nullptr) {
+                ++nhc_audit_imu_seq;
+                ins_ekf_set_nhc_block_audit(&ekf, nhc_audit_fp);
+                ins_ekf_set_nhc_block_audit_context(
+                    &ekf,
+                    static_cast<double>(t_ms) * 0.001,
+                    nhc_audit_imu_seq,
+                    sensors.gps.speed_mps);
+            }
             filter->apply_constraints(zupt_active, nhc_lateral, nhc_vertical);
             filter_impl->sync_simulation_clock_ms(t_ms);
             filter->predict(
@@ -550,6 +605,14 @@ void TunnelStressScenario::run(
         }
     }
 
+    if (nhc_audit_fp != nullptr) {
+        if (filter_impl != nullptr) {
+            ins_ekf_set_nhc_block_audit(&filter_impl->native(), nullptr);
+        }
+        std::fclose(nhc_audit_fp);
+        nhc_audit_fp = nullptr;
+    }
+
     std::printf("----------------------------------------------------------------\n");
     std::printf(" RESULTADO TUNNEL_STRESS\n");
     std::printf("  Deriva al apagar GPS (10 s):       %8.2f m\n", result.drift_at_gps_loss_m);
@@ -582,8 +645,9 @@ void TunnelStressScenario::run(
 void run_tunnel_stress_scenario(
     TelemetryInterface *telemetry,
     TunnelStressNavEmitFn emit_nav,
-    uint32_t seed)
+    uint32_t seed,
+    TunnelStressImuMode imu_mode)
 {
     TunnelStressScenario scenario{};
-    scenario.run(telemetry, emit_nav, seed);
+    scenario.run(telemetry, emit_nav, seed, imu_mode);
 }

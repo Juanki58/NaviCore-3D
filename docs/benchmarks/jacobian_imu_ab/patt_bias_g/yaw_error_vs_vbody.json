@@ -1,0 +1,244 @@
+{
+  "window_s": [
+    1.69,
+    1.79
+  ],
+  "base_course_rad": 1.5707963267948966,
+  "V_mps": 13.88888888888889,
+  "arms": {
+    "ctrl": {
+      "arm": "ctrl",
+      "n": 10,
+      "tick_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\yaw_error_vs_vbody_ctrl_ticks.csv",
+      "dyaw_deg": {
+        "mean": 0.6598018701149918,
+        "std": 0.08098693717409412,
+        "min": 0.4822994279776029,
+        "max": 0.7511973607987434
+      },
+      "roll_pitch_rms_deg": {
+        "roll": 5.801557245628168,
+        "pitch": 0.4688602246462234
+      },
+      "stats": {
+        "lat_vs_minus_V_sin_dyaw": {
+          "name": "filter_v_lat vs -V sin(\u0394yaw)",
+          "pearson": 0.9837544686146252,
+          "rmse": 0.26332929475748745,
+          "rmse_best_scale": 0.07081275779965598,
+          "best_scale": -0.5739982725355739,
+          "frac_var_explained": 0.5425875790177308,
+          "frac_var_explained_scaled": -0.4108440636248052
+        },
+        "lat_vs_att_only": {
+          "name": "filter_v_lat vs (truth_vel @ filter_att)_lat",
+          "pearson": 0.9867491918429088,
+          "rmse": 0.251084107238508,
+          "rmse_best_scale": 0.07248172879043582,
+          "best_scale": -0.6111777036555739,
+          "frac_var_explained": 0.5710112280628847,
+          "frac_var_explained_scaled": -0.4711327563167138
+        },
+        "lat_vs_vel_only": {
+          "name": "filter_v_lat vs (filter_vel @ truth_att)_lat",
+          "pearson": 0.9864790856804736,
+          "rmse": 0.12039009762712254,
+          "rmse_best_scale": 0.052680775731748244,
+          "best_scale": 0.48972927723202186,
+          "frac_var_explained": 0.40321248684376,
+          "frac_var_explained_scaled": 0.21086234406559712
+        },
+        "vert_vs_att_only": {
+          "name": "filter_v_vert vs (truth_vel @ filter_att)_vert",
+          "pearson": 0.9710086144888213,
+          "rmse": 0.04759662558608254,
+          "rmse_best_scale": 0.04731002646885849,
+          "best_scale": 0.959543599531297,
+          "frac_var_explained": 0.3728451865794107,
+          "frac_var_explained_scaled": 0.3595726662217653
+        },
+        "vert_vs_vel_only": {
+          "name": "filter_v_vert vs (filter_vel @ truth_att)_vert",
+          "pearson": 0.9959142882992741,
+          "rmse": 0.11948513301922858,
+          "rmse_best_scale": 0.1149078160044347,
+          "best_scale": 1.9898536453074784,
+          "frac_var_explained": 0.802836357203397,
+          "frac_var_explained_scaled": 0.9772725724417924
+        },
+        "recon_lat_vs_audit": {
+          "name": "audit_lat vs telem-recon_lat",
+          "pearson": 0.9987118169405401,
+          "rmse": 0.036285301155372596,
+          "rmse_best_scale": 0.009262721394593615,
+          "best_scale": 1.4329361974968198,
+          "frac_var_explained": 0.8418261004972174,
+          "frac_var_explained_scaled": 0.9797739318353691
+        },
+        "fwd_vs_V_cos_dyaw": {
+          "name": "filter_v_fwd vs V cos(\u0394yaw)",
+          "pearson": 0.9956832001288615,
+          "rmse": 0.8989444928679797,
+          "rmse_best_scale": 0.025117256941533467,
+          "best_scale": 0.9352969113695613,
+          "frac_var_explained": 0.016747598871587832,
+          "frac_var_explained_scaled": 0.015668294367935598
+        },
+        "lat_vs_minus_V_dyaw_small": {
+          "name": "filter_v_lat vs -V\u00b7\u0394yaw (small-angle)",
+          "pearson": 0.983753117078486,
+          "rmse": 0.26333277458131243,
+          "rmse_best_scale": 0.07081315130074346,
+          "best_scale": -0.5739828516392589,
+          "frac_var_explained": 0.5426125508507589,
+          "frac_var_explained_scaled": -0.41085827430103694
+        }
+      },
+      "verdict": {
+        "label": "PARTIAL_YAW_LINK",
+        "reading": "Yaw/attitude error correlates with v_lat but does not fully close the equation; see stats table."
+      }
+    },
+    "latch": {
+      "arm": "latch",
+      "n": 10,
+      "tick_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\yaw_error_vs_vbody_latch_ticks.csv",
+      "dyaw_deg": {
+        "mean": 0.8368686523979777,
+        "std": 0.307714648685354,
+        "min": 0.27935798889654495,
+        "max": 1.1978197354550058
+      },
+      "roll_pitch_rms_deg": {
+        "roll": 6.748171743069519,
+        "pitch": 2.816307220520552
+      },
+      "stats": {
+        "lat_vs_minus_V_sin_dyaw": {
+          "name": "filter_v_lat vs -V sin(\u0394yaw)",
+          "pearson": -0.7085349033034468,
+          "rmse": 1.1746210587334185,
+          "rmse_best_scale": 1.1363654114323787,
+          "best_scale": 2.3757243547467075,
+          "frac_var_explained": -0.11624707839653947,
+          "frac_var_explained_scaled": -0.29593637418299235
+        },
+        "lat_vs_att_only": {
+          "name": "filter_v_lat vs (truth_vel @ filter_att)_lat",
+          "pearson": 0.26131984873724867,
+          "rmse": 1.150381880184518,
+          "rmse_best_scale": 0.9388369884221424,
+          "best_scale": 5.264227508190344,
+          "frac_var_explained": 0.00953931055735402,
+          "frac_var_explained_scaled": 0.042165858621962315
+        },
+        "lat_vs_vel_only": {
+          "name": "filter_v_lat vs (filter_vel @ truth_att)_lat",
+          "pearson": 0.979928213460699,
+          "rmse": 0.3544921443892491,
+          "rmse_best_scale": 0.3318391508411191,
+          "best_scale": 1.1157391026942187,
+          "frac_var_explained": 0.9600129046474338,
+          "frac_var_explained_scaled": 0.9431166705091752
+        },
+        "vert_vs_att_only": {
+          "name": "filter_v_vert vs (truth_vel @ filter_att)_vert",
+          "pearson": 0.9851710329086066,
+          "rmse": 0.8826128767289382,
+          "rmse_best_scale": 0.25039500020986055,
+          "best_scale": 2.211786121015063,
+          "frac_var_explained": 0.690371241848575,
+          "frac_var_explained_scaled": 0.9700306224811045
+        },
+        "vert_vs_vel_only": {
+          "name": "filter_v_vert vs (filter_vel @ truth_att)_vert",
+          "pearson": 0.9523868773575366,
+          "rmse": 0.8441078139791601,
+          "rmse_best_scale": 0.7009364735385623,
+          "best_scale": 1.5063440940484851,
+          "frac_var_explained": 0.631313618630607,
+          "frac_var_explained_scaled": 0.8117193240321727
+        },
+        "recon_lat_vs_audit": {
+          "name": "audit_lat vs telem-recon_lat",
+          "pearson": 0.976818251590589,
+          "rmse": 0.3299825589296048,
+          "rmse_best_scale": 0.3274909200588934,
+          "best_scale": 1.0348096329933951,
+          "frac_var_explained": 0.9461700761248428,
+          "frac_var_explained_scaled": 0.9381511545985181
+        },
+        "fwd_vs_V_cos_dyaw": {
+          "name": "filter_v_fwd vs V cos(\u0394yaw)",
+          "pearson": 0.7678665706104233,
+          "rmse": 0.8320733282974548,
+          "rmse_best_scale": 0.6535829867633508,
+          "best_scale": 0.9629189841567074,
+          "frac_var_explained": 0.002322432791640905,
+          "frac_var_explained_scaled": 0.002236396443232591
+        },
+        "lat_vs_minus_V_dyaw_small": {
+          "name": "filter_v_lat vs -V\u00b7\u0394yaw (small-angle)",
+          "pearson": -0.7085379590292888,
+          "rmse": 1.1746207251040341,
+          "rmse_best_scale": 1.1363718956672528,
+          "best_scale": 2.3755288077520884,
+          "frac_var_explained": -0.11625906317855073,
+          "frac_var_explained_scaled": -0.2959413961416679
+        }
+      },
+      "verdict": {
+        "label": "VEL_ERROR_DOMINATES",
+        "reading": "Filter velocity error dominates body-lateral more than attitude misprojection."
+      }
+    }
+  },
+  "verdict": {
+    "latch": {
+      "label": "CASCADE_VIA_VEL_STATE_NOT_INSTANT_YAW_PROJECTION",
+      "reading": "The simple equation filter_v_lat \u2248 -V\u00b7sin(\u0394yaw) is FALSIFIED for latch: \u0394yaw only ~0.3\u20131.2\u00b0 predicts |v_lat|\u22720.29 m/s but observed max is 1.80 m/s. Instead filter_v_lat \u2248 filter NED cross-track vs truth heading (pearson 0.98, frac var 0.96) \u2014 the lateral innov is the already-corrupted velocity state, not an instantaneous yaw misprojection of forward speed. filter_v_vert still tracks attitude projection of speed (roll/pitch; att_only pearson ~0.985) with partial amplitude. Cascade holds end-to-end, but the proximate equation at explosion time is: attitude loop \u2192 polluted vel_NED \u2192 body lat/vert via NHC, not v_lat=V\u00b7sin(\u0394\u03c8) alone.",
+      "falsified": "filter_v_lat \u2248 -V sin(\u0394yaw) as sole quantitative link in [1.69,1.79] latch",
+      "supported": [
+        "v_lat \u2248 v_cross_track_filter (truth-heading frame)",
+        "v_vert shape \u2248 truth_vel projected with filter roll/pitch",
+        "A_CASCADE (truth body\u22480) still stands"
+      ],
+      "metrics": {
+        "dyaw_deg_range": [
+          0.27935798889654495,
+          1.1978197354550058
+        ],
+        "max_abs_pred_Vsin": 0.290338547485219,
+        "max_abs_filter_v_lat": 1.804651,
+        "pearson_vlat_vs_cross": 0.979928213460699,
+        "frac_var_vlat_vs_cross": 0.9600129046474338,
+        "pearson_vlat_vs_Vsin": -0.7085349033034468,
+        "roll_deg_range": [
+          -10.037075959102136,
+          -3.4559730638489334
+        ],
+        "pitch_deg_range": [
+          -3.8714694227344295,
+          3.828267770264643
+        ],
+        "filter_along_range": [
+          12.28307363810541,
+          14.207964216317784
+        ]
+      }
+    },
+    "ctrl": {
+      "label": "PARTIAL_YAW_LINK",
+      "reading": "Yaw/attitude error correlates with v_lat but does not fully close the equation; see stats table."
+    },
+    "comparison": {
+      "latch_pearson_sin": -0.7085349033034468,
+      "ctrl_pearson_sin": 0.9837544686146252,
+      "latch_frac_var_sin": -0.11624707839653947,
+      "latch_frac_var_att_only": 0.00953931055735402,
+      "latch_frac_var_vel_only": 0.9600129046474338
+    },
+    "note": "Do not claim yaw-sin closes the equation; claim cascade via velocity-state pollution + attitude projection on vert."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_yaw_error_vs_vbody.png"
+}

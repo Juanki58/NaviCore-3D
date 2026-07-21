@@ -1,0 +1,163 @@
+{
+  "window_s": [
+    1.69,
+    1.79
+  ],
+  "truth_kinematics": {
+    "source": "slalom_kinematics_at_time (yaw-only, vel along heading)",
+    "base_course_rad": 0.7853981633974483,
+    "speed_mps": 13.88888888888889,
+    "yaw_amp_rad": 0.13750987083139757,
+    "omega_radps": 1.5707963267948966,
+    "analytic": "truth v_lat \u2261 0, v_vert \u2261 0"
+  },
+  "arms": {
+    "ctrl": {
+      "tick_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\innov_explosion_ab_ctrl_ticks.csv",
+      "n_ticks": 10,
+      "verdict": {
+        "label": "A_CASCADE",
+        "reading": "Truth v_body lat/vert stays ~0 (NHC assumption holds for scenario kinematics); filter v_body diverges \u2014 innov explosion is filter/state cascade, not NHC-too-rigid.",
+        "truth_tol_mps": 0.05,
+        "max_abs_truth_lat": 8.881784197001252e-16,
+        "max_abs_truth_vert": 0.0,
+        "max_abs_filter_lat": 0.245136,
+        "max_abs_filter_vert": 0.245947,
+        "mean_abs_filter_lat": 0.1003326,
+        "mean_abs_filter_vert": 0.11864040000000001,
+        "max_innov_norm": 0.347249,
+        "sub_tramo_tags": [
+          "S1:A",
+          "S2:A",
+          "S3:A"
+        ],
+        "subs": {
+          "S1": {
+            "n": 4,
+            "t_span": [
+              1.690000057,
+              1.720000029
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 2.220446049250313e-16,
+            "max_abs_filter_lat": 0.245136,
+            "max_abs_filter_vert": 0.245947,
+            "mean_abs_filter_lat": 0.157298,
+            "mean_innov_norm": 0.2392675,
+            "max_innov_norm": 0.347249
+          },
+          "S2": {
+            "n": 3,
+            "t_span": [
+              1.730000138,
+              1.750000119
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 2.9605947323337506e-16,
+            "max_abs_filter_lat": 0.080688,
+            "max_abs_filter_vert": 0.106737,
+            "mean_abs_filter_lat": 0.07110633333333333,
+            "mean_innov_norm": 0.11655666666666666,
+            "max_innov_norm": 0.133803
+          },
+          "S3": {
+            "n": 3,
+            "t_span": [
+              1.76000011,
+              1.780000091
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_filter_lat": 0.057152,
+            "max_abs_filter_vert": 0.069865,
+            "mean_abs_filter_lat": 0.05360500000000001,
+            "mean_innov_norm": 0.08298333333333334,
+            "max_innov_norm": 0.090264
+          }
+        },
+        "scenario_note": "Ideal SLALOM truth is yaw-only with vel along heading \u2192 truth v_lat=v_vert\u22610 by construction. B cannot appear unless kinematics change; a 'B' verdict here would require numerical artifact or a different scenario."
+      },
+      "max_abs_innov_plus_v_resid": 0.0
+    },
+    "latch": {
+      "tick_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\innov_explosion_ab_latch_ticks.csv",
+      "n_ticks": 10,
+      "verdict": {
+        "label": "A_CASCADE",
+        "reading": "Truth v_body lat/vert stays ~0 (NHC assumption holds for scenario kinematics); filter v_body diverges \u2014 innov explosion is filter/state cascade, not NHC-too-rigid.",
+        "truth_tol_mps": 0.05,
+        "max_abs_truth_lat": 8.881784197001252e-16,
+        "max_abs_truth_vert": 0.0,
+        "max_abs_filter_lat": 1.804651,
+        "max_abs_filter_vert": 2.181551,
+        "mean_abs_filter_lat": 1.1008874,
+        "mean_abs_filter_vert": 1.4382842,
+        "max_innov_norm": 2.338412,
+        "sub_tramo_tags": [
+          "S1:A",
+          "S2:A",
+          "S3:A"
+        ],
+        "subs": {
+          "S1": {
+            "n": 4,
+            "t_span": [
+              1.690000057,
+              1.720000029
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 2.220446049250313e-16,
+            "max_abs_filter_lat": 1.804651,
+            "max_abs_filter_vert": 1.671815,
+            "mean_abs_filter_lat": 1.714726,
+            "mean_innov_norm": 2.02630925,
+            "max_innov_norm": 2.338412
+          },
+          "S2": {
+            "n": 3,
+            "t_span": [
+              1.730000138,
+              1.750000119
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 2.9605947323337506e-16,
+            "max_abs_filter_lat": 1.297651,
+            "max_abs_filter_vert": 1.977188,
+            "mean_abs_filter_lat": 0.8767320000000001,
+            "mean_innov_norm": 1.8264153333333333,
+            "max_innov_norm": 2.024622
+          },
+          "S3": {
+            "n": 3,
+            "t_span": [
+              1.76000011,
+              1.780000091
+            ],
+            "max_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_truth_vert": 0.0,
+            "mean_abs_truth_lat": 8.881784197001252e-16,
+            "max_abs_filter_lat": 0.862652,
+            "max_abs_filter_vert": 2.181551,
+            "mean_abs_filter_lat": 0.5065913333333333,
+            "mean_innov_norm": 2.0963283333333336,
+            "max_innov_norm": 2.193386
+          }
+        },
+        "scenario_note": "Ideal SLALOM truth is yaw-only with vel along heading \u2192 truth v_lat=v_vert\u22610 by construction. B cannot appear unless kinematics change; a 'B' verdict here would require numerical artifact or a different scenario."
+      },
+      "max_abs_innov_plus_v_resid": 0.0
+    }
+  },
+  "verdict": {
+    "latch": "A_CASCADE",
+    "ctrl": "A_CASCADE",
+    "reading": "Truth v_body lat/vert stays ~0 (NHC assumption holds for scenario kinematics); filter v_body diverges \u2014 innov explosion is filter/state cascade, not NHC-too-rigid.",
+    "design_implication": "A_CASCADE \u2192 resume attitude-Z cascade thread (onset\u2192break\u2192innov lag); do not open NHC-too-rigid design conversation from this ideal-slalom evidence. B would require a scenario with real sideslip/bank in truth."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_innov_explosion_ab.png"
+}

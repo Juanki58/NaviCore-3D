@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GAP-4 §11 — Run preregistered intervention arms (1a/1b/1d/1d′)."""
+"""GAP-4 §11 — Run preregistered intervention arms (1a/1b/1d/1d′/1e)."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ INTERVENTION_ARMS = {
     "1b": {"ppv_policy": "zero", "subdir": "G1_intervention/arm_1b_unconditional"},
     "1d": {"ppv_policy": "cos_pos", "subdir": "G1_intervention/arm_1d_cos_pos"},
     "1d_prime": {"ppv_policy": "cos_tot", "subdir": "G1_intervention/arm_1d_prime_cos_tot"},
+    "1e": {"ppv_policy": "innov_h", "subdir": "G1_intervention/arm_1e_innov_h"},
 }
 
 G2_REFERENCE = {
@@ -28,16 +29,16 @@ def main() -> int:
     parser.add_argument(
         "--intervention",
         choices=sorted(INTERVENTION_ARMS),
-        help="Preregistered arm id (1a, 1b, 1d, 1d_prime)",
+        help="Preregistered arm id (1a, 1b, 1d, 1d_prime, 1e)",
     )
     parser.add_argument(
         "--ppv-policy",
-        choices=["none", "gap_le_1s", "zero", "cos_pos", "cos_tot"],
+        choices=["none", "gap_le_1s", "zero", "cos_pos", "cos_tot", "innov_h"],
         help="Override P_pv policy (default from --intervention)",
     )
     parser.add_argument("--arm", choices=["G1", "G2"], default="G1")
     parser.add_argument("--skip-replay", action="store_true")
-    parser.add_argument("--run-all", action="store_true", help="Run all four §11 arms on G1 pos+vel")
+    parser.add_argument("--run-all", action="store_true", help="Run all §11 arms on G1 pos+vel")
     parser.add_argument("--g2-reference", action="store_true", help="G2 pos+vel reference for fix#56")
     args, extra = parser.parse_known_args()
 

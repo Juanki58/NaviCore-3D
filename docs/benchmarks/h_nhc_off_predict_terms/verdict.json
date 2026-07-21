@@ -1,0 +1,62 @@
+{
+  "question": "Which predict term produces \u0394v_E \u2248 \u22128.3 m/s (#17\u2192#18, NHC off)?",
+  "interval_s": [
+    19.301353455,
+    20.301353455
+  ],
+  "n_ticks": 98,
+  "sum_dt_s": 0.9989999999999999,
+  "observed": {
+    "\u03a3 a_lin_E\u00b7dt (integrator East)": -8.299273662,
+    "\u03a3 a_nav_E\u00b7dt": -8.299273662,
+    "\u0394v_E from vel_pre\u2192vel_post": -8.241552,
+    "target_approx": -8.3
+  },
+  "terms_m_s": [
+    {
+      "term": "R\u00b7imu (specific force raw\u2192NED)",
+      "dv_E_mps": -6.653154788652985,
+      "in_code": true
+    },
+    {
+      "term": "\u2212R\u00b7bias_a",
+      "dv_E_mps": -1.6461187314754344,
+      "in_code": true
+    },
+    {
+      "term": "gravity (\u2212g_E)",
+      "dv_E_mps": 0.0,
+      "in_code": true
+    },
+    {
+      "term": "Coriolis",
+      "dv_E_mps": 0.0,
+      "in_code": false
+    },
+    {
+      "term": "Earth rotation",
+      "dv_E_mps": 0.0,
+      "in_code": false
+    }
+  ],
+  "sum_terms_m_s": -8.29927352012842,
+  "closure_sum_minus_a_lin": 1.418715793732872e-07,
+  "checks": {
+    "gravity_E_from_a_lin_minus_a_nav": 0.0,
+    "gravity_D_from_a_lin_minus_a_nav": -9.796843522000001,
+    "expected_gravity_D": -9.796843349999998,
+    "a_corr_vs_body_minus_bias_rms": 7.354021531272943e-07,
+    "dcm_recon_vs_a_nav_rms": 2.176322475018666e-06,
+    "\u03a3 R\u00b7a_corr_E\u00b7dt": -8.299273380317002
+  },
+  "dominance": {
+    "dominant": "R\u00b7imu",
+    "share_of_abs_in_code": 0.8016550813172907,
+    "PASS_single_term_ge_90pct": false
+  },
+  "eliminated": [
+    "Coriolis \u2014 not in predict()",
+    "Earth rotation \u2014 not in predict()",
+    "Gravity East \u2014 g_NED=(0,0,G) \u21d2 contribution 0 by construction"
+  ]
+}

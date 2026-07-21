@@ -678,7 +678,7 @@ flowchart LR
     PICO --> EKF
 ```
 
-**NavState** is the single source of truth for the guidance/API layer: position, velocity, heading, mode (`GPS` · `DEAD_RECKONING` · `HYBRID`), and confidence (`estimate_quality`, satellite count, fix age).
+**NavState** is the navigation **product façade** (LLA, heading, GPS/HYBRID/DR). Underneath, the reusable engine speaks estimate quality, reject codes, and AIDED/COAST — see [`docs/ESTIMATE_ENGINE_VS_NAV_VOCAB.md`](docs/ESTIMATE_ENGINE_VS_NAV_VOCAB.md).
 
 **INS/EKF** — see [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not): real **15-state ESKF** (predict + Joseph GNSS/NHC/ZUPT), not a simplified complementary blend. Replay selects `--ekf-core v1|v2`.
 
@@ -1099,11 +1099,11 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 
 | Phase | Target |
 |-------|--------|
-| **Done** | **MC N=100 · NHC matrix (GAP-3) · Allan IEEE tooling** · EKF v2 A/B · spoof · fuzz · NavMode · fault-policy · CI |
+| **Done** | **MC · NHC · Allan tooling · EKF v2** · estimate↔nav vocab · A5 triage · EKF edge tests · GAP-3 video script · fuzz · CI |
 | **Now** | A3 domain Q/R profiles · expand error-path cover · harden cppcheck findings |
 | **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
 | **Also pending** | Allan **fit** publish (static IMU hours) · WCET S0–S7 on-board (protocol ready) |
-| **Visibility** | Repo on GitHub · Unity demo local · communities **with** field+PPK2 when ready |
+| **Visibility** | GAP-3 **guion** listo · grabación Unity pendiente · comunidades con PPK2/campo |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).
 

@@ -3,6 +3,8 @@
 **Audience:** someone integrating NaviCore into a product who needs to know *when*
 modes change and *what precision is (and is not) promised*.
 
+See also: [ESTIMATE_ENGINE_VS_NAV_VOCAB.md](ESTIMATE_ENGINE_VS_NAV_VOCAB.md) (generic AIDED/COAST ↔ NavMode).
+
 **Normative implementation (Pico / EKF path):** [`src/core/nav_mode_policy.cpp`](../src/core/nav_mode_policy.cpp)
 via `ins_ekf_export_nav_state`. Host `fusion.cpp` has a parallel HYBRID/GPS/DR path
 for the PC API — see § Host fusion note.

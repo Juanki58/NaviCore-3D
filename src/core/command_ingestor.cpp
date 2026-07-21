@@ -194,14 +194,14 @@ uint8_t command_ingestor_compute_checksum(const RadioCommandPacket *packet)
         return 0U;
     }
 
-    const uint8_t *bytes = (const uint8_t *)packet;
+    const auto *bytes = reinterpret_cast<const uint8_t *>(packet);
     uint8_t sum = 0U;
 
     for (size_t i = 0U; i < sizeof(RadioCommandPacket); ++i) {
         if (i == 3U) {
             continue;
         }
-        sum = (uint8_t)(sum + bytes[i]);
+        sum = static_cast<uint8_t>(sum + bytes[i]);
     }
 
     return sum;

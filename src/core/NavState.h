@@ -7,7 +7,11 @@
 #include "vector3d.h"
 
 /*
- * NavState — estado unificado de navegación (NaviCore-3D).
+ * NavState — product façade: navigation vocabulary over the estimate engine.
+ *
+ * Generic layer (reuse for non-nav pivots): see estimate_mode.hpp,
+ * estimate_quality.hpp, meas_reject.hpp, docs/ESTIMATE_ENGINE_VS_NAV_VOCAB.md.
+ * This header keeps LLA / heading / GPS* names as the integrator ABI.
  *
  * Convención de ejes (permanente en todo el núcleo):
  *   position.x = latitud  [°]

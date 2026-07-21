@@ -29,13 +29,13 @@ Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan
 | A2 | Detección de **inconsistencia** (reglas / gate) | **Hecho (v1)** | `reject_reason=3`; gap corto; test SW spoof. **No** bloquea B-Ambiq |
 | A2b | Spoof / inconsistencia **on-device ligero** (reglas→modelo) | Más tarde | Ideal en **Apollo4** (edge AI); no sustituye A2 v1 |
 | A3 | Perfiles de dominio configurables (Q/R tierra/aire/mar) | Pendiente | Núcleo unificado + tuning por vertical |
-| A4 | Suite de tests formal + spoof + properties | **Parcial** | Catch2 + RapidCheck + `--safety-inject`; ampliar edge cases EKF |
-| A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Parcial** | Baseline + CI; triage hallazgos + tidy blocking |
+| A4 | Suite de tests formal + spoof + properties | **Parcial→mejorado** | Catch2 + RapidCheck + `--safety-inject` + **`test_ins_ekf_edge`** (init/NaN/invalid/dt) |
+| A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Triage hecho** | [TRIAGE_A5.md](benchmarks/static_analysis/TRIAGE_A5.md); fixes style; tidy CI soft; ASan hard |
 | A6 | Fuzzing parsers NMEA/UBX/WT61C (libFuzzer) | **Hecho (v1)** | CI smoke 60 s; corpus `tests/fuzz/corpus/` |
 | A7 | Fault injection policy (host) + lab protocol | **Parcial** | Host OK; banco físico pendiente de campaña registrada |
 | A8 | Matriz NavMode documentada + tests | **Hecho (v1)** | [NAV_MODE_DEGRADATION.md](NAV_MODE_DEGRADATION.md) |
 | A9 | WDT externo independiente del die | **API lista** | `bsp_ext_wdt` + GP15 |
-| A10 | IMU vigilante (cross-check) | **API lista** | `imu_cross_check` + MPU-6050 opcional |
+| A11 | Vocabulario genérico estimate vs Nav* | **Hecho (v1)** | [ESTIMATE_ENGINE_VS_NAV_VOCAB.md](ESTIMATE_ENGINE_VS_NAV_VOCAB.md) · aliases · sin rewrite EKF |
 
 ### Spoofing — solo software
 
@@ -97,7 +97,7 @@ Esquema CSV (una línea por muestra):
 
 | # | Acción | Estado |
 |---|--------|--------|
-| C1 | Vídeo 1–2 min Unity/Cesium: pérdida/inconsistencia GNSS | Pendiente |
+| C1 | Vídeo 1–2 min Unity/Cesium: GAP-3 NHC | **Guion listo** | [VIDEO_SCRIPT_GAP3_NHC.md](VIDEO_SCRIPT_GAP3_NHC.md) — falta grabación |
 | C2 | Repo + README PNT + **Evidence scorecard** (MC/NHC/Allan/v2) | **Hecho (v1)** en GitHub — ampliar con PPK2/campo |
 | C3 | Comunidades + Show HN **con** campo + PPK2 (± Ambiq cuando haya) | Pendiente |
 | C4 | LinkedIn: 2–3 posts técnicos espaciados | Pendiente |

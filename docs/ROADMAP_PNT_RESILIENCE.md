@@ -3,6 +3,22 @@
 **Estado:** vigente · **Posicionamiento:** resiliencia GNSS degradado/denegado (civil) + **ultra-bajo consumo medible**.  
 **Principio:** por partes; spoof solo por inyección SW (no RF sin autorización CNMC).
 
+**Rigor científico ya bancado** (no está “pendiente de README”): ver [README § Evidence — scorecard](../README.md#scientific-rigor-scorecard-what-is-already-done) — Monte Carlo N=100, matriz NHC (GAP-3), Allan IEEE 952 tooling, EKF v2 A/B en 3 trazas reales.
+
+---
+
+## S · Campañas científicas (rigor)
+
+Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan fit pendiente de log estático” con “no hay método Allan”.
+
+| # | Campaña | Estado | Resultado / artefacto |
+|---|---------|--------|------------------------|
+| S1 | **Monte Carlo** `TUNNEL_STRESS` | **Hecho** | N=100 · mean **13.0 m** @ t=30 s · p95 16.1 m · 0% diverge · `docs/monte_carlo/` |
+| S2 | **NHC experiment matrix** | **Hecho** (GAP-3 CLOSED) | NHC-off 493 m exit vs `B_always` 1408 m — NHC agresivo empeora · `docs/nhc_experiments/manifest.json` |
+| S3 | **Allan variance** IEEE Std 952 | **Herramienta hecha** · tabla ARW/BI pendiente de log | [`analyze_allan.py`](../analyze_allan.py) · falta `docs/imu_static_log.csv` (horas) |
+| S4 | **EKF v2 vs v1** (3 phone drives) | **Hecho** | Accept → 100% · drift ~35 / 38 / 110 m · `docs/benchmarks/ekf_v2_ab_3routes/` |
+| S5 | GAP-1…4 / G-ext diagnostics | **CLOSED** | Mapa en README § EKF diagnostics |
+
 ---
 
 ## A · Código (orden de prioridad)
@@ -13,13 +29,13 @@
 | A2 | Detección de **inconsistencia** (reglas / gate) | **Hecho (v1)** | `reject_reason=3`; gap corto; test SW spoof. **No** bloquea B-Ambiq |
 | A2b | Spoof / inconsistencia **on-device ligero** (reglas→modelo) | Más tarde | Ideal en **Apollo4** (edge AI); no sustituye A2 v1 |
 | A3 | Perfiles de dominio configurables (Q/R tierra/aire/mar) | Pendiente | Núcleo unificado + tuning por vertical |
-| A4 | Suite de tests formal + spoof + properties | **Parcial** | Catch2 + RapidCheck + `--safety-inject` (wire + fault policy); MC/NHC = campañas |
-| A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Parcial** | Baseline + CI [code-audit.yml](../.github/workflows/code-audit.yml) |
-| A6 | Fuzzing parsers NMEA/UBX/WT61C (libFuzzer) | **Hecho (v1)** | Core host-linkable; CI smoke 60 s; corpus `tests/fuzz/corpus/` |
-| A7 | Fault injection policy (host) + lab protocol | **Parcial** | `health_policy` + inject tests; banco: [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) |
-| A8 | Matriz NavMode documentada + tests | **Hecho (v1)** | [NAV_MODE_DEGRADATION.md](NAV_MODE_DEGRADATION.md) + `nav_mode_select` |
-| A9 | WDT externo independiente del die | **API lista** | `bsp_ext_wdt` + GP15; activar `PICO2_EXT_WDT_ENABLE` al soldar TPL5010 |
-| A10 | IMU vigilante (cross-check) | **API lista** | `imu_cross_check` + MPU-6050 opcional I2C0 |
+| A4 | Suite de tests formal + spoof + properties | **Parcial** | Catch2 + RapidCheck + `--safety-inject`; ampliar edge cases EKF |
+| A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Parcial** | Baseline + CI; triage hallazgos + tidy blocking |
+| A6 | Fuzzing parsers NMEA/UBX/WT61C (libFuzzer) | **Hecho (v1)** | CI smoke 60 s; corpus `tests/fuzz/corpus/` |
+| A7 | Fault injection policy (host) + lab protocol | **Parcial** | Host OK; banco físico pendiente de campaña registrada |
+| A8 | Matriz NavMode documentada + tests | **Hecho (v1)** | [NAV_MODE_DEGRADATION.md](NAV_MODE_DEGRADATION.md) |
+| A9 | WDT externo independiente del die | **API lista** | `bsp_ext_wdt` + GP15 |
+| A10 | IMU vigilante (cross-check) | **API lista** | `imu_cross_check` + MPU-6050 opcional |
 
 ### Spoofing — solo software
 
@@ -44,6 +60,7 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 | B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** | Baseline obligatorio antes de comparar Ambiq |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
 | B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Protocolo listo | [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) — registrar artefactos |
+| B6 | Log estático multi-hora → **Allan fit** publicado | Pendiente dato | Cierra S3 (herramienta ya existe) |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
@@ -81,7 +98,7 @@ Esquema CSV (una línea por muestra):
 | # | Acción | Estado |
 |---|--------|--------|
 | C1 | Vídeo 1–2 min Unity/Cesium: pérdida/inconsistencia GNSS | Pendiente |
-| C2 | Repo público + README PNT resilience | Pendiente (hoy showcase) |
+| C2 | Repo + README PNT + **Evidence scorecard** (MC/NHC/Allan/v2) | **Hecho (v1)** en GitHub — ampliar con PPK2/campo |
 | C3 | Comunidades + Show HN **con** campo + PPK2 (± Ambiq cuando haya) | Pendiente |
 | C4 | LinkedIn: 2–3 posts técnicos espaciados | Pendiente |
 | C5 | Telefónica internos (Wayra / IoT-edge) si aplica | Opcional |
@@ -92,11 +109,15 @@ Esquema CSV (una línea por muestra):
 
 ## Orden operativo recomendado
 
-1. **PPK2 Pico** (B3) → publicar tabla en README  
-2. Campo outage Pico (B1) + vídeo Unity (C1)  
-3. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
-4. Apollo4 + A2b (spoof más sofisticado / on-device) si el mercado lo pide  
-5. Visibilidad externa fuerte solo con números medidos  
+0. **Ya bancado (no rehacer):** S1–S5 + Evidence scorecard en README  
+1. **PPK2 Pico** (B3) → publicar tabla mA/mW en README  
+2. Log estático → **Allan fit** (B6 / cierra S3)  
+3. Campo outage Pico (B1) + fault-injection banco (B5) + vídeo Unity (C1)  
+4. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
+5. Apollo4 + A2b si el mercado lo pide  
+6. Visibilidad externa fuerte (C3+) solo con números medidos de hardware  
+
+Prioridad de código en paralelo (barato): **A5** (sanitizers/tidy triage) → **A4** (más edge cases EKF) → fuzz ya en v1.
 
 ---
 

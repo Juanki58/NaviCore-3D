@@ -46,6 +46,12 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/recovery_guard.cpp
     ${NAVICORE_CORE_DIR}/navigation_cortex.cpp
     ${NAVICORE_CORE_DIR}/pid.cpp
+    ${NAVICORE_CORE_DIR}/nmea_parser.cpp
+    ${NAVICORE_CORE_DIR}/ubx_parser.cpp
+    ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
+    ${NAVICORE_CORE_DIR}/health_policy.cpp
+    ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+    ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
 )
 
 add_executable(NaviCore3D_VehicleDemo
@@ -81,6 +87,7 @@ set(NAVICORE_REPLAY_SOURCES
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
+    ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
 )
 
 add_executable(NaviCore3D_Replay
@@ -110,6 +117,12 @@ add_executable(navicore_regression_test
     ${NAVICORE_CORE_DIR}/command_ingestor.cpp
     ${NAVICORE_CORE_DIR}/fusion.cpp
     ${NAVICORE_CORE_DIR}/divergence_guard.cpp
+    ${NAVICORE_CORE_DIR}/nmea_parser.cpp
+    ${NAVICORE_CORE_DIR}/ubx_parser.cpp
+    ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
+    ${NAVICORE_CORE_DIR}/health_policy.cpp
+    ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+    ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
 )
 
 # Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)
@@ -154,6 +167,8 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_math.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_fusion_isolated.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_properties_rapidcheck.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_sensor_wire_and_health.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_nav_mode_transitions.cpp
         ${NAVICORE_CORE_DIR}/NavState.cpp
         ${NAVICORE_CORE_DIR}/vector3d.cpp
         ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
@@ -163,6 +178,12 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${NAVICORE_CORE_DIR}/fusion.cpp
         ${NAVICORE_CORE_DIR}/divergence_guard.cpp
         ${NAVICORE_CORE_DIR}/diagnostic.cpp
+        ${NAVICORE_CORE_DIR}/nmea_parser.cpp
+        ${NAVICORE_CORE_DIR}/ubx_parser.cpp
+        ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
+        ${NAVICORE_CORE_DIR}/health_policy.cpp
+        ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+        ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
     )
     target_link_libraries(navicore_unit_tests PRIVATE Catch2::Catch2WithMain rapidcheck)
     target_include_directories(navicore_unit_tests PRIVATE
@@ -174,6 +195,38 @@ if(NAVICORE_BUILD_UNIT_TESTS)
     include(CTest)
     include(Catch)
     catch_discover_tests(navicore_unit_tests)
+endif()
+
+# --- Sensor wire fuzzers (libFuzzer on Clang; standalone corpus runner otherwise) ---
+option(NAVICORE_BUILD_FUZZERS "Build NMEA/UBX/WT61C fuzz targets" OFF)
+set(NAVICORE_FUZZ_SOURCES
+    ${CMAKE_SOURCE_DIR}/tests/fuzz/sensor_wire_fuzz.cpp
+    ${NAVICORE_CORE_DIR}/nmea_parser.cpp
+    ${NAVICORE_CORE_DIR}/ubx_parser.cpp
+    ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
+    ${NAVICORE_CORE_DIR}/vector3d.cpp
+)
+if(NAVICORE_BUILD_FUZZERS)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-fsanitize=fuzzer" NAVICORE_HAS_LIBFUZZER)
+    if(NAVICORE_HAS_LIBFUZZER)
+        add_executable(navicore_sensor_wire_fuzz ${NAVICORE_FUZZ_SOURCES})
+        target_include_directories(navicore_sensor_wire_fuzz PRIVATE
+            ${NAVICORE_CORE_DIR}
+            ${NAVICORE_CORE_DIR}/interfaces)
+        target_compile_options(navicore_sensor_wire_fuzz PRIVATE
+            -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer -g)
+        target_link_options(navicore_sensor_wire_fuzz PRIVATE
+            -fsanitize=fuzzer,address,undefined)
+    endif()
+
+    # AFL / corpus smoke: same harness with a file/stdin main (no libFuzzer runtime)
+    add_executable(navicore_sensor_wire_fuzz_standalone ${NAVICORE_FUZZ_SOURCES})
+    target_include_directories(navicore_sensor_wire_fuzz_standalone PRIVATE
+        ${NAVICORE_CORE_DIR}
+        ${NAVICORE_CORE_DIR}/interfaces)
+    target_compile_definitions(navicore_sensor_wire_fuzz_standalone PRIVATE
+        NAVICORE_FUZZ_STANDALONE=1)
 endif()
 
 # Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe

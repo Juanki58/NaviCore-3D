@@ -1,10 +1,12 @@
 #include "bsp_sensors.hpp"
 
 #include "bsp_gnss.hpp"
+#include "bsp_imu_secondary.hpp"
 #include "bsp_power.hpp"
 #include "bsp_wt61c.hpp"
 #include "hw_config.hpp"
 
+#include "../../core/imu_cross_check.hpp"
 #include "../../core/sensor_types.hpp"
 
 #include "hardware/uart.h"
@@ -89,6 +91,12 @@ void sensors_update_confidence_flags(uint32_t timestamp_ms)
 
     g_sensor_confidence.imu_degraded = g_imu_overflow_window.confidence_degraded;
     g_sensor_confidence.gnss_degraded = g_gnss_overflow_window.confidence_degraded;
+    /* imu_cross_fail is latched/cleared in sensors_tick after dual-IMU compare */
+
+    /* Cable pull / UART hang: silence is a first-class degrade, not only overflow. */
+    if (pico2_bsp_wt61c_silence_ms() >= PICO2_IMU_SILENCE_DEGRADE_MS) {
+        g_sensor_confidence.imu_degraded = true;
+    }
 }
 
 float sensors_course_deg_to_yaw_rad(float course_deg)
@@ -102,7 +110,8 @@ void sensors_apply_degraded_confidence(NavState *nav_state)
         return;
     }
 
-    if (!g_sensor_confidence.imu_degraded && !g_sensor_confidence.gnss_degraded) {
+    if (!g_sensor_confidence.imu_degraded && !g_sensor_confidence.gnss_degraded
+        && !g_sensor_confidence.imu_cross_fail) {
         return;
     }
 
@@ -114,6 +123,10 @@ void sensors_apply_degraded_confidence(NavState *nav_state)
 
     if (g_sensor_confidence.gnss_degraded) {
         nav_state->confidence.gps_trusted = false;
+        quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
+    }
+
+    if (g_sensor_confidence.imu_cross_fail) {
         quality *= PICO2_RING_DEGRADED_QUALITY_FACTOR;
     }
 
@@ -140,6 +153,12 @@ bool pico2_bsp_sensors_init(void)
     if (!pico2_bsp_gnss_init()) {
         printf("Error: NEO-M9N UART1 init\n");
         return false;
+    }
+
+    if (pico2_bsp_imu_secondary_init()) {
+        printf("BSP: secondary IMU vigilante present (I2C0)\n");
+    } else if (PICO2_SECONDARY_IMU_ENABLE) {
+        printf("Aviso: secondary IMU enabled but not responding (cross-check idle)\n");
     }
 
     printf(
@@ -277,6 +296,14 @@ bool pico2_bsp_sensors_tick(
     if (g_ins_seeded && pico2_bsp_wt61c_poll(&imu)) {
         imu.timestamp_ms = timestamp_ms;
         (void)ins_ekf_predict(ins_filter, &imu);
+
+        ImuSample secondary{};
+        if (pico2_bsp_imu_secondary_poll(&secondary)) {
+            const ImuCrossCheckResult xcheck = imu_cross_check_evaluate(&imu, &secondary);
+            g_sensor_confidence.imu_cross_fail = xcheck.disagree;
+        } else {
+            g_sensor_confidence.imu_cross_fail = false;
+        }
     }
 
     const GpsSample *last_gps_ptr = nullptr;

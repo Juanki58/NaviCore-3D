@@ -20,9 +20,10 @@
  *   - WDT detecta bloqueos; loop_budget_exceeded detecta degradación sostenida de ritmo.
  *   - WT61C: checksum de trama obligatorio antes de actualizar IMU (bsp_wt61c.cpp).
  *   - Ticks: contador atómico (no bool) — un bool pierde ticks si el bucle > 10 ms.
- *   - WDT: watchdog_update() al final del ciclo; bloqueo → reset sin enmascarar.
+ *   - WDT on-chip (RP2350 hardware/watchdog): watchdog_update() al final del ciclo.
+ *   - WDT externo opcional (TPL5010/MAX6822 en GP15): kick solo al final sano del loop.
  *   - Overflow UART: parser descarta hasta delimitador ('\n' / cabecera 0x55).
- *
+ *   - IMU vigilante opcional (MPU-6050 I2C0 GP8/9): solo cross-check, no fusiona. *
  * Invariante WDT (3 pasos I2C fallidos × 2 ms = 6 ms << 50 ms WDT):
  *   PICO2_I2C_STEP_TIMEOUT_US × PICO2_I2C_RECOVER_AFTER < PICO2_WDT_TIMEOUT_MS × 1000
  *
@@ -76,6 +77,23 @@
 #define PICO2_I2C_RECOVER_AFTER      3U
 #define PICO2_I2C_RECOVER_MAX        3U    /* secuencias 9-pulsos fallidas → OFFLINE permanente */
 #define PICO2_WDT_TIMEOUT_MS         50U
+/* External supervisor (independent of RP2350 die). 0 = API no-op until soldered. */
+#ifndef PICO2_EXT_WDT_ENABLE
+#define PICO2_EXT_WDT_ENABLE         0
+#endif
+#define PICO2_EXT_WDT_GPIO           15U
+#define PICO2_EXT_WDT_PULSE_US       10U
+
+/* Cheap vigilante IMU (MPU-6050 class). 0 until module is wired on I2C0. */
+#ifndef PICO2_SECONDARY_IMU_ENABLE
+#define PICO2_SECONDARY_IMU_ENABLE   0
+#endif
+#define PICO2_SEC_IMU_I2C            i2c0
+#define PICO2_SEC_IMU_I2C_HZ         400000U
+#define PICO2_SEC_IMU_SDA_PIN        8U
+#define PICO2_SEC_IMU_SCL_PIN        9U
+#define PICO2_SEC_IMU_ADDR           0x68U
+
 #define PICO2_LOOP_BUDGET_US           (static_cast<uint32_t>(PICO2_NAV_TICK_MS) * 1000U)
 #define PICO2_WIFI_MIN_REMAINING_US  500U
 #define PICO2_SAFE_LOG_MAX_BYTES_PER_LOOP 256U
@@ -117,3 +135,6 @@
 #define PICO2_RING_OVERFLOW_WINDOW_MS  1000U
 #define PICO2_RING_OVERFLOW_DEGRADE_THRESHOLD 3U
 #define PICO2_RING_DEGRADED_QUALITY_FACTOR    0.50f
+/* Cable pull / UART silence — mirrors HEALTH_POLICY_IMU_SILENCE_DEGRADE_MS */
+#define PICO2_IMU_SILENCE_DEGRADE_MS          200U
+#define PICO2_GNSS_SILENCE_DEGRADE_MS         5000U

@@ -38,6 +38,12 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/recovery_guard.cpp
     ${NAVICORE_CORE_DIR}/navigation_cortex.cpp
     ${NAVICORE_CORE_DIR}/pid.cpp
+    ${NAVICORE_CORE_DIR}/nmea_parser.cpp
+    ${NAVICORE_CORE_DIR}/ubx_parser.cpp
+    ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
+    ${NAVICORE_CORE_DIR}/health_policy.cpp
+    ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+    ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
 )
 
 add_executable(NaviCore3D_Pico2
@@ -50,6 +56,8 @@ add_executable(NaviCore3D_Pico2
     ${NAVICORE_PICO2_DIR}/bsp_wt61c.cpp
     ${NAVICORE_PICO2_DIR}/bsp_gnss.cpp
     ${NAVICORE_PICO2_DIR}/bsp_power.cpp
+    ${NAVICORE_PICO2_DIR}/bsp_ext_wdt.cpp
+    ${NAVICORE_PICO2_DIR}/bsp_imu_secondary.cpp
     ${NAVICORE_PICO2_DIR}/nav_state_udp.cpp
     ${NAVICORE_CORE_SOURCES}
 )

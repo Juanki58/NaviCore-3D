@@ -3,6 +3,7 @@
 #include "geodesy.hpp"
 #include "ins_ekf_math.hpp"
 #include "math_utils.hpp"
+#include "nav_mode_policy.hpp"
 
 #include <math.h>
 #include <stdio.h>
@@ -3672,32 +3673,23 @@ void ins_ekf_export_nav_state(
 
     const bool gps_fix_now = (last_gps != NULL) && last_gps->fix_valid;
     const bool gnss_recent = filter->last_gnss_accept_ms != 0U
-        && ((timestamp_ms - filter->last_gnss_accept_ms) <= 2000U);
-    const bool gnss_outlier = filter->outlier_detected;
+        && ((timestamp_ms - filter->last_gnss_accept_ms) <= NAV_MODE_GNSS_RECENT_MS);
+    const uint32_t fix_age_ms = (filter->last_gnss_accept_ms == 0U)
+        ? timestamp_ms
+        : (timestamp_ms - filter->last_gnss_accept_ms);
 
-    if (gnss_outlier) {
-        out_state->mode = NAV_MODE_DEAD_RECKONING;
-        out_state->confidence = nav_confidence_make(false, 0U, timestamp_ms, 0.25f);
-    } else if (gps_fix_now && gnss_recent) {
-        const uint8_t sats = last_gps->satellites;
-        const float quality = clampf(0.55f + ((float)sats * 0.03f), 0.55f, 0.95f);
-        out_state->mode = NAV_MODE_HYBRID;
-        out_state->confidence = nav_confidence_make(true, sats, 0U, quality);
-    } else if (gps_fix_now) {
-        out_state->mode = NAV_MODE_GPS;
-        out_state->confidence = nav_confidence_make(
-            true,
-            last_gps->satellites,
-            0U,
-            0.65f);
-    } else {
-        const uint32_t fix_age_ms = (filter->last_gnss_accept_ms == 0U)
-            ? timestamp_ms
-            : (timestamp_ms - filter->last_gnss_accept_ms);
-        const float quality = nav_confidence_quality_from_fix_age_ms(fix_age_ms);
-        out_state->mode = NAV_MODE_DEAD_RECKONING;
-        out_state->confidence = nav_confidence_make(false, 0U, fix_age_ms, quality);
-    }
+    NavModeSelectInput sel_in{};
+    sel_in.initialized = true;
+    sel_in.gps_fix_valid = gps_fix_now;
+    sel_in.gnss_accepted_recent = gnss_recent;
+    sel_in.gnss_outlier = filter->outlier_detected;
+    sel_in.fix_age_ms = fix_age_ms;
+    sel_in.satellites = (last_gps != NULL) ? last_gps->satellites : 0U;
+    sel_in.imu_cross_check_fail = false; /* applied in BSP after export if needed */
+
+    const NavModeSelectResult sel = nav_mode_select(&sel_in);
+    out_state->mode = sel.mode;
+    out_state->confidence = sel.confidence;
 }
 
 bool ins_ekf_pack_navigation_state(

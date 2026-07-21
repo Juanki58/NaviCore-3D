@@ -11,6 +11,10 @@
 #include "geometry_guard.hpp"
 #include "command_ingestor.hpp"
 #include "fusion.hpp"
+#include "health_policy.hpp"
+#include "nmea_parser.hpp"
+#include "ubx_parser.hpp"
+#include "wt61c_parser.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -25,7 +29,7 @@
 namespace {
 
 constexpr int kRegressionTestCount = 12;
-constexpr int kSafetyInjectTestCount = 6;
+constexpr int kSafetyInjectTestCount = 9;
 constexpr int kMaxRegressionReports = 16;
 constexpr const char *kRegressionReportPath = "docs/regression_report.json";
 
@@ -431,6 +435,80 @@ void test_geometry_guard_discontinuity(RegressionTestReport *report)
             == static_cast<uint8_t>(DIAG_HEALTH_SCORE_MAX - GEOMETRY_GUARD_HEALTH_PENALTY),
         "penalización geometry");
     add_simple_metric(report, "geom_step_m", mon.last_geometry_step_m, "m");
+}
+
+void test_nmea_ubx_corrupt_wire_fail_closed(RegressionTestReport *report)
+{
+    NmeaLineAssembler as{};
+    nmea_line_assembler_reset(&as);
+    char line[NAVICORE_NMEA_LINE_MAX];
+    GpsSample gps{};
+    for (int i = 0; i < 400; ++i) {
+        const uint8_t b = static_cast<uint8_t>((i * 37) & 0xFF);
+        if (nmea_line_assembler_feed(&as, b, line, sizeof(line))) {
+            expect_true(
+                !nmea_try_parse_sentence(line, &gps) || gps.fix_valid,
+                "parsed line must be checksum-valid GGA");
+        }
+    }
+    expect_true(as.len < NAVICORE_NMEA_LINE_MAX, "assembler never fills past max");
+
+    UbxStreamParser ubx{};
+    ubx_stream_reset(&ubx);
+    UbxFrame frame{};
+    const uint8_t oversize[] = {0xB5, 0x62, 0x01, 0x07, 0xFF, 0xFF};
+    UbxParseStatus st = UBX_PARSE_NEED_MORE;
+    for (uint8_t b : oversize) {
+        st = ubx_stream_feed(&ubx, b, &frame);
+    }
+    expect_true(st == UBX_PARSE_OVERSIZE, "UBX oversize length must fail-closed");
+
+    Wt61cStreamParser wt{};
+    wt61c_stream_reset(&wt);
+    uint8_t junk[32];
+    for (uint8_t i = 0U; i < 32U; ++i) {
+        junk[i] = static_cast<uint8_t>(0xA5U ^ i);
+        wt61c_stream_feed(&wt, junk[i], 1000U + i);
+    }
+    ImuSample imu{};
+    expect_true(!wt61c_stream_try_sample(&wt, &imu), "noise must not yield IMU sample");
+    add_simple_metric(report, "wire_fail_closed", 1.0f, "bool");
+}
+
+void test_fault_imu_silence_policy(RegressionTestReport *report)
+{
+    HealthPolicyInput in{};
+    in.imu_silence_ms = HEALTH_POLICY_IMU_SILENCE_DEGRADE_MS;
+    const HealthPolicyDecision d = health_policy_evaluate(&in);
+    expect_true(d.level == HEALTH_POLICY_DEGRADED, "IMU silence → DEGRADED");
+    expect_true(d.imu_should_degrade, "imu_should_degrade");
+    expect_true(
+        d.primary_event != nullptr && std::strcmp(d.primary_event, "imu_silence") == 0,
+        "primary_event imu_silence");
+    add_simple_metric(report, "imu_silence_ms", static_cast<float>(in.imu_silence_ms), "ms");
+}
+
+void test_fault_uart_overflow_and_power(RegressionTestReport *report)
+{
+    HealthPolicyInput uart{};
+    uart.uart0_overflows_in_window =
+        static_cast<uint16_t>(HEALTH_POLICY_UART_OVERFLOW_PER_S_MAX + 1U);
+    const HealthPolicyDecision d_uart = health_policy_evaluate(&uart);
+    expect_true(d_uart.level == HEALTH_POLICY_DEGRADED, "UART overflow rate → DEGRADED");
+    expect_true(d_uart.imu_should_degrade, "UART0 overflow degrades IMU");
+
+    HealthPolicyInput pwr{};
+    pwr.power_offline = true;
+    const HealthPolicyDecision d_pwr = health_policy_evaluate(&pwr);
+    expect_true(d_pwr.level == HEALTH_POLICY_CRITICAL, "power cut → CRITICAL");
+
+    HealthPolicyInput starve{};
+    starve.task_idle_us = 40000U;
+    starve.task_max_idle_us = 30000U;
+    const HealthPolicyDecision d_st = health_policy_evaluate(&starve);
+    expect_true(d_st.level == HEALTH_POLICY_CRITICAL, "task starvation → CRITICAL");
+    expect_true(d_st.controlled_restart, "starvation requests controlled restart");
+    add_simple_metric(report, "fault_policy", 1.0f, "bool");
 }
 
 void test_nhc_enabled_predict_increments_counter(RegressionTestReport *report)
@@ -965,6 +1043,9 @@ int run_regression_suite_safety_inject()
     run_test("waypoint_full_ingest_reject", test_waypoint_buffer_full_and_ingest_reject);
     run_test("time_guard_wcet", test_time_guard_wcet_violation);
     run_test("geometry_guard_discontinuity", test_geometry_guard_discontinuity);
+    run_test("nmea_ubx_corrupt_wire", test_nmea_ubx_corrupt_wire_fail_closed);
+    run_test("fault_imu_silence_policy", test_fault_imu_silence_policy);
+    run_test("fault_uart_overflow_and_power", test_fault_uart_overflow_and_power);
 
     std::printf("====================================\n");
     (void)export_regression_report_json();

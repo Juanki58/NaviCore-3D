@@ -13,8 +13,13 @@
 | A2 | Detección de **inconsistencia** (reglas / gate) | **Hecho (v1)** | `reject_reason=3`; gap corto; test SW spoof. **No** bloquea B-Ambiq |
 | A2b | Spoof / inconsistencia **on-device ligero** (reglas→modelo) | Más tarde | Ideal en **Apollo4** (edge AI); no sustituye A2 v1 |
 | A3 | Perfiles de dominio configurables (Q/R tierra/aire/mar) | Pendiente | Núcleo unificado + tuning por vertical |
-| A4 | Suite de tests formal + spoof + properties | **Parcial** | Catch2 + **RapidCheck** (`test_properties_rapidcheck.cpp`) + `--safety-inject`; MC/NHC = campañas |
+| A4 | Suite de tests formal + spoof + properties | **Parcial** | Catch2 + RapidCheck + `--safety-inject` (wire + fault policy); MC/NHC = campañas |
 | A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Parcial** | Baseline + CI [code-audit.yml](../.github/workflows/code-audit.yml) |
+| A6 | Fuzzing parsers NMEA/UBX/WT61C (libFuzzer) | **Hecho (v1)** | Core host-linkable; CI smoke 60 s; corpus `tests/fuzz/corpus/` |
+| A7 | Fault injection policy (host) + lab protocol | **Parcial** | `health_policy` + inject tests; banco: [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) |
+| A8 | Matriz NavMode documentada + tests | **Hecho (v1)** | [NAV_MODE_DEGRADATION.md](NAV_MODE_DEGRADATION.md) + `nav_mode_select` |
+| A9 | WDT externo independiente del die | **API lista** | `bsp_ext_wdt` + GP15; activar `PICO2_EXT_WDT_ENABLE` al soldar TPL5010 |
+| A10 | IMU vigilante (cross-check) | **API lista** | `imu_cross_check` + MPU-6050 opcional I2C0 |
 
 ### Spoofing — solo software
 
@@ -38,6 +43,7 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 | B2 | Vibración real (vehículo/dron) | Pendiente | El sintético no sustituye |
 | B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** | Baseline obligatorio antes de comparar Ambiq |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
+| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Protocolo listo | [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) — registrar artefactos |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 

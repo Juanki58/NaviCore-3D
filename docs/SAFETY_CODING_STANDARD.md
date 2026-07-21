@@ -43,5 +43,7 @@ See [`docs/benchmarks/static_analysis/`](benchmarks/static_analysis/) for publis
 
 1. Keep zero-heap invariants (`static_assert` / fixed sizes).  
 2. Prefer fail-closed: reject measurement / trip guard rather than silent NaN propagation.  
-3. Add a regression or inject path for new error branches (NaN sensor, WCET trip, buffer full) — extend `run_regression_suite_safety_inject()`.  
-4. Re-run `navicore_regression_test --safety-inject` and static analysis before claiming the change is “safety-clean”.
+3. Add a regression or inject path for new error branches (NaN sensor, WCET trip, buffer full, sensor silence) — extend `run_regression_suite_safety_inject()`.  
+4. Wire-format parsers (NMEA / UBX / WT61C) stay in host-linkable `src/core/*_parser.*` and must survive `navicore_sensor_wire_fuzz` / corpus smoke without overflow or UB.  
+5. Re-run `--safety-inject`, unit `[fault]/[nmea]`, and static analysis before claiming the change is “safety-clean”.  
+6. On-target reactions (IMU unplug, UART flood, power cut): follow [`FAULT_INJECTION_LAB.md`](FAULT_INJECTION_LAB.md) — host policy tests are necessary but not sufficient.

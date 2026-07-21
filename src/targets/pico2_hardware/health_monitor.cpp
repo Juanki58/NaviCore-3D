@@ -76,6 +76,21 @@ constexpr HealthPolicyDescriptor k_policy_table[] = {
         HealthPolicyRecovery::Permanent,
         SystemHealth::CRITICAL,
     },
+    {
+        "imu_silence",
+        HealthPolicyRecovery::Recoverable,
+        SystemHealth::DEGRADED,
+    },
+    {
+        "imu_cross_check_fail",
+        HealthPolicyRecovery::Recoverable,
+        SystemHealth::DEGRADED,
+    },
+    {
+        "uart_frame_timeout",
+        HealthPolicyRecovery::Recoverable,
+        SystemHealth::DEGRADED,
+    },
 };
 
 struct RateWindow {

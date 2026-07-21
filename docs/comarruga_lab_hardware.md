@@ -14,8 +14,10 @@ Este documento describe el hardware del banco Comarruga, la arquitectura de tiem
 |------------|------------|----------|-------|
 | **MCU** | Raspberry Pi Pico 2 W (RP2350) | USB stdio + CYW43439 Wi-Fi | Dual Cortex-M33 @ 150 MHz |
 | **Energía** | Waveshare UPS Module | I2C1 @ 100 kHz, addr `0x43` | Celdas AVESO 14500; monitoreo de batería |
-| **IMU / AHRS** | WitMotion WT61C-232 | UART0 @ 115200 8N1 | Filtro de Kalman integrado en el módulo |
+| **IMU / AHRS (primario)** | WitMotion WT61C-232 | UART0 @ 115200 8N1 | Filtro de Kalman integrado en el módulo |
+| **IMU vigilante (opcional)** | MPU-6050 / compatible | I2C0 GP8/GP9 @ 0x68 | Solo cross-check (`PICO2_SECONDARY_IMU_ENABLE`) |
 | **GNSS** | u-blox NEO-M9N | UART1 @ 115200 8N1 | GPS+GLONASS+Galileo+BeiDou concurrentes |
+| **WDT externo (recomendado)** | TPL5010 o MAX6822 | GP15 DONE/WDI | Independiente del die RP2350 (`PICO2_EXT_WDT_ENABLE`) |
 
 ### Instrumentación de banco
 
@@ -35,6 +37,8 @@ Este documento describe el hardware del banco Comarruga, la arquitectura de tiem
 | WT61C-232 | UART0 | GP0 | GP1 | 115200 |
 | NEO-M9N | UART1 | GP4 → RX GNSS | GP5 ← TX GNSS | 115200 |
 | Waveshare UPS | I2C1 | GP6 (SDA) | GP7 (SCL) | 100 kHz @ `0x43` |
+| IMU vigilante (opcional) | I2C0 | GP8 (SDA) | GP9 (SCL) | 400 kHz @ `0x68` |
+| WDT externo (opcional) | GPIO | **GP15** | — | Pulso DONE/WDI fin de loop sano |
 | **Benchmark tick** | GPIO salida | **GP22** | — | Pulso HIGH = `pico2_bsp_sensors_tick()` |
 | **Benchmark Wi-Fi** | GPIO salida | **GP21** | — | Pulso HIGH = `cyw43_arch_poll()` |
 
@@ -70,7 +74,7 @@ Cada iteración del `while(true)` ejecuta, en este orden:
 4. **GP21 ↑** → `cyw43_arch_poll()` → **GP21 ↓** (omitido si sin presupuesto o `health_monitor` deshabilitó Wi-Fi)
 5. `loop_metrics_sync_uart_overflows()` + `safe_log_flush_pending()` (máx. 256 B/ciclo)
 6. `loop_metrics_on_loop_complete()` + `health_monitor_on_loop_complete()`
-7. `watchdog_update()` — alimenta WDT de 50 ms **solo si el ciclo terminó**
+7. `watchdog_update()` + `pico2_bsp_ext_wdt_kick()` — WDT on-chip **y** supervisor externo (si `PICO2_EXT_WDT_ENABLE`) **solo** al final sano del ciclo (no desde recovery I2C)
 8. `__wfi()` si no hay tick pendiente y los sensores permiten dormir
 
 ### Invariantes de diseño

@@ -5,7 +5,6 @@
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
-#include "hardware/watchdog.h"
 #include "pico/error.h"
 #include "pico/stdlib.h"
 #include "pico/time.h"
@@ -132,7 +131,7 @@ void power_handle_i2c_failure(void)
     }
 
     if (g_i2c_fail_streak >= PICO2_I2C_RECOVER_AFTER) {
-        watchdog_update();
+        /* Do NOT pet the WDT here — a stuck recovery must trip on-chip / external WDT. */
         power_begin_recovery();
         return;
     }
@@ -162,7 +161,7 @@ void power_state_recovery_pulse(void)
     busy_wait_us(PICO2_I2C_RECOVERY_SCL_LOW_US);
     gpio_put(PICO2_POWER_I2C_SCL_PIN, 1U);
     busy_wait_us(PICO2_I2C_RECOVERY_SCL_HIGH_US);
-    watchdog_update();
+    /* No watchdog_update in recovery — pulse budget ≪ PICO2_WDT_TIMEOUT_MS. */
 
     if (power_i2c_sda_released()) {
         g_recovery_sda_released = true;

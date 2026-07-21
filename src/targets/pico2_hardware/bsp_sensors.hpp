@@ -9,6 +9,7 @@
 typedef struct {
     bool imu_degraded;
     bool gnss_degraded;
+    bool imu_cross_fail; /* vigilante vs primary disagreement */
 } SensorConfidenceFlags;
 
 bool pico2_bsp_sensors_init(void);

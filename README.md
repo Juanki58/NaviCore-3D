@@ -19,21 +19,22 @@
 2. [Positioning — GPS-denied resilience](#positioning--gps-denied--pnt-resilience)
 3. [Executive summary](#executive-summary--resumen-ejecutivo)
 4. [Evidence — published results](#evidence--published-results)
-5. [Fusion algorithm (audit)](#fusion-algorithm--what-it-is--what-it-is-not)
-6. [What validates the real firmware](#what-validates-the-real-firmware--pico-2-w)
-7. [Power — measure before more hardware](#power--measure-before-more-hardware-ppk2)
-8. [Repository layout](#repository-layout--estructura)
-9. [Architecture](#architecture--arquitectura)
-10. [Build](#build--compilar)
-11. [Run simulator](#run-simulator--ejecutar-simulador)
-12. [Real-run replay pipeline](#real-run-replay-pipeline)
-13. [EKF diagnostics (H0–H9d, GAP-1…5)](#ekf-diagnostics-real-run)
-14. [Calibration](#calibration--calibración)
-15. [Python tooling](#python-tooling)
-16. [Validated stress scenarios](#validated-stress-scenarios)
-17. [Digital Twin / telemetry](#digital-twin--telemetry)
-18. [Roadmap](#roadmap)
-19. [License](#license--author)
+5. [NavMode degradation matrix](#navmode-degradation-matrix)
+6. [Fusion algorithm (audit)](#fusion-algorithm--what-it-is--what-it-is-not)
+7. [What validates the real firmware](#what-validates-the-real-firmware--pico-2-w)
+8. [Power — measure before more hardware](#power--measure-before-more-hardware-ppk2)
+9. [Repository layout](#repository-layout--estructura)
+10. [Architecture](#architecture--arquitectura)
+11. [Build](#build--compilar)
+12. [Run simulator](#run-simulator--ejecutar-simulador)
+13. [Real-run replay pipeline](#real-run-replay-pipeline)
+14. [EKF diagnostics (H0–H9d, GAP-1…5)](#ekf-diagnostics-real-run)
+15. [Calibration](#calibration--calibración)
+16. [Python tooling](#python-tooling)
+17. [Validated stress scenarios](#validated-stress-scenarios)
+18. [Digital Twin / telemetry](#digital-twin--telemetry)
+19. [Roadmap](#roadmap)
+20. [License](#license--author)
 
 ---
 
@@ -106,7 +107,7 @@ Volume and urgency sit in that middle band: enough GNSS dependency to hurt when 
 
 | Mechanism | Where | Role |
 |-----------|--------|------|
-| Mode `GPS` → `HYBRID` → `DEAD_RECKONING` | `NavMode` / fusion + EKF export | Coast when fix is weak or rejected |
+| Mode `GPS` → `HYBRID` → `DEAD_RECKONING` | `nav_mode_select` / EKF export | Coast when fix is weak or rejected — **full matrix:** [NAV_MODE_DEGRADATION.md](docs/NAV_MODE_DEGRADATION.md) |
 | `estimate_quality` + fix age | `NavConfidence` | Degraded trust for mission / guards |
 | GNSS NIS reject / accept | ESKF update | Integrity vs inconsistent innovation |
 | INS predict without GNSS | ESKF @ ~100 Hz | Dead reckoning backbone |
@@ -264,6 +265,9 @@ Fail-closed paths exercised by `navicore_regression_test --safety-inject` (CI + 
 | `waypoint_full_ingest_reject` | Radio `ADD_WAYPOINT` rejected at 64/64 (no silent overwrite) |
 | `time_guard_wcet` | Over-budget ticks → `TIME_GUARD_ERROR_WCET` + health penalty |
 | `geometry_guard_discontinuity` | Step ≫ 150 m → `GEOMETRY_ERROR_DISCONTINUITY` |
+| `nmea_ubx_corrupt_wire` | NMEA assembler / UBX oversize / WT61C noise → fail-closed (no bogus sample) |
+| `fault_imu_silence_policy` | IMU silence ≥ 200 ms → `DEGRADED` + `imu_should_degrade` (host mirror of Pico) |
+| `fault_uart_overflow_and_power` | UART overflow rate → degrade; power offline / task starvation → **CRITICAL** |
 | (+ gravity, spoof) | Smoke of core ESKF + consistency gate |
 
 ```powershell
@@ -271,6 +275,29 @@ Fail-closed paths exercised by `navicore_regression_test --safety-inject` (CI + 
 ```
 
 Full suite (includes legacy NHC/TC benchmarks that may still FAIL): omit the flag.
+
+### Sensor wire fuzzing (NMEA / UBX / WT61C)
+
+Parsers live in host-buildable core (`nmea_parser`, `ubx_parser`, `wt61c_parser`) — same code Pico BSP calls. libFuzzer (Clang) + ASan/UBSan hunt overflows / UB on corrupt frames; seed corpus in `tests/fuzz/corpus/`.
+
+```bash
+# Linux / CI (Clang)
+cmake -S . -B build_fuzz -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DNAVICORE_BUILD_FUZZERS=ON
+cmake --build build_fuzz --target navicore_sensor_wire_fuzz
+./build_fuzz/navicore_sensor_wire_fuzz tests/fuzz/corpus -max_total_time=60
+
+# Windows / AFL-style: corpus or stdin driver (no libFuzzer runtime)
+cmake -S . -B build -DNAVICORE_BUILD_FUZZERS=ON
+cmake --build build --target navicore_sensor_wire_fuzz_standalone
+.\build\navicore_sensor_wire_fuzz_standalone.exe tests\fuzz\corpus\nmea_valid_gga
+```
+
+CI job: `sensor-wire-fuzz` in [code-audit.yml](.github/workflows/code-audit.yml).
+
+### Hardware fault injection (lab)
+
+Host tests assert **policy**. On-target checklist (unplug IMU, UART flood, UPS/I2C, hard power cut, WDT):  
+[`docs/FAULT_INJECTION_LAB.md`](docs/FAULT_INJECTION_LAB.md). Pico now treats IMU silence ≥ `PICO2_IMU_SILENCE_DEGRADE_MS` as `imu_degraded`.
 
 ### Code audit (A5) — baseline + CI
 
@@ -281,7 +308,8 @@ Full suite (includes legacy NHC/TC benchmarks that may still FAIL): omit the fla
 | gcov (`navicore_regression_test`) | **~50%** line cover on linked ESKF TUs (pre–inject expansion); re-run after `--safety-inject` links guards |
 | clang-tidy | `.clang-tidy` + **CI job** (Ubuntu/Clang) |
 | ASan + UBSan | **CI job** builds with Clang `-fsanitize=address,undefined` and runs `--safety-inject` |
-| Catch2 + RapidCheck | **CI job** `navicore_unit_tests` — units + properties (fix-age quality, quat, invert, EKF jump) |
+| Catch2 + RapidCheck | **CI job** `navicore_unit_tests` — units + properties + wire/health |
+| libFuzzer (NMEA/UBX/WT61C) | **CI job** `sensor-wire-fuzz` — 60 s smoke on corpus |
 | Workflow | [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) |
 | Runner (local) | `python tools/run_static_analysis.py --cppcheck` · `--clang-tidy` · `--coverage-build` |
 
@@ -292,7 +320,7 @@ Full suite (includes legacy NHC/TC benchmarks that may still FAIL): omit the fla
 | PPK2 current on Pico 2 W | “Ultra-low power” stays architectural until measured |
 | Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware |
 | Allan fit from hours of static IMU | Replace Q folklore with IEEE numbers |
-| Error-path cover beyond inject suite | More WCET/starvation / Pico health_monitor on-target |
+| Logged lab fault-injection campaign | Host policy covered; fill `docs/benchmarks/fault_injection/` after bank run |
 | Field + PPK2 artefacts published | Coast curve + mA/mW table still empty — needed before “going viral” |
 
 ### Diagnostic campaign (real-run)
@@ -305,6 +333,37 @@ Full suite (includes legacy NHC/TC benchmarks that may still FAIL): omit the fla
 | Attitude snapshot (static 0–2 s) | EKF↔Orientation **0.05°**, gravity **0.09°** |
 
 Full map: [EKF diagnostics](#ekf-diagnostics-real-run).
+
+---
+
+## NavMode degradation matrix
+
+Integrator-facing contract (transitions + honest precision envelopes):  
+**[`docs/NAV_MODE_DEGRADATION.md`](docs/NAV_MODE_DEGRADATION.md)**
+
+| Mode | When (EKF / Pico) | Trust sketch |
+|------|-------------------|--------------|
+| `HYBRID` | Fix valid **and** GNSS accept ≤ 2 s | Highest — INS+GNSS; quality `0.55+0.03×sats` ∈ [0.55, 0.95] |
+| `GPS` | Fix valid, accept **stale** (> 2 s) | Weak GNSS — quality 0.65; do not treat as fresh hybrid |
+| `DEAD_RECKONING` | No fix **or** GNSS outlier | Coast; quality from fix age (or 0.25 on outlier). Lab: ~13 m @ 30 s synthetic; phone v2 coast tens–~110 m |
+| `INITIALIZING` | Not seeded | Do not steer |
+
+Overlays (halve quality, may not change mode): IMU silence, UART overflow, **IMU vigilante cross-check**, GNSS degrade.
+
+Tests: `navicore_unit_tests "[navmode],[imu_cross]"`.
+
+### Watchdogs (on-chip + external)
+
+| Layer | What | Independence |
+|-------|------|----------------|
+| RP2350 `hardware/watchdog` | On-chip HW WDT, 50 ms, kick **end-of-loop only** | Same silicon as firmware — not a software timer, but **not** die-independent |
+| External supervisor (TPL5010 / MAX6822) | Optional pulse on **GP15** (`PICO2_EXT_WDT_ENABLE`) | **Independent** of the MCU die — use this for true hang survival |
+
+I2C UPS recovery **no longer** pets the WDT (a stuck recovery must trip).
+
+### Dual-IMU vigilante
+
+Optional MPU-6050 on I2C0 (GP8/9): compares with WT61C; on disagreement sets `imu_cross_fail` and halves quality — **does not** replace the primary in the EKF. Enable `PICO2_SECONDARY_IMU_ENABLE`.
 
 ---
 
@@ -620,7 +679,8 @@ cmake --build build
 | `NaviCore3D_VehicleDemo` | `build\NaviCore3D_VehicleDemo.exe` | CAN vehicle-bus demo + HMI |
 | `NaviCore3D_Replay` | `build\NaviCore3D_Replay.exe` | Real-run EKF replay + audit hooks |
 | `navicore_regression_test` | `build\navicore_regression_test.exe` | C++ regression / `--safety-inject` |
-| `navicore_unit_tests` | `build\navicore_unit_tests.exe` | Catch2 + RapidCheck (NavState / math / fusion / properties) |
+| `navicore_unit_tests` | `build\navicore_unit_tests.exe` | Catch2 + RapidCheck (NavState / math / fusion / wire / health) |
+| `navicore_sensor_wire_fuzz(_standalone)` | optional `-DNAVICORE_BUILD_FUZZERS=ON` | libFuzzer or corpus/stdin driver |
 | `ring_stress_test` | `build\ring_stress_test.exe` | Host SPSC UART stress (S7 campaign) |
 
 Build a single target:
@@ -1016,7 +1076,7 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 
 | Phase | Target |
 |-------|--------|
-| **Done** | Zero-heap ESKF · evidence · spoof · safety-inject · cppcheck · **Catch2+RapidCheck** · CI code-audit |
+| **Done** | ESKF · evidence · spoof · fuzz · fault-policy · **NavMode matrix** · ext-WDT API · IMU vigilante API · CI |
 | **Now** | A3 domain Q/R profiles · expand error-path cover · harden cppcheck findings |
 | **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
 | **Also pending** | Allan publish from static IMU hours · WCET S0–S7 on-board (protocol ready) |

@@ -71,6 +71,31 @@ jobs:
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: ./build_asan/navicore_regression_test --safety-inject
 
+  sensor-wire-fuzz:
+    name: libFuzzer NMEA/UBX/WT61C (smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Clang
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build
+      - name: Configure fuzzers
+        run: |
+          cmake -S . -B build_fuzz -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DNAVICORE_BUILD_FUZZERS=ON \
+            -DNAVICORE_BUILD_UNIT_TESTS=OFF \
+            -DNAVICORE_ENABLE_SANITIZERS=OFF
+      - name: Build libFuzzer target
+        run: cmake --build build_fuzz --target navicore_sensor_wire_fuzz -j $(nproc)
+      - name: Corpus + short fuzz (60s)
+        env:
+          ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          ./build_fuzz/navicore_sensor_wire_fuzz tests/fuzz/corpus \
+            -max_total_time=60 -max_len=4096 -rss_limit_mb=2048
+
   unit-tests:
     name: Catch2 + RapidCheck unit/property tests
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 {
   "suite": "NaviCore-3D",
-  "generated_at": "2026-07-21T21:56:37",
+  "generated_at": "2026-07-21T23:12:50",
   "result": "OK",
   "failure_count": 0,
   "tests": [
@@ -44,6 +44,27 @@
       "passed": true,
       "metrics": {
         "geom_step_m": { "value": 1111.142944, "unit": "m" }
+      }
+    },
+    {
+      "name": "nmea_ubx_corrupt_wire",
+      "passed": true,
+      "metrics": {
+        "wire_fail_closed": { "value": 1.000000, "unit": "bool" }
+      }
+    },
+    {
+      "name": "fault_imu_silence_policy",
+      "passed": true,
+      "metrics": {
+        "imu_silence_ms": { "value": 200.000000, "unit": "ms" }
+      }
+    },
+    {
+      "name": "fault_uart_overflow_and_power",
+      "passed": true,
+      "metrics": {
+        "fault_policy": { "value": 1.000000, "unit": "bool" }
       }
     }
   ]

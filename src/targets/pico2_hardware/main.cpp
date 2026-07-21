@@ -4,6 +4,7 @@
  */
 #include "bsp_sensors.hpp"
 #include "bsp_power.hpp"
+#include "bsp_ext_wdt.hpp"
 #include "health_monitor.hpp"
 #include "hw_config.hpp"
 #include "loop_metrics.hpp"
@@ -102,6 +103,15 @@ int main()
     add_repeating_timer_ms(-static_cast<int64_t>(PICO2_NAV_TICK_MS), repeating_timer_callback, nullptr, &timer);
 
     watchdog_enable(PICO2_WDT_TIMEOUT_MS, true);
+    if (pico2_bsp_ext_wdt_init()) {
+        printf("External HW WDT supervisor armed on GP%u (kick end-of-loop only)\n", PICO2_EXT_WDT_GPIO);
+    } else {
+        printf(
+            "MCU on-chip WDT %u ms armed; external supervisor disabled "
+            "(set PICO2_EXT_WDT_ENABLE=1 + TPL5010/MAX6822 on GP%u)\n",
+            PICO2_WDT_TIMEOUT_MS,
+            PICO2_EXT_WDT_GPIO);
+    }
 
     gpio_init(PICO2_GPIO_BENCHMARK);
     gpio_set_dir(PICO2_GPIO_BENCHMARK, GPIO_OUT);
@@ -239,7 +249,10 @@ int main()
 
         loop_metrics_report_due();
 
+        /* On-chip RP2350 WDT + optional external supervisor (independent die).
+         * Kick ONLY here — never from I2C recovery — so a hung path cannot pet. */
         watchdog_update();
+        pico2_bsp_ext_wdt_kick();
 
         if (g_tick_ready.load(std::memory_order_acquire) == 0U
             && pico2_bsp_sensors_can_sleep()) {

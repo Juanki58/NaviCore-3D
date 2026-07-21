@@ -1,0 +1,22 @@
+---
+description: Always document completed work and push it to GitHub
+alwaysApply: true
+---
+
+# Ship + document every change
+
+When a task produces meaningful code, tests, tools, evidence, or docs:
+
+1. **Document** in the right place before considering the work done:
+   - User-facing / integrator: `README.md` (Evidence, Build, Roadmap table as needed)
+   - Priorities / status: `docs/ROADMAP_PNT_RESILIENCE.md`
+   - Lab / fault / modes: dedicated docs under `docs/` when that is the subject
+   - Do not leave banked rigor or new capabilities only in chat or buried in code
+
+2. **Commit** with a clear message (why, not only what).
+
+3. **Push** to `origin` (`git push -u origin HEAD`) in the same turn unless the user explicitly says not to push yet.
+
+4. If push needs approval / network, request it — do not stop at a local-only commit when the user expects GitHub to be current.
+
+Exception: pure Q&A or exploration with no repo changes — no commit/push required.

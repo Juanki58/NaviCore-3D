@@ -408,6 +408,9 @@ void TelemetryInterface::broadcast_logger(const NavState &state, MissionState mi
         fwd_accel = pid->forward_accel_mps2;
         yaw_rate = pid->yaw_rate_radps;
         vert_accel = pid->vertical_accel_mps2;
+    } else if (bindings_ != NULL && bindings_->measured_yaw_rate_valid) {
+        /* Escenarios EKF-only (SLALOM): ω medido del IMU, no plant PID. */
+        yaw_rate = bindings_->measured_yaw_rate_radps;
     }
 
     fprintf(

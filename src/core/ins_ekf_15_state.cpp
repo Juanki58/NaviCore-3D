@@ -16,13 +16,19 @@ constexpr float kRadToDegF = 180.0f / static_cast<float>(M_PI);
 
 } /* namespace */
 
-InsEkf15State::InsEkf15State()
-    : timestamp_s_(0.0)
+InsEkf15State::InsEkf15State(InsEkfCoreVersion core)
+    : core_(core)
+    , timestamp_s_(0.0)
     , run_zupt_after_predict_(false)
     , pending_lateral_std_mps_(NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS)
     , pending_vertical_std_mps_(NAVICORE_INS_EKF_NHC_VERTICAL_STD_MPS)
 {
     std::memset(&ekf_, 0, sizeof(ekf_));
+}
+
+InsEkfCoreVersion InsEkf15State::core_version() const
+{
+    return core_;
 }
 
 void InsEkf15State::sync_timestamp_from_ms(uint32_t t_ms)
@@ -73,6 +79,14 @@ bool InsEkf15State::seed_from_gnss_sample(const GpsSample &gps, NavDomain domain
         return false;
     }
 
+    if (core_ == INS_EKF_CORE_V2) {
+        if (!ins_ekf_v2_seed_from_gnss(&ekf_, &gps, domain)) {
+            return false;
+        }
+        sync_timestamp_from_ms(gps.timestamp_ms);
+        return true;
+    }
+
     const float yaw_rad = static_cast<float>(gps.course_deg * M_PI / 180.0);
     ins_ekf_init(&ekf_, gps.position, yaw_rad, domain);
     ins_ekf_set_nhc_enabled(&ekf_, false);
@@ -86,13 +100,13 @@ bool InsEkf15State::seed_from_gnss_sample(const GpsSample &gps, NavDomain domain
     return true;
 }
 
-bool InsEkf15State::seed_from_ned_fix(const double pos_ned_m[3], NavDomain domain)
+bool InsEkf15State::seed_from_ned_pos(const double pos_ned_m[3], NavDomain domain)
 {
     const double barcelona_ref_deg[3] = {41.3874, 2.1686, 12.0};
-    return seed_from_ned_fix(pos_ned_m, barcelona_ref_deg, domain);
+    return seed_from_ned_pos(pos_ned_m, barcelona_ref_deg, domain);
 }
 
-bool InsEkf15State::seed_from_ned_fix(
+bool InsEkf15State::seed_from_ned_pos(
     const double pos_ned_m[3],
     const double ref_lla_deg[3],
     NavDomain domain)
@@ -121,6 +135,20 @@ bool InsEkf15State::seed_from_ned_fix(
     ekf_.cov.P[INS_ERR_ATT_Z][INS_ERR_ATT_Z] = NAVICORE_INS_EKF_INIT_ATT_YAW_VAR_RAD2;
 
     return true;
+}
+
+void InsEkf15State::set_velocity_ned_from_speed_course(float speed_mps, float course_deg)
+{
+    if (!ekf_.initialized) {
+        return;
+    }
+    if (!(speed_mps >= 0.0f) || !std::isfinite(speed_mps) || !std::isfinite(course_deg)) {
+        return;
+    }
+    const float course_rad = course_deg * static_cast<float>(M_PI) / 180.0f;
+    ekf_.vel_[0] = speed_mps * std::cos(course_rad);
+    ekf_.vel_[1] = speed_mps * std::sin(course_rad);
+    ekf_.vel_[2] = 0.0f;
 }
 
 void InsEkf15State::sync_simulation_clock_ms(uint32_t t_ms)
@@ -166,7 +194,13 @@ void InsEkf15State::predict(
     imu.gyro_radps[1] = gyro_rads[1];
     imu.gyro_radps[2] = gyro_rads[2];
 
-    (void)ins_ekf_predict(&ekf_, &imu);
+    if (core_ == INS_EKF_CORE_V2) {
+        (void)ins_ekf_v2_predict(&ekf_, &imu);
+        /* NHC state-triggered (doc 17): solo con gap GNSS, nunca ALWAYS en predict. */
+        (void)ins_ekf_v2_maybe_update_nhc(&ekf_, imu.timestamp_ms);
+    } else {
+        (void)ins_ekf_predict(&ekf_, &imu);
+    }
 
     if (run_zupt_after_predict_) {
         const float vel_before_zupt[3] = {
@@ -224,7 +258,11 @@ void InsEkf15State::update_gnss(const double pos_ned_m[3], const float std_dev_m
         ekf_.gnss_pos_var_m2 = std_dev_m[0] * std_dev_m[0];
     }
 
-    (void)ins_ekf_update_gnss(&ekf_, &gps);
+    if (core_ == INS_EKF_CORE_V2) {
+        (void)ins_ekf_v2_update_gnss(&ekf_, &gps);
+    } else {
+        (void)ins_ekf_update_gnss(&ekf_, &gps);
+    }
 }
 
 void InsEkf15State::update_gnss_with_velocity(
@@ -264,7 +302,11 @@ void InsEkf15State::update_gnss_with_velocity(
         ekf_.gnss_pos_var_m2 = std_dev_m[0] * std_dev_m[0];
     }
 
-    (void)ins_ekf_update_gnss(&ekf_, &gps);
+    if (core_ == INS_EKF_CORE_V2) {
+        (void)ins_ekf_v2_update_gnss(&ekf_, &gps);
+    } else {
+        (void)ins_ekf_update_gnss(&ekf_, &gps);
+    }
 }
 
 bool InsEkf15State::update_gnss_from_sample(const GpsSample &gps)
@@ -273,6 +315,9 @@ bool InsEkf15State::update_gnss_from_sample(const GpsSample &gps)
         return false;
     }
 
+    if (core_ == INS_EKF_CORE_V2) {
+        return ins_ekf_v2_update_gnss(&ekf_, &gps);
+    }
     return ins_ekf_update_gnss(&ekf_, &gps);
 }
 
@@ -290,6 +335,7 @@ void InsEkf15State::apply_constraints(
     ekf_.nhc_lateral_var_m2 = lateral_std_mps * lateral_std_mps;
     ekf_.nhc_vertical_var_m2 = vertical_std_mps * vertical_std_mps;
 
+    /* v2: armar flag NHC solo si el harness pide σ>0; el disparo real es por gap GNSS. */
     const bool enable_nhc = (lateral_std_mps > 0.0f);
     ins_ekf_set_nhc_enabled(&ekf_, enable_nhc);
     run_zupt_after_predict_ = is_stopping;
@@ -333,12 +379,20 @@ NaviState InsEkf15State::get_state() const
 
 std::string InsEkf15State::get_filter_name() const
 {
+    if (core_ == INS_EKF_CORE_V2) {
+        return "InsEkf15State_v2";
+    }
     return "InsEkf15State";
 }
 
 std::unique_ptr<INaviFilter> create_default_navi_filter()
 {
-    return std::make_unique<InsEkf15State>();
+    return create_navi_filter(INS_EKF_CORE_V1);
+}
+
+std::unique_ptr<INaviFilter> create_navi_filter(InsEkfCoreVersion core)
+{
+    return std::make_unique<InsEkf15State>(core);
 }
 
 const InsEkfFilter *navi_filter_try_get_ins_ekf(const INaviFilter *filter)

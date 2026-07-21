@@ -1,0 +1,110 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md",
+  "timestamp": "2026-07-19T00:04:20+02:00",
+  "seed": 71,
+  "jacobian": "correct_current_bf2bfbd_sign",
+  "arm_a": {
+    "arm": "A_ideal",
+    "imu_mode": "ideal",
+    "seed": 71,
+    "scenarios": {
+      "SLALOM": {
+        "passed": false,
+        "error": null,
+        "csv": "C:\\NaviCore-3D\\docs\\benchmarks\\slalom_ab_ideal_s71_telemetry.csv",
+        "metrics": {
+          "max_lateral_drift": {
+            "passed": false,
+            "measured": 53.999,
+            "limit": 0.15,
+            "unit": "m"
+          }
+        }
+      },
+      "TUNNEL_STRESS": {
+        "passed": false,
+        "error": null,
+        "csv": "C:\\NaviCore-3D\\docs\\benchmarks\\tunnel_stress_ab_ideal_s71_telemetry.csv",
+        "metrics": {
+          "tunnel_exit_drift": {
+            "passed": false,
+            "measured": 152.09,
+            "limit": 15.0,
+            "unit": "m"
+          },
+          "zupt_residual_speed": {
+            "passed": false,
+            "measured": 2.266,
+            "limit": 0.01,
+            "unit": "m/s"
+          },
+          "gps_glitch_rejection": {
+            "passed": true,
+            "measured": "rejections=1, nis_peak=15684.64",
+            "limit": "rejections=1, nis>11.345, gnss=REJ",
+            "unit": ""
+          },
+          "gps_recovery_time": {
+            "passed": false,
+            "measured": "TIMEOUT",
+            "limit": "convergencia < 1.0 m antes de t=45 s",
+            "unit": "s"
+          }
+        }
+      }
+    },
+    "overall_pass": false
+  },
+  "arm_b": {
+    "arm": "B_dirty",
+    "imu_mode": "dirty",
+    "seed": 71,
+    "scenarios": {
+      "TUNNEL_STRESS": {
+        "passed": false,
+        "error": null,
+        "csv": "C:\\NaviCore-3D\\docs\\benchmarks\\tunnel_stress_ab_dirty_s71_telemetry.csv",
+        "metrics": {
+          "tunnel_exit_drift": {
+            "passed": false,
+            "measured": 487.1,
+            "limit": 15.0,
+            "unit": "m"
+          },
+          "zupt_residual_speed": {
+            "passed": false,
+            "measured": 1.241,
+            "limit": 0.01,
+            "unit": "m/s"
+          },
+          "gps_glitch_rejection": {
+            "passed": true,
+            "measured": "rejections=1, nis_peak=37002.89",
+            "limit": "rejections=1, nis>11.345, gnss=REJ",
+            "unit": ""
+          },
+          "gps_recovery_time": {
+            "passed": false,
+            "measured": "TIMEOUT",
+            "limit": "convergencia < 1.0 m antes de t=45 s",
+            "unit": "s"
+          }
+        }
+      }
+    },
+    "overall_pass": false
+  },
+  "verdict": {
+    "reading": "DEGRADATION_WITHOUT_DIRTY: ambos FAIL \u2014 la degradaci\u00f3n no requiere IMU dirty (Jacobiano u otros cambios post-cf4ff61 bastan; SLALOM ideal ya informa)",
+    "slalom_ideal_pass": false,
+    "tunnel_ideal_pass": false,
+    "tunnel_dirty_pass": false,
+    "note_slalom": "SLALOM siempre usa IMU cinematica ideal; un FAIL en A implica degradaci\u00f3n sin IEEE-952 dirty.",
+    "session_status": "NOT_CLOSED \u2014 E2E revela pregunta abierta que precede a todo lo construido despues de bf2bfbd; no escribir 'regresion E2E PASS/cerrada'.",
+    "historical_limits": {
+      "slalom_max_lateral_m": 0.15,
+      "tunnel_exit_m": 15.0,
+      "tunnel_zupt_speed_mps": 0.01
+    }
+  }
+}

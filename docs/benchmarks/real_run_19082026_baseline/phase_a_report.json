@@ -1,0 +1,48 @@
+{
+  "phase": "A",
+  "dataset": "G-ext",
+  "source_raw": "data\\real_run\\19082026",
+  "replay_csv": "docs\\benchmarks\\real_run_19082026_baseline\\real_run_replay.csv",
+  "n_rows_total": 67620,
+  "n_imu": 66939,
+  "n_gps": 681,
+  "n_location_raw": 681,
+  "timestamp_s_first": 0.002520832,
+  "timestamp_s_last": 677.121189888,
+  "duration_s": 677.118669056,
+  "imu_rate_hz": 98.85859459955891,
+  "gps_rate_hz": 1.0057321280912415,
+  "imu_dt_median_s": 0.010084607999999662,
+  "imu_dt_p99_s": 0.010085376000006363,
+  "gps_to_nearest_imu_dt_median_s": 0.002580736000027173,
+  "gps_to_nearest_imu_dt_p99_s": 0.004997324799978742,
+  "checks": {
+    "duration_ge_670s": true,
+    "imu_near_99hz": true,
+    "gps_near_1hz": true,
+    "gps_count_matches_location": true,
+    "sync_median_lt_20ms": true
+  },
+  "clean_gnss_windows_hAcc_le_5m_speed_ge_3mps": [
+    {
+      "n_fixes": 507,
+      "t_start_s": 44.46212060546875,
+      "t_end_s": 550.4623198242188,
+      "duration_s": 506.00019921875,
+      "hAcc_mean_m": 3.3773175454468887,
+      "speed_mean_mps": 16.357961587887072,
+      "speed_max_mps": 23.97112846374512
+    },
+    {
+      "n_fixes": 22,
+      "t_start_s": 17.462125244140626,
+      "t_end_s": 38.46212158203125,
+      "duration_s": 20.999996337890625,
+      "hAcc_mean_m": 1.7314545458013362,
+      "speed_mean_mps": 12.005404515699906,
+      "speed_max_mps": 15.987272262573242
+    }
+  ],
+  "longest_clean_gnss_window_s": 506.00019921875,
+  "phase_a_ok": true
+}

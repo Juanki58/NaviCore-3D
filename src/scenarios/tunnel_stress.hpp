@@ -65,16 +65,26 @@ TunnelStressPhase tunnel_stress_phase_at_ms(uint32_t t_ms);
 const char *tunnel_stress_phase_name(TunnelStressPhase phase);
 bool tunnel_stress_gps_outage_at_ms(uint32_t t_ms);
 
+/** Modo IMU del escenario (A/B Jacobiano × IEEE-952). */
+enum class TunnelStressImuMode : uint8_t {
+    DIRTY_FULL = 0, /**< IEEE-952 noise + scale/misalign + bias RW (default post-bf2bfbd). */
+    IDEAL = 1,      /**< Kinemática limpia; sin apply_measurement_model ni bias RW. */
+};
+
+const char *tunnel_stress_imu_mode_name(TunnelStressImuMode mode);
+
 class TunnelStressScenario {
 public:
     void run(
         TelemetryInterface *telemetry,
         TunnelStressNavEmitFn emit_nav = nullptr,
-        uint32_t seed = 71U);
+        uint32_t seed = 71U,
+        TunnelStressImuMode imu_mode = TunnelStressImuMode::DIRTY_FULL);
 };
 
 /** Punto de entrada del simulador (--scenario TUNNEL_STRESS). */
 void run_tunnel_stress_scenario(
     TelemetryInterface *telemetry,
     TunnelStressNavEmitFn emit_nav = nullptr,
-    uint32_t seed = 71U);
+    uint32_t seed = 71U,
+    TunnelStressImuMode imu_mode = TunnelStressImuMode::DIRTY_FULL);

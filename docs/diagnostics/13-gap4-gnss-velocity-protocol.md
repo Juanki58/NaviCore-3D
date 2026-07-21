@@ -1,6 +1,7 @@
 # GAP-4 — Protocolo de intervención: observación velocidad GNSS
 
-**Estado:** G0 ejecutado (2026-07-18) — **§11 preregistrado**, fase 4.1 intervención pendiente  
+**Estado:** G0 ejecutado (2026-07-18) — **§11.7 H1e ejecutado → FAIL** (veredicto en `arm_1e_innov_h/`)
+  
 **Tipo:** intervención (contrasta con GAP-3 autopsia)  
 **Prerequisito:** [12-gap3-synthesis.md](12-gap3-synthesis.md) (GAP-3 cerrado)  
 **Baseline experimental:** Patrón Oro, `data/real_run/`, ~332 s, `--constraint-policy disabled`, `--nhc-policy enabled`, `--nhc-every-n-ticks 1`
@@ -551,7 +552,7 @@ A partir de ahí existen **dos instancias** del filtro. Comparar `cos` en fix#6�
 
 ## 11. Preregistración — intervención P_pv / gate de alineación (GAP-4 fase 4.1)
 
-**Estado:** preregistrado, **no ejecutado**  
+**Estado:** ejecutado (familia 1a/1d/1e → **FAIL** / ABORT @ fix#2; H1e omisión PASS)  
 **Fecha:** 2026-07-18  
 **Prerequisito:** §10 diagnóstico cerrado; guardrail §3.3 implementado (`tools/gap4_abort_guardrail.py`)
 
@@ -668,7 +669,127 @@ docs/benchmarks/gap4_gnss_velocity/G1_intervention/
 ```
 
 Script: `tools/run_gap4_arm.py` (`--ppv-policy`), orquestador `tools/run_gap4_intervention.py` (`--run-all`, `--g2-reference`).  
-Replay: `--p-pv-policy {none,gap_le_1s,zero,cos_pos,cos_tot}` en `NaviCore3D_Replay.exe`.
+Replay: `--p-pv-policy {none,gap_le_1s,zero,cos_pos,cos_tot,innov_h}` en `NaviCore3D_Replay.exe`.
+
+---
+
+## 11.7 Reformulación — criterio independiente de zona degradada (H1e)
+
+**Estado:** ejecutado 2026-07-18 — **FAIL**  
+**Motivo de la reformulación:** 1d/1d′ fallan por **omisión** en zona degradada (`cos≤0` cuando `innov_h` grande; 0 casos `trig=0 ∧ cos_pos>0` en 331 ticks). gps#20 muestra que cuando el gate sí dispara en degradada, **mejora** vel y pos — no es falso positivo.
+
+### Hipótesis H1e (primaria tras reformulación)
+
+> Anular P_pv cuando la innovación horizontal de posición supera un umbral **independiente de cos** identifica la zona degradada donde el arrastre pos→vel es dañino, sin depender del signo de alineación (que colapsa precisamente cuando más hace falta intervenir).
+
+| ID | Intervención | Trigger (pre-corrección) |
+|----|--------------|--------------------------|
+| **H1e** | P_pv←0 | **`innov_h ≥ T_innov_h`** |
+
+**Umbral (fijado aquí, antes de ejecutar H1e):**
+
+```
+T_innov_h = 50.0 m
+```
+
+**Justificación (solo baseline G1 sin intervención P_pv, congelado):**
+
+| Cohorte G1 | innov_h |
+|------------|---------|
+| Accepts tempranos gps#1–7 | 22–31 m |
+| Accept gps#37 | 148 m |
+| Rejects p10 | ~138 m |
+
+50 m queda **por encima** de accepts “sanos” tempranos y **por debajo** del cuerpo de rejects / accept tardío degradado — sin usar cos ni ajustar post-hoc tras ver RMSE de H1e.
+
+**NIS:** se **loguea** (`nis_full`) para anatomía; **no** entra en el trigger (evita ambigüedad y/o y dependencia P→S). Criterio = solo `innov_h`.
+
+### Relación con brazos previos
+
+| Brazo | Rol tras reformulación |
+|-------|------------------------|
+| 1a, 1b | Controles (sin cambio) |
+| 1d, 1d′ | Exploratorios / contraste — omisión conocida en degradada |
+| **1e** | **Hipótesis primaria** |
+
+### PASS H1e (preregistrado)
+
+Mismos P1–P3 y anclas §11.2–11.3 que H1d, con:
+
+- **P3′:** RMSE vel(1e) ≤ RMSE vel(1a) (vs proxy temporal).  
+- **Omisión:** en ticks con `innov_h ≥ T` ∧ `cos_pos ≤ 0`, fracción `ppv_triggered=1` debe ser **≥ 0.95** (el punto de la reformulación).  
+- **gps#20-class:** si existe accept con `innov_h ≥ T` ∧ `cos_pos > 0`, Δerr_vel y Δerr_pos deben **IMPROVE** (misma definición `gap4_abort_guardrail`).
+
+**Desempate §11.5** ampliado: entre {1a, 1d, 1d′, 1e} que cumplan PASS completo → (a) menor RMSE vel; (b) empate ε → preferir **1e > 1d > 1d′ > 1a**.
+
+### Artefacto adicional
+
+```
+docs/benchmarks/gap4_gnss_velocity/G1_intervention/arm_1e_innov_h/
+```
+
+CLI: `--p-pv-policy innov_h` (umbral compilado `NAVICORE_INS_EKF_PPV_INNOV_H_THRESHOLD_M`, default 50).
+
+### Resultado H1e (2026-07-18)
+
+| Criterio | Resultado |
+|----------|-----------|
+| **PASS global §11.7** | **FAIL** |
+| P1 / P5 (no abort) | **FAIL** — `verdict_h1=ABORT` @ fix#2 (`k_vel≈0.965`, Δerr_vel≈+0.034 m/s) |
+| Gate activo en fix#2 | **No** — `innov_h≈29.3 m < T=50`, `ppv_triggered=0` |
+| Omisión (`innov_h≥T ∧ cos≤0` → trig) | **PASS** — 322/322 = **1.0** |
+| Accepts | 13 (S1 numérico OK; no salva P1) |
+| gps#20-class | N/A (0 accepts con `innov_h≥T ∧ cos_pos>0`) |
+| Familia 1a / 1d | También **ABORT** en el mismo abort @ fix#2 |
+
+**Lectura causal (no post-hoc de umbral):** la reformulación **sí** cierra la omisión en zona degradada. El abort primario de G1 ocurre en la cohorte “sana” temprana (`innov_h` 22–31 m), **fuera del dominio** del trigger `innov_h≥50`. H1e no podía prevenir fix#2 sin bajar T por debajo de los accepts tempranos — eso reabriría el dominio y **no** está autorizado sin nueva preregistración (§11.5).
+
+**Artefactos:** `gap4_g1_innov_h_report.json`, `h1e_section11_verdict.json`.
+
+---
+
+## 11.8 Cierre GAP-4 — lectura agregada (cinco brazos)
+
+**Fecha:** 2026-07-18  
+**Estado:** **cerrado** — conclusión de investigación, no solo veredicto de H1e
+
+### Patrón agregado
+
+Las cinco variantes de gating P_pv preregistradas fallan en el **mismo** evento:
+
+| Brazo | Trigger | Abort locus |
+|-------|---------|-------------|
+| 1a | `gap ≤ 1 s` | **fix#2** |
+| 1b | incondicional | **fix#2** |
+| 1d | `cos_pos > 0` | **fix#2** |
+| 1d′ | `cos_tot > 0` | **fix#2** |
+| 1e | `innov_h ≥ 50 m` | **fix#2** (gate **inactivo**: innov_h≈29 m) |
+
+No son cinco modos de fallo distintos. Es **un único evento** ya caracterizado como `LEGITIMATE_HIGH_GAIN`: Kalman bayesianamente correcto, `cos>0`, la corrección de posición arrastra velocidad en dirección equivocada vía acoplamiento P_pv. Ninguna estrategia de gating — tiempo, alineación, ni magnitud de innovación — lo resuelve, porque el propio fix está **por debajo de cualquier umbral razonable de “sospechoso”** (`innov_h≈29 m`) y aun así produce corrección dañina por la geometría específica de ese instante.
+
+### Respuesta a la pregunta original de GAP-4
+
+> ¿Existe un criterio de gating que evite el arrastre dañino sin sacrificar los casos donde ayuda?
+
+**Evidencia actual: no** — al menos no con ninguna variable derivada de cos / gap / magnitud entre las probadas bajo preregistración §11 / §11.7.
+
+Eso es más fuerte que «OQ7 closed FAIL»: cierra la **formulación por gating** de la intervención P_pv, no solo el brazo H1e.
+
+### Qué queda abierto (problema distinto, más acotado)
+
+Tratar **fix#2** con una **intervención directa sobre el evento**, no con un gate general — mismo tipo de arreglo que `ZUPT_MAX_GAIN`: clamp de ganancia del término cruzado pos→vel cuando `k_vel` se acerca a 1, **independiente** del signo de cos.
+
+| | Gate general (cerrado) | Clamp de ganancia cruzada (futuro) |
+|--|------------------------|-------------------------------------|
+| Disparo | cos / gap / ‖innov‖ | geometría de K (`k_vel` alto) |
+| Dominio | “zona sospechosa” | evento de alta ganancia legítima |
+| Analogía | — | `NAVICORE_INS_EKF_ZUPT_MAX_GAIN` |
+
+**No implementar** en esta sesión. Candidata de trabajo futuro si se retoma OQ7 / GAP-4 intervención; preregistrar umbral y anclas antes de tocar código.
+
+### Implicación de sesión
+
+§11 cerrado. Siguiente paso formal: regresión E2E TUNNEL_STRESS/SLALOM con `p_pv_policy=none` (ninguna intervención experimental) y constraints del escenario Sim (no replay `forced_time`).
 
 ---
 
@@ -688,3 +809,6 @@ Replay: `--p-pv-policy {none,gap_le_1s,zero,cos_pos,cos_tot}` en `NaviCore3D_Rep
 | 1.9 | 2026-07-18 | §10.4e H1d gate cos directo; diseño 1a+1b+1d; 1c descartado |
 | 2.0 | 2026-07-18 | §10.4e reetiquetado exploratorio; **§11 preregistración formal** 1a+1b+1d+1d′; anclas fix#2/#7/#56 |
 | 2.1 | 2026-07-18 | §11 ε_vel=0,02 m/s; desempate preescrito; `--p-pv-policy` implementado |
+| 2.2 | 2026-07-18 | **§11.7 H1e** — `innov_h ≥ 50 m`; primaria tras omisión 1d; NIS solo log |
+| 2.3 | 2026-07-18 | **H1e ejecutado → FAIL**; omisión PASS; abort fix#2 fuera de dominio del gate |
+| 2.4 | 2026-07-18 | **§11.8 cierre GAP-4**: gating falsificado (5/5 @ fix#2); candidata clamp tipo `ZUPT_MAX_GAIN` |

@@ -1,4 +1,4 @@
-# NaviCore-3D: Multi-Domain Ultra-Low Power Navigation Core
+# NaviCore-3D: Edge INS for GPS-degraded / GPS-denied resilience
 
 ```cpp
 // Haiku del Programador Defensivo en C++
@@ -8,27 +8,32 @@
 //   parada segura.
 ```
 
-**ES** · Núcleo de navegación unificado multimodal (tierra, aire, mar) para **edge computing** en MCUs de ultra-bajo consumo, con motor **INS/EKF de 15 estados**, simulador PC, replay de datos reales y target Pico 2 W.  
-**EN** · Unified multi-domain navigation core (land, air, sea) for **edge** ultra-low-power MCUs, with a **15-state INS/EKF**, PC simulator, real-run replay, and Pico 2 W target.
+**ES** · Núcleo **INS/ESKF 15 estados** para MCU edge: **resiliencia de navegación cuando el GNSS se degrada o deniega** (dead reckoning + integridad), no un “autopiloto multidominio” completo. Pico 2 W · replay real · lab Comarruga. Consumo: **medir con PPK2**.  
+**EN** · **15-state INS/ESKF** edge core aimed at **navigation resilience under degraded/denied GNSS** (dead reckoning + integrity) — not a full multi-domain autopilot. Pico 2 W · real-run replay · Comarruga lab. Power: **measure with PPK2**.
 
 ---
 
 ## Contents / Contenido
 
 1. [Quick start (local)](#quick-start-local)
-2. [Executive summary](#executive-summary--resumen-ejecutivo)
-3. [Repository layout](#repository-layout--estructura)
-4. [Architecture](#architecture--arquitectura)
-5. [Build](#build--compilar)
-6. [Run simulator](#run-simulator--ejecutar-simulador)
-7. [Real-run replay pipeline](#real-run-replay-pipeline)
-8. [EKF diagnostics (H0–H9d, GAP-1…5)](#ekf-diagnostics-real-run)
-9. [Calibration](#calibration--calibración)
-10. [Python tooling](#python-tooling)
-11. [Validated stress scenarios](#validated-stress-scenarios)
-12. [Digital Twin / telemetry](#digital-twin--telemetry)
-13. [Roadmap](#roadmap)
-14. [License](#license--author)
+2. [Positioning — GPS-denied resilience](#positioning--gps-denied--pnt-resilience)
+3. [Executive summary](#executive-summary--resumen-ejecutivo)
+4. [Evidence — published results](#evidence--published-results)
+5. [Fusion algorithm (audit)](#fusion-algorithm--what-it-is--what-it-is-not)
+6. [What validates the real firmware](#what-validates-the-real-firmware--pico-2-w)
+7. [Power — measure before more hardware](#power--measure-before-more-hardware-ppk2)
+8. [Repository layout](#repository-layout--estructura)
+9. [Architecture](#architecture--arquitectura)
+10. [Build](#build--compilar)
+11. [Run simulator](#run-simulator--ejecutar-simulador)
+12. [Real-run replay pipeline](#real-run-replay-pipeline)
+13. [EKF diagnostics (H0–H9d, GAP-1…5)](#ekf-diagnostics-real-run)
+14. [Calibration](#calibration--calibración)
+15. [Python tooling](#python-tooling)
+16. [Validated stress scenarios](#validated-stress-scenarios)
+17. [Digital Twin / telemetry](#digital-twin--telemetry)
+18. [Roadmap](#roadmap)
+19. [License](#license--author)
 
 ---
 
@@ -57,8 +62,9 @@ cmake --build build
 # 4) Smoke: stress simulator (writes docs\telemetria_navicore.csv)
 .\build\NaviCore3D_Sim.exe --no-udp
 
-# 5) Smoke: regression
-.\build\navicore_regression_test.exe
+# 5) Smoke: Catch2 units + safety-inject
+.\build\navicore_unit_tests.exe
+.\build\navicore_regression_test.exe --safety-inject
 # or orchestrated:
 python tools\run_regression_suite.py
 ```
@@ -75,17 +81,427 @@ Documentación de reproducción completa: [`docs/diagnostics/06-reproduction.md`
 
 ---
 
+## Positioning — GPS-denied / PNT resilience
+
+### The turn
+
+| Old framing (weak as sole pitch) | Better framing |
+|----------------------------------|----------------|
+| “Unified land / air / sea navigation core” | **Navigation resilience when GNSS is degraded, denied, or lying** (civil *assured PNT*-style coast + integrity) |
+| Multi-domain as the product | Shared ESKF + `NavState` **machinery**; domain aiding still per vertical |
+| Compete with Honeywell / BAE / Thales / Collins | **Do not.** That tier is certified, export-controlled, defence/avionics-priced |
+| Compete with ArduPilot / sealed u-blox modules | Fill the gap below mil-grade: **lightweight, auditable, MIT, zero-heap** resilience for cost-sensitive platforms |
+
+### Who this is (and is not) for
+
+| Segment | Fit |
+|---------|-----|
+| Defence / certified avionics PNT (Honeywell, BAE, Northrop, Thales, Collins, …) | **Out of scope** — price, ITAR/export, certification |
+| **Civil / commercial underserved** — ag drones, low-cost AUVs, logistics robots, asset trackers, ocean buoys | **Target niche**: vulnerable to jamming/spoofing (accidental or not), no budget for mil PNT |
+| Simulation / AV digital-twin as sole story | Secondary; less urgency and more crowded than GNSS resilience |
+
+Volume and urgency sit in that middle band: enough GNSS dependency to hurt when the sky lies, not enough margin for a Collins box.
+
+### What you already have (resilience-relevant)
+
+| Mechanism | Where | Role |
+|-----------|--------|------|
+| Mode `GPS` → `HYBRID` → `DEAD_RECKONING` | `NavMode` / fusion + EKF export | Coast when fix is weak or rejected |
+| `estimate_quality` + fix age | `NavConfidence` | Degraded trust for mission / guards |
+| GNSS NIS reject / accept | ESKF update | Integrity vs inconsistent innovation |
+| INS predict without GNSS | ESKF @ ~100 Hz | Dead reckoning backbone |
+| v2 fusion policy | `--ekf-core v2` | Keep position when velocity NIS fails (lab, 3 drives) |
+| Pico 2 W + `safe_log` | Embedded DUT | Real outage / spoof-stress measurement |
+| Consistency gate (`reject_reason=3`) | ESKF GNSS update | Fix present but IMU-incompatible → reject (SW spoof) |
+
+Today you mostly react to **loss of fix** (age, reject, sats). That is necessary but not what “PNT resilience” sells hardest.
+
+### The one technical wedge (not a redesign)
+
+**Spoof / inconsistency detection (v1 shipped):** a fix that is still *present* but **physically incompatible with the IMU / INS** — gated on short GNSS gaps (`reject_reason=3`). Validated by **software injection** only (no RF spoof/jam).
+
+| Today | Done |
+|-------|------|
+| Detect **GPS lost** (no fix / aged fix / NIS reject) | Detect **GPS lying** while `fix_valid` stays true (continuous track) |
+| Dead reckoning after dropout | Flag spoof-suspect → refuse update; reacquire after long outage still via NIS |
+
+Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent integrity** on an auditable edge core.
+
+### What you still must measure
+
+| Gap | Why |
+|-----|-----|
+| Forced **outage** coast curve on Pico (+ optional truth logger) | Residual vs time under deny |
+| Forced **spoof-like** injection in replay (teleport / velocity lie) | Shows the new detector before field RF |
+| PPK2 current | Edge/low-power claim |
+
+**Bottom line:** same architecture; reposition under civil GPS-denied resilience; consistency/spoof gate **shipped (v1)**; next credibility is **measured power + field outage**, not another slogan.
+
+---
+
 ## Executive Summary / Resumen ejecutivo
 
 | | **English** | **Español** |
 |---|---|---|
-| **Mission** | Single navigation state across domains, with dead reckoning when GNSS fails, on bare-metal MCUs (Pico 2 W validated in Comarruga lab). | Modelo único de estado de navegación en todos los dominios, con navegación estimada cuando falla el GNSS, en MCUs bare-metal (Pico 2 W validado en banco Comarruga). |
-| **Estimator** | 15-state error-state INS/EKF (position, velocity, attitude error, accel/gyro biases) @ 100 Hz. | INS/EKF de 15 estados (posición, velocidad, error de actitud, sesgos accel/giro) @ 100 Hz. |
+| **Mission** | **GPS-degraded / denied resilience** on edge MCUs: coast with INS when the fix fails, expose integrity (`estimate_quality`, modes), auditable Q/R, zero heap. Multidomain = shared state, not the product slogan. | **Resiliencia GNSS degradado/denegado** en MCU edge: costa con INS, integridad (`estimate_quality`, modos), Q/R auditable, zero heap. Multidominio = estado compartido, no el eslogan. |
+| **Estimator** | Explicit ESKF: position, velocity, attitude error, accel/gyro biases @ ~100 Hz. See [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). | ESKF explícito: posición, velocidad, error de actitud, sesgos @ ~100 Hz. Ver [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). |
 | **Language** | C++17, embedded-oriented: fixed structs, no heap in `core/`. | C++17, estilo embebido: estructuras fijas, sin heap en `core/`. |
 | **Memory** | **Zero dynamic allocation** in `core/`: no `std::vector`, no `std::string`, fixed buffers, stack-only hot paths. | **Cero asignación dinámica** en `core/`: sin `std::vector`/`std::string`, buffers fijos, hot path en stack. |
 | **Frames** | Nav: **NED**. Body: **FRD** (+X forward, +Y right, +Z down). Quaternions: Hamilton. | Nav: **NED**. Cuerpo: **FRD**. Cuaterniones: Hamilton. |
 | **Coordinates (NavState API)** | Permanent 3D axes: **X = latitude**, **Y = longitude**, **Z = altitude (air) / hydrostatic pressure (sea)**. | Ejes 3D permanentes: **X = latitud**, **Y = longitud**, **Z = altitud / presión hidrostática**. |
 | **Host modes** | (1) Synthetic stress sim `NaviCore3D_Sim`. (2) Real vehicle replay `NaviCore3D_Replay`. | (1) Simulador de estrés. (2) Replay de vehículo real. |
+
+---
+
+## Evidence — published results
+
+Numbers below are from **artefacts already in the repo** (not aspirational). Reproduce from the linked paths. Gaps called out honestly.
+
+### EKF v2 vs v1 — real phone drives (NHC-off shell)
+
+Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/).
+
+| Route | Core | GNSS accept rate | Final horizontal drift |
+|-------|------|------------------|------------------------|
+| REF_19082026 | v1 | 2.6% | **~158 km** |
+| REF_19082026 | **v2** | **100%** | **~35 m** |
+| ALT_16072026 | v1 | 2.4% | **~856 km** |
+| ALT_16072026 | **v2** | **100%** | **~38 m** |
+| JUL17_20260717 | v1 | 10.6% | **~332 km** |
+| JUL17_20260717 | **v2** | **100%** | **~110 m** |
+
+**Verdict:** v2 keeps position anchoring when velocity NIS fails (5-DoF joint reject in v1). Drift still **tens–hundreds of metres** — civil DR, not rail-grade.
+
+### Monte Carlo — `TUNNEL_STRESS` (synthetic)
+
+`run_monte_carlo.py` → `docs/monte_carlo/run_0000…run_0099` (**N = 100** seeds). Metric: horizontal drift at tunnel exit **t = 30 s**.
+
+| Stat | Value |
+|------|------:|
+| Runs | **100** |
+| Mean drift | **13.0 m** |
+| Std | **1.26 m** |
+| Min / max | 11.8 / 18.6 m |
+| p95 / p99 | 16.1 / 18.5 m |
+| Divergence rate (drift > 30 m) | **0%** |
+
+### NHC — what the matrix actually showed
+
+Not a marketing “NHC always helps” claim. Super-tunnel + R-sweep artefacts in [`docs/nhc_experiments/`](docs/nhc_experiments/) (`manifest.json`):
+
+| Condition | Drift @ tunnel exit | Drift final (post-GNSS) |
+|-----------|--------------------:|------------------------:|
+| **A — NHC off** (baseline) | **493 m** | **~2 m** (reacquire) |
+| Best G-arm (`G_l10_v10`) | 758 m | 887 m |
+| `B_always` (NHC every tick) | 1408 m | 1554 m |
+
+**Finding (GAP-3 closed):** naive high-rate NHC over-observes body velocity, compresses `P_vv`, and can **worsen** coasting vs NHC-off; dose-response N=1…20 documented. Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”.
+
+Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md).
+
+### Allan variance (IEEE 952) — tooling ready, fit pending publish
+
+| Item | Status |
+|------|--------|
+| Tool | [`analyze_allan.py`](analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW |
+| Shipped Q scalars | σ_a = **0.05 m/s²**, σ_g = **0.002 rad/s** (car-log / mount order of magnitude in `ins_ekf.hpp`) |
+| **Published ARW/BI table from multi-hour static IMU** | **Not yet** — needs `docs/imu_static_log.csv` (hours) then run Allan and paste IEEE units here |
+
+Until that table exists, treat Q as **engineering defaults**, not a certified IMU datasheet.
+
+### Integrity / spoof (software only)
+
+| Check | Result |
+|-------|--------|
+| Teleport +500 m with `fix_valid=true` (short gap) | Rejected · `reject_reason=3` · test `gnss_physical_inconsistency_spoof` |
+| RF GPS spoof / jam | **Out of scope** — illegal in ES/EU without CNMC authorisation |
+
+### Catch2 unit tests (isolated — not the Sim pipeline)
+
+Formal C++ unit tests (**Catch2 v3**, FetchContent) over kernels only — no Monte Carlo orchestration, no tunnel scenario:
+
+| File | Covers |
+|------|--------|
+| `tests/unit/test_navstate_math.cpp` | `NavState` heading wrap, quality clamp, speed EPS (`math_utils.hpp`) |
+| `tests/unit/test_ins_ekf_math.cpp` | `navicore_quat_normalize` (zero→identity), `mat_invert2x2/3x3` singular → false |
+| `tests/unit/test_fusion_isolated.cpp` | `dead_reckoning_*` init + NaN/Inf reject |
+| `tests/unit/test_properties_rapidcheck.cpp` | **RapidCheck** properties (see below) |
+
+Math kernels live in [`src/core/ins_ekf_math.hpp`](src/core/ins_ekf_math.hpp) so the ESKF can be tested **without** linking Sim/Replay.
+
+### RapidCheck property tests (above unit cases)
+
+Properties that must hold for *all* generated inputs (default **300** trials via `RC_PARAMS=max_success=300`; shrinks counterexamples):
+
+| Property | Statement |
+|----------|-----------|
+| Fix-age quality | `age_a ≤ age_b` ⇒ `quality(age_a) ≥ quality(age_b)` (`nav_confidence_quality_from_fix_age_ms`) |
+| Heading | `normalize(h) ∈ [0, 360)` for bounded `h` |
+| Quaternion | after normalize, ‖q‖ ≈ 1 (zero-norm → identity, no `/0`) |
+| S⁻¹ | if `invert2x2` succeeds ⇒ `S·S⁻¹ ≈ I` |
+| EKF @ 100 Hz | one 10 ms predict: horizontal ‖Δp‖ ≤ civil envelope (~1.3 m for \|v\|≤80, \|a\|≤40) |
+
+This is stricter than Monte Carlo over fixed scenarios: the fuzzer searches for breaks, not just average drift.
+
+```powershell
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DNAVICORE_BUILD_UNIT_TESTS=ON
+cmake --build build --target navicore_unit_tests
+$env:RC_PARAMS="max_success=500"
+.\build\navicore_unit_tests.exe
+# filter properties only:
+.\build\navicore_unit_tests.exe "[rapidcheck]"
+```
+
+Disable all unit/property builds with `-DNAVICORE_BUILD_UNIT_TESTS=OFF`.
+
+### Safety inject tests (error paths)
+
+Fail-closed paths exercised by `navicore_regression_test --safety-inject` (CI + ASan):
+
+| Test | What it proves |
+|------|----------------|
+| `imu_nan_reject` | `ins_ekf_predict` / DR reject NaN/Inf IMU; state unchanged |
+| `waypoint_full_ingest_reject` | Radio `ADD_WAYPOINT` rejected at 64/64 (no silent overwrite) |
+| `time_guard_wcet` | Over-budget ticks → `TIME_GUARD_ERROR_WCET` + health penalty |
+| `geometry_guard_discontinuity` | Step ≫ 150 m → `GEOMETRY_ERROR_DISCONTINUITY` |
+| (+ gravity, spoof) | Smoke of core ESKF + consistency gate |
+
+```powershell
+.\build\navicore_regression_test.exe --safety-inject
+```
+
+Full suite (includes legacy NHC/TC benchmarks that may still FAIL): omit the flag.
+
+### Code audit (A5) — baseline + CI
+
+| Item | Result |
+|------|--------|
+| Standard | [docs/SAFETY_CODING_STANDARD.md](docs/SAFETY_CODING_STANDARD.md) (MISRA-inspired, not certified) |
+| cppcheck `--enable=all` on `src/core` | Local baseline + **CI job** — [REPORT_LATEST](docs/benchmarks/static_analysis/REPORT_LATEST.md) |
+| gcov (`navicore_regression_test`) | **~50%** line cover on linked ESKF TUs (pre–inject expansion); re-run after `--safety-inject` links guards |
+| clang-tidy | `.clang-tidy` + **CI job** (Ubuntu/Clang) |
+| ASan + UBSan | **CI job** builds with Clang `-fsanitize=address,undefined` and runs `--safety-inject` |
+| Catch2 + RapidCheck | **CI job** `navicore_unit_tests` — units + properties (fix-age quality, quat, invert, EKF jump) |
+| Workflow | [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) |
+| Runner (local) | `python tools/run_static_analysis.py --cppcheck` · `--clang-tidy` · `--coverage-build` |
+
+### Still missing for “demo-ready” credibility
+
+| Gap | Why it matters |
+|-----|----------------|
+| PPK2 current on Pico 2 W | “Ultra-low power” stays architectural until measured |
+| Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware |
+| Allan fit from hours of static IMU | Replace Q folklore with IEEE numbers |
+| Error-path cover beyond inject suite | More WCET/starvation / Pico health_monitor on-target |
+| Field + PPK2 artefacts published | Coast curve + mA/mW table still empty — needed before “going viral” |
+
+### Diagnostic campaign (real-run)
+
+| Phase | Status |
+|-------|--------|
+| GAP-1 … GAP-4, G-ext | **CLOSED** |
+| GAP-5 v1 (adaptive NHC) | **CLOSED** — passive path inactive under preregistered ops |
+| GAP-5 v2 | Preregistered / paused |
+| Attitude snapshot (static 0–2 s) | EKF↔Orientation **0.05°**, gravity **0.09°** |
+
+Full map: [EKF diagnostics](#ekf-diagnostics-real-run).
+
+---
+
+## Fusion algorithm — what it is / what it is not
+
+This is the section a serious reviewer should read first.  
+**Not** a vague “dead reckoning + sensor fusion” blend: a **15-state error-state Kalman filter (ESKF)** with an explicit state, explicit innovations, and **documented Q / R / P₀** (source of truth: [`src/core/ins_ekf.hpp`](src/core/ins_ekf.hpp) + `ins_ekf_init` / `ins_ekf_build_process_noise`).
+
+### What it is
+
+| Item | Fact |
+|------|------|
+| **Filter class** | **Error-state Kalman filter (ESKF / MEKF-style)** — Joseph covariance update. Not complementary filter, not α-β, not “GPS glue”. |
+| **Nominal** | `p_NED`, `v_NED`, `q` (body→NED), `b_a`, `b_g` |
+| **Error state** | 15×1 δx (table below); mean reset after each inject |
+| **Predict @ ~100 Hz** | `ω_corr = ω − b_g` → quat; `a_lin = R·(f − b_a) − g`; integrate `v`,`p`; sparse Φ; add Q |
+| **Updates** | GNSS (pos / pos+vel / vel); optional **NHC**, **ZUPT** — policy-armed |
+| **Platform** | Float-only, **zero heap** in `src/core/` |
+| **Cores** | v1: `ins_ekf.cpp`. v2: `--ekf-core v2` (`ins_ekf_v2.hpp`) — same 15-state container, different predict/GNSS/NHC policy |
+
+Body frame: [`docs/diagnostics/08-body-frame-contract.md`](docs/diagnostics/08-body-frame-contract.md).
+
+### Error-state vector (15)
+
+| Index | Symbol | Meaning | Unit |
+|------:|--------|---------|------|
+| 0–2 | δp_N, δp_E, δp_D | Position error | m |
+| 3–5 | δv_N, δv_E, δv_D | Velocity error | m/s |
+| 6–8 | δθ_x, δθ_y, δθ_z | Attitude error (small-angle) | rad |
+| 9–11 | δb_ax, δb_ay, δb_az | Accel bias error | m/s² |
+| 12–14 | δb_gx, δb_gy, δb_gz | Gyro bias error | rad/s |
+
+Enum: `InsEkfErrorIdx` in [`ins_ekf.hpp`](src/core/ins_ekf.hpp).
+
+### Innovation sources (what feeds the filter)
+
+| Source | In EKF today? | Observation / notes |
+|--------|---------------|---------------------|
+| **IMU accel + gyro** | Yes (predict) | Specific force & angular rate @ tick; mount matrix in replay |
+| **GNSS position** LLA→NED | Yes | `y = z_NED − p̂`; `R_pos` diagonal |
+| **GNSS horizontal velocity** | Yes (optional) | From speed × course; `pos_vel` / `vel_only` |
+| **NHC** | Optional | Pseudo-meas: body lateral/vertical velocity ≈ 0 |
+| **ZUPT** | Optional | Pseudo-meas: velocity ≈ 0 when stationary policy fires |
+| **Barometer / depth** | **No** (not in ESKF update) | Domain fields exist on NavState API; not an EKF innovation yet |
+| **Magnetometer** | **No** | Not used as attitude update in this core |
+| **Vision / wheel odometry** | **No** | Out of scope of current core |
+
+Honesty for auditors: multi-domain *NavState* is the shared API; **domain-specific aiding** (mag, baro, DVL, airspeed) is **not** claimed as already fused.
+
+### Tuning — process noise Q, measurement R, initial P₀
+
+An EKF lives or dies on Q and R. Defaults below are the **compile-time / init values** shipped in the core (overrideable at runtime for GNSS vel std, NHC σ, scales in replay). Field campaigns should **re-estimate** these from logged residuals — that dataset is more convincing than any synthetic scenario.
+
+#### Process noise Q (diagonal blocks per `ins_ekf_build_process_noise`)
+
+Built each predict from PSD-style scalars × `dt`:
+
+| Block | Construction | Default scalar |
+|-------|--------------|----------------|
+| Q_pos | `σ_a² · dt²` | `σ_a = 0.05 m/s²` (`NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2`) |
+| Q_vel | `σ_a² · dt` | same σ_a |
+| Q_att | `σ_g² · dt` | `σ_g = 0.002 rad/s` (`NAVICORE_INS_EKF_GYRO_NOISE_STD_RADPS`) |
+| Q_ba | `PSD_ba · dt` | `1e-6` (`NAVICORE_INS_EKF_BIAS_ACCEL_RW_VAR`) |
+| Q_bg | `PSD_bg · dt` | `1e-10` (`NAVICORE_INS_EKF_BIAS_GYRO_RW_VAR`) |
+
+Comments in header: σ_a / σ_g aligned with **real car-log / mount vibration** order of magnitude, not optimistic lab IMU.
+
+#### Measurement noise R
+
+| Measurement | Default | Macro / field |
+|-------------|---------|---------------|
+| GNSS position (per axis) | **6.0 m²** (σ ≈ 2.45 m) | `NAVICORE_INS_EKF_GNSS_POS_VAR_M2` → `gnss_pos_var_m2` |
+| GNSS horizontal velocity | **σ = 1.5 m/s** → 2.25 m²/s² | `NAVICORE_INS_EKF_GNSS_VEL_STD_MPS` |
+| NHC lateral / vertical | σ = 0.5 / 1.0 m/s | `NAVICORE_INS_EKF_NHC_*_STD_MPS` |
+| ZUPT velocity | σ = 0.05 m/s | `NAVICORE_INS_EKF_ZUPT_VEL_STD_MPS` |
+
+Replay can raise GNSS σ from phone accuracy columns (floored) and override `--gnss-vel-std-mps`, `--nhc-sigma`.
+
+#### NIS gates (χ² @ 99%)
+
+| Mode | DoF | Threshold |
+|------|-----|-----------|
+| Position only | 3 | 11.345 |
+| Velocity only | 2 | 9.210 |
+| Pos+vel (v1 joint) | 5 | 15.086 |
+
+#### Initial covariance P₀ (`ins_ekf_init` diagonals)
+
+| State | P₀ diag |
+|-------|---------|
+| pos N,E / D | 4 / 4 / 9 m² |
+| vel N,E,D | 1 m²/s² |
+| att roll,pitch / yaw | (5°)² / (10°)² |
+| accel bias | 0.25 (m/s²)² |
+| gyro bias | 0.01 (rad/s)² |
+
+### What it is not (do not over-claim)
+
+| Claim to avoid | Reality |
+|----------------|---------|
+| “Competes with u-blox / full ArduPilot stack” | Different product class. Niche: **lightweight, auditable, zero-heap ESKF core** (MIT) between heavy autopilot stacks and sealed commercial modules — **potential**, not traction yet. |
+| “One untuned filter owns land/air/sea ops” | Shared **state + predict**; each domain still needs its own aiding/R. Multidomain is **architecture**, not the headline — see [Positioning](#positioning--gps-denied--pnt-resilience). |
+| “Assured PNT / anti-jam product” | Civil **integrity + DR** story only. No RF anti-jam; spoof gate = **EKF consistency check** (`reject_reason=3`, SW injection only), not mil stack. No Honeywell comparison. |
+| “Proven automotive / maritime DR” | **Not yet.** Phone-log replay ≠ certified outage campaign on Pico+M9N. |
+| “Baro/mag already in the EKF” | **Not in the update.** See innovation table. |
+| “v2 is a smaller toy filter” | Same 15-state ESKF; different fusion **policy**. |
+
+### v1 vs v2 fusion policy
+
+| | **v1** (`--ekf-core v1`) | **v2** (`--ekf-core v2`) |
+|--|--------------------------|--------------------------|
+| GNSS `pos_vel` | Joint **5-DoF** NIS; bad velocity can reject **whole** fix | Pos / vel **separate**; position keeps anchoring |
+| Predict | Semi-implicit `p`; NHC may run inside predict | Trapezoidal `p`; term budget; no NHC in predict |
+| NHC | Stride when enabled | GNSS-gap triggered (doc 17) |
+| Status | Historical control | Candidate — A/B 3 routes [`ekf_v2_ab_3routes`](docs/benchmarks/ekf_v2_ab_3routes/) |
+
+### Where vibration and multipath still hurt
+
+Phone IMU + phone GNSS stay in the loop on the published city drives. Between fixes, attitude / `R·f` errors still write Δv. Expect **tens–hundreds of metres** residual with current Q/R — not rail-grade — until **field outage residuals** are used to retune Q/R and (later) domain aiding.
+
+**Next evidence that raises confidence more than any feature:** forced GNSS outage on a real drive or Pico+M9N, with residual growth vs time and the Q/R used frozen in the report.
+
+---
+
+## What validates the real firmware — Pico 2 W
+
+The **device under test (DUT)** for NaviCore-3D is the firmware that already runs on the **Raspberry Pi Pico 2 W (RP2350)** — the same C++ ESKF in `src/core/`, not a reimplementation elsewhere.
+
+| Role | Platform | Validates? |
+|------|----------|------------|
+| **DUT / instrument** | **Pico 2 W** + USB CDC to PC (`safe_log.*`, non-blocking stdio) | **Yes** — the real EKF binary, WCET, UART rings, field/lab telemetry |
+| Host replay | `NaviCore3D_Replay` on PC | Deterministic regression on logged CSVs — same algorithms, **not** a substitute for embedded timing/I/O |
+| Optional external truth | e.g. Pi Zero / phone / survey GNSS logging in parallel | Independent **reference track** to compare *against* Pico estimate — **not** a second NaviCore |
+| Python / Ambiq / other MCU ports | Parallel approximations | Useful experiments; **do not** claim they validate Pico firmware |
+
+### Why not “run NaviCore on a Pi Zero instead”
+
+A Python (or other) EKF on a Pi Zero measures **that** stack. It does **not** measure:
+
+- the zero-heap C++ core on RP2350,
+- the real IMU/GNSS UART path,
+- `safe_log` / USB budget inside the 100 Hz loop,
+- WDT / health behaviour under load.
+
+Use a second board only if you need a **ground-truth logger** (or independent estimator) riding along — then compare truth vs Pico USB stream. Wiring: [docs/comarruga_lab_hardware.md](docs/comarruga_lab_hardware.md) (USB CDC, `safe_log_flush_pending`, pin map).
+
+### Correct next measurement (dead reckoning)
+
+1. Flash current Pico 2 W firmware (same core as lab).
+2. PC captures USB/`safe_log` (and/or on-device log) while GNSS is **denied or blocked** for a known interval.
+3. Score residual growth vs time on **that** stream — optionally vs a parallel truth logger.
+4. Freeze Q/R used in the report.
+
+Replay of phone CSVs remains valuable for algorithm A/B (v1/v2); **embedded DR proof** requires the Pico path above.
+
+---
+
+## Power — measure before more hardware (PPK2)
+
+The project tagline includes **ultra-low power / edge MCU**. That claim is currently **architectural** (zero-heap hot path, Pico 2 W target, non-blocking USB) — **not** yet backed by a published current draw from a Nordic **Power Profiler Kit II (PPK2)** or equivalent.
+
+**Priority before adding Pi Zero, Ambiq, or other boards:** measure the **Pico 2 W** running the real firmware. It is the cheapest, fastest experiment and the one that most directly supports (or falsifies) the central product claim.
+
+| Do first | Do later |
+|----------|----------|
+| PPK2 on Pico 2 W + document mA / mW here | Pi Zero as parallel truth logger |
+| Same for IMU+GNSS on / off profiles | Port to Ambiq **before** Pico PPK2 baseline |
+| After Pico numbers: Artemis/Apollo3 same GPS-denied scenario | Claim “ultra-low power” without measured mA |
+| Later: Apollo4 (+ edge AI for richer integrity) | Skip Artemis and jump straight to Apollo510 |
+| Freeze build hash + profile in the table | Marketing “µA-class” without numbers |
+
+### Measurement protocol (lab)
+
+1. **Instrument:** Nordic PPK2 (source or ampere meter mode as appropriate for the board supply).
+2. **DUT:** Pico 2 W flashed with `pico2_hardware` firmware under test (record git commit / build id).
+3. **Supply:** Measure **board + MCU path** you care about; note whether Wi-Fi, USB CDC, external IMU (WT61C), GNSS (NEO-M9N) are powered from the same rail.
+4. **Profiles** (run ≥30–60 s steady each; report mean and peak):
+
+| ID | Profile | Expected intent |
+|----|---------|-----------------|
+| P0 | MCU idle / clocks only (if available) | Floor |
+| P1 | Nav loop @ 100 Hz, USB CDC on, **no** Wi-Fi, sensors as in Comarruga bank | Typical lab estimate |
+| P2 | P1 + Wi-Fi activity (if enabled in build) | Upper bound with radio |
+| P3 | Deep sleep / safe shutdown path (if exercised) | Conservation claim |
+
+5. **Publish:** fill the table below — do **not** invent placeholders as facts. Until filled, treat “ultra-low power” as **design goal**, not measured evidence.
+
+### Measured results (fill after PPK2)
+
+| Profile | V_supply [V] | I_mean [mA] | I_peak [mA] | P_mean [mW] | Build / commit | Date | Notes |
+|---------|-------------:|------------:|------------:|------------:|----------------|------|-------|
+| P0 | — | **TBD** | TBD | TBD | | | |
+| P1 | — | **TBD** | TBD | TBD | | | Comarruga sensors |
+| P2 | — | **TBD** | TBD | TBD | | | |
+| P3 | — | **TBD** | TBD | TBD | | | |
+
+Artefacts (CSV/PNG from nRF Connect / PPK2 export) belong under `docs/benchmarks/power_ppk2/` when available.
 
 ---
 
@@ -103,34 +519,38 @@ NaviCore-3D/
 │   └── real_run/                  # CSVs Android Sensor Logger (~332 s)
 ├── calibration/
 │   └── imu_mount.json             # Matriz sensor→body FRD (Rodrigues)
+├── tests/unit/                    # Catch2 + RapidCheck (kernels aislados)
+├── .github/workflows/             # CI code-audit (cppcheck · tidy · ASan · units)
 ├── docs/
 │   ├── diagnostics/               # Metodología H0–H9d + GAP-1…5
-│   ├── benchmarks/                # Artefactos CSV/JSON/PNG de experimentos
+│   ├── benchmarks/                # Evidence packs (EKF v2 A/B, static analysis, …)
+│   ├── ROADMAP_PNT_RESILIENCE.md  # Tracks código / hardware / visibilidad
+│   ├── SAFETY_CODING_STANDARD.md  # Guía MISRA-inspired (no certificación)
 │   ├── monte_carlo/               # Trazas Monte Carlo
 │   ├── nhc_experiments/           # Experimentos NHC del sim
-│   ├── comarruga_lab_hardware.md  # Hardware lab Pico 2 W
-│   ├── sil_architecture.md        # SIL multi-UAV
 │   └── telemetria_navicore.csv    # Black-box del simulador
-├── tools/                         # Visualizers, regression, GAP auditors/runners
+├── tools/                         # Visualizers, regression, audits, static analysis
 ├── parse_mobile_log.py            # Sensor Logger → replay CSV
-├── audit_imu_chain.py             # Cadena IMU + export calibración
-├── CMakeLists.txt                 # Build PC
-├── DEVELOPMENT.md                 # Contexto vivo para agentes / desarrollo
+├── CMakeLists.txt                 # Build PC (+ optional unit tests)
+├── DEVELOPMENT.md
 ├── README.md
 └── build/                         # Salida CMake local (no versionar)
 ```
 
 | Path | Role |
 |------|------|
-| `src/core/` | INS/EKF 15-state, NavState, geodesy WGS84, fusion/DR, cortex, safety guards |
+| `src/core/` | INS/EKF 15-state (ESKF), NavState, geodesy WGS84, guards — see Fusion algorithm |
 | `src/scenarios/` | Escenarios cuantitativos (`tunnel_stress`, `slalom_scenario`) |
 | `src/targets/generic_pc/` | Host: sim, replay, UDP telemetry, adaptive NHC controller |
 | `src/targets/pico2_hardware/` | Embedded: BSP IMU/GNSS/UPS, health monitor, WDT |
-| `data/real_run/` | Entrada cruda del vehículo (Android Sensor Logger) |
-| `docs/benchmarks/` | Salidas de auditoría y benchmarks |
+| `tests/unit/` | Catch2 + RapidCheck formal units/properties |
+| `data/real_run/` | Entrada cruda del vehículo (Android Sensor Logger), carpetas por fecha |
+| `docs/benchmarks/` | Evidence + audits (bulk regenerable CSV ignored — see `.gitignore`) |
 | `docs/diagnostics/` | Documentación científica del pipeline EKF |
 | `tools/` | Scripts Python de visualización, regresión y GAP |
 | `calibration/` | Calibración de montaje IMU |
+
+Unity EKF Explorer (`ekf_explorer/`) is **local-only** (Cesium/Unity binaries ≫ GitHub limits). Protocol: [`docs/diagnostics/19-ekf-explorer-protocol.md`](docs/diagnostics/19-ekf-explorer-protocol.md).
 
 Contexto de desarrollo y prioridades RT: [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
@@ -179,7 +599,7 @@ flowchart LR
 
 **NavState** is the single source of truth for the guidance/API layer: position, velocity, heading, mode (`GPS` · `DEAD_RECKONING` · `HYBRID`), and confidence (`estimate_quality`, satellite count, fix age).
 
-**INS/EKF** (primary estimator for real-run work) integrates specific force and angular rate in the body frame, transforms to NED, and applies GNSS / NHC / ZUPT updates with NIS gating (Joseph form covariance update).
+**INS/EKF** — see [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not): real **15-state ESKF** (predict + Joseph GNSS/NHC/ZUPT), not a simplified complementary blend. Replay selects `--ekf-core v1|v2`.
 
 Body-frame contract (normative): [`docs/diagnostics/08-body-frame-contract.md`](docs/diagnostics/08-body-frame-contract.md).
 
@@ -199,7 +619,8 @@ cmake --build build
 | `NaviCore3D_Sim` | `build\NaviCore3D_Sim.exe` | Stress simulator + CSV/UDP telemetry |
 | `NaviCore3D_VehicleDemo` | `build\NaviCore3D_VehicleDemo.exe` | CAN vehicle-bus demo + HMI |
 | `NaviCore3D_Replay` | `build\NaviCore3D_Replay.exe` | Real-run EKF replay + audit hooks |
-| `navicore_regression_test` | `build\navicore_regression_test.exe` | C++ regression suite |
+| `navicore_regression_test` | `build\navicore_regression_test.exe` | C++ regression / `--safety-inject` |
+| `navicore_unit_tests` | `build\navicore_unit_tests.exe` | Catch2 + RapidCheck (NavState / math / fusion / properties) |
 | `ring_stress_test` | `build\ring_stress_test.exe` | Host SPSC UART stress (S7 campaign) |
 
 Build a single target:
@@ -210,6 +631,23 @@ cmake --build build --target NaviCore3D_Sim
 ```
 
 On Windows, the sim links `ws2_32` for UDP telemetry.
+
+### Audit builds (sanitizers / coverage)
+
+```powershell
+# Coverage (gcov)
+cmake -S . -B build_coverage -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DNAVICORE_ENABLE_COVERAGE=ON
+cmake --build build_coverage --target navicore_regression_test
+.\build_coverage\navicore_regression_test.exe --safety-inject
+
+# ASan+UBSan — prefer Clang/Linux (MinGW often lacks libasan)
+cmake -S . -B build_asan -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DNAVICORE_ENABLE_SANITIZERS=ON
+cmake --build build_asan --target navicore_regression_test
+./build_asan/navicore_regression_test --safety-inject
+```
+
+CI: [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) (cppcheck · clang-tidy · ASan · Catch2+RapidCheck).  
+Report: [`docs/benchmarks/static_analysis/REPORT_LATEST.md`](docs/benchmarks/static_analysis/REPORT_LATEST.md) · standard: [`docs/SAFETY_CODING_STANDARD.md`](docs/SAFETY_CODING_STANDARD.md).
 
 ### Pico 2 W (`NaviCore3D_Pico2`)
 
@@ -317,6 +755,7 @@ python parse_mobile_log.py `
 .\build\NaviCore3D_Replay.exe `
   --input docs\benchmarks\real_run_replay.csv `
   --output docs\benchmarks\h9_predict_only_output.csv `
+  --constraint-policy disabled `
   --predict-only --predict-only-end-s 60 `
   --h9a-gravity-tilt-init `
   --mount-calibration calibration\imu_mount.json `
@@ -346,7 +785,7 @@ python parse_mobile_log.py `
 | `--predict-only` | Disable GNSS/NHC/ZUPT updates |
 | `--predict-only-end-s`, `--replay-end-s` | Time window |
 | `--h9a-gravity-tilt-init` | Init roll/pitch from gravity |
-| `--constraint-policy` | `auto`, `forced_time`, `gps_stop`, `imu_stationary`, `disabled` |
+| `--constraint-policy` | **Required.** `forced_time`, `gps_stop`, `imu_stationary`, `disabled` (`auto` rejected) |
 | `--nhc-policy` | `enabled`, `disabled` |
 | `--nhc-every-n-ticks N` | NHC decimation |
 | `--gnss-obs-mode` | `pos`, `pos_vel`, `vel_only` |
@@ -356,7 +795,7 @@ python parse_mobile_log.py `
 | `--gap3-*-audit-csv` | GAP-3 audit exports |
 | `--help` | Full CLI |
 
-> **Validity note (Jul 2026):** full-filter runs between H9 and GAP-3.7 used legacy ZUPT (`forced_time`: `t≤30s OR gps_speed≤0.1`). Re-run with `--constraint-policy imu_stationary` before citing those results. Predict-only (H9) is unaffected. See [`docs/diagnostics/11-replay-zupt-provenance.md`](docs/diagnostics/11-replay-zupt-provenance.md).
+> **Validity note (Jul 2026):** full-filter runs between H9 and GAP-3.7 used legacy ZUPT (`forced_time`: `t≤30s OR gps_speed≤0.1`). Re-run with `--constraint-policy imu_stationary` before citing those results. Predict-only (H9) is unaffected by ZUPT math, but the CLI still requires an explicit `--constraint-policy` (use `disabled`). See [`docs/diagnostics/11-replay-zupt-provenance.md`](docs/diagnostics/11-replay-zupt-provenance.md).
 
 ---
 
@@ -385,7 +824,9 @@ Pipeline experimental sobre grabaciones reales: consistencia NEES/NIS, geodesia 
 | [13-gap4-gnss-velocity-protocol](docs/diagnostics/13-gap4-gnss-velocity-protocol.md) | **GAP-4 diagnostic closed** |
 | [14-adaptive-nhc-protocol](docs/diagnostics/14-adaptive-nhc-protocol.md) | GAP-5 v1 preregistration |
 | [15-gap5-passive-outcome](docs/diagnostics/15-gap5-passive-outcome.md) | GAP-5 v1 passive outcome |
-| [16-gap5-v2-observable-selection](docs/diagnostics/16-gap5-v2-observable-selection.md) | **GAP-5 v2 (active research)** |
+| [16-gap5-v2-observable-selection](docs/diagnostics/16-gap5-v2-observable-selection.md) | **GAP-5 v2** (preregistrada; pausa post G-ext) |
+| [reference/CURRENT_STATE_OF_THE_RESEARCH](docs/diagnostics/reference/CURRENT_STATE_OF_THE_RESEARCH.md) | **Estado de la investigación** (artículo interno) |
+| [reference/RESEARCH_STATUS](docs/diagnostics/reference/RESEARCH_STATUS.md) | Pausa / cadena consolidado vs abierto |
 
 Frozen reference set: [`docs/diagnostics/reference/`](docs/diagnostics/reference/)  
 (`STATE_OF_KNOWLEDGE.md`, `OPEN_QUESTIONS.md`, `DECISION_LOG.md`, `RESEARCH_MAP.md`).
@@ -399,7 +840,8 @@ Frozen reference set: [`docs/diagnostics/reference/`](docs/diagnostics/reference
 | **GAP-3** | INS model autopsy (NHC / P / K / gate) | **CLOSED** |
 | **GAP-4** | GNSS velocity / P_pv diagnostic | **CLOSED** (`gap4-diagnostic-complete`) |
 | **GAP-5 v1** | Adaptive NHC via Γ̄ | **CLOSED** — passive controller inactive under preregistered operationalization |
-| **GAP-5 v2** | Observable / regime selection | **PREREGISTERED** — characterization / benchmarks pending |
+| **G-ext** | External lockout validation (19082026) | **CLOSED** — K14/K15; see `INTERPRETATION.md` |
+| **GAP-5 v2** | Observable / regime selection | **PREREGISTERED** — pause before benchmark ([RESEARCH_STATUS](docs/diagnostics/reference/RESEARCH_STATUS.md)) |
 
 ### Snapshot findings (attitude)
 
@@ -425,16 +867,32 @@ Artifacts land in `docs/benchmarks/` (and subfolders `gap3_*`, `gap4_gnss_veloci
 
 ## Calibration / Calibración
 
+### Mount (vehicle FRD)
+
 Primary mount calibration: [`calibration/imu_mount.json`](calibration/imu_mount.json)
 
 - Method: gravity-alignment Rodrigues (`audit_imu_chain.py`)
 - Maps sensor frame → vehicle body **FRD**
 - Applied in replay via `--mount-calibration` / `--mount-mode calibration`
 
-Regenerate:
-
 ```powershell
 python audit_imu_chain.py --export-calibration calibration\imu_mount.json
+```
+
+### Allan variance (IMU noise → Q)
+
+```powershell
+# Needs multi-hour static IMU CSV (see analyze_allan.py header for columns)
+python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
+```
+
+Published ARW / bias-instability numbers belong in [Evidence](#evidence--published-results) once a static log is committed. Until then, process-noise defaults remain the σ_a / σ_g macros in `ins_ekf.hpp`.
+
+### Monte Carlo
+
+```powershell
+python run_monte_carlo.py --runs 100
+# Artefacts: docs\monte_carlo\run_*.csv
 ```
 
 ---
@@ -449,10 +907,16 @@ pip install numpy matplotlib pandas
 
 | Script | Role |
 |--------|------|
+| `analyze_allan.py` | Allan variance (IEEE 952) → ARW/VRW / BI / RRW |
+| `run_monte_carlo.py` | TUNNEL_STRESS Monte Carlo → `docs/monte_carlo/` |
+| `tools/run_static_analysis.py` | cppcheck / clang-tidy / gcov coverage runner |
+| `tools/run_regression_suite.py` | Orchestrates Catch2 units + `--safety-inject` |
+| `.github/workflows/code-audit.yml` | CI: cppcheck · tidy · ASan · Catch2+RapidCheck |
 | `parse_mobile_log.py` | Sensor Logger folder → `real_run_replay.csv` |
 | `audit_imu_chain.py` | IMU chain audit + mount export |
 | `run_all_benchmarks.py` | Quantitative sim benchmarks |
 | `tools/visualizer.py` | Offline 3D CSV replay |
+| `tools/serial_navstate_capture.py` | USB CDC → NavState CSV (Pico/Artemis; EKF on-device) |
 | `tools/remote_visualizer.py` | Live UDP telemetry |
 | `tools/run_regression_suite.py` | Regression orchestrator (`--full` includes ring stress) |
 | `tools/audit_gap*.py` / `tools/run_gap*.py` | Scientific GAP campaign |
@@ -487,7 +951,7 @@ Both scenarios run in `NaviCore3D_Sim` at **100 ms** ticks and export every samp
 | **Expected** | `Pos_Z` tracks pressure in Pa; `Vel_Z` ≈ **10 000 Pa/s** after first sample. |
 | **Result** | `pos.z` reaches **201 325 Pa** at 10 s; `vel.z` stable at **10 000 Pa/s**. |
 
-Additional quantitative scenarios: `SLALOM`, `TUNNEL_STRESS`, `--super-tunnel`, `--nhc-experiments`.
+Additional quantitative scenarios: `SLALOM`, `TUNNEL_STRESS` (see [Monte Carlo](#monte-carlo--tunnel_stress-synthetic)), `--super-tunnel`, `--nhc-experiments` (see [NHC results](#nhc--what-the-matrix-actually-showed)).
 
 ---
 
@@ -547,14 +1011,20 @@ SIL architecture notes: [`docs/sil_architecture.md`](docs/sil_architecture.md).
 
 ## Roadmap
 
+Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):  
+[`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md)
+
 | Phase | Target |
 |-------|--------|
-| **Done** | PC simulator + CSV black box + zero-heap fusion/EKF core |
-| **Done** | `pico2_hardware` — Pico 2 W @ 100 Hz, banco Comarruga (`pico2-comarruga-banco-v1`) |
-| **Done** | Real-run diagnostic pipeline H0–H9d + GAP-1…4 closed; GAP-5 v1 closed |
-| **Now** | GAP-5 v2 observable / regime characterization |
-| **Next** | Campaña WCET S0–S7 + telemetría UDP en vivo desde `NaviCore3D_Pico2` |
-| **Twin** | Live telemetry → Digital Twin 3D dashboard |
+| **Done** | Zero-heap ESKF · evidence · spoof · safety-inject · cppcheck · **Catch2+RapidCheck** · CI code-audit |
+| **Now** | A3 domain Q/R profiles · expand error-path cover · harden cppcheck findings |
+| **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
+| **Also pending** | Allan publish from static IMU hours · WCET S0–S7 on-board (protocol ready) |
+| **Visibility** | Repo on GitHub · Unity demo local · communities **with** field+PPK2 when ready |
+
+**Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).
+
+Pico RT detail (health monitor / WCET protocol): [`DEVELOPMENT.md`](DEVELOPMENT.md) § Prioridades RT — subordinate to the PNT roadmap above.
 
 ---
 
@@ -563,5 +1033,5 @@ SIL architecture notes: [`docs/sil_architecture.md`](docs/sil_architecture.md).
 **Author:** Juan Carlos Pulido Mellado  
 **License:** [MIT License](LICENSE) — Copyright (c) 2026 Juan Carlos Pulido Mellado
 
-Private / showcase repository.  
-**NaviCore-3D** — *Navigate every domain. Trust every fix. Zero waste on the edge.*
+Hosted on GitHub (`origin/main`). Decide dual licence **before** going widely public / viral if commercial use is intended.  
+**NaviCore-3D** — *Resilience when the sky lies. Zero heap on the edge.*

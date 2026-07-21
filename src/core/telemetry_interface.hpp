@@ -117,6 +117,9 @@ typedef struct {
     /** Deriva horizontal/lateral vs verdad de escenario (m); NaN si no aplica. */
     float drift_m;
     bool drift_valid;
+    /** ω_z medido (rad/s) que alimenta predict/NHC; p. ej. imu.gyro_z en SLALOM. */
+    float measured_yaw_rate_radps;
+    bool measured_yaw_rate_valid;
 } TelemetryBindings;
 
 typedef struct {

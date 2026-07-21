@@ -1,0 +1,32 @@
+REAL_RUN_REPLAY: filtro=InsEkf15State
+REAL_RUN_REPLAY: entrada=C:\NaviCore-3D\docs\benchmarks\real_run_19082026_baseline\real_run_replay.csv
+REAL_RUN_REPLAY: salida=C:\NaviCore-3D\docs\benchmarks\h_nhc_yaw0\H2u\replay_output.csv
+REAL_RUN_REPLAY: montaje=calibration:C:\NaviCore-3D\calibration\imu_mount.json
+REAL_RUN_REPLAY: yaw_init=H0_zero_yaw
+REAL_RUN_REPLAY: H9a gravity tilt init (min_samples=50 window=2.0 s)
+REAL_RUN_REPLAY: constraint_policy=disabled nhc_policy=enabled nhc_every_n=1 static_end=30.0s gps_thresh=0.10 m/s
+REAL_RUN_REPLAY: NHC_sigma lateral=0.500 vertical=1.000 m/s
+REAL_RUN_REPLAY: nhc-att-z-unobs-immediate ON (H[ATT_Z]=0 from first NHC)
+REAL_RUN_REPLAY: seed_velocity=gnss pending (apply on first GPS with speed>=3.0 + course from Î”pos)
+REAL_RUN_REPLAY: gnss_obs_mode=pos_vel | sigma_vel=1.50 m/s | p_pv_policy=none
+REAL_RUN_REPLAY: H8 geodesy validation omitida (Location.csv no disponible)
+REAL_RUN_REPLAY: inicializado @ t=2.672 s | ref NED=(0.000, 0.000, -0.000) m
+REAL_RUN_REPLAY: H9a gravity tilt init @ t=3.174 s | samples=50 | mean_a_body=(-3.390, -7.395, 6.270) | mean_w_body=(-0.00595, -0.25955, 0.19958) | roll=-49.71 pitch=19.27 deg
+REAL_RUN_REPLAY: H-seed-yaw applied @ t=4.301 s | yaw:=course=93.6 deg (roll/pitch preserved)
+REAL_RUN_REPLAY: H-seed-v applied @ t=4.301 s | speed=8.38 m/s course=93.6 deg |Î”pos|=20.6 m | +yaw
+REAL_RUN_REPLAY: YAW_CHASE deg | before=-0.543 after_seed=93.615 after_update=93.577 after_pred1=78.253 after_pred2=76.519 | t_seed=4.301 t_upd=4.301(gnss_accept) t_p1=4.303 t_p2=4.313
+[t=  10.0 s] rows=1000 imu=993 gps=7 drift=65.77 m
+[t=  20.1 s] rows=2000 imu=1983 gps=17 drift=230.36 m
+[t=  30.1 s] rows=3000 imu=2973 gps=27 drift=229.08 m
+[t=  40.1 s] rows=4000 imu=3963 gps=37 drift=489.42 m
+[t=  50.1 s] rows=5000 imu=4953 gps=47 drift=710.97 m
+----------------------------------------------------------------
+ REAL_RUN_REPLAY resumen
+  Filas procesadas: 5991 (IMU=5933, GPS=57)
+  Duracion:         60.00 s
+  Filtro activo:    si
+  GNSS aceptadas:   7 | rechazadas: 50 (12.3% aceptadas)
+  Ultimo GPS NED:   (315.419, 456.181, 16.424) m
+  Deriva final H:   830.118 m
+  Estado final NED: (134.448, -353.970, -3477.276) m
+----------------------------------------------------------------

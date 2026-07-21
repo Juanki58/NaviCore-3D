@@ -1,0 +1,90 @@
+$ C:\Program Files\CMake\bin\cmake.EXE --build C:\NaviCore-3D\build_coverage --target navicore_regression_test -j 8
+exit=0
+
+--- stdout ---
+[  8%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/regression_tests.cpp.obj
+[ 16%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/super_tunnel_benchmark.cpp.obj
+[ 25%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/constant_slope_benchmark.cpp.obj
+[ 33%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/regression_suite.cpp.obj
+[ 41%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/core/vector3d.cpp.obj
+[ 50%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/core/NavState.cpp.obj
+[ 66%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/slalom_benchmark.cpp.obj
+[ 66%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/targets/generic_pc/sensors_sim.cpp.obj
+[ 75%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/core/geodesy.cpp.obj
+[ 83%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/core/ins_ekf_15_state.cpp.obj
+[ 91%] Building CXX object CMakeFiles/navicore_regression_test.dir/src/core/ins_ekf.cpp.obj
+[100%] Linking CXX executable navicore_regression_test.exe
+[100%] Built target navicore_regression_test
+
+--- stderr ---
+C:\NaviCore-3D\src\targets\generic_pc\regression_suite.cpp: In function 'void {anonymous}::test_nhc_jacobian_fd(RegressionTestReport*)':
+C:\NaviCore-3D\src\targets\generic_pc\regression_suite.cpp:382:21: warning: unused variable 'y_nom' [-Wunused-variable]
+  382 |         const float y_nom[2] = {-v_body[1], -v_body[2]};
+      |                     ^~~~~
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp: In function 'void imu_simulator_init(ImuSimulator*, uint32_t)':
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp:454:11: warning: 'void* memset(void*, int, size_t)' clearing an object of non-trivial type 'struct ImuSimulator'; use assignment or value-initialization instead [-Wclass-memaccess]
+  454 |     memset(sim, 0, sizeof(*sim));
+      |     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+In file included from C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp:1:
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.hpp:44:16: note: 'struct ImuSimulator' declared here
+   44 | typedef struct {
+      |                ^
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp: In function 'void gps_simulator_init(GpsSimulator*, Vector3D, float, float, uint32_t)':
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp:524:11: warning: 'void* memset(void*, int, size_t)' clearing an object of non-trivial type 'struct GpsSimulator'; use assignment or value-initialization instead [-Wclass-memaccess]
+  524 |     memset(sim, 0, sizeof(*sim));
+      |     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.hpp:65:16: note: 'struct GpsSimulator' declared here
+   65 | typedef struct {
+      |                ^
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp: In function 'void sensors_simulation_init(SensorsSimulation*, SensorScenario, Vector3D, float, float, uint32_t)':
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.cpp:683:11: warning: 'void* memset(void*, int, size_t)' clearing an object of non-trivial type 'struct SensorsSimulation'; use assignment or value-initialization instead [-Wclass-memaccess]
+  683 |     memset(ctx, 0, sizeof(*ctx));
+      |     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\targets\generic_pc\sensors_sim.hpp:97:16: note: 'struct SensorsSimulation' declared here
+   97 | typedef struct {
+      |                ^
+C:\NaviCore-3D\src\core\ins_ekf.cpp: In function 'void ins_ekf_init(InsEkfFilter*, Vector3D, float, NavDomain)':
+C:\NaviCore-3D\src\core\ins_ekf.cpp:2307:11: warning: 'void* memset(void*, int, size_t)' clearing an object of non-trivial type 'struct InsEkfFilter'; use assignment or value-initialization instead [-Wclass-memaccess]
+ 2307 |     memset(filter, 0, sizeof(InsEkfFilter));
+      |     ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:\NaviCore-3D\src\core\ins_ekf.cpp:1:
+C:\NaviCore-3D\src\core\ins_ekf.hpp:365:8: note: 'struct InsEkfFilter' declared here
+  365 | struct InsEkfFilter {
+      |        ^~~~~~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf.cpp: In function 'void ins_ekf_log_cov_step_audit(InsEkfFilter*, const char*, const char*)':
+C:\NaviCore-3D\src\core\ins_ekf.cpp:3414:9: warning: too many arguments for format [-Wformat-extra-args]
+ 3414 |         "%.9f,%llu,%s,%s,"
+      |         ^~~~~~~~~~~~~~~~~~
+ 3415 |         "%.9e,%.9e,%.9e,"
+      |         ~~~~~~~~~~~~~~~~~
+ 3416 |         "%.9e,%.9e,%.9e,"
+      |         ~~~~~~~~~~~~~~~~~
+ 3417 |         "%.9e,%.9e,%.9e,"
+      |         ~~~~~~~~~~~~~~~~~
+ 3418 |         "%.6f,%.6f,%.6f,"
+      |         ~~~~~~~~~~~~~~~~~
+ 3419 |         "%.6f,%.6f,%.6f,%.6f\n",
+      |         ~~~~~~~~~~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf.cpp: At global scope:
+C:\NaviCore-3D\src\core\ins_ekf.cpp:1090:13: warning: 'void gnss_store_k_audit(InsEkfFilter*, const float (*)[3])' defined but not used [-Wunused-function]
+ 1090 | static void gnss_store_k_audit(
+      |             ^~~~~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf.cpp:101:6: warning: 'void {anonymous}::ins_ekf_covariance_joseph_update(float (*)[15], const float (*)[3], float, float (*)[15], float (*)[15], float (*)[15])' defined but not used [-Wunused-function]
+  101 | void ins_ekf_covariance_joseph_update(
+      |      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf.cpp:64:6: warning: 'void {anonymous}::mat15_transpose(const float (*)[15], float (*)[15])' defined but not used [-Wunused-function]
+   64 | void mat15_transpose(const InsEkfMat15 in, InsEkfMat15 out)
+      |      ^~~~~~~~~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf.cpp:48:6: warning: 'void {anonymous}::mat_copy(const float (*)[15], float (*)[15])' defined but not used [-Wunused-function]
+   48 | void mat_copy(const InsEkfMat15 src, InsEkfMat15 dst)
+      |      ^~~~~~~~
+C:\NaviCore-3D\src\core\ins_ekf_15_state.cpp: In constructor 'InsEkf15State::InsEkf15State(InsEkfCoreVersion)':
+C:\NaviCore-3D\src\core\ins_ekf_15_state.cpp:26:16: warning: 'void* memset(void*, int, size_t)' clearing an object of non-trivial type 'struct InsEkfFilter'; use assignment or value-initialization instead [-Wclass-memaccess]
+   26 |     std::memset(&ekf_, 0, sizeof(ekf_));
+      |     ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:\NaviCore-3D\src\core\ins_ekf_15_state.hpp:4,
+                 from C:\NaviCore-3D\src\core\ins_ekf_15_state.cpp:1:
+C:\NaviCore-3D\src\core\ins_ekf.hpp:365:8: note: 'struct InsEkfFilter' declared here
+  365 | struct InsEkfFilter {
+      |        ^~~~~~~~~~~~
+

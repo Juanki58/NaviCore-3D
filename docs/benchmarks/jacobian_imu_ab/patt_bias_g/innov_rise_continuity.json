@@ -1,0 +1,408 @@
+{
+  "windows": {
+    "onset_to_break": {
+      "label": "onset\u2192break [1.34,1.59)",
+      "n": 25,
+      "t_span": [
+        1.340000033,
+        1.580000043
+      ],
+      "mean_ratio": 0.5516433042643094,
+      "median_ratio": 0.5504130823818618,
+      "p90_ratio": 0.6379729199808495,
+      "mean_innov_c": 0.26254829762373744,
+      "mean_innov_l": 0.1350969260806948,
+      "sum_innov_c": 6.5637074405934355,
+      "sum_innov_l": 3.37742315201737,
+      "sum_ratio_of_sums": 0.5145602820640055,
+      "median_cos": 0.972332077498368,
+      "mean_cos": 0.935655174989466,
+      "frac_cos_lt_0": 0.0,
+      "sum_dx_bias_gz_c": -0.014112278732599999,
+      "sum_dx_bias_gz_l": -0.012353731414290001,
+      "mean_abs_omega_frac_peak": 0.6570776126476896
+    },
+    "break_to_peak": {
+      "label": "break\u2192peak [1.59,2.0]",
+      "n": 42,
+      "t_span": [
+        1.590000033,
+        2.0
+      ],
+      "mean_ratio": 5.9807790717642995,
+      "median_ratio": 2.4424715518894087,
+      "p90_ratio": 18.385289236462807,
+      "mean_innov_c": 0.267278356780611,
+      "mean_innov_l": 0.9036685074521073,
+      "sum_innov_c": 11.225690984785663,
+      "sum_innov_l": 37.9540773129885,
+      "sum_ratio_of_sums": 3.381001433624727,
+      "median_cos": -0.8146454686054496,
+      "mean_cos": -0.42873974515349955,
+      "frac_cos_lt_0": 0.7142857142857143,
+      "sum_dx_bias_gz_c": 0.02353520478913,
+      "sum_dx_bias_gz_l": -0.013554378939100001,
+      "mean_abs_omega_frac_peak": 0.9314999242514865
+    },
+    "full_rise": {
+      "label": "full rise [1.34,2.0]",
+      "n": 67,
+      "t_span": [
+        1.340000033,
+        2.0
+      ],
+      "mean_ratio": 3.9549821435926606,
+      "median_ratio": 0.6896966284239453,
+      "p90_ratio": 11.640145301354027,
+      "mean_innov_c": 0.26551340933401646,
+      "mean_innov_l": 0.6168880666418787,
+      "sum_innov_c": 17.7893984253791,
+      "sum_innov_l": 41.331500465005874,
+      "sum_ratio_of_sums": 2.3233781984465884,
+      "median_cos": 0.3889444476950369,
+      "mean_cos": 0.08036283698939799,
+      "frac_cos_lt_0": 0.44776119402985076,
+      "sum_dx_bias_gz_c": 0.00942292605653,
+      "sum_dx_bias_gz_l": -0.025908110353390003,
+      "mean_abs_omega_frac_peak": 0.8291035393246966
+    }
+  },
+  "edge_0.10s": {
+    "pre": {
+      "label": "break-0.10\u2192break",
+      "n": 10,
+      "t_span": [
+        1.490000129,
+        1.580000043
+      ],
+      "mean_ratio": 0.49225998192174353,
+      "median_ratio": 0.4820380873794326,
+      "p90_ratio": 0.5211200956952395,
+      "mean_innov_c": 0.4976819894529167,
+      "mean_innov_l": 0.24739778846010535,
+      "sum_innov_c": 4.976819894529167,
+      "sum_innov_l": 2.4739778846010534,
+      "sum_ratio_of_sums": 0.4971001436721882,
+      "median_cos": 0.9077539424031051,
+      "mean_cos": 0.8691936486465647,
+      "frac_cos_lt_0": 0.0,
+      "sum_dx_bias_gz_c": -0.0098276723301,
+      "sum_dx_bias_gz_l": -0.0093993632478,
+      "mean_abs_omega_frac_peak": 0.7441362209469425
+    },
+    "post": {
+      "label": "break\u2192break+0.10",
+      "n": 10,
+      "t_span": [
+        1.590000033,
+        1.680000067
+      ],
+      "mean_ratio": 1.8763995154150535,
+      "median_ratio": 1.5671537818148318,
+      "p90_ratio": 3.177727359167201,
+      "mean_innov_c": 0.6845469043968951,
+      "mean_innov_l": 1.2321295537239207,
+      "sum_innov_c": 6.845469043968952,
+      "sum_innov_l": 12.321295537239207,
+      "sum_ratio_of_sums": 1.7999198386697273,
+      "median_cos": -0.9322960597900861,
+      "mean_cos": -0.6076531743827476,
+      "frac_cos_lt_0": 0.8,
+      "sum_dx_bias_gz_c": 0.022103539493099997,
+      "sum_dx_bias_gz_l": -0.040628450457999996,
+      "mean_abs_omega_frac_peak": 0.8392388344342402
+    },
+    "jump_median_ratio": 1.0851156944353992,
+    "median_cos_pre": 0.9077539424031051,
+    "median_cos_post": -0.9322960597900861
+  },
+  "edge_0.05s": {
+    "pre": {
+      "label": "break-0.05\u2192break",
+      "n": 5,
+      "t_span": [
+        1.540000081,
+        1.580000043
+      ],
+      "mean_ratio": 0.5012070837116503,
+      "median_ratio": 0.48228218220197494,
+      "p90_ratio": 0.5524862612559881,
+      "mean_innov_c": 0.6496888831272125,
+      "mean_innov_l": 0.3286489031878403,
+      "sum_innov_c": 3.2484444156360626,
+      "sum_innov_l": 1.6432445159392015,
+      "sum_ratio_of_sums": 0.50585582072133,
+      "median_cos": 0.8218985428872939,
+      "mean_cos": 0.796334341287823,
+      "frac_cos_lt_0": 0.0,
+      "sum_dx_bias_gz_c": -0.004966471112,
+      "sum_dx_bias_gz_l": -0.0063763459916,
+      "mean_abs_omega_frac_peak": 0.7703232019720353
+    },
+    "post": {
+      "label": "break\u2192break+0.05",
+      "n": 5,
+      "t_span": [
+        1.590000033,
+        1.630000114
+      ],
+      "mean_ratio": 1.0965725428853752,
+      "median_ratio": 1.1060710175939403,
+      "p90_ratio": 1.4248699471546065,
+      "mean_innov_c": 0.6768283005020694,
+      "mean_innov_l": 0.7352927512633343,
+      "sum_innov_c": 3.384141502510347,
+      "sum_innov_l": 3.6764637563166715,
+      "sum_ratio_of_sums": 1.0863800327467041,
+      "median_cos": -0.24792779606060739,
+      "mean_cos": -0.23474266567974683,
+      "frac_cos_lt_0": 0.6,
+      "sum_dx_bias_gz_c": 0.0137100436832,
+      "sum_dx_bias_gz_l": -0.014787903056000001,
+      "mean_abs_omega_frac_peak": 0.8179479376078357
+    },
+    "jump_median_ratio": 0.6237888353919654
+  },
+  "continuity": {
+    "log_ratio_slope_pre": -1.369605390052747,
+    "log_ratio_slope_post": -4.90863356777969,
+    "log_ratio_slope_full_rise": 1.9910036407465372,
+    "pred_ratio_at_break_from_pre_fit": 0.4586802214689788,
+    "actual_median_ratio_last_0.1_pre": 0.4820380873794326,
+    "actual_median_ratio_first_0.1_post": 1.5671537818148318,
+    "jump_mean_ratio_post_minus_pre": 5.42913576749999,
+    "jump_median_ratio_post_minus_pre": 1.8920584695075469,
+    "pre_half_growth_median_ratio": -0.11729629026316324,
+    "typical_abs_bin_step_ratio_50ms": 0.8928929146212308,
+    "max_abs_bin_step_ratio_50ms": 17.242481014618644,
+    "max_abs_bin_step_t_mid": 1.7900000000000005,
+    "max_step_near_break": false,
+    "frac_sum_innov_l_accumulated_by_break": 0.08171547400939222,
+    "frac_sum_innov_c_accumulated_by_break": 0.368967363799631,
+    "frac_abs_dx_bias_gz_l_by_break": 0.09199551422680442,
+    "flat_pre": true,
+    "big_edge_jump": false
+  },
+  "nuance": {
+    "post_mean_ratio_vs_aggregate_6": 5.9807790717642995,
+    "pre_mean_ratio": 0.5516433042643094,
+    "post_sum_ratio_of_sums": 3.381001433624727,
+    "pre_sum_ratio_of_sums": 0.5145602820640055,
+    "note": "Aggregate post-break mean ratio\u22486 can be dominated by a few large ticks; compare median, edge jump, and \u03a3\u2016y\u2016 fractions."
+  },
+  "bins_50ms": [
+    {
+      "t_mid": 1.3650000000000002,
+      "t0": 1.34,
+      "t1": 1.3900000000000001,
+      "n": 5,
+      "median_ratio": 0.6414345014006101,
+      "mean_ratio": 0.6410447120287138,
+      "sum_ratio": 0.6393318408548114,
+      "median_cos": 0.9864554523506014,
+      "mean_innov_l": 0.03417338428251685,
+      "mean_innov_c": 0.05345171646202653,
+      "sum_dx_l": -0.00051083898129,
+      "omega_frac": 0.5356946755056424
+    },
+    {
+      "t_mid": 1.415,
+      "t0": 1.3900000000000001,
+      "t1": 1.4400000000000002,
+      "n": 5,
+      "median_ratio": 0.5943791829657958,
+      "mean_ratio": 0.5940331829685437,
+      "sum_ratio": 0.5916485220107367,
+      "median_cos": 0.981962856239571,
+      "mean_innov_l": 0.054532296004919475,
+      "mean_innov_c": 0.09217008743567837,
+      "sum_dx_l": -0.0008728808462,
+      "omega_frac": 0.6002721959618371
+    },
+    {
+      "t_mid": 1.4650000000000003,
+      "t0": 1.4400000000000002,
+      "t1": 1.4900000000000002,
+      "n": 5,
+      "median_ratio": 0.5387498509660186,
+      "mean_ratio": 0.5386186624808023,
+      "sum_ratio": 0.5355477014696518,
+      "median_cos": 0.972332077498368,
+      "mean_innov_l": 0.0919833731958269,
+      "mean_innov_c": 0.171755705315149,
+      "sum_dx_l": -0.001570648339,
+      "omega_frac": 0.6611487498770834
+    },
+    {
+      "t_mid": 1.5150000000000001,
+      "t0": 1.4900000000000002,
+      "t1": 1.5400000000000003,
+      "n": 5,
+      "median_ratio": 0.48179399255689026,
+      "mean_ratio": 0.48331288013183676,
+      "sum_ratio": 0.48064403759874874,
+      "median_cos": 0.9449164911279834,
+      "mean_innov_l": 0.16614667373237046,
+      "mean_innov_c": 0.34567509577862077,
+      "sum_dx_l": -0.0030230172562,
+      "omega_frac": 0.71794923992185
+    },
+    {
+      "t_mid": 1.5650000000000004,
+      "t0": 1.5400000000000003,
+      "t1": 1.5900000000000003,
+      "n": 5,
+      "median_ratio": 0.48228218220197494,
+      "mean_ratio": 0.5012070837116503,
+      "sum_ratio": 0.50585582072133,
+      "median_cos": 0.8218985428872939,
+      "mean_innov_l": 0.3286489031878403,
+      "mean_innov_c": 0.6496888831272125,
+      "sum_dx_l": -0.0063763459916,
+      "omega_frac": 0.7703232019720353
+    },
+    {
+      "t_mid": 1.6150000000000002,
+      "t0": 1.5900000000000003,
+      "t1": 1.6400000000000003,
+      "n": 5,
+      "median_ratio": 1.1060710175939403,
+      "mean_ratio": 1.0965725428853752,
+      "sum_ratio": 1.0863800327467041,
+      "median_cos": -0.24792779606060739,
+      "mean_innov_l": 0.7352927512633343,
+      "mean_innov_c": 0.6768283005020694,
+      "sum_dx_l": -0.014787903056000001,
+      "omega_frac": 0.8179479376078357
+    },
+    {
+      "t_mid": 1.6650000000000005,
+      "t0": 1.6400000000000003,
+      "t1": 1.6900000000000004,
+      "n": 5,
+      "median_ratio": 2.2277765658483597,
+      "mean_ratio": 2.656226487944733,
+      "sum_ratio": 2.497548029586244,
+      "median_cos": -0.9834922421916479,
+      "mean_innov_l": 1.728966356184507,
+      "mean_innov_c": 0.692265508291721,
+      "sum_dx_l": -0.025840547402,
+      "omega_frac": 0.8605297312606448
+    },
+    {
+      "t_mid": 1.7150000000000003,
+      "t0": 1.6900000000000004,
+      "t1": 1.7400000000000004,
+      "n": 5,
+      "median_ratio": 9.709396697220118,
+      "mean_ratio": 9.539029781676755,
+      "sum_ratio": 8.930749437209034,
+      "median_cos": -0.8415299614136574,
+      "mean_innov_l": 1.9484622105219684,
+      "mean_innov_c": 0.218174546741162,
+      "sum_dx_l": 0.0015079301085,
+      "omega_frac": 0.8978060540250077
+    },
+    {
+      "t_mid": 1.7650000000000006,
+      "t0": 1.7400000000000004,
+      "t1": 1.7900000000000005,
+      "n": 5,
+      "median_ratio": 24.18611679257139,
+      "mean_ratio": 22.34991820856229,
+      "sum_ratio": 21.796021799680226,
+      "median_cos": 0.7974543152128766,
+      "mean_innov_l": 2.026231334153592,
+      "mean_innov_c": 0.09296335600945854,
+      "sum_dx_l": 0.04848896339400001,
+      "omega_frac": 0.9295471526853601
+    },
+    {
+      "t_mid": 1.8150000000000004,
+      "t0": 1.7900000000000005,
+      "t1": 1.8400000000000005,
+      "n": 5,
+      "median_ratio": 6.943635777952746,
+      "mean_ratio": 9.631053475918836,
+      "sum_ratio": 9.743229210095627,
+      "median_cos": 0.6025179840083801,
+      "mean_innov_l": 0.6747893221688809,
+      "mean_innov_c": 0.06925725625644581,
+      "sum_dx_l": -0.015600337181999999,
+      "omega_frac": 0.9555572278932223
+    },
+    {
+      "t_mid": 1.8650000000000007,
+      "t0": 1.8400000000000005,
+      "t1": 1.8900000000000006,
+      "n": 5,
+      "median_ratio": 3.321383685955622,
+      "mean_ratio": 3.3970692236272306,
+      "sum_ratio": 3.319397346494529,
+      "median_cos": -0.7964487616818778,
+      "mean_innov_l": 0.25963201251551776,
+      "mean_innov_c": 0.07821661145499915,
+      "sum_dx_l": -0.004957847588,
+      "omega_frac": 0.9756760178226827
+    },
+    {
+      "t_mid": 1.9150000000000005,
+      "t0": 1.8900000000000006,
+      "t1": 1.9400000000000006,
+      "n": 5,
+      "median_ratio": 1.032766189853398,
+      "mean_ratio": 1.0957651788211034,
+      "sum_ratio": 1.0490228398822394,
+      "median_cos": -0.9493110564691577,
+      "mean_innov_l": 0.122048523710463,
+      "mean_innov_c": 0.1163449632080116,
+      "sum_dx_l": -0.0011648103100000001,
+      "omega_frac": 0.9897794156964581
+    },
+    {
+      "t_mid": 1.9650000000000007,
+      "t0": 1.9400000000000006,
+      "t1": 1.9900000000000007,
+      "n": 5,
+      "median_ratio": 0.3686859088653557,
+      "mean_ratio": 0.3853476049474227,
+      "sum_ratio": 0.37184371985258463,
+      "median_cos": -0.9008067031544835,
+      "mean_innov_l": 0.07184716175199356,
+      "mean_innov_c": 0.19321870429995958,
+      "sum_dx_l": -0.0008760457275000001,
+      "omega_frac": 0.9977804995883839
+    }
+  ],
+  "verdict": {
+    "label": "REGIME_CHANGE_AT_BREAK_NOT_CONTINUOUS_FROM_ONSET",
+    "reading": "Innov ratio does NOT climb continuously from onset: onset\u2192break stays flat at ~0.55 (latch smaller than ctrl). The aggregate post-break mean ratio\u22486 is post-break-dominated (~92% of \u03a3\u2016y\u2016_latch after 1.59) and mean-inflated by a later spike (~1.69\u20131.79, median ratio~24). At the break edge itself: cos flips +0.91\u2192\u22120.93 (real composition event) while ratio only crosses ~0.48\u21921.11 \u2014 a regime change from \u201clatch helps innov\u201d to \u201clatch hurts\u201d, not a statistical threshold on a pre-existing ratio trend. Still: do not treat 1.59 as sole intervention trigger \u2014 signed bias escape is already ~48% complete in the silent onset\u2192break window; and peak innov damage is ~1.7\u20131.8, not at break. K_bias window = full rise [1.34,2.0].",
+    "answers_user": {
+      "is_ratio_6_post_break_pure": true,
+      "pre_ratio_inflating_aggregate": false,
+      "pre_actually": "latch innov smaller (ratio~0.55); full-rise mean pulled down by pre",
+      "continuous_ratio_growth_along_rise": false,
+      "discrete_event_at_break": {
+        "cos_flip": true,
+        "ratio_regime_cross_unity": true,
+        "ratio_explosion_to_6": false,
+        "ratio_explosion_location": "~1.69\u20131.79 (after break)"
+      },
+      "user_suspicion_continuous_threshold": "Rejected for innov ratio (flat pre). Partially right that 1.59 is not the unique causal climax \u2014 bias silent from onset; max innov ratio later."
+    }
+  },
+  "design_implication": {
+    "decompose_window": "full rise onset\u2192peak [1.34, 2.0]",
+    "do_not": [
+      "Use t=1.59 alone as intervention trigger (misses silent bias half; H-ATT-c lesson)",
+      "Treat aggregate ratio\u22486 as a continuous climb from onset",
+      "Window decompose on post-break only"
+    ],
+    "do": [
+      "Condition K_bias att/vel on full rising limb",
+      "Report pre vs post break separately inside that window",
+      "Expect innov-ratio story and bias-escape story to have different timing (bias earlier)"
+    ]
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_innov_rise_continuity.png"
+}

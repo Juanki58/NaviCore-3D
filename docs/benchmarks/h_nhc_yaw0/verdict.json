@@ -1,0 +1,151 @@
+{
+  "H2": {
+    "n_B": 280,
+    "yaw_chase": {
+      "before": -1.98,
+      "after_seed": 93.615,
+      "after_update": 93.534,
+      "after_pred1": 107.496,
+      "after_pred2": 127.087,
+      "t_seed": 4.301,
+      "t_upd": 4.301,
+      "upd_tag": "gnss_accept",
+      "t_p1": 4.303,
+      "t_p2": 4.313,
+      "dyaw_seed_to_pred1": 13.881,
+      "dyaw_pred1_to_pred2": 19.591000000000008
+    },
+    "P1_fail_frac": 0.27976190476190477,
+    "P3_first_fail_t_s": 4.323426723,
+    "P3a_fail_t_s": 4.323426723,
+    "P3a_immediate_break": true,
+    "max_abs_dyaw_B_post_seed": 19.572629929,
+    "max_abs_course_yaw_B_post_seed_2s": 179.981445312,
+    "residual_h_at_6s": 34.466388702,
+    "residual_h_max_0_6": 35.4022789,
+    "t_sep_s": 5.301555157,
+    "gnss_accept": 7,
+    "gnss_reject": 50
+  },
+  "H2u": {
+    "n_B": 280,
+    "yaw_chase": {
+      "before": -0.543,
+      "after_seed": 93.615,
+      "after_update": 93.577,
+      "after_pred1": 78.253,
+      "after_pred2": 76.519,
+      "t_seed": 4.301,
+      "t_upd": 4.301,
+      "upd_tag": "gnss_accept",
+      "t_p1": 4.303,
+      "t_p2": 4.313,
+      "dyaw_seed_to_pred1": -15.361999999999995,
+      "dyaw_pred1_to_pred2": -1.7339999999999947
+    },
+    "P1_fail_frac": 0.0,
+    "P3_first_fail_t_s": 4.625940323,
+    "P3a_fail_t_s": 4.625940323,
+    "P3a_immediate_break": true,
+    "max_abs_dyaw_B_post_seed": 60.349170685,
+    "max_abs_course_yaw_B_post_seed_2s": 179.74432373,
+    "residual_h_at_6s": 33.222961426,
+    "residual_h_max_0_6": 33.222961426,
+    "t_sep_s": 5.593985081,
+    "gnss_accept": 7,
+    "gnss_reject": 50
+  },
+  "H2ua": {
+    "n_B": 280,
+    "yaw_chase": {
+      "before": -0.645,
+      "after_seed": 93.615,
+      "after_update": 93.571,
+      "after_pred1": 91.765,
+      "after_pred2": 92.712,
+      "t_seed": 4.301,
+      "t_upd": 4.301,
+      "upd_tag": "gnss_accept",
+      "t_p1": 4.303,
+      "t_p2": 4.313,
+      "dyaw_seed_to_pred1": -1.8499999999999943,
+      "dyaw_pred1_to_pred2": 0.9470000000000027
+    },
+    "P1_fail_frac": 0.0,
+    "P3_first_fail_t_s": null,
+    "P3a_immediate_break": false,
+    "max_abs_dyaw_B_post_seed": 1.802643895,
+    "max_abs_course_yaw_B_post_seed_2s": 7.326759338,
+    "residual_h_at_6s": 18.623209,
+    "residual_h_max_0_6": 23.820264816,
+    "t_sep_s": 6.309934616,
+    "gnss_accept": 7,
+    "gnss_reject": 50
+  },
+  "gates_H2ua": {
+    "yaw_held_after_two_predicts": true,
+    "P3a_no_break_in_2s_after_seed": true
+  },
+  "PASS_H2ua": true,
+  "compare": {
+    "yaw_chase": {
+      "H2": {
+        "before": -1.98,
+        "after_seed": 93.615,
+        "after_update": 93.534,
+        "after_pred1": 107.496,
+        "after_pred2": 127.087,
+        "t_seed": 4.301,
+        "t_upd": 4.301,
+        "upd_tag": "gnss_accept",
+        "t_p1": 4.303,
+        "t_p2": 4.313,
+        "dyaw_seed_to_pred1": 13.881,
+        "dyaw_pred1_to_pred2": 19.591000000000008
+      },
+      "H2u": {
+        "before": -0.543,
+        "after_seed": 93.615,
+        "after_update": 93.577,
+        "after_pred1": 78.253,
+        "after_pred2": 76.519,
+        "t_seed": 4.301,
+        "t_upd": 4.301,
+        "upd_tag": "gnss_accept",
+        "t_p1": 4.303,
+        "t_p2": 4.313,
+        "dyaw_seed_to_pred1": -15.361999999999995,
+        "dyaw_pred1_to_pred2": -1.7339999999999947
+      },
+      "H2ua": {
+        "before": -0.645,
+        "after_seed": 93.615,
+        "after_update": 93.571,
+        "after_pred1": 91.765,
+        "after_pred2": 92.712,
+        "t_seed": 4.301,
+        "t_upd": 4.301,
+        "upd_tag": "gnss_accept",
+        "t_p1": 4.303,
+        "t_p2": 4.313,
+        "dyaw_seed_to_pred1": -1.8499999999999943,
+        "dyaw_pred1_to_pred2": 0.9470000000000027
+      }
+    },
+    "P3_first_fail_t_s": {
+      "H2": 4.323426723,
+      "H2u": 4.625940323,
+      "H2ua": null
+    },
+    "residual_h_at_6s": {
+      "H2": 34.466388702,
+      "H2u": 33.222961426,
+      "H2ua": 18.623209
+    },
+    "t_sep_s": {
+      "H2": 5.301555157,
+      "H2u": 5.593985081,
+      "H2ua": 6.309934616
+    }
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "arm": "B_nhc_disabled",
+  "question": "In NHC-off G1 shell, which 5-DoF NIS component crosses the gate at the first GNSS that ends the early-accept regime?",
+  "exit_rule": "Days 1\u20134: produce a concrete causal mechanism for this transition, or freeze knowledge and start EKF rewrite. No parallel branches.",
+  "first_absolute_reject": {
+    "timestamp_s": 20.301353455,
+    "gps_index": 18,
+    "accepted": 0,
+    "reject_reason": 1,
+    "n_meas": 5,
+    "gnss_nis_gate": 36.459,
+    "nis_threshold": 15.086,
+    "gate_margin": -21.373000000000005,
+    "crossed": true,
+    "contrib": {
+      "nis_contrib_n": 0.347179,
+      "nis_contrib_e": 0.924864,
+      "nis_contrib_d": 0.67181,
+      "nis_contrib_vn": 0.923399,
+      "nis_contrib_ve": 33.591751
+    },
+    "contrib_abs_share": {
+      "n": 0.009522449091655083,
+      "e": 0.025367232340390657,
+      "d": 0.01842645011439287,
+      "vn": 0.02532705022131296,
+      "ve": 0.9213568182322485
+    },
+    "dominant_abs_component": "ve",
+    "innov_h_m": 9.830275,
+    "innov_vn_mps": -1.182476,
+    "innov_ve_mps": 10.242094,
+    "vel_pred_h_mps": 10.675867,
+    "gps_speed_mps": 15.695425,
+    "dt_since_prev_accept_s": 1.0
+  },
+  "regime_change_reject": {
+    "timestamp_s": 20.301353455,
+    "gps_index": 18,
+    "accepted": 0,
+    "reject_reason": 1,
+    "n_meas": 5,
+    "gnss_nis_gate": 36.459,
+    "nis_threshold": 15.086,
+    "gate_margin": -21.373000000000005,
+    "crossed": true,
+    "contrib": {
+      "nis_contrib_n": 0.347179,
+      "nis_contrib_e": 0.924864,
+      "nis_contrib_d": 0.67181,
+      "nis_contrib_vn": 0.923399,
+      "nis_contrib_ve": 33.591751
+    },
+    "contrib_abs_share": {
+      "n": 0.009522449091655083,
+      "e": 0.025367232340390657,
+      "d": 0.01842645011439287,
+      "vn": 0.02532705022131296,
+      "ve": 0.9213568182322485
+    },
+    "dominant_abs_component": "ve",
+    "innov_h_m": 9.830275,
+    "innov_vn_mps": -1.182476,
+    "innov_ve_mps": 10.242094,
+    "vel_pred_h_mps": 10.675867,
+    "gps_speed_mps": 15.695425,
+    "dt_since_prev_accept_s": 1.0
+  },
+  "last_accept_before_regime_change": {
+    "timestamp_s": 19.301353455,
+    "gps_index": 17,
+    "accepted": 1,
+    "reject_reason": 0,
+    "n_meas": 5,
+    "gnss_nis_gate": 11.285184,
+    "nis_threshold": 15.086,
+    "gate_margin": 3.800816000000001,
+    "crossed": false,
+    "contrib": {
+      "nis_contrib_n": 0.533526,
+      "nis_contrib_e": 0.476288,
+      "nis_contrib_d": 0.918791,
+      "nis_contrib_vn": 5.302602,
+      "nis_contrib_ve": 4.053977
+    },
+    "contrib_abs_share": {
+      "n": 0.04727667710158735,
+      "e": 0.0422047172646897,
+      "d": 0.08141568626616988,
+      "vn": 0.46987288820456985,
+      "ve": 0.35923003116298324
+    },
+    "dominant_abs_component": "vn",
+    "innov_h_m": 7.584242,
+    "innov_vn_mps": -4.282192,
+    "innov_ve_mps": 3.638706,
+    "vel_pred_h_mps": 16.169052,
+    "gps_speed_mps": 15.874033,
+    "dt_since_prev_accept_s": 1.0
+  },
+  "context_rows": [
+    {
+      "timestamp_s": 17.301353455,
+      "gps_index": 15,
+      "accepted": 1,
+      "reject_reason": 0,
+      "n_meas": 5,
+      "gnss_nis_gate": 5.272913,
+      "nis_threshold": 15.086,
+      "gate_margin": 9.813087,
+      "crossed": false,
+      "contrib": {
+        "nis_contrib_n": 1.523165,
+        "nis_contrib_e": 0.990062,
+        "nis_contrib_d": 1.525993,
+        "nis_contrib_vn": 0.344565,
+        "nis_contrib_ve": 0.889127
+      },
+      "contrib_abs_share": {
+        "n": 0.288866000418744,
+        "e": 0.18776380110269242,
+        "d": 0.28940232645642483,
+        "vn": 0.06534624511086094,
+        "ve": 0.16862162691127788
+      },
+      "dominant_abs_component": "d",
+      "innov_h_m": 9.559054,
+      "innov_vn_mps": -1.313956,
+      "innov_ve_mps": -1.64215,
+      "vel_pred_h_mps": 17.943766,
+      "gps_speed_mps": 15.856018,
+      "dt_since_prev_accept_s": 1.0
+    },
+    {
+      "timestamp_s": 18.301353455,
+      "gps_index": 16,
+      "accepted": 1,
+      "reject_reason": 0,
+      "n_meas": 5,
+      "gnss_nis_gate": 5.871017,
+      "nis_threshold": 15.086,
+      "gate_margin": 9.214983,
+      "crossed": false,
+      "contrib": {
+        "nis_contrib_n": 0.780105,
+        "nis_contrib_e": 0.444958,
+        "nis_contrib_d": 1.021528,
+        "nis_contrib_vn": 3.039214,
+        "nis_contrib_ve": 0.585211
+      },
+      "contrib_abs_share": {
+        "n": 0.13287393527798255,
+        "e": 0.07578892648223068,
+        "d": 0.17399509727106857,
+        "vn": 0.5176640635964882,
+        "ve": 0.09967797737222996
+      },
+      "dominant_abs_component": "vn",
+      "innov_h_m": 7.131713,
+      "innov_vn_mps": -3.417401,
+      "innov_ve_mps": -1.785964,
+      "vel_pred_h_mps": 19.466703,
+      "gps_speed_mps": 15.987272,
+      "dt_since_prev_accept_s": 1.0
+    },
+    {
+      "timestamp_s": 19.301353455,
+      "gps_index": 17,
+      "accepted": 1,
+      "reject_reason": 0,
+      "n_meas": 5,
+      "gnss_nis_gate": 11.285184,
+      "nis_threshold": 15.086,
+      "gate_margin": 3.800816000000001,
+      "crossed": false,
+      "contrib": {
+        "nis_contrib_n": 0.533526,
+        "nis_contrib_e": 0.476288,
+        "nis_contrib_d": 0.918791,
+        "nis_contrib_vn": 5.302602,
+        "nis_contrib_ve": 4.053977
+      },
+      "contrib_abs_share": {
+        "n": 0.04727667710158735,
+        "e": 0.0422047172646897,
+        "d": 0.08141568626616988,
+        "vn": 0.46987288820456985,
+        "ve": 0.35923003116298324
+      },
+      "dominant_abs_component": "vn",
+      "innov_h_m": 7.584242,
+      "innov_vn_mps": -4.282192,
+      "innov_ve_mps": 3.638706,
+      "vel_pred_h_mps": 16.169052,
+      "gps_speed_mps": 15.874033,
+      "dt_since_prev_accept_s": 1.0
+    },
+    {
+      "timestamp_s": 20.301353455,
+      "gps_index": 18,
+      "accepted": 0,
+      "reject_reason": 1,
+      "n_meas": 5,
+      "gnss_nis_gate": 36.459,
+      "nis_threshold": 15.086,
+      "gate_margin": -21.373000000000005,
+      "crossed": true,
+      "contrib": {
+        "nis_contrib_n": 0.347179,
+        "nis_contrib_e": 0.924864,
+        "nis_contrib_d": 0.67181,
+        "nis_contrib_vn": 0.923399,
+        "nis_contrib_ve": 33.591751
+      },
+      "contrib_abs_share": {
+        "n": 0.009522449091655083,
+        "e": 0.025367232340390657,
+        "d": 0.01842645011439287,
+        "vn": 0.02532705022131296,
+        "ve": 0.9213568182322485
+      },
+      "dominant_abs_component": "ve",
+      "innov_h_m": 9.830275,
+      "innov_vn_mps": -1.182476,
+      "innov_ve_mps": 10.242094,
+      "vel_pred_h_mps": 10.675867,
+      "gps_speed_mps": 15.695425,
+      "dt_since_prev_accept_s": 1.0
+    },
+    {
+      "timestamp_s": 21.301353455,
+      "gps_index": 19,
+      "accepted": 0,
+      "reject_reason": 1,
+      "n_meas": 5,
+      "gnss_nis_gate": 127.469841,
+      "nis_threshold": 15.086,
+      "gate_margin": -112.383841,
+      "crossed": true,
+      "contrib": {
+        "nis_contrib_n": 0.362976,
+        "nis_contrib_e": 5.869942,
+        "nis_contrib_d": 0.003843,
+        "nis_contrib_vn": 0.756249,
+        "nis_contrib_ve": 120.47683
+      },
+      "contrib_abs_share": {
+        "n": 0.002847544172017475,
+        "e": 0.046049653784769794,
+        "d": 3.014830802329398e-05,
+        "vn": 0.005932768096359107,
+        "ve": 0.9451398856388303
+      },
+      "dominant_abs_component": "ve",
+      "innov_h_m": 24.082062,
+      "innov_vn_mps": 3.741043,
+      "innov_ve_mps": 19.267576,
+      "vel_pred_h_mps": 8.988606,
+      "gps_speed_mps": 15.723735,
+      "dt_since_prev_accept_s": 2.0
+    },
+    {
+      "timestamp_s": 22.301351547,
+      "gps_index": 20,
+      "accepted": 0,
+      "reject_reason": 1,
+      "n_meas": 5,
+      "gnss_nis_gate": 270.925873,
+      "nis_threshold": 15.086,
+      "gate_margin": -255.839873,
+      "crossed": true,
+      "contrib": {
+        "nis_contrib_n": -0.773756,
+        "nis_contrib_e": 25.081743,
+        "nis_contrib_d": 5.206101,
+        "nis_contrib_vn": 28.446238,
+        "nis_contrib_ve": 212.965561
+      },
+      "contrib_abs_share": {
+        "n": 0.0028397487712185803,
+        "e": 0.0920520795499747,
+        "d": 0.019106822974671374,
+        "vn": 0.10440005558120556,
+        "ve": 0.7816012931229297
+      },
+      "dominant_abs_component": "ve",
+      "innov_h_m": 47.474331,
+      "innov_vn_mps": 11.40296,
+      "innov_ve_mps": 26.076351,
+      "vel_pred_h_mps": 14.25083,
+      "gps_speed_mps": 15.315045,
+      "dt_since_prev_accept_s": 2.999998
+    },
+    {
+      "timestamp_s": 23.301351547,
+      "gps_index": 21,
+      "accepted": 0,
+      "reject_reason": 1,
+      "n_meas": 5,
+      "gnss_nis_gate": 431.762573,
+      "nis_threshold": 15.086,
+      "gate_margin": -416.67657299999996,
+      "crossed": true,
+      "contrib": {
+        "nis_contrib_n": -2.552186,
+        "nis_contrib_e": 66.523659,
+        "nis_contrib_d": 39.389851,
+        "nis_contrib_vn": 108.871582,
+        "nis_contrib_ve": 219.529663
+      },
+      "contrib_abs_share": {
+        "n": 0.0058420213581691,
+        "e": 0.1522744175783262,
+        "d": 0.09016441232617782,
+        "vn": 0.24920993506807831,
+        "ve": 0.5025092136692485
+      },
+      "dominant_abs_component": "ve",
+      "innov_h_m": 78.022774,
+      "innov_vn_mps": 20.542578,
+      "innov_ve_mps": 28.008316,
+      "vel_pred_h_mps": 19.790886,
+      "gps_speed_mps": 14.985622,
+      "dt_since_prev_accept_s": 3.999998
+    }
+  ],
+  "answer": {
+    "t_regime_change_s": 20.301353455,
+    "gps_index": 18,
+    "nis_gate": 36.459,
+    "threshold": 15.086,
+    "dominant_component": "ve",
+    "contrib": {
+      "nis_contrib_n": 0.347179,
+      "nis_contrib_e": 0.924864,
+      "nis_contrib_d": 0.67181,
+      "nis_contrib_vn": 0.923399,
+      "nis_contrib_ve": 33.591751
+    },
+    "shares_abs": {
+      "n": 0.009522449091655083,
+      "e": 0.025367232340390657,
+      "d": 0.01842645011439287,
+      "vn": 0.02532705022131296,
+      "ve": 0.9213568182322485
+    }
+  }
+}

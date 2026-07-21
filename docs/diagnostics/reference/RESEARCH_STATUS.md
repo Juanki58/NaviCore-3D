@@ -1,8 +1,13 @@
 # Research Status — Cadena explicativa (post G-ext)
 
 **Tipo:** documentación de referencia — **mapa de fase del proyecto**, no protocolo experimental.  
-**Fecha:** 2026-07-18  
-**Estado:** **Stage I CERRADA (D21).** Baseline científico congelado. OQ1 parcialmente abierta (heredada). GAP-5 v3 **no** abierta.
+**Fecha:** 2026-07-19  
+**Estado:** **Stage I CERRADA (D21).** **Pausa D22.** Hito metodológico Stage II: método reproducible (no centrado en una implementación). Una página: [RESEARCH_PROGRAM.md](../../ekf_explorer/RESEARCH_PROGRAM.md). Regla docs: no crear documento sin pregunta nueva. GAP-5 v3 / OQ8 / EKF v2 **no** abiertos.
+
+| Línea | Estado |
+|-------|--------|
+| EKF / regímenes | Cerrada — modelo parcial del filtro |
+| Jacobiano / H-ATT-d | Acotada: espacio de instrumentos para contrastar H-ATT-d delimitado; hipótesis abierta; cand1 dominio-caracterizado |
 
 ---
 
@@ -25,7 +30,8 @@
 | ¿Pausa cerrada? | **Sí** (D17) |
 | ¿OQ1? | **Parcialmente abierta** (heredada a Stage II) |
 | ¿Stage I? | **Cerrada (D21)** |
-| ¿Siguiente? | Nada urgente. Cuando haya Stage II: preregistro GAP-5 v3 con frase de handoff Stage I §7 |
+| ¿Siguiente? | **Stage II (lab):** campañas V1–V5 — no rediseñar EKF. Puerta: onset+variables en ~5 min ([STAGE2_VALIDATION](../../ekf_explorer/STAGE2_VALIDATION.md)). GAP-5 v3 / EKF v2 solo con decisión explícita + evidencia |
+| ¿EKF v2? | **No ahora (~10–20% justificado).** Evidencia para *seguir investigando*, no para tirar el filtro. Stage II: lab días→minutos hasta onset; luego bifurcar corrección local vs v2. Ver [STAGE2_VALIDATION](../../ekf_explorer/STAGE2_VALIDATION.md). |
 
 ---
 
@@ -91,9 +97,11 @@ Solo lo listado en [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md):
 | OQ3 | Invarianza C-F1 ↔ C-PoC |
 | OQ4 | Modelo de régimen explícito |
 | OQ5–OQ6 | Controlador (GAP-5 v3+, **no ahora**) |
-| OQ7 | Intervención `P_pv` §11 (separada; no mezclar con v2) |
+| OQ7 | Intervención `P_pv` §11 | **Cerrada** — gating falsificado (§11.8); candidata futura = clamp tipo ZUPT_MAX_GAIN |
+| OQ8 | Jacobiano NHC × IMU E2E | **Abierta — en pausa D22** · mecanismo early cerrado · H-ATT-d intacta · cand1 no generaliza ([CAND1 review](../../benchmarks/jacobian_imu_ab/CAND1_GENERALIZATION_REVIEW.md)) · reformulación científica diferida: *¿existe onset invariante entre dominios?* — **no** abrir experimento ahora |
+| OQ9 | Régimen tardío SLALOM | **Abierta** — no fusionar con early vía bias (artefacto latch §12.9) |
 
-**Regla:** no reabrir A dentro de B. Si alguien propone retune Q/R/K, “arreglar Γ̄ subiendo umbral”, o “Norte → longitudinal” como hecho — rechazar y apuntar a D2 / K12 / D12.
+**Regla:** no reabrir A dentro de B. Si alguien propone retune Q/R/K, “arreglar Γ̄ subiendo umbral”, “subir T₂ de cand1”, o “Norte → longitudinal” como hecho — rechazar y apuntar a D2 / K12 / D12 / D22 / [patrón operacionalización](OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md).
 
 ---
 

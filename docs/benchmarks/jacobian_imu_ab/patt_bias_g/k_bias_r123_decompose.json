@@ -1,0 +1,342 @@
+{
+  "definition": {
+    "split": "frozen-S: K_via_X = P H_X^T S^{-1}; dx = K_via_X\u00b7y; X in {vel,att}",
+    "identity_ok_rms": "~1e-9",
+    "note_cancel": "via_vel and via_att are large opposite; net dx is residual after cancellation. |frac|~0.5 does NOT mean a single motor."
+  },
+  "primary_tramos": {
+    "ctrl": {
+      "R1": {
+        "n": 25,
+        "t_span": [
+          1.340000033,
+          1.580000043
+        ],
+        "sum_total": -0.014112278732599999,
+        "sum_via_vel": 1.148357207459,
+        "sum_via_att": -1.1624695132060001,
+        "cancel_ratio": 0.0061070259428793626,
+        "frac_abs_att": 0.5030535188166205,
+        "mean_innov": 0.26254824,
+        "mean_k_via_vel": 0.22967709063599998,
+        "mean_k_via_att": 0.227969999908,
+        "path_scale": 2.310826720665
+      },
+      "R2": {
+        "n": 15,
+        "t_span": [
+          1.590000033,
+          1.730000138
+        ],
+        "sum_total": 0.021042130188799996,
+        "sum_via_vel": -0.09019157290100001,
+        "sum_via_att": 0.11123371687000004,
+        "cancel_ratio": 0.1044661780689145,
+        "frac_abs_att": 0.5522331232411849,
+        "mean_innov": 0.5290894666666666,
+        "mean_k_via_vel": 0.18470180630666666,
+        "mean_k_via_att": 0.18152052263333335,
+        "path_scale": 0.20142528977100005
+      },
+      "R3": {
+        "n": 27,
+        "t_span": [
+          1.740000129,
+          2.0
+        ],
+        "sum_total": 0.00249307460033,
+        "sum_via_vel": -0.258154247429,
+        "sum_via_att": 0.26064731927,
+        "cancel_ratio": 0.004805449251421479,
+        "frac_abs_att": 0.5024027219663799,
+        "mean_innov": 0.12182777777777776,
+        "mean_k_via_vel": 0.13018109455925925,
+        "mean_k_via_att": 0.1269281754814815,
+        "path_scale": 0.518801566699
+      }
+    },
+    "latch": {
+      "R1": {
+        "n": 25,
+        "t_span": [
+          1.340000033,
+          1.580000043
+        ],
+        "sum_total": -0.012353731414290001,
+        "sum_via_vel": 0.346868404184,
+        "sum_via_att": -0.359222137582,
+        "cancel_ratio": 0.017495959347355282,
+        "frac_abs_att": 0.5087479810783913,
+        "mean_innov": 0.135097,
+        "mean_k_via_vel": 0.23268628478,
+        "mean_k_via_att": 0.23118069827999999,
+        "path_scale": 0.706090541766
+      },
+      "R2": {
+        "n": 15,
+        "t_span": [
+          1.590000033,
+          1.730000138
+        ],
+        "sum_total": -0.039120520349500004,
+        "sum_via_vel": 3.13342731456,
+        "sum_via_att": -3.17254789558,
+        "cancel_ratio": 0.006203722508549393,
+        "frac_abs_att": 0.5031018660648312,
+        "mean_innov": 1.4709071999999999,
+        "mean_k_via_vel": 0.21460524200000003,
+        "mean_k_via_att": 0.21253547371333337,
+        "path_scale": 6.30597521014
+      },
+      "R3": {
+        "n": 27,
+        "t_span": [
+          1.740000129,
+          2.0
+        ],
+        "sum_total": 0.025566141410399992,
+        "sum_via_vel": -0.2500137100837,
+        "sum_via_att": 0.2755798117691,
+        "cancel_ratio": 0.04864242108668941,
+        "frac_abs_att": 0.5243211727527343,
+        "mean_innov": 0.5885360370370369,
+        "mean_k_via_vel": 0.11226578580666666,
+        "mean_k_via_att": 0.1086907897325926,
+        "path_scale": 0.5255935218528001
+      }
+    }
+  },
+  "sub_tramos": {
+    "ctrl": {
+      "R1a": {
+        "n": 13,
+        "t_span": [
+          1.340000033,
+          1.460000038
+        ],
+        "sum_total": -0.0031123007357,
+        "sum_via_vel": 0.156627875289,
+        "sum_via_att": -0.15974018116599997,
+        "cancel_ratio": 0.009837594764067757,
+        "frac_abs_att": 0.5049188055075381,
+        "mean_innov": 0.09031530769230768,
+        "mean_k_via_vel": 0.23166591616153845,
+        "mean_k_via_att": 0.22971215041538462,
+        "path_scale": 0.316368056455
+      },
+      "R1b": {
+        "n": 12,
+        "t_span": [
+          1.470000029,
+          1.580000043
+        ],
+        "sum_total": -0.0109999779969,
+        "sum_via_vel": 0.9917293321699999,
+        "sum_via_att": -1.00272933204,
+        "cancel_ratio": 0.00551526997991561,
+        "frac_abs_att": 0.5027576404734257,
+        "mean_innov": 0.44913391666666663,
+        "mean_k_via_vel": 0.22752252965000005,
+        "mean_k_via_att": 0.2260826701916667,
+        "path_scale": 1.9944586642099997
+      },
+      "R2a": {
+        "n": 8,
+        "t_span": [
+          1.590000033,
+          1.660000086
+        ],
+        "sum_total": 0.0230378067932,
+        "sum_via_vel": 0.184399360799,
+        "sum_via_att": -0.16136153783999996,
+        "cancel_ratio": 0.06662930043241581,
+        "frac_abs_att": 0.4666853264066547,
+        "mean_innov": 0.711166875,
+        "mean_k_via_vel": 0.1997910160625,
+        "mean_k_via_att": 0.19991962424999998,
+        "path_scale": 0.34576089863899995
+      },
+      "R2b": {
+        "n": 7,
+        "t_span": [
+          1.670000076,
+          1.730000138
+        ],
+        "sum_total": -0.0019956766043999997,
+        "sum_via_vel": -0.27459093370000004,
+        "sum_via_att": 0.27259525470999996,
+        "cancel_ratio": 0.003647161874094423,
+        "frac_abs_att": 0.4981764168830731,
+        "mean_innov": 0.321001,
+        "mean_k_via_vel": 0.16745699515714282,
+        "mean_k_via_att": 0.16049297792857145,
+        "path_scale": 0.54718618841
+      },
+      "R3a": {
+        "n": 13,
+        "t_span": [
+          1.740000129,
+          1.860000134
+        ],
+        "sum_total": -0.0002388805005500001,
+        "sum_via_vel": -0.09483584063299999,
+        "sum_via_att": 0.094596957792,
+        "cancel_ratio": 0.0012610303101475713,
+        "frac_abs_att": 0.4993694786674057,
+        "mean_innov": 0.07937130769230769,
+        "mean_k_via_vel": 0.13656633747692307,
+        "mean_k_via_att": 0.13186720128461538,
+        "path_scale": 0.189432798425
+      },
+      "R3b": {
+        "n": 14,
+        "t_span": [
+          1.870000124,
+          2.0
+        ],
+        "sum_total": 0.0027319551008800004,
+        "sum_via_vel": -0.16331840679600002,
+        "sum_via_att": 0.166050361478,
+        "cancel_ratio": 0.008294517768628573,
+        "frac_abs_att": 0.5041472582484313,
+        "mean_innov": 0.16125164285714286,
+        "mean_k_via_vel": 0.12425194042142855,
+        "mean_k_via_att": 0.1223419372357143,
+        "path_scale": 0.329368768274
+      }
+    },
+    "latch": {
+      "R1a": {
+        "n": 13,
+        "t_span": [
+          1.340000033,
+          1.460000038
+        ],
+        "sum_total": -0.00220830602469,
+        "sum_via_vel": 0.064518629574,
+        "sum_via_att": -0.066726936262,
+        "cancel_ratio": 0.016825757202718943,
+        "frac_abs_att": 0.5084128811283402,
+        "mean_innov": 0.05296423076923078,
+        "mean_k_via_vel": 0.23249843486923077,
+        "mean_k_via_att": 0.23054348276923078,
+        "path_scale": 0.131245565836
+      },
+      "R1b": {
+        "n": 12,
+        "t_span": [
+          1.470000029,
+          1.580000043
+        ],
+        "sum_total": -0.010145425389600001,
+        "sum_via_vel": 0.28234977461,
+        "sum_via_att": -0.29249520132,
+        "cancel_ratio": 0.01764897635781969,
+        "frac_abs_att": 0.5088244893273933,
+        "mean_innov": 0.22407416666666666,
+        "mean_k_via_vel": 0.23288978885000003,
+        "mean_k_via_att": 0.23187101508333333,
+        "path_scale": 0.5748449759300001
+      },
+      "R2a": {
+        "n": 8,
+        "t_span": [
+          1.590000033,
+          1.660000086
+        ],
+        "sum_total": -0.030456801877,
+        "sum_via_vel": 0.94416268916,
+        "sum_via_att": -0.97461951148,
+        "cancel_ratio": 0.01587298541066375,
+        "frac_abs_att": 0.5079364980324086,
+        "mean_innov": 1.009476,
+        "mean_k_via_vel": 0.225894341225,
+        "mean_k_via_att": 0.22470783628750002,
+        "path_scale": 1.91878220064
+      },
+      "R2b": {
+        "n": 7,
+        "t_span": [
+          1.670000076,
+          1.730000138
+        ],
+        "sum_total": -0.008663718472499998,
+        "sum_via_vel": 2.1892646254,
+        "sum_via_att": -2.1979283841,
+        "cancel_ratio": 0.001974774862592012,
+        "frac_abs_att": 0.5009873920159473,
+        "mean_innov": 1.998257142857143,
+        "mean_k_via_vel": 0.2017034143142857,
+        "mean_k_via_att": 0.1986242022,
+        "path_scale": 4.3871930095
+      },
+      "R3a": {
+        "n": 13,
+        "t_span": [
+          1.740000129,
+          1.860000134
+        ],
+        "sum_total": 0.0289345241599,
+        "sum_via_vel": -0.27874476436100004,
+        "sum_via_att": 0.3076792494783,
+        "cancel_ratio": 0.04934061954671085,
+        "frac_abs_att": 0.5246702764846436,
+        "mean_innov": 1.1076500000000002,
+        "mean_k_via_vel": 0.13278966281538462,
+        "mean_k_via_att": 0.12852213418153846,
+        "path_scale": 0.5864240138393
+      },
+      "R3b": {
+        "n": 14,
+        "t_span": [
+          1.870000124,
+          2.0
+        ],
+        "sum_total": -0.0033683827495,
+        "sum_via_vel": 0.0287310542773,
+        "sum_via_att": -0.0320994377092,
+        "cancel_ratio": 0.05537326165712319,
+        "frac_abs_att": 0.5276866364375907,
+        "mean_innov": 0.10650164285714288,
+        "mean_k_via_vel": 0.09320790001285716,
+        "mean_k_via_att": 0.09027596988714286,
+        "path_scale": 0.0608304919865
+      }
+    }
+  },
+  "latch_vs_ctrl": {
+    "R1": {
+      "delta_total": 0.0017585473183099973,
+      "delta_via_vel": -0.801488803275,
+      "delta_via_att": 0.8032473756240002,
+      "delta_path_scale": -1.6047361788990002,
+      "latch_cancel_ratio": 0.017495959347355282,
+      "ctrl_cancel_ratio": 0.0061070259428793626
+    },
+    "R2": {
+      "delta_total": -0.0601626505383,
+      "delta_via_vel": 3.223618887461,
+      "delta_via_att": -3.2837816124500003,
+      "delta_path_scale": 6.104549920368999,
+      "latch_cancel_ratio": 0.006203722508549393,
+      "ctrl_cancel_ratio": 0.1044661780689145
+    },
+    "R3": {
+      "delta_total": 0.023073066810069993,
+      "delta_via_vel": 0.008140537345300014,
+      "delta_via_att": 0.014932492499100003,
+      "delta_path_scale": 0.0067919551538000444,
+      "latch_cancel_ratio": 0.04864242108668941,
+      "ctrl_cancel_ratio": 0.004805449251421479
+    }
+  },
+  "verdict": {
+    "label": "NEAR_CANCEL_PATHS_LATCH_R2_SCALE_EXPLOSION",
+    "reading": "H_vel vs H_att path split does NOT reveal a motor that switches att\u2192vel across R1/R2/R3. In every tramo both paths are large, opposite, and cancel (cancel_ratio \u226a 1; |frac_att|\u22480.50). The actionable latch effect is a path-SCALE explosion in R2 (latch path_scale\u22486.3 vs ctrl\u22480.20) while net \u03a3dx_bias_gz stays small (\u22120.039). Net sign still changes by tramo under latch (R1/R2 negative, R3 positive). Dominant-path labels at frac\u22480.5 are not meaningful \u2014 report cancel structure + path_scale + net residual. Sub-tramos: R3 halves flip path signs under latch (explosion front vs tail); R1 magnitude grows toward break; R2 coherent.",
+    "implications": [
+      "Do not design intervention as cut via_att or cut via_vel alone \u2014 they nearly cancel; cutting one may unmask the other.",
+      "Latch does not change which path dominates (both always ~equal); it amplifies both in R2.",
+      "Net bias escape timing (silent R1, cost R2/R3) remains the design clock; path split explains coupling geometry, not a new switch."
+    ]
+  }
+}

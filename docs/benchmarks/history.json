@@ -47,5 +47,17 @@
       "tunnel_gps_rejections": 1,
       "tunnel_nis_peak": 10798.05
     }
+  },
+  {
+    "commit_hash": "5a28c83",
+    "commit_message": "Freeze Stage I scientific baseline (D21).",
+    "timestamp": "2026-07-18T23:57:05+02:00",
+    "metrics": {
+      "slalom_max_lateral_drift_m": 53.999,
+      "tunnel_exit_drift_m": 432.45,
+      "tunnel_zupt_max_speed_mps": 0.518,
+      "tunnel_gps_rejections": 1,
+      "tunnel_nis_peak": 30177.31
+    }
   }
 ]

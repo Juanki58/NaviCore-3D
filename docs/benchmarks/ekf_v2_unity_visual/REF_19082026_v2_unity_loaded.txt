@@ -1,0 +1,5 @@
+sessionId=REF_19082026_v2
+pack.name=REF_19082026_v2
+sessionJsonPath=C:\NaviCore-3D\ekf_explorer\EkfExplorer\Assets\StreamingAssets\Sessions\REF_19082026_v2\session.json
+activePref=REF_19082026_v2
+ok_name_match=True

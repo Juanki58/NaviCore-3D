@@ -1,0 +1,83 @@
+{
+  "ctrl": {
+    "n_B": 280,
+    "P1_fail_frac": 1.0,
+    "P1_n_valid": 168,
+    "P2_t_s": 10.92831707,
+    "P3_first_fail_t_s": 5.523398399,
+    "P3a_fail_t_s": 5.523398399,
+    "P3a_immediate_break": true,
+    "speed_max_B": 0.301893651,
+    "residual_h_at_6s": 31.032396317,
+    "residual_h_max_0_6": 31.032396317,
+    "t_sep_s": 5.301555157,
+    "gnss_accept": 7,
+    "gnss_reject": 50
+  },
+  "H1": {
+    "n_B": 280,
+    "P1_fail_frac": 0.0,
+    "P1_n_valid": 168,
+    "P2_t_s": 4.303259373,
+    "P3_first_fail_t_s": 4.303259373,
+    "P3a_immediate_break": false,
+    "speed_max_B": 10.96846962,
+    "residual_h_at_6s": 28.836942673,
+    "residual_h_max_0_6": 28.836942673,
+    "t_sep_s": 6.309934616,
+    "gnss_accept": 8,
+    "gnss_reject": 49
+  },
+  "H2": {
+    "n_B": 280,
+    "P1_fail_frac": 0.27976190476190477,
+    "P1_n_valid": 168,
+    "P2_t_s": 4.303259373,
+    "P3_first_fail_t_s": 4.323426723,
+    "P3a_fail_t_s": 4.323426723,
+    "P3a_immediate_break": true,
+    "speed_max_B": 8.384643555,
+    "residual_h_at_6s": 34.466388702,
+    "residual_h_max_0_6": 35.4022789,
+    "t_sep_s": 5.301555157,
+    "gnss_accept": 7,
+    "gnss_reject": 0
+  },
+  "gates_H2": {
+    "P1_speed_vs_gps": true,
+    "P3a_no_break_in_2s_after_seed": false,
+    "P3b_course_yaw_delay_or_absent": false
+  },
+  "PASS_H2": false,
+  "compare": {
+    "residual_h_at_6s": {
+      "ctrl": 31.032396317,
+      "H1": 28.836942673,
+      "H2": 34.466388702
+    },
+    "t_sep_s": {
+      "ctrl": 5.301555157,
+      "H1": 6.309934616,
+      "H2": 5.301555157
+    },
+    "P3_first_fail_t_s": {
+      "ctrl": 5.523398399,
+      "H1": 4.303259373,
+      "H2": 4.323426723
+    },
+    "gnss_accept_reject": {
+      "ctrl": [
+        7,
+        50
+      ],
+      "H1": [
+        8,
+        49
+      ],
+      "H2": [
+        7,
+        0
+      ]
+    }
+  }
+}

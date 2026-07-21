@@ -1,0 +1,24 @@
+# Enable checks relevant to safety-oriented embedded C++17.
+# Not a MISRA certificate — see docs/SAFETY_CODING_STANDARD.md
+
+Checks: >
+  bugprone-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*,
+  performance-*,
+  portability-*,
+  readability-non-const-parameter,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-special-member-functions,
+  -bugprone-easily-swappable-parameters
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'src/core/.*'
+FormatStyle: none
+CheckOptions:
+  - key: cppcoreguidelines-avoid-do-while.IgnoreMacros
+    value: true

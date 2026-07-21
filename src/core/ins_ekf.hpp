@@ -70,10 +70,21 @@ enum InsEkfPpvPolicy : uint8_t {
     INS_EKF_PPV_POLICY_ZERO = 2,
     INS_EKF_PPV_POLICY_COS_POS = 3,
     INS_EKF_PPV_POLICY_COS_TOT = 4,
+    INS_EKF_PPV_POLICY_INNOV_H = 5, /**< Zero P_pv if horizontal pos innov ≥ threshold. */
+};
+
+/** NHC attitude H rows — correct vs pre-bf2bfbd sign bug (A/B E2E only). */
+enum InsEkfNhcJacobianMode : uint8_t {
+    INS_EKF_NHC_JACOBIAN_CORRECT = 0,
+    INS_EKF_NHC_JACOBIAN_LEGACY_BUG = 1,
 };
 
 #ifndef NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S
 #define NAVICORE_INS_EKF_PPV_GAP_THRESHOLD_S 1.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_PPV_INNOV_H_THRESHOLD_M
+#define NAVICORE_INS_EKF_PPV_INNOV_H_THRESHOLD_M 50.0f
 #endif
 
 #ifndef NAVICORE_INS_EKF_ACCEL_NOISE_STD_MPS2
@@ -139,6 +150,69 @@ enum InsEkfPpvPolicy : uint8_t {
 #define NAVICORE_INS_EKF_ZUPT_MAX_GAIN 0.85f
 #endif
 
+/* --- Integridad: fix presente pero físicamente inverosímil vs INS (spoof/consistency) --- */
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_CHECK_ENABLED
+#define NAVICORE_INS_EKF_CONSISTENCY_CHECK_ENABLED 1
+#endif
+
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_MAX_GAP_S
+/**
+ * Solo sospecha spoof si el último GNSS aceptado/visto fue reciente.
+ * Tras outage largo (túnel), |innov| grande es reaquisição legítima → NIS, no reason=3.
+ */
+#define NAVICORE_INS_EKF_CONSISTENCY_MAX_GAP_S 2.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_MAX_POS_JUMP_M
+/** Tope duro de |innov_h| (m) en track continuo (gap corto). */
+#define NAVICORE_INS_EKF_CONSISTENCY_MAX_POS_JUMP_M 120.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_POS_MARGIN_M
+/** Margen añadido a |v|·Δt para multipath / timing (m). */
+#define NAVICORE_INS_EKF_CONSISTENCY_POS_MARGIN_M 30.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_SIGMA_K
+/** Multiplicador de σ_pos horizontal de P (√(Pnn+Pee)). */
+#define NAVICORE_INS_EKF_CONSISTENCY_SIGMA_K 6.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_CONSISTENCY_MAX_VEL_JUMP_MPS
+/** |v_gps − v_ins| horizontal máximo aceptable (m/s) en track continuo. */
+#define NAVICORE_INS_EKF_CONSISTENCY_MAX_VEL_JUMP_MPS 35.0f
+#endif
+
+/** gnss_last_reject_reason: 1=NIS, 2=S singular, 3=physical inconsistency (spoof-suspect). */
+#define INS_EKF_GNSS_REJECT_NIS 1U
+#define INS_EKF_GNSS_REJECT_S_SINGULAR 2U
+#define INS_EKF_GNSS_REJECT_INCONSISTENT 3U
+
+#ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET
+/* H-ATT-b1/c: fracción de dx_att_z NHC rechazada en aplicación (0 = off). */
+#define NAVICORE_INS_EKF_NHC_ATT_Z_FORGET 0.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GATE
+/* H-ATT-c: umbral Σ|dx_att_z|; <=0 = gate off (b1 ciego si λ>0). */
+#define NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GATE 0.0f
+#endif
+
+#ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_TMAX_S
+/* H-ATT-c: solo evaluar disparo para t <= tmax desde primer NHC. */
+#define NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_TMAX_S 0.65f
+#endif
+
+#ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GRACE_TICKS
+/* §13.22 E1: NHC ticks skipped before cand1 accumulate/evaluate (0 = off). */
+#define NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GRACE_TICKS 0U
+#endif
+
+#ifndef NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GATE_NORM
+/* §13.22 E2: 1 ⇒ gate thr is κ for sumabs/P[ATT_Z,ATT_Z]. */
+#define NAVICORE_INS_EKF_NHC_ATT_Z_FORGET_GATE_NORM 0
+#endif
+
 enum InsEkfErrorIdx : uint8_t {
     INS_ERR_POS_N = 0,
     INS_ERR_POS_E = 1,
@@ -196,6 +270,21 @@ typedef struct {
     float f_dp_dv_dt_s;
     float f_va[3][3];
     float f_vba[3][3];
+    /* Identidades internas (solo predict, ANTES de NHC/ZUPT/GNSS). */
+    float pos_pre_m[3];
+    float vel_pre_mps[3];
+    float kinematic_pos_residual_m; /* |p+ − (p− + v+·Δt)| ; integración semi-implícita */
+    float vel_body_mps[3];          /* Rᵀ·v_NED al final del predict */
+    float body_ned_roundtrip_err_mps; /* |v_NED − R·v_body| */
+    float roll_rad;
+    float pitch_rad;
+    float yaw_rad;
+    float euler_dcm_frob; /* ||R(euler(q)) − R(q)||_F — convenio export vs interno */
+    /* Presupuesto Δv (v2; v1 deja ceros). a_lin = R·imu − R·bias − g (+ coriolis=0). */
+    float term_R_imu_mps2[3];
+    float term_R_neg_bias_mps2[3];
+    float term_gravity_mps2[3];
+    float term_coriolis_mps2[3];
     bool valid;
 } InsEkfPredictAudit;
 
@@ -205,6 +294,25 @@ typedef struct {
     float p_vel_pos_frob;
     float p_vel_att_frob;
     float p_att_att_frob;
+    /* Bloque cruzado actitud × bias_giro (3×3) — candidato H-ATT / P_att-bias_g. */
+    float p_att_bias_g_frob;
+    float p_att_bias_g_max_abs;
+    float p_att_z_bias_gz; /* P[ATT_Z, BIAS_GZ] — eje de la fuga observada */
+    /* Bloque P_att interno (ATT_X=roll, ATT_Y=pitch, ATT_Z=yaw). */
+    float p_att_xx; /* P[ATT_X,ATT_X] */
+    float p_att_yy; /* P[ATT_Y,ATT_Y] */
+    float p_att_zz; /* P[ATT_Z,ATT_Z] */
+    float p_att_xz; /* P[ATT_X,ATT_Z] roll–yaw */
+    float p_att_yz; /* P[ATT_Y,ATT_Z] pitch–yaw */
+    float p_att_xy; /* P[ATT_X,ATT_Y] roll–pitch */
+    /* Bloque cruzado actitud × velocidad (filas ATT_Y/Z × VEL_NED). */
+    float p_att_y_vn;
+    float p_att_y_ve;
+    float p_att_y_vd;
+    float p_att_z_vn;
+    float p_att_z_ve;
+    float p_att_z_vd;
+    float p_bias_g_frob;
     float p_pos_std_n_m;
     float p_pos_std_e_m;
     float p_pos_std_d_m;
@@ -292,9 +400,26 @@ struct InsEkfFilter {
     float gnss_nis_last;
     float gnss_innovation_last[3];
     float gnss_innovation_cov_last[3][3];
+    uint8_t gnss_last_n_meas;
+    float gnss_innovation_full[5];
+    float gnss_nis_contrib[5];
+    float gnss_s_diag[5];
     uint32_t gnss_last_update_timestamp_ms;
     uint8_t gnss_last_accepted;
     uint8_t gnss_last_reject_reason;
+    /* Integridad: último chequeo INS↔GNSS (spoof-suspect si reason=3). */
+    uint8_t gnss_consistency_enabled;
+    uint8_t gnss_consistency_last_suspect;
+    float gnss_consistency_last_innov_h_m;
+    float gnss_consistency_last_plausible_m;
+    float gnss_consistency_last_vel_jump_mps;
+    /* GNSS v2: pos/vel gates independientes (0 en path v1). */
+    uint8_t gnss_v2_accepted_pos;
+    uint8_t gnss_v2_accepted_vel;
+    float gnss_v2_nis_pos;
+    float gnss_v2_nis_vel;
+    /** v2 polish: R adaptativo, vel coherente, NHC entre fixes. */
+    uint8_t v2_polish;
     float gnss_last_k_pos_max;
     float gnss_last_k_vel_max;
     float gnss_last_k_att_max;
@@ -374,6 +499,21 @@ struct InsEkfFilter {
     float nhc_last_k_pos_max;
     float nhc_last_k_att_max;
     float nhc_last_k_bias_max;
+    float nhc_last_k_bias_gz; /* max |K[BIAS_GZ, :]| en el update NHC */
+    /* Path split (frozen S): K = P (H_vel+H_att)^T S^{-1}; dx = K y.
+     * Exact for NHC (H only vel+att). Used by K_bias R1/R2/R3 autopsy. */
+    float nhc_last_dx_bias_gz_via_vel;
+    float nhc_last_dx_bias_gz_via_att;
+    float nhc_last_k_bias_gz_via_vel; /* max |K_via_vel[BIAS_GZ,:]| */
+    float nhc_last_k_bias_gz_via_att; /* max |K_via_att[BIAS_GZ,:]| */
+    /* Filas K actitud NHC (2 innov: lat=y, vert=z). Pre-λ; Joseph usa este K. */
+    float nhc_last_k_att_y0; /* K[ATT_Y, innov_y] pitch */
+    float nhc_last_k_att_y1; /* K[ATT_Y, innov_z] */
+    float nhc_last_k_att_z0; /* K[ATT_Z, innov_y] yaw */
+    float nhc_last_k_att_z1; /* K[ATT_Z, innov_z] */
+    float nhc_last_dx_att_y_via_innov_y; /* K_y0 * y0 */
+    float nhc_last_dx_att_y_via_innov_z; /* K_y1 * y1 */
+    float nhc_last_dx_att_z_raw; /* pre-λ; audit dx_att_z es post-λ */
     float nhc_last_h_row0_vel[3];
     float nhc_last_h_row1_vel[3];
     float nhc_last_vel_after_n_mps;
@@ -388,6 +528,9 @@ struct InsEkfFilter {
     float nhc_last_dx_pos_e_m;
     float nhc_last_dx_pos_d_m;
     float nhc_last_dx_bias_norm;
+    float nhc_last_dx_bias_gx;
+    float nhc_last_dx_bias_gy;
+    float nhc_last_dx_bias_gz;
     InsEkfCovBlockMetrics nhc_last_cov_pre{};
     InsEkfCovBlockMetrics nhc_last_cov_post{};
 
@@ -407,6 +550,38 @@ struct InsEkfFilter {
     bool initialized;
     bool outlier_detected;
     bool nhc_enabled;
+    InsEkfNhcJacobianMode nhc_jacobian_mode;
+    /* H-ATT-b1/c: λ ∈ [0,1]; δx[ATT_Z] *= (1-λ) tras K·y, antes de inyectar. */
+    float nhc_att_z_forget;
+    /* H-ATT-c: gate. thr<=0 ⇒ aplicar λ siempre (b1); thr>0 ⇒ solo tras latch. */
+    float nhc_att_z_forget_gate_thr;
+    float nhc_att_z_forget_tmax_s;
+    float nhc_att_z_sumabs;
+    uint32_t nhc_att_z_epoch_ms;
+    uint32_t nhc_att_z_gate_nhc_count; /* NHC updates seen while gate_thr>0 */
+    uint32_t nhc_att_z_forget_grace_ticks; /* §13.22 E1 */
+    bool nhc_att_z_forget_gate_norm; /* §13.22 E2: thr=κ on sumabs/Pzz */
+    float nhc_att_z_gate_scale_pzz; /* E2: Pzz congelado al salir de gracia (0=unset) */
+    bool nhc_att_z_forget_latched;
+    float nhc_att_z_forget_fire_t_s;
+    /* H-ATT-d: tras latch, H[*][ATT_Z]=0 antes de S/K/Joseph (no truncar δx). */
+    bool nhc_att_z_unobs;
+    bool nhc_last_att_z_unobs_active;
+    /* Experiment: H[*][ATT_X/Y/Z]=0 always (NHC velocity-only). */
+    bool nhc_att_unobs;
+    /**
+     * Coherence gate: block NHC→attitude until |v|, GNSS-valid and
+     * |course−yaw| hold for nhc_att_gate_hold_s; then latch open.
+     */
+    bool nhc_att_coherence_gate;
+    float nhc_att_gate_vmin_mps;
+    float nhc_att_gate_yaw_max_rad;
+    float nhc_att_gate_hold_s;
+    bool nhc_att_gate_gnss_valid;
+    bool nhc_att_gate_open;
+    float nhc_att_gate_ok_accum_s;
+    uint32_t nhc_att_gate_last_imu_ms;
+    float nhc_att_gate_open_t_s;
     uint32_t nhc_every_n_ticks;
     float nhc_lateral_var_m2;
     float nhc_vertical_var_m2;
@@ -449,6 +624,8 @@ void ins_ekf_init(
 bool ins_ekf_predict(InsEkfFilter *filter, const ImuSample *imu);
 bool ins_ekf_update_gnss(InsEkfFilter *filter, const GpsSample *gps);
 void ins_ekf_set_gnss_obs_mode(InsEkfFilter *filter, InsEkfGnssObsMode mode);
+void ins_ekf_set_consistency_check_enabled(InsEkfFilter *filter, bool enabled);
+bool ins_ekf_gnss_consistency_last_suspect(const InsEkfFilter *filter);
 void ins_ekf_set_p_pv_policy(InsEkfFilter *filter, InsEkfPpvPolicy policy);
 void ins_ekf_set_gnss_vel_var_m2(InsEkfFilter *filter, float var_m2_h);
 const char *ins_ekf_gnss_obs_mode_name(InsEkfGnssObsMode mode);
@@ -458,6 +635,45 @@ bool ins_ekf_update_nhc(InsEkfFilter *filter);
 void ins_ekf_set_nhc_enabled(InsEkfFilter *filter, bool enabled);
 void ins_ekf_set_nhc_every_n_ticks(InsEkfFilter *filter, uint32_t every_n_ticks);
 bool ins_ekf_nhc_enabled(const InsEkfFilter *filter);
+void ins_ekf_set_nhc_jacobian_mode(InsEkfFilter *filter, InsEkfNhcJacobianMode mode);
+InsEkfNhcJacobianMode ins_ekf_nhc_jacobian_mode(const InsEkfFilter *filter);
+const char *ins_ekf_nhc_jacobian_mode_name(InsEkfNhcJacobianMode mode);
+bool ins_ekf_parse_nhc_jacobian_mode(const char *text, InsEkfNhcJacobianMode *out_mode);
+void ins_ekf_set_default_nhc_jacobian_mode(InsEkfNhcJacobianMode mode);
+InsEkfNhcJacobianMode ins_ekf_default_nhc_jacobian_mode(void);
+void ins_ekf_set_nhc_att_z_forget(InsEkfFilter *filter, float lambda);
+float ins_ekf_nhc_att_z_forget(const InsEkfFilter *filter);
+void ins_ekf_set_default_nhc_att_z_forget(float lambda);
+float ins_ekf_default_nhc_att_z_forget(void);
+void ins_ekf_set_nhc_att_z_forget_gate(InsEkfFilter *filter, float thr_rad, float tmax_s);
+void ins_ekf_set_default_nhc_att_z_forget_gate(float thr_rad, float tmax_s);
+float ins_ekf_default_nhc_att_z_forget_gate_thr(void);
+float ins_ekf_default_nhc_att_z_forget_tmax_s(void);
+void ins_ekf_set_nhc_att_z_forget_grace_ticks(InsEkfFilter *filter, uint32_t grace_ticks);
+void ins_ekf_set_default_nhc_att_z_forget_grace_ticks(uint32_t grace_ticks);
+uint32_t ins_ekf_default_nhc_att_z_forget_grace_ticks(void);
+void ins_ekf_set_nhc_att_z_forget_gate_norm(InsEkfFilter *filter, bool enabled);
+void ins_ekf_set_default_nhc_att_z_forget_gate_norm(bool enabled);
+bool ins_ekf_default_nhc_att_z_forget_gate_norm(void);
+bool ins_ekf_nhc_att_z_forget_latched(const InsEkfFilter *filter);
+float ins_ekf_nhc_att_z_forget_fire_t_s(const InsEkfFilter *filter);
+float ins_ekf_nhc_att_z_sumabs(const InsEkfFilter *filter);
+void ins_ekf_set_nhc_att_z_unobs(InsEkfFilter *filter, bool enabled);
+bool ins_ekf_nhc_att_z_unobs(const InsEkfFilter *filter);
+void ins_ekf_set_default_nhc_att_z_unobs(bool enabled);
+bool ins_ekf_default_nhc_att_z_unobs(void);
+void ins_ekf_set_nhc_att_unobs(InsEkfFilter *filter, bool enabled);
+bool ins_ekf_nhc_att_unobs(const InsEkfFilter *filter);
+void ins_ekf_set_nhc_att_coherence_gate(InsEkfFilter *filter, bool enabled);
+bool ins_ekf_nhc_att_coherence_gate(const InsEkfFilter *filter);
+void ins_ekf_configure_nhc_att_coherence_gate(
+    InsEkfFilter *filter,
+    float vmin_mps,
+    float yaw_max_deg,
+    float hold_s);
+void ins_ekf_set_nhc_att_gate_gnss_valid(InsEkfFilter *filter, bool valid);
+bool ins_ekf_nhc_att_gate_open(const InsEkfFilter *filter);
+float ins_ekf_nhc_att_gate_open_t_s(const InsEkfFilter *filter);
 uint32_t ins_ekf_nhc_update_count(const InsEkfFilter *filter);
 void ins_ekf_get_nhc_innovation_last(
     const InsEkfFilter *filter,
@@ -512,10 +728,23 @@ typedef struct {
     uint32_t timestamp_ms;
     uint8_t accepted;
     uint8_t reject_reason;
+    uint8_t n_meas;
     float innov_n_m;
     float innov_e_m;
     float innov_d_m;
-    float nis;
+    float innov_vn_mps;
+    float innov_ve_mps;
+    float nis; /* gate NIS = gnss_nis_last */
+    float nis_contrib_n;
+    float nis_contrib_e;
+    float nis_contrib_d;
+    float nis_contrib_vn;
+    float nis_contrib_ve;
+    float s_nn;
+    float s_ee;
+    float s_dd;
+    float s_vn;
+    float s_ve;
     float k_pos_max;
     float k_vel_max;
     float k_att_max;

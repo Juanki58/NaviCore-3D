@@ -1,0 +1,238 @@
+{
+  "window_s": [
+    0.4,
+    1.69
+  ],
+  "arms": {
+    "ctrl": {
+      "phases": {
+        "P_early_loop": {
+          "n": 94,
+          "t_span": [
+            0.41,
+            1.3399999999999999
+          ],
+          "cross_start": 0.026984178201486353,
+          "cross_end": 0.0023591574728527576,
+          "cross_delta": -0.024625020728633595,
+          "max_abs_cross": 0.026984178201486353,
+          "mean_abs_cross": 0.01673361617924061,
+          "horiz_start": 0.027016554196068434,
+          "horiz_end": 0.03220561886516463,
+          "horiz_delta": 0.005189064669096199,
+          "max_err_horiz": 0.03220561886516463,
+          "slope_cross_mps2": -0.025222491039051723,
+          "slope_abs_cross_mps2": -0.025222491039051723,
+          "slope_horiz_mps2": -0.0138793910443679,
+          "dyaw_deg_end": 0.10783915129394608,
+          "max_abs_dyaw_deg": 0.11097995256592046
+        },
+        "P_rise_pre_break": {
+          "n": 25,
+          "t_span": [
+            1.3499999999999999,
+            1.5899999999999999
+          ],
+          "cross_start": 0.0015191024329572755,
+          "cross_end": -0.16181627783939145,
+          "cross_delta": -0.16333538027234873,
+          "max_abs_cross": 0.2261482398327873,
+          "mean_abs_cross": 0.07000474354944748,
+          "horiz_start": 0.03600391490017646,
+          "horiz_end": 0.16864526546385983,
+          "horiz_delta": 0.13264135056368337,
+          "max_err_horiz": 0.3282143595019521,
+          "slope_cross_mps2": -0.9677905848812014,
+          "slope_abs_cross_mps2": 0.9640404174550153,
+          "slope_horiz_mps2": 1.2204655352235318,
+          "dyaw_deg_end": 2.0923253039078316,
+          "max_abs_dyaw_deg": 2.1464089588152953
+        },
+        "P_break_to_explode": {
+          "n": 10,
+          "t_span": [
+            1.5999999999999999,
+            1.69
+          ],
+          "cross_start": -0.06293513034428067,
+          "cross_end": 0.24714980273628628,
+          "cross_delta": 0.31008493308056695,
+          "max_abs_cross": 0.46513805669027175,
+          "mean_abs_cross": 0.28862056986851886,
+          "horiz_start": 0.16582350693377096,
+          "horiz_end": 0.9022462704376818,
+          "horiz_delta": 0.7364227635039109,
+          "max_err_horiz": 0.9022462704376818,
+          "slope_cross_mps2": 3.270950715343925,
+          "slope_abs_cross_mps2": 2.5843856570426817,
+          "slope_horiz_mps2": 9.095244510774059,
+          "dyaw_deg_end": 0.48229896326744537,
+          "max_abs_dyaw_deg": 1.83996223343362
+        },
+        "P_full_pre_explode": {
+          "n": 129,
+          "t_span": [
+            0.41,
+            1.69
+          ],
+          "cross_start": 0.026984178201486353,
+          "cross_end": 0.24714980273628628,
+          "cross_delta": 0.22016562453479993,
+          "max_abs_cross": 0.46513805669027175,
+          "mean_abs_cross": 0.0481339861106201,
+          "horiz_start": 0.027016554196068434,
+          "horiz_end": 0.9022462704376818,
+          "horiz_delta": 0.8752297162416134,
+          "max_err_horiz": 0.9022462704376818,
+          "slope_cross_mps2": 0.02014989083484153,
+          "slope_abs_cross_mps2": 0.12014546583852946,
+          "slope_horiz_mps2": 0.2879708053272291,
+          "dyaw_deg_end": 0.48229896326744537,
+          "max_abs_dyaw_deg": 2.1464089588152953
+        }
+      }
+    },
+    "latch": {
+      "phases": {
+        "P_early_loop": {
+          "n": 94,
+          "t_span": [
+            0.41,
+            1.3399999999999999
+          ],
+          "cross_start": 0.026985174795039146,
+          "cross_end": -0.002728860807002853,
+          "cross_delta": -0.029714035602042,
+          "max_abs_cross": 0.026985174795039146,
+          "mean_abs_cross": 0.016374507544408255,
+          "horiz_start": 0.02701754555940453,
+          "horiz_end": 0.018127517350575478,
+          "horiz_delta": -0.008890028208829052,
+          "max_err_horiz": 0.02701754555940453,
+          "slope_cross_mps2": -0.028174578476178675,
+          "slope_abs_cross_mps2": -0.027519315417893982,
+          "slope_horiz_mps2": -0.021286163108172617,
+          "dyaw_deg_end": 0.033641116824489115,
+          "max_abs_dyaw_deg": 0.11103724834544154
+        },
+        "P_rise_pre_break": {
+          "n": 25,
+          "t_span": [
+            1.3499999999999999,
+            1.5899999999999999
+          ],
+          "cross_start": -0.00395388839455002,
+          "cross_end": -0.25906869613444894,
+          "cross_delta": -0.2551148077398989,
+          "max_abs_cross": 0.25906869613444894,
+          "mean_abs_cross": 0.06609800672946103,
+          "horiz_start": 0.020452262692764164,
+          "horiz_end": 0.4684999707101165,
+          "horiz_delta": 0.44804770801735233,
+          "max_err_horiz": 0.4684999707101165,
+          "slope_cross_mps2": -0.8551760364972655,
+          "slope_abs_cross_mps2": 0.8551760364972655,
+          "slope_horiz_mps2": 1.5806667678173343,
+          "dyaw_deg_end": 0.07998293584933577,
+          "max_abs_dyaw_deg": 0.07998293584933577
+        },
+        "P_break_to_explode": {
+          "n": 10,
+          "t_span": [
+            1.5999999999999999,
+            1.69
+          ],
+          "cross_start": -0.31406117138852596,
+          "cross_end": -1.640176624497245,
+          "cross_delta": -1.3261154531087191,
+          "max_abs_cross": 1.640176624497245,
+          "mean_abs_cross": 0.8895071767780323,
+          "horiz_start": 0.5470357202799371,
+          "horiz_end": 1.6709247614299356,
+          "horiz_delta": 1.1238890411499987,
+          "max_err_horiz": 1.6709247614299356,
+          "slope_cross_mps2": -15.538494014646938,
+          "slope_abs_cross_mps2": 15.538494014646938,
+          "slope_horiz_mps2": 13.500307471614319,
+          "dyaw_deg_end": 0.2793573122321116,
+          "max_abs_dyaw_deg": 0.2793573122321116
+        },
+        "P_full_pre_explode": {
+          "n": 129,
+          "t_span": [
+            0.41,
+            1.69
+          ],
+          "cross_start": 0.026985174795039146,
+          "cross_end": -1.640176624497245,
+          "cross_delta": -1.6671617992922843,
+          "max_abs_cross": 1.640176624497245,
+          "mean_abs_cross": 0.09369554763714127,
+          "horiz_start": 0.02701754555940453,
+          "horiz_end": 1.6709247614299356,
+          "horiz_delta": 1.643907215870531,
+          "max_err_horiz": 1.6709247614299356,
+          "slope_cross_mps2": -0.3739145975222991,
+          "slope_abs_cross_mps2": 0.32234723175146524,
+          "slope_horiz_mps2": 0.44645494731095736,
+          "dyaw_deg_end": 0.2793573122321116,
+          "max_abs_dyaw_deg": 0.2793573122321116
+        }
+      }
+    }
+  },
+  "verdict": {
+    "label": "VEL_NED_DIRTY_BEFORE_NHC_EXPLOSION",
+    "reading": "Filter vel_NED cross-track already -1.64 m/s at t=1.69 (same scale NHC sees as v_lat). Turn reveals pre-existing dirt. NOT a uniform silent drip from 0.4: early[0.4,1.34) clean; rise starts; SURGE in [1.59,1.69]. Intervene on rise/f_va, not NHC@1.7.",
+    "latch_full": {
+      "n": 129,
+      "t_span": [
+        0.41,
+        1.69
+      ],
+      "cross_start": 0.026985174795039146,
+      "cross_end": -1.640176624497245,
+      "cross_delta": -1.6671617992922843,
+      "max_abs_cross": 1.640176624497245,
+      "mean_abs_cross": 0.09369554763714127,
+      "horiz_start": 0.02701754555940453,
+      "horiz_end": 1.6709247614299356,
+      "horiz_delta": 1.643907215870531,
+      "max_err_horiz": 1.6709247614299356,
+      "slope_cross_mps2": -0.3739145975222991,
+      "slope_abs_cross_mps2": 0.32234723175146524,
+      "slope_horiz_mps2": 0.44645494731095736,
+      "dyaw_deg_end": 0.2793573122321116,
+      "max_abs_dyaw_deg": 0.2793573122321116
+    },
+    "ctrl_full": {
+      "n": 129,
+      "t_span": [
+        0.41,
+        1.69
+      ],
+      "cross_start": 0.026984178201486353,
+      "cross_end": 0.24714980273628628,
+      "cross_delta": 0.22016562453479993,
+      "max_abs_cross": 0.46513805669027175,
+      "mean_abs_cross": 0.0481339861106201,
+      "horiz_start": 0.027016554196068434,
+      "horiz_end": 0.9022462704376818,
+      "horiz_delta": 0.8752297162416134,
+      "max_err_horiz": 0.9022462704376818,
+      "slope_cross_mps2": 0.02014989083484153,
+      "slope_abs_cross_mps2": 0.12014546583852946,
+      "slope_horiz_mps2": 0.2879708053272291,
+      "dyaw_deg_end": 0.48229896326744537,
+      "max_abs_dyaw_deg": 2.1464089588152953
+    },
+    "latch_phases_slopes_abs_cross": {
+      "early": -0.027519315417893982,
+      "rise": 0.8551760364972655,
+      "break_to_explode": 15.538494014646938
+    },
+    "implication": "If VEL_NED_DIRTY_BEFORE_NHC_EXPLOSION: full chain is NHC Jacobian sign \u2192 attitude loop \u2192 f_va pollutes vel_NED silently \u2192 heading turn reveals as v_lat \u2192 NHC innov explodes. Intervene early on attitude/f_va, not at NHC explosion.",
+    "phase_nuance": "early_clean_rise_starts_break_surge"
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_vel_ned_pre_explosion.png"
+}

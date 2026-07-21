@@ -1,0 +1,149 @@
+{
+  "window_s": [
+    1.54,
+    1.64
+  ],
+  "convention": "ATT_X=roll, ATT_Y=pitch, ATT_Z=yaw",
+  "arms": {
+    "ctrl": {
+      "pre": {
+        "n": 5,
+        "mean_P_xz": 0.0044111962429999995,
+        "mean_P_yz": 0.0006913675344599999,
+        "mean_P_xy": 0.00062554704492,
+        "mean_rho_xz": 0.524723703001752,
+        "mean_rho_yz": 0.08549053657032106,
+        "max_abs_P_xz": 0.004577908665,
+        "max_abs_P_yz": 0.0007460538764,
+        "mean_P_xx": 0.0065242035312,
+        "mean_P_yy": 0.006038313918,
+        "mean_P_zz": 0.010831189712000002,
+        "mean_abs_dx_x": 0.0058911249974,
+        "mean_abs_dx_y": 0.002250798360932,
+        "mean_abs_dx_z": 0.0033379083034,
+        "sum_dx_y": -0.009806273097659999,
+        "sum_dx_x": -0.029455624987
+      },
+      "post": {
+        "n": 5,
+        "mean_P_xz": 0.003751183767,
+        "mean_P_yz": 0.00051129653004,
+        "mean_P_xy": 0.00029281618772,
+        "mean_rho_xz": 0.48693761122004153,
+        "mean_rho_yz": 0.06426087470384009,
+        "max_abs_P_xz": 0.004062743392,
+        "max_abs_P_yz": 0.0005932643544,
+        "mean_P_xx": 0.005702725332200001,
+        "mean_P_yy": 0.0060817849822,
+        "mean_P_zz": 0.01039064247,
+        "mean_abs_dx_x": 0.0072599506938,
+        "mean_abs_dx_y": 0.0055997557005999996,
+        "mean_abs_dx_z": 0.006398642435600001,
+        "sum_dx_y": -0.027998778502999998,
+        "sum_dx_x": -0.036299753469
+      },
+      "full": {
+        "n": 10,
+        "mean_P_xz": 0.004081190005000001,
+        "mean_P_yz": 0.00060133203225,
+        "mean_P_xy": 0.00045918161632,
+        "mean_rho_xz": 0.5058306571108967,
+        "mean_rho_yz": 0.07487570563708058,
+        "max_abs_P_xz": 0.004577908665,
+        "max_abs_P_yz": 0.0007460538764,
+        "mean_P_xx": 0.006113464431699999,
+        "mean_P_yy": 0.0060600494500999995,
+        "mean_P_zz": 0.010610916091,
+        "mean_abs_dx_x": 0.006575537845600001,
+        "mean_abs_dx_y": 0.0039252770307660004,
+        "mean_abs_dx_z": 0.0048682753695,
+        "sum_dx_y": -0.03780505160066,
+        "sum_dx_x": -0.065755378456
+      },
+      "ticks_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\patt_cross_ctrl_ticks.csv",
+      "growth": {
+        "P_yz_post_over_pre": 0.7395437369493401,
+        "abs_P_yz_post_over_pre": 0.7952030988200627,
+        "abs_P_xz_post_over_pre": 0.8874671142002786,
+        "rho_yz_post_minus_pre": -0.021229661866480967,
+        "rho_xz_post_minus_pre": -0.03778609178171044
+      }
+    },
+    "latch": {
+      "pre": {
+        "n": 5,
+        "mean_P_xz": 0.0047117667272,
+        "mean_P_yz": 0.0008424096159,
+        "mean_P_xy": 0.0009658396593199999,
+        "mean_rho_xz": 0.5313301391326665,
+        "mean_rho_yz": 0.10269987434898323,
+        "max_abs_P_xz": 0.00475501176,
+        "max_abs_P_yz": 0.0008644026821,
+        "mean_P_xx": 0.007025996037,
+        "mean_P_yy": 0.0060119128786,
+        "mean_P_zz": 0.011194267867999999,
+        "mean_abs_dx_x": 0.00042929332702,
+        "mean_abs_dx_y": 0.0019444379024,
+        "mean_abs_dx_z": 0.0,
+        "sum_dx_y": 0.009722189512,
+        "sum_dx_x": 0.0021464666351
+      },
+      "post": {
+        "n": 5,
+        "mean_P_xz": 0.0046113043092,
+        "mean_P_yz": 0.00075507885778,
+        "mean_P_xy": 0.00093892930306,
+        "mean_rho_xz": 0.5364751993896215,
+        "mean_rho_yz": 0.09073527455893336,
+        "max_abs_P_xz": 0.004649394657,
+        "max_abs_P_yz": 0.0007997831563,
+        "mean_P_xx": 0.006506242975599999,
+        "mean_P_yy": 0.0060982908122,
+        "mean_P_zz": 0.011359596626000001,
+        "mean_abs_dx_x": 0.00040041329339400003,
+        "mean_abs_dx_y": 0.004783568438,
+        "mean_abs_dx_z": 0.0,
+        "sum_dx_y": 0.02391784219,
+        "sum_dx_x": 0.00029915524643000005
+      },
+      "full": {
+        "n": 10,
+        "mean_P_xz": 0.0046615355182,
+        "mean_P_yz": 0.0007987442368400001,
+        "mean_P_xy": 0.0009523844811900001,
+        "mean_rho_xz": 0.5339026692611439,
+        "mean_rho_yz": 0.0967175744539583,
+        "max_abs_P_xz": 0.00475501176,
+        "max_abs_P_yz": 0.0008644026821,
+        "mean_P_xx": 0.0067661195063,
+        "mean_P_yy": 0.0060551018454,
+        "mean_P_zz": 0.011276932247,
+        "mean_abs_dx_x": 0.0004148533102069999,
+        "mean_abs_dx_y": 0.0033640031702,
+        "mean_abs_dx_z": 0.0,
+        "sum_dx_y": 0.033640031702,
+        "sum_dx_x": 0.0024456218815300003
+      },
+      "ticks_csv": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\patt_cross_latch_ticks.csv",
+      "growth": {
+        "P_yz_post_over_pre": 0.8963321922356039,
+        "abs_P_yz_post_over_pre": 0.925243723627729,
+        "abs_P_xz_post_over_pre": 0.977788256195606,
+        "rho_yz_post_minus_pre": -0.011964599790049865,
+        "rho_xz_post_minus_pre": 0.005145060256955047
+      }
+    }
+  },
+  "verdict": {
+    "label": "PATT_CROSS_LARGE_FLAT",
+    "reading": "P_att cross blocks are material but do not surge at the break \u2014 present as standing coupling; may still mediate leakage but not the timing of the pitch ramp alone.",
+    "next": "Check whether standing cross + rising innov explains pitch; else f_va/predict.",
+    "latch_mean_rho_yz": 0.0967175744539583,
+    "latch_mean_rho_xz": 0.5339026692611439,
+    "latch_abs_P_yz_growth": 0.925243723627729,
+    "latch_vs_ctrl_abs_P_yz": 1.3282915161717632,
+    "latch_mean_abs_dx_y": 0.0033640031702,
+    "latch_mean_abs_dx_z": 0.0
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_patt_cross_154_164.png"
+}

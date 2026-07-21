@@ -1,0 +1,203 @@
+{
+  "protocol_section": "11.7",
+  "protocol_doc": "docs/diagnostics/13-gap4-gnss-velocity-protocol.md",
+  "arm": "H1e",
+  "arm_dir": "docs/benchmarks/gap4_gnss_velocity/G1_intervention/arm_1e_innov_h",
+  "T_innov_h": 50.0,
+  "csv_repair": {
+    "applied": true,
+    "header_n": 68,
+    "row_n": 65,
+    "note": "CSV has 68 headers but 65 values; writer omitted vel_after_h_mps, dt_since_prev_gnss_s, dt_since_prev_accept_s. Remapped values[58:65] onto ppv_* / cos_* / frob trailing fields.",
+    "omitted_columns": [
+      "vel_after_h_mps (recomputed from n/e)",
+      "dt_since_prev_gnss_s",
+      "dt_since_prev_accept_s"
+    ]
+  },
+  "counts": {
+    "n_rows": 331,
+    "n_innov_ge_50": 322,
+    "n_triggered": 322,
+    "n_triggered_and_innov_ge_50": 322,
+    "n_omission_cohort": 322,
+    "n_omission_triggered": 322,
+    "omission_trigger_frac": 1.0
+  },
+  "omission_criterion": {
+    "definition": "among innov_h_m >= T_innov_h AND cos_dv_pos_err_pre <= 0, fraction with ppv_triggered==1",
+    "threshold": 0.95,
+    "omission_trigger_frac": 1.0,
+    "n_omission_cohort": 322,
+    "n_omission_triggered": 322,
+    "pass": true
+  },
+  "early_accepts": {
+    "definition": "accepted & (gps_index <= 7 or timestamp_s < 12)",
+    "n": 7,
+    "any_gate_fire": false,
+    "rows": [
+      {
+        "gps_index": 1,
+        "timestamp_s": 1.030678272,
+        "innov_h_m": 30.927515,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.0,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 2,
+        "timestamp_s": 5.664433479,
+        "innov_h_m": 29.260845,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.285774,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 3,
+        "timestamp_s": 6.053678513,
+        "innov_h_m": 27.669645,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.659131,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 4,
+        "timestamp_s": 6.922794342,
+        "innov_h_m": 26.075626,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": -0.658217,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 5,
+        "timestamp_s": 8.536244392,
+        "innov_h_m": 22.225285,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.469729,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 6,
+        "timestamp_s": 9.544651985,
+        "innov_h_m": 23.94269,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.779062,
+        "innov_h_ge_T": false
+      },
+      {
+        "gps_index": 7,
+        "timestamp_s": 10.553059578,
+        "innov_h_m": 23.235012,
+        "ppv_triggered": 0,
+        "cos_dv_pos_err_pre": 0.465781,
+        "innov_h_ge_T": false
+      }
+    ],
+    "note": "All early accepts have innov_h < T; gate does not fire before fix#2 abort."
+  },
+  "fix2_abort": {
+    "gps_index": 2,
+    "timestamp_s": 5.664433479,
+    "innov_h_m": 29.260845,
+    "ppv_triggered": 0,
+    "ppv_policy": "innov_h",
+    "accepted": 1,
+    "k_vel_max": 0.964973,
+    "cos_dv_pos_err_pre": 0.285774,
+    "innov_h_gate_active": false,
+    "innov_h_below_T": true,
+    "note": "Abort pathological_k_vel at fix#2; innov_h gate NOT active (innov_h=29.261m < T=50.0m, ppv_triggered=0)."
+  },
+  "gps20_class": {
+    "n_accepts_innov_ge_T_and_cos_pos_gt_0": 0,
+    "delta_err_columns_in_nis_audit": [],
+    "cases": [],
+    "applicable": false,
+    "pass": null,
+    "note": "No accepts with innov_h>=T and cos_pos>0; gps#20-class IMPROVE check N/A."
+  },
+  "report": {
+    "path": "docs/benchmarks/gap4_gnss_velocity/G1_intervention/arm_1e_innov_h/gap4_g1_innov_h_report.json",
+    "verdict_h1": "ABORT",
+    "accepts": 13,
+    "abort_flags": {
+      "k_vel_pathological": true,
+      "k_pos_pathological": true,
+      "dP_pathological": true,
+      "legacy_k_vel_max_gt_0.5": true,
+      "legacy_dP_over_P_gt_0.5": true
+    },
+    "criteria": {
+      "P1_Lambda_n_le_1.87": false,
+      "P2_accepts_ge_8": true,
+      "P5_no_abort": false
+    },
+    "P1": false,
+    "P2": true,
+    "P5": false,
+    "Lambda_n_fix8": 2.699702844259679,
+    "ppv_policy": "innov_h",
+    "pathological_k_vel_events": [
+      {
+        "gps_index": 2,
+        "timestamp_s": 5.664433479,
+        "k_vel_max": 0.964973,
+        "err_vel_pre_mps": 0.40475401630832897,
+        "err_vel_post_mps": 0.4384295108219818,
+        "delta_err_vel_mps": 0.033675494513652815
+      }
+    ]
+  },
+  "comparison": {
+    "arm_1a_gap": {
+      "verdict_h1": "ABORT",
+      "accepts": 8,
+      "criteria": {
+        "P1_Lambda_n_le_1.87": false,
+        "P2_accepts_ge_8": true,
+        "P5_no_abort": false
+      },
+      "abort_flags": {
+        "k_vel_pathological": true,
+        "k_pos_pathological": false,
+        "dP_pathological": true,
+        "legacy_k_vel_max_gt_0.5": true,
+        "legacy_dP_over_P_gt_0.5": true
+      }
+    },
+    "arm_1d_cos_pos": {
+      "verdict_h1": "ABORT",
+      "accepts": 9,
+      "criteria": {
+        "P1_Lambda_n_le_1.87": true,
+        "P2_accepts_ge_8": true,
+        "P5_no_abort": false
+      },
+      "abort_flags": {
+        "k_vel_pathological": true,
+        "k_pos_pathological": true,
+        "dP_pathological": true,
+        "legacy_k_vel_max_gt_0.5": true,
+        "legacy_dP_over_P_gt_0.5": true
+      }
+    },
+    "arm_1d_cos_pos_full_logged": {
+      "n_triggered": 137,
+      "n_omission_cohort_innov_ge_50_cos_le_0": 187,
+      "omission_trigger_frac_vs_H1e_T": 0.0,
+      "note": "1d trigger is cos_pos-based; omission under H1e T is expected (contrast)."
+    }
+  },
+  "section_11_7": {
+    "verdict": "FAIL",
+    "pass": false,
+    "primary_reason": "FAIL: P1/P5 fail due to abort at fix#2; innov_h gate was not active at that tick (innov_h=29.261m < T_innov_h=50.0m, ppv_triggered=0). Omisión criterion PASS (frac=1.0000, n=322).",
+    "reasons": [
+      "P5/P1 path fails: verdict_h1=ABORT with abort at fix#2 (k_vel_max=0.964973); innov_h gate was NOT active at that tick (innov_h=29.261m < T=50.0m, ppv_triggered=0).",
+      "P1_Lambda_n_le_1.87=false (Lambda_n_fix8=2.699702844259679).",
+      "Omisión PASS: trigger frac=1.0000 >= 0.95 (n_omission_cohort=322).",
+      "No accepts with innov_h>=T and cos_pos>0; gps#20-class IMPROVE check N/A."
+    ]
+  }
+}

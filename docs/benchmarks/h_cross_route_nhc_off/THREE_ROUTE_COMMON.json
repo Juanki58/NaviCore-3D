@@ -1,0 +1,385 @@
+{
+  "protocol": {
+    "shell": "NHC-off GNSS NIS audits",
+    "arms": [
+      "REF",
+      "ALT",
+      "JUL17"
+    ],
+    "paths": {
+      "REF": "docs/benchmarks/h_nhc_policy_ab/B_nhc_disabled/gnss_nis_audit.csv",
+      "ALT": "docs/benchmarks/h_cross_route_nhc_off/ALT_16072026/gnss_nis_audit.csv",
+      "JUL17": "docs/benchmarks/h_cross_route_nhc_off/ROUTE_20260717/gnss_nis_audit.csv"
+    },
+    "reject_reason_codes": {
+      "0": "accepted",
+      "1": "NIS gate: gnss_nis_gate > nis_threshold (ins_ekf.cpp)",
+      "2": "other pre-NIS reject path (not observed on these arms)"
+    },
+    "regime_change_definition": "first epoch where previous accepted==1 and this plus next two are accepted==0",
+    "permanent_reject_definition": "first reject after the last accept in the file (rejects continue to end)",
+    "early_accept_definition": "last accept immediately before the first regime-change reject"
+  },
+  "arms": {
+    "REF": {
+      "path": "docs/benchmarks/h_nhc_policy_ab/B_nhc_disabled/gnss_nis_audit.csv",
+      "n_epochs": 681,
+      "t_span_s": [
+        2.672356367,
+        676.349243164
+      ],
+      "n_accept": 18,
+      "n_reject": 663,
+      "accept_rate": 0.02643171806167401,
+      "early_accept_streak_from_start": 17,
+      "t_first_permanent_reject_streak": 509.301513672,
+      "gps_index_first_permanent_reject": 507,
+      "n_rejects_in_permanent_streak": 175,
+      "first_regime_change_reject": {
+        "definition": "first accept->reject with >=3 consecutive rejects",
+        "t": 20.301353455,
+        "gps_index": 18,
+        "gnss_nis_gate": 36.459,
+        "threshold": 15.086,
+        "dominant_nis_contrib": "ve",
+        "dominant_abs_share": 0.9213568182322485,
+        "shares_abs": {
+          "n": 0.009522449091655083,
+          "e": 0.025367232340390657,
+          "d": 0.01842645011439287,
+          "vn": 0.02532705022131296,
+          "ve": 0.9213568182322485
+        },
+        "vel_abs_share_vn_ve": 0.9466838684535615,
+        "pos_abs_share_n_e_d": 0.053316131546438605,
+        "innov_h_m": 9.830275,
+        "innov_vn": -1.182476,
+        "innov_ve": 10.242094,
+        "vel_pred_h": 10.675867,
+        "gps_speed": 15.695425,
+        "n_meas": 5,
+        "reject_reason": 1,
+        "initial_reject_streak_len": 488
+      },
+      "mean_gnss_nis_gate_rejects_first_60s": 3897.995102875,
+      "median_gnss_nis_gate_rejects_first_60s": 3671.578125,
+      "n_rejects_first_60s": 40,
+      "after_last_early_accept": {
+        "definition": "last accept before first regime-change reject; count consecutive rejects from regime onset until next accept or end",
+        "last_early_accept_t": 19.301353455,
+        "last_early_accept_gps_index": 17,
+        "consec_rejects": 488,
+        "until": "next_accept"
+      },
+      "reject_path": {
+        "all_rejects_reason_1_nis_gate": true,
+        "all_rejects_nis_gt_threshold": true,
+        "n_meas_on_rejects": {
+          "3": 61,
+          "5": 602
+        },
+        "dominant_contrib_counts_on_rejects": {
+          "ve": 7,
+          "vn": 2,
+          "d": 495,
+          "n": 159
+        }
+      }
+    },
+    "ALT": {
+      "path": "docs/benchmarks/h_cross_route_nhc_off/ALT_16072026/gnss_nis_audit.csv",
+      "n_epochs": 331,
+      "t_span_s": [
+        1.030678272,
+        332.268585205
+      ],
+      "n_accept": 8,
+      "n_reject": 323,
+      "accept_rate": 0.02416918429003021,
+      "early_accept_streak_from_start": 7,
+      "t_first_permanent_reject_streak": 66.268447876,
+      "gps_index_first_permanent_reject": 64,
+      "n_rejects_in_permanent_streak": 268,
+      "first_regime_change_reject": {
+        "definition": "first accept->reject with >=3 consecutive rejects",
+        "t": 11.268433571,
+        "gps_index": 8,
+        "gnss_nis_gate": 26.883972,
+        "threshold": 15.086,
+        "dominant_nis_contrib": "vn",
+        "dominant_abs_share": 0.5254738046501316,
+        "shares_abs": {
+          "n": 0.34595667976121086,
+          "e": 0.015124849492095102,
+          "d": 0.015595985265569035,
+          "vn": 0.5254738046501316,
+          "ve": 0.09784868083099334
+        },
+        "vel_abs_share_vn_ve": 0.6233224854811249,
+        "pos_abs_share_n_e_d": 0.376677514518875,
+        "innov_h_m": 27.864634,
+        "innov_vn": -8.207237,
+        "innov_ve": 3.813111,
+        "vel_pred_h": 3.920029,
+        "gps_speed": 6.05146,
+        "n_meas": 5,
+        "reject_reason": 1,
+        "initial_reject_streak_len": 55
+      },
+      "mean_gnss_nis_gate_rejects_first_60s": 976.38772162,
+      "median_gnss_nis_gate_rejects_first_60s": 71.18409750000001,
+      "n_rejects_first_60s": 50,
+      "after_last_early_accept": {
+        "definition": "last accept before first regime-change reject; count consecutive rejects from regime onset until next accept or end",
+        "last_early_accept_t": 10.553059578,
+        "last_early_accept_gps_index": 7,
+        "consec_rejects": 55,
+        "until": "next_accept"
+      },
+      "reject_path": {
+        "all_rejects_reason_1_nis_gate": true,
+        "all_rejects_nis_gt_threshold": true,
+        "n_meas_on_rejects": {
+          "3": 3,
+          "5": 320
+        },
+        "dominant_contrib_counts_on_rejects": {
+          "vn": 87,
+          "n": 25,
+          "ve": 39,
+          "d": 23,
+          "e": 149
+        }
+      }
+    },
+    "JUL17": {
+      "path": "docs/benchmarks/h_cross_route_nhc_off/ROUTE_20260717/gnss_nis_audit.csv",
+      "n_epochs": 715,
+      "t_span_s": [
+        0.070161149,
+        798.140014648
+      ],
+      "n_accept": 76,
+      "n_reject": 639,
+      "accept_rate": 0.1062937062937063,
+      "early_accept_streak_from_start": 74,
+      "t_first_permanent_reject_streak": 265.140136719,
+      "gps_index_first_permanent_reject": 230,
+      "n_rejects_in_permanent_streak": 486,
+      "first_regime_change_reject": {
+        "definition": "first accept->reject with >=3 consecutive rejects",
+        "t": 113.139518738,
+        "gps_index": 75,
+        "gnss_nis_gate": 23.264248,
+        "threshold": 15.086,
+        "dominant_nis_contrib": "vn",
+        "dominant_abs_share": 0.5504746525371449,
+        "shares_abs": {
+          "n": 0.0008775741570973595,
+          "e": 0.013808963193676521,
+          "d": 7.294524090873809e-06,
+          "vn": 0.5504746525371449,
+          "ve": 0.4348315155879903
+        },
+        "vel_abs_share_vn_ve": 0.9853061681251352,
+        "pos_abs_share_n_e_d": 0.014693831874864756,
+        "innov_h_m": 6.604749,
+        "innov_vn": -5.759985,
+        "innov_ve": -5.304136,
+        "vel_pred_h": 12.224888,
+        "gps_speed": 7.806792,
+        "n_meas": 5,
+        "reject_reason": 1,
+        "initial_reject_streak_len": 34
+      },
+      "mean_gnss_nis_gate_rejects_first_60s": null,
+      "median_gnss_nis_gate_rejects_first_60s": null,
+      "n_rejects_first_60s": 0,
+      "after_last_early_accept": {
+        "definition": "last accept before first regime-change reject; count consecutive rejects from regime onset until next accept or end",
+        "last_early_accept_t": 112.139518738,
+        "last_early_accept_gps_index": 74,
+        "consec_rejects": 34,
+        "until": "next_accept"
+      },
+      "reject_path": {
+        "all_rejects_reason_1_nis_gate": true,
+        "all_rejects_nis_gt_threshold": true,
+        "n_meas_on_rejects": {
+          "3": 142,
+          "5": 497
+        },
+        "dominant_contrib_counts_on_rejects": {
+          "vn": 16,
+          "ve": 41,
+          "n": 181,
+          "e": 400,
+          "d": 1
+        }
+      }
+    }
+  },
+  "common": {
+    "shared_failure_property": "EKF abandons GPS exclusively via the 5-DoF GNSS NIS gate: every reject has reject_reason=1 (nis > nis_threshold). No other reject path appears on any arm. At the first accept->sustained-reject regime change, a horizontal velocity NIS component (vn or ve) is the single largest abs-share contributor on all three arms (combined vn+ve abs share > 0.5 on all three).",
+    "must_be_true_for_all": [
+      {
+        "fact": "100% of rejects are NIS-gate failures (reject_reason=1; gnss_nis_gate > nis_threshold)",
+        "REF": true,
+        "ALT": true,
+        "JUL17": true
+      },
+      {
+        "fact": "First regime-change reject has n_meas=5 and nis_threshold=15.086",
+        "REF": {
+          "n_meas": 5,
+          "threshold": 15.086
+        },
+        "ALT": {
+          "n_meas": 5,
+          "threshold": 15.086
+        },
+        "JUL17": {
+          "n_meas": 5,
+          "threshold": 15.086
+        }
+      },
+      {
+        "fact": "First regime-change reject: dominant abs nis_contrib is a horizontal velocity channel (vn or ve)",
+        "REF": {
+          "dominant": "ve",
+          "abs_share": 0.9213568182322485
+        },
+        "ALT": {
+          "dominant": "vn",
+          "abs_share": 0.5254738046501316
+        },
+        "JUL17": {
+          "dominant": "vn",
+          "abs_share": 0.5504746525371449
+        }
+      },
+      {
+        "fact": "First regime-change reject: combined abs share of (vn+ve) > 0.5",
+        "REF": 0.9466838684535615,
+        "ALT": 0.6233224854811249,
+        "JUL17": 0.9853061681251352
+      },
+      {
+        "fact": "Early consecutive accepts from start, then gate closes; permanent reject streak exists before end",
+        "REF": {
+          "early_accepts": 17,
+          "accept_rate": 0.02643171806167401,
+          "t_perm": 509.301513672
+        },
+        "ALT": {
+          "early_accepts": 7,
+          "accept_rate": 0.02416918429003021,
+          "t_perm": 66.268447876
+        },
+        "JUL17": {
+          "early_accepts": 74,
+          "accept_rate": 0.1062937062937063,
+          "t_perm": 265.140136719
+        }
+      }
+    ],
+    "differs_onset_signatures": {
+      "t_regime_change_s": {
+        "REF": 20.301353455,
+        "ALT": 11.268433571,
+        "JUL17": 113.139518738
+      },
+      "dominant_channel_at_regime": {
+        "REF": "ve (abs_share=0.921357)",
+        "ALT": "vn (abs_share=0.525474)",
+        "JUL17": "vn (abs_share=0.550475)"
+      },
+      "gnss_nis_gate_at_regime": {
+        "REF": 36.459,
+        "ALT": 26.883972,
+        "JUL17": 23.264248
+      },
+      "innov_h_m_at_regime": {
+        "REF": 9.830275,
+        "ALT": 27.864634,
+        "JUL17": 6.604749
+      },
+      "innov_vn_ve_at_regime": {
+        "REF": [
+          -1.182476,
+          10.242094
+        ],
+        "ALT": [
+          -8.207237,
+          3.813111
+        ],
+        "JUL17": [
+          -5.759985,
+          -5.304136
+        ]
+      },
+      "vel_pred_h_and_gps_speed_at_regime": {
+        "REF": [
+          10.675867,
+          15.695425
+        ],
+        "ALT": [
+          3.920029,
+          6.05146
+        ],
+        "JUL17": [
+          12.224888,
+          7.806792
+        ]
+      },
+      "pos_abs_share_at_regime": {
+        "REF": 0.053316131546438605,
+        "ALT": 0.376677514518875,
+        "JUL17": 0.014693831874864756
+      },
+      "mean_median_reject_nis_first_60s": {
+        "REF": [
+          3897.995102875,
+          3671.578125
+        ],
+        "ALT": [
+          976.38772162,
+          71.18409750000001
+        ],
+        "JUL17": [
+          null,
+          null
+        ]
+      },
+      "n_rejects_first_60s": {
+        "REF": 40,
+        "ALT": 50,
+        "JUL17": 0
+      },
+      "consec_rejects_after_last_early_accept": {
+        "REF": {
+          "n": 488,
+          "until": "next_accept"
+        },
+        "ALT": {
+          "n": 55,
+          "until": "next_accept"
+        },
+        "JUL17": {
+          "n": 34,
+          "until": "next_accept"
+        }
+      },
+      "t_first_permanent_reject_streak": {
+        "REF": 509.301513672,
+        "ALT": 66.268447876,
+        "JUL17": 265.140136719
+      },
+      "accept_rate": {
+        "REF": 0.02643171806167401,
+        "ALT": 0.02416918429003021,
+        "JUL17": 0.1062937062937063
+      }
+    }
+  }
+}

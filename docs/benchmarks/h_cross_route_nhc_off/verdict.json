@@ -1,0 +1,126 @@
+{
+  "protocol": {
+    "shell": "G1-like NHC-off: constraint disabled, nhc disabled, pos_vel, p_pv none, yaw zero + h9a",
+    "single_variable": "trajectory CSV only",
+    "max_new_routes": 2,
+    "available_new_routes_in_repo": 1,
+    "metrics": [
+      "t_sep",
+      "gnss accept/reject",
+      "first regime reject",
+      "\u0394v_E",
+      "NIS",
+      "residual"
+    ],
+    "note": "Does not replace \u0394v_E term investigation; control experiment only."
+  },
+  "REF_19082026": {
+    "input": "docs\\benchmarks\\real_run_19082026_baseline\\real_run_replay.csv",
+    "duration_hint_s": 676.349243164,
+    "gnss": {
+      "n_events": 681,
+      "n_accept": 18,
+      "n_reject": 663,
+      "accept_rate": 0.02643171806167401,
+      "t_first_permanent_reject_s": 509.301513672
+    },
+    "regime_change": {
+      "t_last_accept_s": 19.301353455,
+      "t_first_regime_reject_s": 20.301353455,
+      "delta_v_E_vel_mps": -8.299274,
+      "sum_dv_pred_e_mps": -8.299271000000001,
+      "v_E_after_accept": 10.771195,
+      "v_E_at_reject_pred": 2.471921
+    },
+    "first_regime_reject_nis": {
+      "t_s": 20.301353455,
+      "gps_index": 18,
+      "gnss_nis_gate": 36.459,
+      "nis_threshold": 15.086,
+      "n_meas": 5,
+      "dominant": "ve",
+      "shares": {
+        "n": 0.009522449091655083,
+        "e": 0.025367232340390657,
+        "d": 0.01842645011439287,
+        "vn": 0.02532705022131296,
+        "ve": 0.9213568182322485
+      },
+      "contrib_ve": 33.591751,
+      "innov_ve": 10.242094
+    },
+    "residual": {
+      "available": true,
+      "residual_h_final_m": 156869.64981080545,
+      "residual_h_max_m": 312014.6412923396,
+      "residual_h_at_60s_m": 2766.421547324035,
+      "t_sep_s": 21.301353455
+    },
+    "deriva_final_h_m": 158140.031
+  },
+  "ALT_16072026": {
+    "input": "docs\\benchmarks\\real_run_replay.csv",
+    "duration_hint_s": 332.268585205,
+    "gnss": {
+      "n_events": 331,
+      "n_accept": 8,
+      "n_reject": 323,
+      "accept_rate": 0.02416918429003021,
+      "t_first_permanent_reject_s": 66.268447876
+    },
+    "regime_change": {
+      "t_last_accept_s": 10.553059578,
+      "t_first_regime_reject_s": 11.268433571,
+      "delta_v_E_vel_mps": 0.21414299999999997,
+      "sum_dv_pred_e_mps": 0.21414000000000002,
+      "v_E_after_accept": 0.219312,
+      "v_E_at_reject_pred": 0.433455
+    },
+    "first_regime_reject_nis": {
+      "t_s": 11.268433571,
+      "gps_index": 8,
+      "gnss_nis_gate": 26.883972,
+      "nis_threshold": 15.086,
+      "n_meas": 5,
+      "dominant": "vn",
+      "shares": {
+        "n": 0.34595667976121086,
+        "e": 0.015124849492095102,
+        "d": 0.015595985265569035,
+        "vn": 0.5254738046501316,
+        "ve": 0.09784868083099334
+      },
+      "contrib_ve": 2.630561,
+      "innov_ve": 3.813111
+    },
+    "residual": {
+      "available": true,
+      "residual_h_final_m": 853317.7956852526,
+      "residual_h_max_m": 853317.7956852526,
+      "residual_h_at_60s_m": 8083.766917220084,
+      "t_sep_s": 14.268433571
+    },
+    "deriva_final_h_m": 856262.25
+  },
+  "discrimination": {
+    "case": "C",
+    "meaning": "Fails but different signature \u2192 general weakness, mechanism not identical to REF.",
+    "flags": {
+      "early_reject_15_30s": false,
+      "large_abs_delta_v_E": false,
+      "nis_ve_dominant": false,
+      "same_structure_A": false,
+      "works_well_B": false
+    },
+    "alt_key_numbers": {
+      "t_regime_reject_s": 11.268433571,
+      "delta_v_E_mps": 0.21414000000000002,
+      "nis_dominant": "vn",
+      "nis_ve_share": 0.09784868083099334,
+      "accept_rate": 0.02416918429003021,
+      "t_permanent_reject_s": 66.268447876,
+      "residual_h_at_60s_m": 8083.766917220084,
+      "deriva_final_h_m": 856262.25
+    }
+  }
+}

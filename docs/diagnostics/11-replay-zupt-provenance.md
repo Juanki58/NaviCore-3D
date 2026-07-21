@@ -39,6 +39,7 @@ No invalida automáticamente la *existencia* del hallazgo (p. ej. que ZUPT espur
 | **GAP-3.1 – GAP-3.7** | `gap3_*` (NIS, K-block, cov, Pregunta A) | Incluye veredictos sobre `v_nominal`, `P_vv`, NIS |
 | **GAP-3.8 Exp A** | `constraint_matrix/A/` | Reproducción explícita del baseline legacy |
 | Cualquier replay **sin** `--constraint-policy` antes de GAP-3.8 | `real_run_output*.csv`, `docs/benchmarks/*` | Default histórico = `forced_time` |
+| Invocaciones actuales **sin** el flag | N/A | Fallan en CLI (flag obligatorio desde higiene Jul 2026) |
 
 ### 3.2 No condicionados por ZUPT legacy (o exentos)
 
@@ -73,6 +74,10 @@ NaviCore3D_Replay.exe ... \
 Ajustar umbrales IMU solo con registro explícito en el informe.
 
 **No usar** `forced_time` ni `auto` (alias legacy) para nuevos experimentos estructurales (GNSS+velocidad, sweeps P/Q/R, etc.).
+
+**CLI (higiene, Jul 2026):** `NaviCore3D_Replay` **exige** `--constraint-policy`. No hay default: omitir el flag o pasar `auto` termina con error. `forced_time` solo si se pide por nombre (reproducción legacy intencional).
+
+**Arquitectura (ZUPT + NHC):** ver [17-conditional-constraints-architecture.md](17-conditional-constraints-architecture.md) — un solo principio: disparo por estado del sistema, no por reloj ni ALWAYS.
 
 ---
 
@@ -116,3 +121,4 @@ Los informes GAP-3.8 ya distinguen `constraint_policy` por experimento.
 |---------|-------|-------|
 | 1.0 | 2026-07-18 | Regla de validez post GAP-3.7; clasificación H9→GAP-3.7 |
 | 1.1 | 2026-07-18 | Post GAP-3.8: NHC domina GNSS accepts; prioridad GAP-3.9 |
+| 1.2 | 2026-07-18 | CLI: `--constraint-policy` obligatorio; `auto` retirado |

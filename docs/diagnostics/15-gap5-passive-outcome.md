@@ -44,6 +44,8 @@ controlador v1 (umbrales 12/22, dwell 1 s)
 
 El problema **no** está en el EKF, ni en F1, ni en GAP-4. Está en la **traducción** diagnóstico offline → señal de control online.
 
+**Patrón de programa (Caso A):** misma estructura que el cierre de cand1 (Jacobiano) — ver [reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md](reference/OPERATIONALIZATION_FAILURES_DESIGN_PATTERN.md).
+
 ---
 
 ## 2. Diseño experimental (passive only)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "adaptive_nhc_controller.hpp"
+#include "ins_ekf_v2.hpp"
 
 #include <cstdint>
 
@@ -18,7 +19,7 @@ enum class RealRunYawInitMode : uint8_t {
 
 /** ZUPT arming policy for replay (does not change filter math, only when ZUPT is armed). */
 enum class ReplayConstraintPolicy : uint8_t {
-    AUTO = 0,          /**< Calibration-aligned replay default (FORCED_TIME). */
+    AUTO = 0,          /**< Retired CLI alias of FORCED_TIME; rejected by replay_main. */
     FORCED_TIME = 1,   /**< t <= static_phase_end OR gps_speed <= threshold (legacy). */
     GPS_STOP = 2,      /**< gps_speed <= moving_speed_threshold only. */
     IMU_STATIONARY = 3, /**< |‖a‖ − g| and ‖ω‖ below IMU thresholds. */
@@ -42,7 +43,17 @@ enum class ReplayPpvPolicy : uint8_t {
     ZERO = 2,
     COS_POS = 3,
     COS_TOT = 4,
+    INNOV_H = 5,
 };
+
+/** H-seed-v (§20): how nominal velocity is seeded after pos seed. */
+enum class ReplaySeedVelocityMode : uint8_t {
+    ZERO = 0, /**< Legacy: seed_from_ned_pos leaves v=0. */
+    GNSS = 1, /**< Set v from first GPS with speed≥threshold + course from Δpos. */
+};
+
+const char *replay_seed_velocity_mode_name(ReplaySeedVelocityMode mode);
+bool replay_parse_seed_velocity_mode(const char *text, ReplaySeedVelocityMode *out_mode);
 
 struct ReplayConstraintDecision {
     bool zupt_armed;
@@ -95,6 +106,8 @@ struct RealRunReplayConfig {
     const char *gap3_vel_source_audit_csv_path;
     const char *gap3_imu_constraint_audit_csv_path;
     const char *gap3_constraint_pipeline_audit_csv_path;
+    const char *kinematic_identity_audit_csv_path;
+    const char *tick_stage_audit_csv_path;
     const char *h8_propagation_audit_csv_path;
     const char *h9_tilt_audit_csv_path;
     const char *h9a_gravity_alignment_audit_csv_path;
@@ -138,6 +151,31 @@ struct RealRunReplayConfig {
     float h9a_gravity_init_window_s;
     AdaptiveNhcMode adaptive_nhc_mode;
     const char *adaptive_nhc_controller_audit_csv_path;
+    ReplaySeedVelocityMode seed_velocity_mode;
+    float seed_velocity_min_speed_mps;
+    /** H2: with seed_velocity=gnss, also yaw:=course at the same shot. */
+    bool seed_yaw_from_course;
+    /**
+     * Experiment: NHC treats ATT_Z as unobservable from the first update
+     * (H[*][ATT_Z]=0; does not wait for forget-latch).
+     */
+    bool nhc_att_z_unobs_immediate;
+    /** Experiment: NHC velocity-only (H[*][ATT_X/Y/Z]=0). */
+    bool nhc_att_unobs_immediate;
+    /** Coherence gate: NHC attitude blocked until |v|/GNSS/|course−yaw| hold. */
+    bool nhc_att_coherence_gate;
+    float nhc_att_gate_vmin_mps;
+    float nhc_att_gate_yaw_max_deg;
+    float nhc_att_gate_hold_s;
+    /**
+     * Experiment: after H2 seed, freeze roll/pitch/yaw (restore q each tick)
+     * and force NHC velocity-only. Discriminates att-rotation → v-drain.
+     */
+    bool freeze_attitude_after_seed;
+    /** EKF core: v1 (legacy) | v2 (núcleos reescritos). Default v1. */
+    InsEkfCoreVersion ekf_core;
+    /** v2 only: R adaptativo + vel coherente + NHC entre fixes. */
+    bool v2_polish;
 };
 
 bool real_run_replay_load_mount_matrix(

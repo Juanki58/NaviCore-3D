@@ -485,6 +485,93 @@ void append_nhc_trace_row(
         ins_ekf_nhc_update_count(ekf));
 }
 
+void cov_block_frob(
+    const InsEkfFilter *ekf,
+    uint8_t row0,
+    uint8_t col0,
+    uint8_t n_rows,
+    uint8_t n_cols,
+    float *out_frob)
+{
+    if (out_frob == NULL) {
+        return;
+    }
+    *out_frob = 0.0f;
+    if (ekf == NULL || !ekf->initialized) {
+        return;
+    }
+    double sum_sq = 0.0;
+    for (uint8_t r = 0U; r < n_rows; ++r) {
+        for (uint8_t c = 0U; c < n_cols; ++c) {
+            const float v = ekf->cov.P[row0 + r][col0 + c];
+            sum_sq += static_cast<double>(v) * static_cast<double>(v);
+        }
+    }
+    *out_frob = static_cast<float>(std::sqrt(sum_sq));
+}
+
+void append_anatomy_row(
+    FILE *anatomy_fp,
+    const InsEkfFilter *ekf,
+    const INaviFilter *filter,
+    uint32_t t_ms,
+    bool gps_outage,
+    bool nhc_applied,
+    float truth_n,
+    float truth_e)
+{
+    if (anatomy_fp == NULL || ekf == NULL || !ekf->initialized) {
+        return;
+    }
+
+    float p_vv_frob = 0.0f;
+    float p_pv_frob = 0.0f;
+    cov_block_frob(ekf, INS_ERR_VEL_N, INS_ERR_VEL_N, 3U, 3U, &p_vv_frob);
+    cov_block_frob(ekf, INS_ERR_POS_N, INS_ERR_VEL_N, 3U, 3U, &p_pv_frob);
+    const float p_vv_trace =
+        ekf->cov.P[INS_ERR_VEL_N][INS_ERR_VEL_N]
+        + ekf->cov.P[INS_ERR_VEL_E][INS_ERR_VEL_E]
+        + ekf->cov.P[INS_ERR_VEL_D][INS_ERR_VEL_D];
+
+    float vel_ned[3] = {0.0f, 0.0f, 0.0f};
+    ins_ekf_get_velocity_ned(ekf, vel_ned);
+    const float vel_norm = std::sqrt(
+        vel_ned[0] * vel_ned[0] + vel_ned[1] * vel_ned[1] + vel_ned[2] * vel_ned[2]);
+    const float drift_h =
+        (filter != nullptr) ? filter_horizontal_drift_m(filter, truth_n, truth_e) : 0.0f;
+
+    float dx_pos = 0.0f;
+    float dx_vel = 0.0f;
+    float k_max = 0.0f;
+    float innov_norm = 0.0f;
+    if (nhc_applied) {
+        InsEkfNhcUpdateDetail detail{};
+        if (ins_ekf_get_nhc_last_update_detail(ekf, &detail)
+            && detail.timestamp_ms == t_ms) {
+            dx_pos = detail.dx_pos_norm_m;
+            dx_vel = detail.dx_vel_norm_mps;
+            k_max = detail.k_max;
+            innov_norm = detail.innov_norm_mps;
+        }
+    }
+
+    std::fprintf(
+        anatomy_fp,
+        "%u,%u,%u,%.9e,%.9e,%.9e,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+        t_ms,
+        gps_outage ? 1U : 0U,
+        nhc_applied ? 1U : 0U,
+        p_vv_frob,
+        p_pv_frob,
+        p_vv_trace,
+        vel_norm,
+        drift_h,
+        dx_pos,
+        dx_vel,
+        k_max,
+        innov_norm);
+}
+
 } /* namespace */
 
 SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &config)
@@ -513,6 +600,17 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
                 "vbx,vby,vbz,innov_y,innov_z,innov_norm,k_y,k_z,k_max,nis,"
                 "dx_vel_n,dx_vel_e,dx_vel_d,dx_att_x,dx_att_y,dx_att_z,"
                 "dx_vel_norm,dx_att_norm,dx_pos_norm,nhc_count\n");
+        }
+    }
+
+    FILE *anatomy_fp = NULL;
+    if (config.anatomy_csv_path != NULL && config.anatomy_csv_path[0] != '\0') {
+        anatomy_fp = std::fopen(config.anatomy_csv_path, "w");
+        if (anatomy_fp != NULL) {
+            std::fprintf(
+                anatomy_fp,
+                "t_ms,gps_outage,nhc_applied,P_vv_frob,P_pv_frob,P_vv_trace,"
+                "vel_norm_mps,drift_h_m,dx_pos_norm,dx_vel_norm,k_max,innov_norm\n");
         }
     }
 
@@ -630,6 +728,29 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
                 append_nhc_trace_row(trace_fp, &ekf, t_ms, gps_outage, constant_vel);
             }
 
+            if (anatomy_fp != NULL) {
+                float truth_n_a = 0.0f;
+                float truth_e_a = 0.0f;
+                float truth_d_a = 0.0f;
+                gps_truth_to_ned_m(
+                    ref_lat_deg,
+                    ref_lon_deg,
+                    ref_alt_m,
+                    &gps_truth,
+                    &truth_n_a,
+                    &truth_e_a,
+                    &truth_d_a);
+                append_anatomy_row(
+                    anatomy_fp,
+                    &ekf,
+                    filter,
+                    t_ms,
+                    gps_outage,
+                    nhc_after > nhc_before,
+                    truth_n_a,
+                    truth_e_a);
+            }
+
             if (gps_outage) {
                 float truth_n = 0.0f;
                 float truth_e = 0.0f;
@@ -721,6 +842,9 @@ SuperTunnelPassResult super_tunnel_run_with_config(const SuperTunnelRunConfig &c
     if (trace_fp != NULL) {
         std::fclose(trace_fp);
     }
+    if (anatomy_fp != NULL) {
+        std::fclose(anatomy_fp);
+    }
 
     return result;
 }
@@ -743,6 +867,7 @@ SuperTunnelPassResult super_tunnel_run_pass(
     config.nhc_vertical_std_override_mps = nhc_vertical_std_mps;
     config.verbose = verbose;
     config.nhc_trace_csv_path = NULL;
+    config.anatomy_csv_path = NULL;
 
     return super_tunnel_run_with_config(config);
 }
@@ -872,6 +997,7 @@ int run_super_tunnel_nhc_experiments()
     base.nhc_vertical_std_override_mps = 0.0f;
     base.verbose = false;
     base.nhc_trace_csv_path = NULL;
+    base.anatomy_csv_path = NULL;
 
     char trace_path[256];
 
@@ -915,5 +1041,139 @@ int run_super_tunnel_nhc_experiments()
     std::printf("  el NHC actual no los estima — no es limite universal del NHC.\n");
     std::printf("================================================================\n");
 
+    return 0;
+}
+
+int run_super_tunnel_bd_isolation_rerun()
+{
+#ifdef _WIN32
+    (void)_mkdir("docs");
+    (void)_mkdir("docs\\benchmarks");
+    (void)_mkdir("docs\\benchmarks\\super_tunnel_bd_rerun");
+#else
+    (void)mkdir("docs", 0755);
+    (void)mkdir("docs/benchmarks", 0755);
+    (void)mkdir("docs/benchmarks/super_tunnel_bd_rerun", 0755);
+#endif
+
+    std::printf("\n");
+    std::printf("================================================================\n");
+    std::printf(" SUPER_TUNNEL B/B_dirty + N_always isolation (preregistered)\n");
+    std::printf("  Protocol: docs/diagnostics/16-super-tunnel-ieee952-rerun-protocol.md\n");
+    std::printf("  Jacobiano NHC coeficientes = bf2bfbd | seed=%u | ZUPT=false hardcoded\n",
+                kExperimentSeed);
+    std::printf("  Binario actual != corrida original 481/1416 (ver protocolo §0)\n");
+    std::printf("  Out: docs/benchmarks/super_tunnel_bd_rerun/\n");
+    std::printf("================================================================\n");
+
+    static const struct {
+        const char *id;
+        SuperTunnelNhcPolicy nhc_policy;
+        SuperTunnelImuMode imu_mode;
+    } kArms[] = {
+        {"A", SUPER_TUNNEL_NHC_OFF, SUPER_TUNNEL_IMU_IDEAL},
+        {"A_dirty", SUPER_TUNNEL_NHC_OFF, SUPER_TUNNEL_IMU_DIRTY_FULL},
+        {"B", SUPER_TUNNEL_NHC_CONSTANT_VEL_ONLY, SUPER_TUNNEL_IMU_IDEAL},
+        {"B_dirty", SUPER_TUNNEL_NHC_CONSTANT_VEL_ONLY, SUPER_TUNNEL_IMU_DIRTY_FULL},
+        {"N_always", SUPER_TUNNEL_NHC_ALWAYS, SUPER_TUNNEL_IMU_IDEAL},
+        {"N_always_dirty", SUPER_TUNNEL_NHC_ALWAYS, SUPER_TUNNEL_IMU_DIRTY_FULL},
+    };
+
+    FILE *results_fp = std::fopen(
+        "docs/benchmarks/super_tunnel_bd_rerun/results.csv", "w");
+    if (results_fp != NULL) {
+        std::fprintf(
+            results_fp,
+            "experiment_id,nhc_policy,imu_mode,drift_exit_m,drift_final_m,nhc_updates,"
+            "innov_max_norm_mps,anatomy_csv,trace_csv\n");
+    }
+
+    for (size_t i = 0U; i < (sizeof(kArms) / sizeof(kArms[0])); ++i) {
+        SuperTunnelRunConfig config{};
+        config.experiment_id = kArms[i].id;
+        config.nhc_policy = kArms[i].nhc_policy;
+        config.imu_mode = kArms[i].imu_mode;
+        config.rng_seed = kExperimentSeed;
+        config.nhc_r_lateral_multiplier = 1.0f;
+        config.nhc_r_vertical_multiplier = 1.0f;
+        config.nhc_lateral_std_override_mps = 0.0f;
+        config.nhc_vertical_std_override_mps = 0.0f;
+        config.verbose = false;
+
+        char anatomy_path[256];
+        char trace_path[256];
+        std::snprintf(
+            anatomy_path,
+            sizeof(anatomy_path),
+            "docs/benchmarks/super_tunnel_bd_rerun/%s_anatomy.csv",
+            kArms[i].id);
+        config.anatomy_csv_path = anatomy_path;
+
+        if (kArms[i].nhc_policy != SUPER_TUNNEL_NHC_OFF) {
+            std::snprintf(
+                trace_path,
+                sizeof(trace_path),
+                "docs/benchmarks/super_tunnel_bd_rerun/%s_trace.csv",
+                kArms[i].id);
+            config.nhc_trace_csv_path = trace_path;
+        } else {
+            trace_path[0] = '\0';
+            config.nhc_trace_csv_path = NULL;
+        }
+
+        const SuperTunnelPassResult result = super_tunnel_run_with_config(config);
+
+        const char *policy_name = "off";
+        if (kArms[i].nhc_policy == SUPER_TUNNEL_NHC_CONSTANT_VEL_ONLY) {
+            policy_name = "constant_vel_only";
+        } else if (kArms[i].nhc_policy == SUPER_TUNNEL_NHC_ALWAYS) {
+            policy_name = "always";
+        }
+        const char *imu_name =
+            (kArms[i].imu_mode == SUPER_TUNNEL_IMU_DIRTY_FULL) ? "dirty_full" : "ideal";
+
+        std::printf(
+            "  %-14s drift_exit=%8.2f m | drift_final=%8.2f m | NHC=%5u | imu=%s | policy=%s\n",
+            kArms[i].id,
+            result.drift_exit_tunnel_m,
+            result.drift_final_m,
+            result.nhc_updates,
+            imu_name,
+            policy_name);
+        std::printf("    anatomy=%s\n", anatomy_path);
+
+        if (results_fp != NULL) {
+            std::fprintf(
+                results_fp,
+                "%s,%s,%s,%.6f,%.6f,%u,%.6f,%s,%s\n",
+                kArms[i].id,
+                policy_name,
+                imu_name,
+                result.drift_exit_tunnel_m,
+                result.drift_final_m,
+                result.nhc_updates,
+                result.nhc_innovation_max.norm_mps,
+                anatomy_path,
+                (config.nhc_trace_csv_path != NULL) ? config.nhc_trace_csv_path : "");
+        }
+
+        if (kArms[i].nhc_policy != SUPER_TUNNEL_NHC_OFF) {
+            char summary_path[256];
+            std::snprintf(
+                summary_path,
+                sizeof(summary_path),
+                "docs/benchmarks/super_tunnel_bd_rerun/%s_summary.json",
+                kArms[i].id);
+            (void)write_nhc_summary_json(kArms[i].id, &result, summary_path);
+        }
+    }
+
+    if (results_fp != NULL) {
+        std::fclose(results_fp);
+        std::printf("  results=docs/benchmarks/super_tunnel_bd_rerun/results.csv\n");
+    }
+    std::printf("================================================================\n");
+    std::printf("Next: python tools/audit_super_tunnel_bd_rerun.py\n");
+    std::printf("================================================================\n");
     return 0;
 }

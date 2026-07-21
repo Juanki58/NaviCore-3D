@@ -1,0 +1,137 @@
+{
+  "H2": {
+    "t_end_s": 677.12121582,
+    "n_B": 66626,
+    "yaw_chase": {
+      "before": -1.98,
+      "after_seed": 93.615,
+      "after_update": 93.534,
+      "after_pred1": 107.496,
+      "after_pred2": 127.087,
+      "dyaw_seed_to_pred1": 13.881,
+      "dyaw_pred1_to_pred2": 19.591000000000008
+    },
+    "gate_open": null,
+    "residual_h_final": 8545.259765625,
+    "residual_h_max": 8594.549804688,
+    "residual_h_p50": 4860.8435058595005,
+    "residual_h_p95": 8556.74365234375,
+    "residual_h_at_6s": 34.466388702,
+    "residual_h_at_60s": 532.115356445,
+    "residual_h_at_300s": 4226.109863281,
+    "t_sep_s": 5.301555157,
+    "P3_first_fail_t_s": 4.323426723,
+    "course_yaw_ok_to_fail_count": 25,
+    "course_yaw_fail_frac": 0.3469185040258861,
+    "P3a_fail_t_s": 4.323426723,
+    "P3a_immediate_break": true,
+    "speed_vs_gps_fail_frac": 0.42351809877051994,
+    "gnss_accept": 7,
+    "gnss_reject": 674,
+    "gnss_accept_rate": 0.010279001468428781,
+    "residual_h_max_after_60s": 8594.549804688,
+    "course_yaw_fail_frac_after_60s": 0.3084369769960293,
+    "yaw_held_after_two_predicts": false
+  },
+  "Gate": {
+    "t_end_s": 677.12121582,
+    "n_B": 66626,
+    "yaw_chase": {
+      "before": -0.645,
+      "after_seed": 93.615,
+      "after_update": 93.571,
+      "after_pred1": 91.765,
+      "after_pred2": 92.712,
+      "dyaw_seed_to_pred1": -1.8499999999999943,
+      "dyaw_pred1_to_pred2": 0.9470000000000027
+    },
+    "gate_open": {
+      "t_s": 50.804,
+      "speed": 8.39,
+      "course_yaw_abs_deg": 5.8,
+      "hold_s": 2.5
+    },
+    "residual_h_final": 8460.700195312,
+    "residual_h_max": 8547.607421875,
+    "residual_h_p50": 4973.971679687,
+    "residual_h_p95": 8518.163818359,
+    "residual_h_at_6s": 18.623209,
+    "residual_h_at_60s": 559.474243164,
+    "residual_h_at_300s": 4221.733398438,
+    "t_sep_s": 6.309934616,
+    "P3_first_fail_t_s": 6.188929081,
+    "course_yaw_ok_to_fail_count": 30,
+    "course_yaw_fail_frac": 0.4641240596710442,
+    "P3a_fail_t_s": 6.188929081,
+    "P3a_immediate_break": true,
+    "speed_vs_gps_fail_frac": 0.6726766948279415,
+    "gnss_accept": 7,
+    "gnss_reject": 674,
+    "gnss_accept_rate": 0.010279001468428781,
+    "residual_h_max_after_60s": 8547.607421875,
+    "course_yaw_fail_frac_after_60s": 0.4542195928310423,
+    "yaw_held_after_two_predicts": true
+  },
+  "gates": {
+    "gate_opened": true,
+    "early_yaw_held_and_no_P3a": false,
+    "late_course_yaw_not_worse": false,
+    "residual_final_not_worse_10pct": true,
+    "gnss_ok": true
+  },
+  "PASS_GATE": false,
+  "compare": {
+    "yaw_chase": {
+      "H2": {
+        "before": -1.98,
+        "after_seed": 93.615,
+        "after_update": 93.534,
+        "after_pred1": 107.496,
+        "after_pred2": 127.087,
+        "dyaw_seed_to_pred1": 13.881,
+        "dyaw_pred1_to_pred2": 19.591000000000008
+      },
+      "Gate": {
+        "before": -0.645,
+        "after_seed": 93.615,
+        "after_update": 93.571,
+        "after_pred1": 91.765,
+        "after_pred2": 92.712,
+        "dyaw_seed_to_pred1": -1.8499999999999943,
+        "dyaw_pred1_to_pred2": 0.9470000000000027
+      }
+    },
+    "gate_open": {
+      "t_s": 50.804,
+      "speed": 8.39,
+      "course_yaw_abs_deg": 5.8,
+      "hold_s": 2.5
+    },
+    "P3_first_fail_t_s": {
+      "H2": 4.323426723,
+      "Gate": 6.188929081
+    },
+    "t_sep_s": {
+      "H2": 5.301555157,
+      "Gate": 6.309934616
+    },
+    "residual_h_final": {
+      "H2": 8545.259765625,
+      "Gate": 8460.700195312
+    },
+    "course_yaw_fail_frac_after_60s": {
+      "H2": 0.3084369769960293,
+      "Gate": 0.4542195928310423
+    },
+    "gnss_accept_reject": {
+      "H2": [
+        7,
+        674
+      ],
+      "Gate": [
+        7,
+        674
+      ]
+    }
+  }
+}

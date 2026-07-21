@@ -1,0 +1,68 @@
+$ C:\NaviCore-3D\build_coverage\navicore_regression_test.exe
+exit=1
+
+--- stdout ---
+NaviCore-3D regression suite
+============================
+[TEST] ins_ekf_gravity_compensation
+  PASS
+[TEST] gnss_physical_inconsistency_spoof
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+  PASS
+[TEST] nhc_predict_counter
+  PASS
+[TEST] nhc_jacobian_fd
+  PASS
+[TEST] super_tunnel_nhc_isolation
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.006250 thr=11.345000 innov=[-0.000,-0.250,-0.000,0.000,0.000] contrib=[0.000,0.006,0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=10 n_meas=3 NIS_used=0.013845 thr=11.345000 innov=[-0.000,-0.340,-0.026,0.000,0.000] contrib=[0.000,0.014,0.000,0.000,0.000] S_diag=[8.400,8.400,9.600,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=20 n_meas=3 NIS_used=0.039640 thr=11.345000 innov=[-0.000,-0.553,-0.015,0.000,0.000] contrib=[0.000,0.040,0.000,0.000,0.000] S_diag=[7.715,7.715,8.250,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=30 n_meas=3 NIS_used=0.070965 thr=11.345000 innov=[-0.000,-0.720,-0.049,0.000,0.000] contrib=[0.000,0.071,0.000,0.000,0.000] S_diag=[7.334,7.334,7.637,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=40 n_meas=3 NIS_used=0.090070 thr=11.345000 innov=[-0.000,-0.799,-0.021,0.000,0.000] contrib=[0.000,0.090,0.000,0.000,0.000] S_diag=[7.092,7.092,7.287,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=50 n_meas=3 NIS_used=0.113377 thr=11.345000 innov=[-0.000,-0.886,-0.010,0.000,0.000] contrib=[0.000,0.113,0.000,0.000,0.000] S_diag=[6.924,6.924,7.060,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=60 n_meas=3 NIS_used=0.135129 thr=11.345000 innov=[-0.000,-0.958,-0.043,0.000,0.000] contrib=[0.000,0.135,0.000,0.000,0.000] S_diag=[6.802,6.802,6.901,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=70 n_meas=3 NIS_used=0.212763 thr=11.345000 innov=[-0.000,-1.194,0.025,0.000,0.000] contrib=[0.000,0.213,0.000,0.000,0.000] S_diag=[6.708,6.708,6.785,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=80 n_meas=3 NIS_used=0.278080 thr=11.345000 innov=[-0.000,-1.358,-0.028,0.000,0.000] contrib=[0.000,0.278,0.000,0.000,0.000] S_diag=[6.634,6.634,6.695,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=90 n_meas=3 NIS_used=0.211434 thr=11.345000 innov=[-0.000,-1.179,0.030,0.000,0.000] contrib=[0.000,0.211,0.000,0.000,0.000] S_diag=[6.575,6.575,6.624,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=100 n_meas=3 NIS_used=0.155301 thr=11.345000 innov=[-0.000,-1.006,-0.034,0.000,0.000] contrib=[0.000,0.155,0.000,0.000,0.000] S_diag=[6.526,6.526,6.566,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=110 n_meas=3 NIS_used=0.153066 thr=11.345000 innov=[-0.000,-0.995,0.049,0.000,0.000] contrib=[0.000,0.153,0.000,0.000,0.000] S_diag=[6.485,6.485,6.518,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=120 n_meas=3 NIS_used=0.128723 thr=11.345000 innov=[-0.000,-0.911,0.025,0.000,0.000] contrib=[0.000,0.129,0.000,0.000,0.000] S_diag=[6.450,6.450,6.478,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=130 n_meas=3 NIS_used=0.119892 thr=11.345000 innov=[-0.000,-0.877,-0.014,0.000,0.000] contrib=[0.000,0.120,0.000,0.000,0.000] S_diag=[6.420,6.420,6.444,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=140 n_meas=3 NIS_used=0.066154 thr=11.345000 innov=[-0.000,-0.650,-0.013,0.000,0.000] contrib=[0.000,0.066,0.000,0.000,0.000] S_diag=[6.394,6.394,6.415,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=150 n_meas=3 NIS_used=0.056708 thr=11.345000 innov=[-0.000,-0.600,0.036,0.000,0.000] contrib=[0.000,0.057,0.000,0.000,0.000] S_diag=[6.371,6.371,6.390,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=160 n_meas=3 NIS_used=0.080667 thr=11.345000 innov=[-0.000,-0.714,-0.046,0.000,0.000] contrib=[0.000,0.080,0.000,0.000,0.000] S_diag=[6.351,6.351,6.368,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=170 n_meas=3 NIS_used=0.061602 thr=11.345000 innov=[-0.000,-0.625,-0.010,0.000,0.000] contrib=[0.000,0.062,0.000,0.000,0.000] S_diag=[6.334,6.334,6.348,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=180 n_meas=3 NIS_used=0.049895 thr=11.345000 innov=[-0.000,-0.561,-0.016,0.000,0.000] contrib=[0.000,0.050,0.000,0.000,0.000] S_diag=[6.318,6.318,6.331,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=190 n_meas=3 NIS_used=0.037072 thr=11.345000 innov=[-0.000,-0.483,0.029,0.000,0.000] contrib=[0.000,0.037,0.000,0.000,0.000] S_diag=[6.304,6.304,6.316,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=200 n_meas=3 NIS_used=0.044456 thr=11.345000 innov=[-0.000,-0.528,-0.022,0.000,0.000] contrib=[0.000,0.044,0.000,0.000,0.000] S_diag=[6.292,6.292,6.302,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=210 n_meas=3 NIS_used=0.019909 thr=11.345000 innov=[-0.000,-0.354,0.000,0.000,0.000] contrib=[0.000,0.020,0.000,0.000,0.000] S_diag=[6.280,6.280,6.290,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=220 n_meas=3 NIS_used=0.021582 thr=11.345000 innov=[-0.000,-0.367,-0.026,0.000,0.000] contrib=[0.000,0.021,0.000,0.000,0.000] S_diag=[6.270,6.270,6.279,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=230 n_meas=3 NIS_used=0.023333 thr=11.345000 innov=[-0.000,-0.380,-0.040,0.000,0.000] contrib=[0.000,0.023,0.000,0.000,0.000] S_diag=[6.261,6.261,6.269,0.000,0.000] decision=accept reason=0
+  aislamiento super_tunnel (seed=424242, Jacobiano NHC corregido):
+    dirty      sin NHC exit=303.64 m | con NHC exit=1327.38 m | innov_max=25.247 m/s
+    no_scale   sin NHC exit=296.75 m | con NHC exit=1433.55 m | innov_max=19.905 m/s
+    ideal      sin NHC exit=299.07 m | con NHC exit=1421.56 m | innov_max=6.920 m/s
+    ideal+R5    con NHC exit=971.57 m | innov_max=6.924 m/s (R_lat=5 m/s)
+  FAIL: IMU ideal: NHC no debe empeorar vs dirty+NHC (actual=1421.5558 limit=1327.3757)
+  penalidad NHC (con - sin): dirty=1023.74 m | ideal=1122.48 m | no_scale=1136.80 m
+[TEST] super_tunnel_nhc_regression
+  metricas: sin_nhc_exit=309.20 con_nhc_exit=1383.55 rms_pos=122.51/874.89 rms_vel=8.09/26.41 rms_yaw=1.84/102.33
+  FAIL: deriva con NHC al salir del tunel (actual=1383.5537 limit=50.0000)
+  FAIL: mejora NHC significativa al salir del tunel (actual=-1074.3490 limit=100.0000)
+  FAIL: deriva final con NHC tras recuperar GPS (actual=1491.8474 limit=5.0000)
+[TEST] TC_03_Constant_Slope
+  metricas: rms_pos=239.32 rms_vel=44.60 rms_vel_d=15.78 rms_yaw=43.70 innov_norm=18.051
+  FAIL: TC-03 RMS posicion 3D en apagon < 3 m (actual=239.3223 limit=3.0000)
+  FAIL: TC-03 RMS velocidad vertical NED baja (actual=15.7803 limit=0.5000)
+  FAIL: TC-03 deriva final tras recuperar GPS (actual=475.0828 limit=5.0000)
+[TEST] TC_04_Aggressive_Slalom
+  metricas: rms_pos=101.78 rms_vel=17.39 rms_yaw=14.49 innov_norm=2.679 nhc_updates=2501
+  FAIL: TC-04 RMS posicion 3D en apagon < 5 m (actual=101.7774 limit=5.0000)
+  FAIL: TC-04 RMS yaw en apagon < 1.5 deg (actual=14.4926 limit=1.5000)
+  FAIL: TC-04 deriva final tras recuperar GPS (actual=124.4620 limit=5.0000)
+============================
+Regression report: docs/regression_report.json
+RESULT: FAIL (10 assertion failures)
+
+--- stderr ---
+

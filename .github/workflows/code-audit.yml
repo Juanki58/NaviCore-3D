@@ -1,0 +1,92 @@
+name: code-audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: code-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cppcheck:
+    name: cppcheck (src/core)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+      - name: Run cppcheck
+        run: |
+          mkdir -p docs/benchmarks/static_analysis
+          python3 tools/run_static_analysis.py --cppcheck --tag ci_${{ github.run_id }}
+      - name: Upload cppcheck artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppcheck-report
+          path: docs/benchmarks/static_analysis/cppcheck_*
+
+  clang-tidy:
+    name: clang-tidy (core guidelines)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-tidy
+        run: sudo apt-get update && sudo apt-get install -y clang-tidy clang
+      - name: Run clang-tidy
+        run: |
+          mkdir -p docs/benchmarks/static_analysis
+          python3 tools/run_static_analysis.py --clang-tidy --tag ci_${{ github.run_id }}
+        continue-on-error: true
+      - name: Upload clang-tidy log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clang-tidy-report
+          path: docs/benchmarks/static_analysis/clang_tidy_*
+
+  asan-ubsan:
+    name: ASan+UBSan safety-inject
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build
+      - name: Configure (sanitizers)
+        run: |
+          cmake -S . -B build_asan -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DNAVICORE_ENABLE_SANITIZERS=ON \
+            -DNAVICORE_ENABLE_COVERAGE=OFF
+      - name: Build regression
+        run: cmake --build build_asan --target navicore_regression_test -j $(nproc)
+      - name: Run safety-inject under ASan/UBSan
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ./build_asan/navicore_regression_test --safety-inject
+
+  unit-tests:
+    name: Catch2 + RapidCheck unit/property tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y g++ cmake ninja-build git
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNAVICORE_BUILD_UNIT_TESTS=ON \
+            -DNAVICORE_ENABLE_SANITIZERS=OFF
+      - name: Build unit tests
+        run: cmake --build build --target navicore_unit_tests -j $(nproc)
+      - name: Run Catch2 + RapidCheck
+        env:
+          RC_PARAMS: max_success=300
+        run: ./build/navicore_unit_tests

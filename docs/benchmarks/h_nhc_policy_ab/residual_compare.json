@@ -1,0 +1,163 @@
+{
+  "protocol": {
+    "truth_csv": "C:/NaviCore-3D/docs/benchmarks/real_run_19082026_baseline/real_run_replay.csv",
+    "truth_type_filter": "GPS (input type column is GPS; no GNSS rows)",
+    "residual_def": "hypot(filter.pos_n_m - truth.pos_n, filter.pos_e_m - truth.pos_e); GPS rows in replay_output matched to truth by timestamp",
+    "sum_dv_nhc_h_def": "hypot(sum(dv_nhc_n), sum(dv_nhc_e)) over window (matches verdict.json); sum_dv_nhc_h_path = sum(hypot(dv_n,dv_e))",
+    "constraint_window": [
+      4.301,
+      5.301
+    ],
+    "snap_times_s": [
+      10,
+      60,
+      300,
+      600
+    ]
+  },
+  "arms": {
+    "A_nhc_enabled": {
+      "arm": "A_nhc_enabled",
+      "path": "C:/NaviCore-3D/docs/benchmarks/h_nhc_policy_ab/A_nhc_enabled",
+      "residual": {
+        "residual_h_final_m": 8684.175135522222,
+        "residual_h_max_m": 8749.590762762833,
+        "n_gps": 681,
+        "t_first_s": 2.672356352,
+        "t_last_s": 676.349228032,
+        "max_dt_match_s": 3.051499993489415e-05,
+        "residual_h_at_10s": 70.51443297663563,
+        "residual_h_at_10s_nearest_t": 10.301355008,
+        "residual_h_at_60s": 506.4541866009385,
+        "residual_h_at_60s_nearest_t": 60.301347328,
+        "residual_h_at_300s": 4271.198433470644,
+        "residual_h_at_300s_nearest_t": 300.301399552,
+        "residual_h_at_600s": 8607.014104486432,
+        "residual_h_at_600s_nearest_t": 600.301581312
+      },
+      "deriva_final_h_m_from_log": 8680.695,
+      "gnss": {
+        "n_accept": 1,
+        "n_reject": 680,
+        "accept_rate": 0.0014684287812041115,
+        "n_events": 681,
+        "t_first_permanent_reject_s": 4.301356316,
+        "accept_timestamps_first_20": [
+          2.672356367
+        ]
+      },
+      "constraint_pipeline_window": {
+        "window_s": [
+          4.301,
+          5.301
+        ],
+        "n_ticks": 99,
+        "sum_dv_nhc_h": 0.06461672248729425,
+        "sum_dv_nhc_h_path": 0.7070053748095018,
+        "sum_dv_nhc_n": -0.020240000000000036,
+        "sum_dv_nhc_e": 0.061364999999999975,
+        "v_h_first": 0.301634,
+        "v_h_last": 0.254206
+      }
+    },
+    "B_nhc_disabled": {
+      "arm": "B_nhc_disabled",
+      "path": "C:/NaviCore-3D/docs/benchmarks/h_nhc_policy_ab/B_nhc_disabled",
+      "residual": {
+        "residual_h_final_m": 156869.64981080545,
+        "residual_h_max_m": 312014.6412923396,
+        "n_gps": 681,
+        "t_first_s": 2.672356352,
+        "t_last_s": 676.349228032,
+        "max_dt_match_s": 3.051499993489415e-05,
+        "residual_h_at_10s": 19.60691669421289,
+        "residual_h_at_10s_nearest_t": 10.301355008,
+        "residual_h_at_60s": 2899.752768695915,
+        "residual_h_at_60s_nearest_t": 60.301347328,
+        "residual_h_at_300s": 115133.5754476233,
+        "residual_h_at_300s_nearest_t": 300.301399552,
+        "residual_h_at_600s": 54292.812960037,
+        "residual_h_at_600s_nearest_t": 600.301581312
+      },
+      "deriva_final_h_m_from_log": 158140.031,
+      "gnss": {
+        "n_accept": 18,
+        "n_reject": 663,
+        "accept_rate": 0.02643171806167401,
+        "n_events": 681,
+        "t_first_permanent_reject_s": 509.301513672,
+        "accept_timestamps_first_20": [
+          2.672356367,
+          4.301356316,
+          5.301355839,
+          6.301355839,
+          7.301355362,
+          8.301355362,
+          9.301355362,
+          10.301355362,
+          11.301354408,
+          12.301354408,
+          13.301354408,
+          14.301354408,
+          15.301354408,
+          16.301353455,
+          17.301353455,
+          18.301353455,
+          19.301353455,
+          508.301513672
+        ]
+      },
+      "constraint_pipeline_window": {
+        "window_s": [
+          4.301,
+          5.301
+        ],
+        "n_ticks": 99,
+        "sum_dv_nhc_h": 0.0,
+        "sum_dv_nhc_h_path": 0.0,
+        "sum_dv_nhc_n": 0.0,
+        "sum_dv_nhc_e": 0.0,
+        "v_h_first": 5.222074,
+        "v_h_last": 9.170666
+      }
+    }
+  },
+  "comparison_table": {
+    "sum_dv_nhc_h": {
+      "A": 0.06461672248729425,
+      "B": 0.0
+    },
+    "v_h_last": {
+      "A": 0.254206,
+      "B": 9.170666
+    },
+    "n_accept": {
+      "A": 1,
+      "B": 18
+    },
+    "n_reject": {
+      "A": 680,
+      "B": 663
+    },
+    "t_first_permanent_reject_s": {
+      "A": 4.301356316,
+      "B": 509.301513672
+    },
+    "residual_h_final_m": {
+      "A": 8684.175135522222,
+      "B": 156869.64981080545
+    },
+    "residual_h_max_m": {
+      "A": 8749.590762762833,
+      "B": 312014.6412923396
+    },
+    "residual_h_at_60s": {
+      "A": 506.4541866009385,
+      "B": 2899.752768695915
+    },
+    "residual_h_at_600s": {
+      "A": 8607.014104486432,
+      "B": 54292.812960037
+    }
+  }
+}

@@ -52,6 +52,8 @@ NAVICORE_STATIC_ASSERT(sizeof(NavState) == 52U, "NavState size mismatch");
 NAVICORE_STATIC_ASSERT(sizeof(NavState) % 4U == 0U, "Error de alineación");
 
 NavConfidence nav_confidence_make(bool gps_trusted, uint8_t satellites, uint32_t fix_age_ms, float estimate_quality);
+/** DR / coast: quality falls with fix age (clamped). Monotonic non-increasing in age. */
+float nav_confidence_quality_from_fix_age_ms(uint32_t fix_age_ms);
 NavState navstate_make(Vector3D position, Vector3D velocity, float heading_deg, NavDomain domain, NavMode mode, NavConfidence confidence, uint32_t timestamp_ms);
 NavState navstate_zero(NavDomain domain);
 float navstate_normalize_heading(float heading_deg);

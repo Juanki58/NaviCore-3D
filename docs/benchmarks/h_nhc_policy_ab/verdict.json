@@ -1,0 +1,87 @@
+{
+  "protocol": {
+    "input": "docs/benchmarks/real_run_19082026_baseline/real_run_replay.csv",
+    "single_variable": "--nhc-policy enabled vs disabled",
+    "shared": [
+      "constraint-policy disabled",
+      "gnss-obs-mode pos_vel",
+      "p-pv-policy none",
+      "yaw-init zero + h9a-gravity-tilt-init",
+      "mount calibration",
+      "no seed-velocity / seed-yaw / gates"
+    ],
+    "note": "A = G1 shell NHC on; B = Pico-equivalent NHC off (arming only). Not a claim that B equals full field firmware."
+  },
+  "A_nhc_enabled": {
+    "nhc_policy": "enabled",
+    "vel_window_4p301_5p301": {
+      "sum_dv_nhc_h": 0.064617,
+      "v_h_first": 0.301634,
+      "v_h_last": 0.254206,
+      "nhc_applied_frac": 1.0
+    },
+    "gnss": {
+      "n_accept": 1,
+      "n_reject": 680,
+      "accept_rate": 0.00147,
+      "t_first_permanent_reject_s": 4.301,
+      "accept_timestamps_s": [2.672]
+    },
+    "residual_h_m": {
+      "final": 8684.2,
+      "max": 8749.6,
+      "at_10s": 70.5,
+      "at_60s": 506.5,
+      "at_300s": 4271.2,
+      "at_600s": 8607.0,
+      "deriva_final_log_m": 8680.7
+    }
+  },
+  "B_nhc_disabled": {
+    "nhc_policy": "disabled",
+    "vel_window_4p301_5p301": {
+      "sum_dv_nhc_h": 0.0,
+      "v_h_first": 5.222074,
+      "v_h_last": 9.170666,
+      "nhc_applied_frac": 0.0
+    },
+    "gnss": {
+      "n_accept": 18,
+      "n_reject": 663,
+      "accept_rate": 0.02643,
+      "t_first_permanent_reject_s": 509.302,
+      "accept_timestamps_s_first_20": [
+        2.672, 4.301, 5.301, 6.301, 7.301, 8.301, 9.301, 10.301,
+        11.301, 12.301, 13.301, 14.301, 15.301, 16.301, 17.301,
+        18.301, 19.301, 508.302
+      ]
+    },
+    "residual_h_m": {
+      "final": 156869.6,
+      "max": 312014.6,
+      "at_10s": 19.6,
+      "at_60s": 2899.8,
+      "at_300s": 115133.6,
+      "at_600s": 54292.8,
+      "deriva_final_log_m": 158140.0
+    }
+  },
+  "discrimination": {
+    "early_permanent_gnss_reject_requires_NHC_on": true,
+    "nhc_velocity_update_absent_when_disabled": true,
+    "km_residual_absent_on_B": false,
+    "B_residual_worse_than_A": true,
+    "mechanism_collapses_completely_without_NHC": false,
+    "RESULT": "partial_mixed",
+    "affirmed": [
+      "Under identical G1 shell, NHC enabled vs disabled changes GNSS accept timing: permanent reject onset 4.3 s (A) vs 509 s (B).",
+      "NHC horizontal updates are zero on B by construction; A keeps low v_h (~0.25 m/s) in the 4.3–5.3 s window while B holds ~5–9 m/s.",
+      "Kilometric residual remains on both arms; B final drift is larger (~157 km vs ~8.7 km)."
+    ],
+    "not_affirmed": [
+      "That NHC-off (Pico-equivalent arming) makes the EKF healthy on this pack.",
+      "That the entire Stage II failure mode is only a harness artifact with no remaining EKF problem under NHC-off."
+    ],
+    "precise_claim": "The early permanent GNSS-reject regime studied under G1 is not reproduced when NHC is disabled; unbounded km-scale residual still appears under NHC-off, with a different failure mode (open-loop INS divergence after sparse accepts)."
+  }
+}

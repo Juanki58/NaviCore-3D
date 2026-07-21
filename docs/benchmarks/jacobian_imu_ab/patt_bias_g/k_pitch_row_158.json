@@ -1,0 +1,121 @@
+{
+  "window_s": [
+    1.54,
+    1.64
+  ],
+  "flip_tick": {
+    "t": 1.550000072,
+    "ctrl": {
+      "k_y0": -0.002633519238,
+      "k_y1": -0.003791080555,
+      "k_z0": 0.001173407654,
+      "k_z1": -0.01033474226,
+      "innov_y": 0.491221,
+      "innov_z": -0.332299,
+      "dx_y": -3.386859316e-05,
+      "dx_y_via_y": -0.001293639536,
+      "dx_y_via_z": 0.001259770943,
+      "dx_z": 0.004010623321,
+      "dx_z_raw": 0.004010623321
+    },
+    "latch": {
+      "k_y0": 0.00551024545,
+      "k_y1": -0.003683022922,
+      "k_z0": 0.0009360883851,
+      "k_z1": -0.006901956629,
+      "innov_y": 0.121608,
+      "innov_z": -0.249248,
+      "dx_y": 0.001588076819,
+      "dx_y_via_y": 0.0006700897939,
+      "dx_y_via_z": 0.0009179870831,
+      "dx_z": 0.0,
+      "dx_z_raw": 0.00183413655
+    },
+    "rel_diff": {
+      "k_y0": 1.4779313847080986,
+      "k_y1": 0.028503122376939315,
+      "k_z0": 0.2022479298571202,
+      "k_z1": 0.33215977182966533,
+      "innov_y": 0.7524372940081959,
+      "innov_z": 0.24992852822307624,
+      "dx_y": 1.0213267977687166
+    }
+  },
+  "tick_at_1_58": {
+    "t": 1.580000043,
+    "ctrl": {
+      "k_y0": -0.00867466256,
+      "k_y1": -0.003282837337,
+      "k_z0": -0.000814625877,
+      "k_z1": -0.01290255599,
+      "innov_y": 0.730471,
+      "innov_z": -0.169009,
+      "dx_y": -0.005781755317,
+      "dx_y_via_y": -0.006336586084,
+      "dx_y_via_z": 0.0005548305926,
+      "dx_z": 0.001585594146,
+      "dx_z_raw": 0.001585594146
+    },
+    "latch": {
+      "k_y0": 0.005968115758,
+      "k_y1": -0.003883456346,
+      "k_z0": 0.002569569973,
+      "k_z1": -0.007152710576,
+      "innov_y": 0.196445,
+      "innov_z": -0.38593,
+      "dx_y": 0.002671145834,
+      "dx_y_via_y": 0.001172404154,
+      "dx_y_via_z": 0.001498741796,
+      "dx_z": 0.0,
+      "dx_z_raw": 0.003265223
+    },
+    "rel_diff": {
+      "k_y0": 1.6879939959301427,
+      "k_y1": 0.15466094002025887,
+      "k_z0": 1.3170280963584406,
+      "k_z1": 0.44563615290306524,
+      "innov_y": 0.7310707748836025,
+      "innov_z": 0.5620734330059856,
+      "dx_y": 1.461995654874234
+    }
+  },
+  "ctrl_sign_change_index": 1,
+  "mean_rel_diff_latch_vs_ctrl": {
+    "k_y0": 1.587221143803459,
+    "k_y1": 0.20681124875075613,
+    "k_z0": 1.223332146824513,
+    "k_z1": 0.4049293982488441,
+    "innov_y": 0.6815858114030064,
+    "innov_z": 0.9096130311446572,
+    "dx_y": 1.3807751363545977
+  },
+  "max_rel_diff_latch_vs_ctrl": {
+    "k_y0": 1.9014558175561682,
+    "k_y1": 0.4188757235758302,
+    "k_z0": 1.830524831127113,
+    "k_z1": 0.4695827186685886,
+    "innov_y": 1.0885679889267479,
+    "innov_z": 1.8067764703344003,
+    "dx_y": 1.7242534128765978
+  },
+  "counterfactual_at_flip": {
+    "dx_y_ctrl": -3.386859316e-05,
+    "dx_y_latch": 0.001588076819,
+    "ctrl_K_times_latch_y": 0.000624662238677936,
+    "latch_K_times_ctrl_y": 0.003930613114152128,
+    "err_swap_y_vs_latch": 0.0009634145803220641,
+    "err_swap_K_vs_latch": 0.002342536295152128,
+    "err_swap_y_vs_ctrl": 0.003964481707312128,
+    "err_swap_K_vs_ctrl": 0.000658530831837936
+  },
+  "latch_dx_z_applied_all_zero": true,
+  "implementation_note": "\u03bb zeros \u03b4x[ATT_Z] after \u03b4x=Ky; K and Joseph use full-system K. Any K difference latch\u2194ctrl is from diverged P/H/state, not from editing the pitch row inside one update.",
+  "verdict": {
+    "label": "K_AND_Y_BOTH_MOVE",
+    "reading": "K_pitch and innov both differ at the flip; counterfactual does not cleanly pick one. Still: \u03bb does not edit K in-tick (code+audit).",
+    "next": "Widen onset window; track first divergence of K_y vs y.",
+    "k_pitch_rel_diff_at_flip": 1.4779313847080986,
+    "innov_rel_diff_at_flip": 0.7524372940081959
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_k_pitch_row_158.png"
+}

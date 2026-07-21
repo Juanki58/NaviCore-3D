@@ -60,11 +60,36 @@ def main() -> int:
         action="store_true",
         help="Incluir ring_stress_test (60 s, host UART SPSC)",
     )
+    parser.add_argument(
+        "--safety-inject",
+        action="store_true",
+        default=True,
+        help="C++: solo suite safety-inject (default; CI-friendly)",
+    )
+    parser.add_argument(
+        "--full-cpp",
+        action="store_true",
+        help="C++: suite completa (incluye NHC/TC legacy que pueden FAIL)",
+    )
+    parser.add_argument(
+        "--unit",
+        action="store_true",
+        default=True,
+        help="También ejecutar navicore_unit_tests (Catch2; default on)",
+    )
+    parser.add_argument(
+        "--skip-unit",
+        action="store_true",
+        help="Omitir Catch2 unit tests",
+    )
     args = parser.parse_args()
 
     build_dir = args.build_dir.resolve()
     regression_bin = build_dir / (
         "navicore_regression_test.exe" if sys.platform == "win32" else "navicore_regression_test"
+    )
+    unit_bin = build_dir / (
+        "navicore_unit_tests.exe" if sys.platform == "win32" else "navicore_unit_tests"
     )
     ring_stress_bin = build_dir / (
         "ring_stress_test.exe" if sys.platform == "win32" else "ring_stress_test"
@@ -83,18 +108,43 @@ def main() -> int:
                 "navicore_regression_test",
             ],
         )
+        if not args.skip_unit:
+            failures += run_command(
+                "cmake build (navicore_unit_tests)",
+                [
+                    "cmake",
+                    "--build",
+                    str(build_dir),
+                    "--target",
+                    "navicore_unit_tests",
+                ],
+            )
         if args.full:
             failures += run_command(
                 "cmake build (ring_stress_test)",
                 ["cmake", "--build", str(build_dir), "--target", "ring_stress_test"],
             )
 
+    if failures == 0 and not args.skip_unit:
+        if unit_bin.exists():
+            failures += run_command("navicore_unit_tests (Catch2)", [str(unit_bin)])
+        else:
+            print(f"WARN: no existe {unit_bin} (¿NAVICORE_BUILD_UNIT_TESTS=OFF?)")
+
     if failures == 0:
         if not regression_bin.exists():
             print(f"FAIL: no existe {regression_bin}")
             failures += 1
         else:
-            failures += run_command("navicore_regression_test", [str(regression_bin)])
+            cpp_cmd = [str(regression_bin)]
+            if not args.full_cpp:
+                cpp_cmd.append("--safety-inject")
+            label = (
+                "navicore_regression_test (full)"
+                if args.full_cpp
+                else "navicore_regression_test --safety-inject"
+            )
+            failures += run_command(label, cpp_cmd)
 
     if failures == 0 and args.full:
         if not ring_stress_bin.exists():

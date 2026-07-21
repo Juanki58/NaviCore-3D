@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 
 #ifndef M_PI
@@ -246,8 +247,26 @@ void run_slalom_scenario(
     TelemetryBindings bindings{};
     bindings.ekf_tick = &ekf_tick;
     bindings.scenario_id = TELEM_SCENARIO_SLALOM;
+    bindings.measured_yaw_rate_valid = false;
     if (telemetry != NULL) {
         telemetry->bind_sources(&bindings);
+    }
+
+    /* Optional NHC block audit (GAP-3 format). Env: NAVICORE_NHC_BLOCK_AUDIT_CSV.
+     * Do not bind the FILE* until after seed: ins_ekf_init memset-clears the filter. */
+    FILE *nhc_audit_fp = nullptr;
+    const char *nhc_audit_path = std::getenv("NAVICORE_NHC_BLOCK_AUDIT_CSV");
+    if (nhc_audit_path != nullptr && nhc_audit_path[0] != '\0') {
+        nhc_audit_fp = std::fopen(nhc_audit_path, "w");
+        if (nhc_audit_fp == nullptr) {
+            std::printf("WARNING: no se pudo abrir NHC audit: %s\n", nhc_audit_path);
+        } else if (!ins_ekf_write_nhc_block_audit_header(nhc_audit_fp)) {
+            std::printf("WARNING: header NHC audit fallo: %s\n", nhc_audit_path);
+            std::fclose(nhc_audit_fp);
+            nhc_audit_fp = nullptr;
+        } else {
+            std::printf("NHC block audit: %s\n", nhc_audit_path);
+        }
     }
 
     std::printf("\n");
@@ -259,6 +278,7 @@ void run_slalom_scenario(
                 TC04_MAX_LATERAL_ACCEL_MPS2);
     std::printf("================================================================\n");
 
+    uint64_t imu_seq = 0U;
     for (uint32_t t_ms = 0U; t_ms <= TC04_DURATION_MS; t_ms += kEkfStepMs) {
         ImuSample imu{};
         GpsSample gps{};
@@ -285,6 +305,9 @@ void run_slalom_scenario(
                 ref_lon_deg = gps.position.y;
                 ref_alt_m = gps.position.z;
                 ekf_seeded = true;
+                if (nhc_audit_fp != nullptr) {
+                    ins_ekf_set_nhc_block_audit(&filter_impl->native(), nhc_audit_fp);
+                }
             }
         }
 
@@ -294,6 +317,19 @@ void run_slalom_scenario(
 
         if (ekf_seeded && imu.valid && filter != nullptr && filter_impl != nullptr) {
             InsEkfFilter &ekf = filter_impl->native();
+            ++imu_seq;
+            if (nhc_audit_fp != nullptr) {
+                /* Re-bind each tick in case any path re-inits the filter. */
+                ins_ekf_set_nhc_block_audit(&ekf, nhc_audit_fp);
+                const float speed_mps = std::sqrt(
+                    (truth.vel_ned[0] * truth.vel_ned[0])
+                    + (truth.vel_ned[1] * truth.vel_ned[1]));
+                ins_ekf_set_nhc_block_audit_context(
+                    &ekf,
+                    static_cast<double>(t_s),
+                    imu_seq,
+                    speed_mps);
+            }
             filter->apply_constraints(
                 false,
                 NAVICORE_INS_EKF_NHC_LATERAL_STD_MPS,
@@ -327,6 +363,8 @@ void run_slalom_scenario(
 
             if (telemetry != NULL) {
                 bindings.ekf = &ekf;
+                bindings.measured_yaw_rate_radps = imu.gyro_radps[2];
+                bindings.measured_yaw_rate_valid = true;
                 ekf_tick.gnss_update_this_cycle = gnss_update_this_cycle;
                 ekf_tick.nis = tick_nis;
                 ekf_tick.innov_ned[0] = tick_innov_ned[0];
@@ -347,6 +385,14 @@ void run_slalom_scenario(
                     max_lateral_drift_m);
             }
         }
+    }
+
+    if (nhc_audit_fp != nullptr) {
+        if (filter_impl != nullptr) {
+            ins_ekf_set_nhc_block_audit(&filter_impl->native(), nullptr);
+        }
+        std::fclose(nhc_audit_fp);
+        nhc_audit_fp = nullptr;
     }
 
     std::printf("----------------------------------------------------------------\n");

@@ -1,0 +1,70 @@
+{
+  "question": "Who writes v_E between Accept #17 and Reject #18 (NHC-off)?",
+  "interval_s": [
+    19.301353455,
+    20.301353455
+  ],
+  "endpoints": {
+    "v_E_after_accept_17": 10.771195,
+    "v_E_at_reject_18_pred": 2.471921,
+    "delta_v_E": -8.299274,
+    "innov_ve_at_18": 10.242094,
+    "contrib_ve_at_18": 33.591751
+  },
+  "writers_in_interval": {
+    "update_gnss_at_17": 1.131923,
+    "sum_dv_pred_e_in_interval": -8.299270999999997,
+    "sum_dv_nhc_e_in_interval": 0.0,
+    "sum_dv_zupt_e_in_interval": 0.0
+  },
+  "closure": {
+    "sum_pipeline_dv_e": -8.299270999999997,
+    "delta_v_E": -8.299274,
+    "unexplained_m_s": -3.000000003083869e-06,
+    "note": "Interval starts AFTER accept #17; GNSS dx at #17 is outside the \u0394"
+  },
+  "dominance": {
+    "by_abs_sum": {
+      "predict": 1.0,
+      "nhc": 0.0,
+      "zupt": 0.0
+    },
+    "dominant_source": "predict",
+    "dominant_share": 1.0,
+    "PASS_single_function_ge_90pct": true
+  },
+  "n_imu_ticks": 98,
+  "top5_abs_dv_pred_e_ticks": [
+    {
+      "timestamp_s": 20.205430984,
+      "imu_seq": 1682,
+      "dv_pred_e": -0.178453,
+      "vel_after_zupt_e": 3.294526
+    },
+    {
+      "timestamp_s": 19.913000107,
+      "imu_seq": 1654,
+      "dv_pred_e": -0.106204,
+      "vel_after_zupt_e": 5.95833
+    },
+    {
+      "timestamp_s": 20.296186447,
+      "imu_seq": 1691,
+      "dv_pred_e": -0.103605,
+      "vel_after_zupt_e": 2.471921
+    },
+    {
+      "timestamp_s": 20.155012131,
+      "imu_seq": 1678,
+      "dv_pred_e": -0.102257,
+      "vel_after_zupt_e": 3.738261
+    },
+    {
+      "timestamp_s": 20.023921967,
+      "imu_seq": 1665,
+      "dv_pred_e": -0.099101,
+      "vel_after_zupt_e": 4.941074
+    }
+  ],
+  "full_table_rows": 100
+}

@@ -1,0 +1,176 @@
+{
+  "window_s": [
+    1.54,
+    1.64
+  ],
+  "break_s": 1.59,
+  "arms": {
+    "ctrl": {
+      "max_step_dx_att": {
+        "series": "dx_att_norm",
+        "t": 1.550000072,
+        "t_prev": 1.540000081,
+        "cause": "NO_CLEAN_DX_JUMP",
+        "ratio_dx": 1.2040253084236978,
+        "ratio_y": 1.1394525801282667,
+        "ratio_k_att_max": 0.998527506184474,
+        "ratio_g_eff": 1.0566699566279116,
+        "dx_prev": 0.005066469312,
+        "dx_now": 0.006100157276,
+        "y_prev": 0.520478,
+        "y_now": 0.59306,
+        "k_prev": 0.016978,
+        "k_now": 0.016953,
+        "g_prev": 0.009734262182071097,
+        "g_now": 0.010285902397733786
+      },
+      "max_step_dtheta_state": {
+        "t": 1.550000072,
+        "t_prev": 1.540000081,
+        "ratio": 1.164620133007324,
+        "deg_prev": 1.9913032276420817,
+        "deg_now": 2.319111829834435
+      },
+      "pre_break_means": {
+        "dx_att_norm": 0.0074644480829999995,
+        "y_norm": 0.6496890000000001,
+        "k_att_max": 0.0161248,
+        "g_eff": 0.011324403717259077,
+        "dtheta_state_deg": 2.7104412767109176,
+        "P_aa_frob": 0.015396932142
+      },
+      "post_break_means": {
+        "dx_att_norm": 0.011840739473999998,
+        "y_norm": 0.6768282000000001,
+        "k_att_max": 0.013638,
+        "g_eff": 0.01755190453223812,
+        "dtheta_state_deg": 4.506883925876427,
+        "P_aa_frob": 0.014366081358000002
+      },
+      "ratios_post_over_pre": {
+        "dx_att_norm": 1.5862846579329606,
+        "y_norm": 1.0417726019680187,
+        "k_att_max": 0.8457779321293907,
+        "g_eff": 1.5499186509474183,
+        "dtheta_state_deg": 1.662786043217829,
+        "P_aa_frob": 0.9330482998500703
+      },
+      "pearson_dx_vs_y": 0.60122602782225,
+      "pearson_dx_vs_k": -0.9417484753074099,
+      "pearson_dx_vs_g": 0.9547351809251622,
+      "note_identity": "Full K_att rows not in audit; g_eff:=||dx_att||/||y|| is the realized gain scale. k_att_max is max|K| over att rows \u2014 relative jumps comparable.",
+      "halves": {
+        "first": {
+          "t_span": [
+            1.540000081,
+            1.580000043
+          ],
+          "mean_dx": 0.0074644480829999995,
+          "mean_y": 0.6496890000000001,
+          "mean_k": 0.0161248,
+          "mean_dtheta_deg": 2.7104412767109176
+        },
+        "second": {
+          "t_span": [
+            1.590000033,
+            1.630000114
+          ],
+          "mean_dx": 0.011840739473999998,
+          "mean_y": 0.6768282000000001,
+          "mean_k": 0.013638,
+          "mean_dtheta_deg": 4.506883925876427
+        }
+      }
+    },
+    "latch": {
+      "max_step_dx_att": {
+        "series": "dx_att_norm",
+        "t": 1.610000134,
+        "t_prev": 1.600000024,
+        "cause": "NO_CLEAN_DX_JUMP",
+        "ratio_dx": 1.1994737494431977,
+        "ratio_y": 1.1858900162846049,
+        "ratio_k_att_max": 1.0373731644293187,
+        "ratio_g_eff": 1.0114544628692892,
+        "dx_prev": 0.003883144585,
+        "dx_now": 0.004657729995,
+        "y_prev": 0.598725,
+        "y_now": 0.710022,
+        "k_prev": 0.015867,
+        "k_now": 0.01646,
+        "g_prev": 0.0064856897323479065,
+        "g_now": 0.006559979824568816
+      },
+      "max_step_dtheta_state": {
+        "t": 1.630000114,
+        "t_prev": 1.620000124,
+        "ratio": 1.1738649708919953,
+        "deg_prev": 2.2182555311328627,
+        "deg_now": 2.603932464484285
+      },
+      "pre_break_means": {
+        "dx_att_norm": 0.0019919315585999998,
+        "y_norm": 0.328649,
+        "k_att_max": 0.014958599999999999,
+        "g_eff": 0.006024783386321232,
+        "dtheta_state_deg": 0.9258574203451502,
+        "P_aa_frob": 0.016078830137999996
+      },
+      "post_break_means": {
+        "dx_att_norm": 0.0048053672538,
+        "y_norm": 0.7352930000000001,
+        "k_att_max": 0.0166798,
+        "g_eff": 0.006519836234090619,
+        "dtheta_state_deg": 1.9446842093559376,
+        "P_aa_frob": 0.015938109532
+      },
+      "ratios_post_over_pre": {
+        "dx_att_norm": 2.4124158448382547,
+        "y_norm": 2.2373200587861213,
+        "k_att_max": 1.1150642439800518,
+        "g_eff": 1.0821694019561539,
+        "dtheta_state_deg": 2.1004143474175314,
+        "P_aa_frob": 0.9912480818074305
+      },
+      "pearson_dx_vs_y": 0.9999068609999248,
+      "pearson_dx_vs_k": 0.9776563552440892,
+      "pearson_dx_vs_g": 0.9023971952274034,
+      "note_identity": "Full K_att rows not in audit; g_eff:=||dx_att||/||y|| is the realized gain scale. k_att_max is max|K| over att rows \u2014 relative jumps comparable.",
+      "halves": {
+        "first": {
+          "t_span": [
+            1.540000081,
+            1.580000043
+          ],
+          "mean_dx": 0.0019919315585999998,
+          "mean_y": 0.328649,
+          "mean_k": 0.014958599999999999,
+          "mean_dtheta_deg": 0.9258574203451502
+        },
+        "second": {
+          "t_span": [
+            1.590000033,
+            1.630000114
+          ],
+          "mean_dx": 0.0048053672538,
+          "mean_y": 0.7352930000000001,
+          "mean_k": 0.0166798,
+          "mean_dtheta_deg": 1.9446842093559376
+        }
+      }
+    }
+  },
+  "verdict": {
+    "label": "Y_JUMP_MULTI_TICK_NOT_K_SPIKE_DXZ_LATCHED_ZERO",
+    "reading": "Not a punctual K_att gain spike (k_att_max only ~1.12\u00d7 post/pre; g_eff ~1.08\u00d7). NHC innov ||y|| rises smoothly across [1.54,1.64] (~2.24\u00d7 post/pre) and ||dx_att|| tracks it (~2.41\u00d7) \u2014 Y_JUMP window. No single-tick cliff (max step ||dx|| only 1.20\u00d7). CRITICAL: under latch \u03bb=1, dx_att_z \u2261 0 every tick \u2014 the applied Z correction is off; state ||\u03b4\u03b8|| growth in this window is NOT from NHC ATT_Z updates. State ||\u03b4\u03b8|| ramps multi-tick (0.70\u00b0\u21922.60\u00b0 in table) dominated by roll growth; ctrl also ramps state error (even larger) without a y cliff. The 7.5\u00d7 rise\u2192surge mean jump (\u00a713.14) is a multi-tick ramp of state attitude error coinciding with rising NHC innov (vel already dirty), not a ZUPT/GNSS-style K spike.",
+    "falsified": "Punctual K_att gain jump as cause of ||\u03b4\u03b8|| surge at 1.59 (ZUPT/GNSS pattern)",
+    "supported": [
+      "Y-driven multi-tick rise of ||dx_att|| (X/Y only under latch)",
+      "dx_att_z latched to 0 \u2014 Z channel not applying",
+      "state ||\u03b4\u03b8|| ramp multi-tick; roll-dominated"
+    ],
+    "next": "Ask what grows state attitude (esp. roll) across [1.59,1.69] if not NHC Z: predict/gyro+bias, NHC dx_att_x/y, or latch side-effects. Compare roll error vs truth and bias_g / gyro integration in that window.",
+    "ctrl_note": "Ctrl k_att_max actually falls (0.85\u00d7); y ~flat (1.04\u00d7); state ||\u03b4\u03b8|| still grows 1.66\u00d7 \u2014 shared scenario pressure on attitude, latch amplifies y path."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_dtheta_jump_154_164.png"
+}

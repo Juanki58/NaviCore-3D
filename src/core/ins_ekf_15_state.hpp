@@ -2,6 +2,7 @@
 
 #include "interfaces/INaviFilter.hpp"
 #include "ins_ekf.hpp"
+#include "ins_ekf_v2.hpp"
 #include "sensor_types.hpp"
 
 #include <cstdint>
@@ -10,7 +11,7 @@
 /** Adaptador ESKF 15 estados -> INaviFilter (Benchmark Engine). */
 class InsEkf15State : public INaviFilter {
 public:
-    InsEkf15State();
+    explicit InsEkf15State(InsEkfCoreVersion core = INS_EKF_CORE_V1);
 
     void initialize(const NaviState &initial_state) override;
     void predict(double dt_s, const float accel_mps2[3], const float gyro_rads[3]) override;
@@ -29,15 +30,18 @@ public:
     std::string get_filter_name() const override;
 
     bool seed_from_gnss_sample(const GpsSample &gps, NavDomain domain);
-    bool seed_from_ned_fix(const double pos_ned_m[3], NavDomain domain);
-    bool seed_from_ned_fix(
+    bool seed_from_ned_pos(const double pos_ned_m[3], NavDomain domain);
+    bool seed_from_ned_pos(
         const double pos_ned_m[3],
         const double ref_lla_deg[3],
         NavDomain domain);
+    /** H-seed-v: set nominal NED velocity from GNSS speed/course (does not touch pos/P). */
+    void set_velocity_ned_from_speed_course(float speed_mps, float course_deg);
     bool update_gnss_from_sample(const GpsSample &gps);
     bool is_initialized() const;
     const InsEkfFilter &native() const;
     InsEkfFilter &native();
+    InsEkfCoreVersion core_version() const;
 
     void set_nhc_measurement_stds(float lateral_std_mps, float vertical_std_mps);
     void sync_simulation_clock_ms(uint32_t t_ms);
@@ -47,6 +51,7 @@ private:
     void body_velocity_from_ned(float out_body[3]) const;
 
     InsEkfFilter ekf_;
+    InsEkfCoreVersion core_;
     double timestamp_s_;
     bool run_zupt_after_predict_;
     float pending_lateral_std_mps_;
@@ -54,6 +59,7 @@ private:
 };
 
 std::unique_ptr<INaviFilter> create_default_navi_filter();
+std::unique_ptr<INaviFilter> create_navi_filter(InsEkfCoreVersion core);
 
 const InsEkfFilter *navi_filter_try_get_ins_ekf(const INaviFilter *filter);
 InsEkfFilter *navi_filter_try_get_ins_ekf_mut(INaviFilter *filter);

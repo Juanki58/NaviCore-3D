@@ -1,0 +1,885 @@
+{
+  "protocol": "docs/diagnostics/18-jacobian-imu-ab-protocol.md \u00a711",
+  "intervention": "H-ATT-b1",
+  "timestamp": "2026-07-19T13:18:44+02:00",
+  "seed": 71,
+  "lambdas": [
+    0.0,
+    0.3,
+    0.5,
+    0.7
+  ],
+  "rho": 1.2,
+  "p1_abs_m": 2.0,
+  "p1_improve_factor": 10.0,
+  "scope": "ATT_Z only",
+  "by_lambda": {
+    "0": {
+      "lambda": 0.0,
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.0,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 53.999
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.0,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 53.999
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.0,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 0.377
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.0,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 0.377
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.0,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 152.09,
+          "zupt_residual_speed": 2.266,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.0,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 487.1,
+          "zupt_residual_speed": 1.241,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.0,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 17.41,
+          "zupt_residual_speed": 0.215,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.0,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 15.86,
+          "zupt_residual_speed": 0.241,
+          "gps_recovery_time": "TIMEOUT"
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0_cellC_nhc_block_audit.csv"
+      }
+    },
+    "0.3": {
+      "lambda": 0.3,
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.3,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 141.576
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.3,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 141.576
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.3,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 0.358
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.3,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 0.358
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.3,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 120.48,
+          "zupt_residual_speed": 3.822,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.3,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 418.88,
+          "zupt_residual_speed": 2.217,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.3,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 17.41,
+          "zupt_residual_speed": 0.215,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.3,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 15.87,
+          "zupt_residual_speed": 0.242,
+          "gps_recovery_time": "TIMEOUT"
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.3_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.3_cellC_nhc_block_audit.csv"
+      }
+    },
+    "0.5": {
+      "lambda": 0.5,
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.5,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 140.288
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.5,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 140.288
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.5,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 435.158417
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.5,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 435.158417
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.5,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 103.66,
+          "zupt_residual_speed": 4.378,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.5,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 384.88,
+          "zupt_residual_speed": 1.83,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.5,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 17.41,
+          "zupt_residual_speed": 0.215,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.5,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 15.86,
+          "zupt_residual_speed": 0.243,
+          "gps_recovery_time": "TIMEOUT"
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.5_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.5_cellC_nhc_block_audit.csv"
+      }
+    },
+    "0.7": {
+      "lambda": 0.7,
+      "slalom": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.7,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 136.961365
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.7,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 136.961365
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.7,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 942.341
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.7,
+          "scenario": "SLALOM",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "max_lateral_m": 942.341
+        }
+      },
+      "tunnel": {
+        "A": {
+          "cell": "A",
+          "nhc_jacobian": "correct",
+          "imu_mode": "ideal",
+          "lambda": 0.7,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 88.93,
+          "zupt_residual_speed": 4.914,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "B": {
+          "cell": "B",
+          "nhc_jacobian": "correct",
+          "imu_mode": "dirty",
+          "lambda": 0.7,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 336.07,
+          "zupt_residual_speed": 2.621,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "C": {
+          "cell": "C",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "ideal",
+          "lambda": 0.7,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 17.41,
+          "zupt_residual_speed": 0.215,
+          "gps_recovery_time": "TIMEOUT"
+        },
+        "D": {
+          "cell": "D",
+          "nhc_jacobian": "legacy",
+          "imu_mode": "dirty",
+          "lambda": 0.7,
+          "scenario": "TUNNEL_STRESS",
+          "passed": false,
+          "error": null,
+          "sim_exit_code": 0,
+          "tunnel_exit_m": 15.97,
+          "zupt_residual_speed": 0.245,
+          "gps_recovery_time": "TIMEOUT"
+        }
+      },
+      "audits": {
+        "A": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.7_cellA_nhc_block_audit.csv",
+        "C": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\hatt_b1\\slalom_l0.7_cellC_nhc_block_audit.csv"
+      }
+    }
+  },
+  "scores": {
+    "0": {
+      "P1": {
+        "pass": false,
+        "slalom_A_control_m": 53.999,
+        "slalom_A_interv_m": 53.999,
+        "abs_ok": false,
+        "improve_ok": false,
+        "improve_factor": 1.0
+      },
+      "P2_slalom": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "C": {
+            "control_m": 0.377,
+            "interv_m": 0.377,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "D": {
+            "control_m": 0.377,
+            "interv_m": 0.377,
+            "ratio": 1.0,
+            "pass": true
+          }
+        }
+      },
+      "P2_tunnel": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "A": {
+            "control_m": 152.09,
+            "interv_m": 152.09,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "B": {
+            "control_m": 487.1,
+            "interv_m": 487.1,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "C": {
+            "control_m": 17.41,
+            "interv_m": 17.41,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "D": {
+            "control_m": 15.86,
+            "interv_m": 15.86,
+            "ratio": 1.0,
+            "pass": true
+          }
+        }
+      },
+      "P3": {
+        "pass": false,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.44776119402985076,
+            "rms_dx_att_z_A": 0.0014978091731594465,
+            "rms_dx_att_z_C": 9.466376081548029e-08,
+            "rms_ratio_A_C": 15822.413564140914,
+            "k_att_mean_A": 0.015121875621890546,
+            "k_att_mean_C": 0.015180263681592041,
+            "k_att_mean_ratio_A_C": 0.9961536860672389,
+            "k_att_corr": 0.9394749123025478
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 3.7440728676498436,
+            "sep_ratio_end_start": 147.84094274163897,
+            "innov_ratio_end_start": 958.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "D6": {
+        "pass": true,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.44776119402985076,
+            "rms_dx_att_z_A": 0.0014978091731594465,
+            "rms_dx_att_z_C": 9.466376081548029e-08,
+            "rms_ratio_A_C": 15822.413564140914,
+            "k_att_mean_A": 0.015121875621890546,
+            "k_att_mean_C": 0.015180263681592041,
+            "k_att_mean_ratio_A_C": 0.9961536860672389,
+            "k_att_corr": 0.9394749123025478
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 3.7440728676498436,
+            "sep_ratio_end_start": 147.84094274163897,
+            "innov_ratio_end_start": 958.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "HATT_b1_PASS": false
+    },
+    "0.3": {
+      "P1": {
+        "pass": false,
+        "slalom_A_control_m": 53.999,
+        "slalom_A_interv_m": 141.576,
+        "abs_ok": false,
+        "improve_ok": false,
+        "improve_factor": 0.38141351641521165
+      },
+      "P2_slalom": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "C": {
+            "control_m": 0.377,
+            "interv_m": 0.358,
+            "ratio": 0.9496021220159151,
+            "pass": true
+          },
+          "D": {
+            "control_m": 0.377,
+            "interv_m": 0.358,
+            "ratio": 0.9496021220159151,
+            "pass": true
+          }
+        }
+      },
+      "P2_tunnel": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "A": {
+            "control_m": 152.09,
+            "interv_m": 120.48,
+            "ratio": 0.7921625353409165,
+            "pass": true
+          },
+          "B": {
+            "control_m": 487.1,
+            "interv_m": 418.88,
+            "ratio": 0.8599466228700472,
+            "pass": true
+          },
+          "C": {
+            "control_m": 17.41,
+            "interv_m": 17.41,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "D": {
+            "control_m": 15.86,
+            "interv_m": 15.87,
+            "ratio": 1.0006305170239596,
+            "pass": true
+          }
+        }
+      },
+      "P3": {
+        "pass": false,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.4228855721393035,
+            "rms_dx_att_z_A": 0.0014536042371188535,
+            "rms_dx_att_z_C": 4.9517825195338524e-08,
+            "rms_ratio_A_C": 29355.1712213664,
+            "k_att_mean_A": 0.015158855721393036,
+            "k_att_mean_C": 0.015180527363184081,
+            "k_att_mean_ratio_A_C": 0.9985724052088202,
+            "k_att_corr": 0.9310375640589288
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.996286544890877,
+            "sep_ratio_end_start": 114.52150683204562,
+            "innov_ratio_end_start": 723.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "D6": {
+        "pass": true,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.4228855721393035,
+            "rms_dx_att_z_A": 0.0014536042371188535,
+            "rms_dx_att_z_C": 4.9517825195338524e-08,
+            "rms_ratio_A_C": 29355.1712213664,
+            "k_att_mean_A": 0.015158855721393036,
+            "k_att_mean_C": 0.015180527363184081,
+            "k_att_mean_ratio_A_C": 0.9985724052088202,
+            "k_att_corr": 0.9310375640589288
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.996286544890877,
+            "sep_ratio_end_start": 114.52150683204562,
+            "innov_ratio_end_start": 723.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "HATT_b1_PASS": false
+    },
+    "0.5": {
+      "P1": {
+        "pass": false,
+        "slalom_A_control_m": 53.999,
+        "slalom_A_interv_m": 140.288,
+        "abs_ok": false,
+        "improve_ok": false,
+        "improve_factor": 0.3849153170620438
+      },
+      "P2_slalom": {
+        "pass": false,
+        "rho": 1.2,
+        "cells": {
+          "C": {
+            "control_m": 0.377,
+            "interv_m": 435.158417,
+            "ratio": 1154.2663580901856,
+            "pass": false
+          },
+          "D": {
+            "control_m": 0.377,
+            "interv_m": 435.158417,
+            "ratio": 1154.2663580901856,
+            "pass": false
+          }
+        }
+      },
+      "P2_tunnel": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "A": {
+            "control_m": 152.09,
+            "interv_m": 103.66,
+            "ratio": 0.6815701229535144,
+            "pass": true
+          },
+          "B": {
+            "control_m": 487.1,
+            "interv_m": 384.88,
+            "ratio": 0.7901457606241018,
+            "pass": true
+          },
+          "C": {
+            "control_m": 17.41,
+            "interv_m": 17.41,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "D": {
+            "control_m": 15.86,
+            "interv_m": 15.86,
+            "ratio": 1.0,
+            "pass": true
+          }
+        }
+      },
+      "P3": {
+        "pass": false,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.40298507462686567,
+            "rms_dx_att_z_A": 0.0013612822538902533,
+            "rms_dx_att_z_C": 3.406899233886795e-08,
+            "rms_ratio_A_C": 39956.63389014359,
+            "k_att_mean_A": 0.01519602487562189,
+            "k_att_mean_C": 0.01518053233830846,
+            "k_att_mean_ratio_A_C": 1.001020552966666,
+            "k_att_corr": 0.9147298525683578
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.654867454234219,
+            "sep_ratio_end_start": 99.975332535126,
+            "innov_ratio_end_start": 619.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "D6": {
+        "pass": true,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.40298507462686567,
+            "rms_dx_att_z_A": 0.0013612822538902533,
+            "rms_dx_att_z_C": 3.406899233886795e-08,
+            "rms_ratio_A_C": 39956.63389014359,
+            "k_att_mean_A": 0.01519602487562189,
+            "k_att_mean_C": 0.01518053233830846,
+            "k_att_mean_ratio_A_C": 1.001020552966666,
+            "k_att_corr": 0.9147298525683578
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.654867454234219,
+            "sep_ratio_end_start": 99.975332535126,
+            "innov_ratio_end_start": 619.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": true,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "HATT_b1_PASS": false
+    },
+    "0.7": {
+      "P1": {
+        "pass": false,
+        "slalom_A_control_m": 53.999,
+        "slalom_A_interv_m": 136.961365,
+        "abs_ok": false,
+        "improve_ok": false,
+        "improve_factor": 0.39426447012995236
+      },
+      "P2_slalom": {
+        "pass": false,
+        "rho": 1.2,
+        "cells": {
+          "C": {
+            "control_m": 0.377,
+            "interv_m": 942.341,
+            "ratio": 2499.57824933687,
+            "pass": false
+          },
+          "D": {
+            "control_m": 0.377,
+            "interv_m": 942.341,
+            "ratio": 2499.57824933687,
+            "pass": false
+          }
+        }
+      },
+      "P2_tunnel": {
+        "pass": true,
+        "rho": 1.2,
+        "cells": {
+          "A": {
+            "control_m": 152.09,
+            "interv_m": 88.93,
+            "ratio": 0.584719573936485,
+            "pass": true
+          },
+          "B": {
+            "control_m": 487.1,
+            "interv_m": 336.07,
+            "ratio": 0.6899404639704373,
+            "pass": true
+          },
+          "C": {
+            "control_m": 17.41,
+            "interv_m": 17.41,
+            "ratio": 1.0,
+            "pass": true
+          },
+          "D": {
+            "control_m": 15.86,
+            "interv_m": 15.97,
+            "ratio": 1.0069356872635562,
+            "pass": true
+          }
+        }
+      },
+      "P3": {
+        "pass": false,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.39800995024875624,
+            "rms_dx_att_z_A": 0.0011337903552608053,
+            "rms_dx_att_z_C": 2.0441396170618152e-08,
+            "rms_ratio_A_C": 55465.40685369043,
+            "k_att_mean_A": 0.015288124378109452,
+            "k_att_mean_C": 0.01518053233830846,
+            "k_att_mean_ratio_A_C": 1.0070875011101872,
+            "k_att_corr": 0.8803936280534005
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.0131407174334996,
+            "sep_ratio_end_start": 82.59710623124488,
+            "innov_ratio_end_start": 503.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": false,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "D6": {
+        "pass": false,
+        "detail": {
+          "window_0_2s": {
+            "n": 201,
+            "opp_sign_frac": 0.39800995024875624,
+            "rms_dx_att_z_A": 0.0011337903552608053,
+            "rms_dx_att_z_C": 2.0441396170618152e-08,
+            "rms_ratio_A_C": 55465.40685369043,
+            "k_att_mean_A": 0.015288124378109452,
+            "k_att_mean_C": 0.01518053233830846,
+            "k_att_mean_ratio_A_C": 1.0070875011101872,
+            "k_att_corr": 0.8803936280534005
+          },
+          "window_0_0.75s_growth": {
+            "verdict": "FEEDBACK_GROWTH",
+            "rate_ratio_2nd_1st": 2.0131407174334996,
+            "sep_ratio_end_start": 82.59710623124488,
+            "innov_ratio_end_start": 503.0
+          },
+          "P3_pass": false,
+          "D6_k_att_consistency_pass": false,
+          "D6_note": "pipeline check, not success gate"
+        }
+      },
+      "HATT_b1_PASS": false
+    }
+  },
+  "discipline": "Do not retune thresholds after seeing this report"
+}

@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
+# Optional: -DNAVICORE_ENABLE_SANITIZERS=ON / -DNAVICORE_ENABLE_COVERAGE=ON
+include(${CMAKE_SOURCE_DIR}/cmake/NaviCoreAudit.cmake)
+
+# Export compile_commands.json for clang-tidy when generator supports it
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(NAVICORE_CORE_DIR ${CMAKE_SOURCE_DIR}/src/core)
 set(NAVICORE_PC_DIR ${CMAKE_SOURCE_DIR}/src/targets/generic_pc)
 set(NAVICORE_SCENARIOS_DIR ${CMAKE_SOURCE_DIR}/src/scenarios)
@@ -26,6 +32,7 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/mission.cpp
     ${NAVICORE_CORE_DIR}/geodesy.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
     ${NAVICORE_CORE_DIR}/flight_recorder.cpp
     ${NAVICORE_CORE_DIR}/diagnostic.cpp
@@ -72,6 +79,7 @@ set(NAVICORE_REPLAY_SOURCES
     ${NAVICORE_CORE_DIR}/vector3d.cpp
     ${NAVICORE_CORE_DIR}/geodesy.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
 )
 
@@ -93,7 +101,15 @@ add_executable(navicore_regression_test
     ${NAVICORE_CORE_DIR}/vector3d.cpp
     ${NAVICORE_CORE_DIR}/geodesy.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+    ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
     ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
+    ${NAVICORE_CORE_DIR}/waypoint.cpp
+    ${NAVICORE_CORE_DIR}/diagnostic.cpp
+    ${NAVICORE_CORE_DIR}/time_guard.cpp
+    ${NAVICORE_CORE_DIR}/geometry_guard.cpp
+    ${NAVICORE_CORE_DIR}/command_ingestor.cpp
+    ${NAVICORE_CORE_DIR}/fusion.cpp
+    ${NAVICORE_CORE_DIR}/divergence_guard.cpp
 )
 
 # Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)
@@ -104,6 +120,61 @@ add_executable(ring_stress_test
 )
 target_include_directories(ring_stress_test PRIVATE ${NAVICORE_PICO2_HW_DIR})
 target_compile_options(ring_stress_test PRIVATE -O3)
+
+navicore_apply_host_audit_flags(NaviCore3D_VehicleDemo)
+navicore_apply_host_audit_flags(NaviCore3D_Sim)
+navicore_apply_host_audit_flags(NaviCore3D_Replay)
+navicore_apply_host_audit_flags(navicore_regression_test)
+navicore_apply_host_audit_flags(ring_stress_test)
+
+# --- Catch2 + RapidCheck unit / property tests ---
+option(NAVICORE_BUILD_UNIT_TESTS "Build Catch2 + RapidCheck tests (navicore_unit_tests)" ON)
+if(NAVICORE_BUILD_UNIT_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.4
+    )
+    FetchContent_MakeAvailable(Catch2)
+
+    set(RC_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(RC_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(RC_ENABLE_CATCH OFF CACHE BOOL "" FORCE)
+    set(RC_ENABLE_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        rapidcheck
+        GIT_REPOSITORY https://github.com/emil-e/rapidcheck.git
+        GIT_TAG master
+    )
+    FetchContent_MakeAvailable(rapidcheck)
+
+    add_executable(navicore_unit_tests
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_navstate_math.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_math.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_fusion_isolated.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_properties_rapidcheck.cpp
+        ${NAVICORE_CORE_DIR}/NavState.cpp
+        ${NAVICORE_CORE_DIR}/vector3d.cpp
+        ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp
+        ${NAVICORE_CORE_DIR}/ins_ekf.cpp
+        ${NAVICORE_CORE_DIR}/ins_ekf_15_state.cpp
+        ${NAVICORE_CORE_DIR}/geodesy.cpp
+        ${NAVICORE_CORE_DIR}/fusion.cpp
+        ${NAVICORE_CORE_DIR}/divergence_guard.cpp
+        ${NAVICORE_CORE_DIR}/diagnostic.cpp
+    )
+    target_link_libraries(navicore_unit_tests PRIVATE Catch2::Catch2WithMain rapidcheck)
+    target_include_directories(navicore_unit_tests PRIVATE
+        ${NAVICORE_CORE_DIR}
+        ${NAVICORE_CORE_DIR}/interfaces)
+    navicore_apply_host_audit_flags(navicore_unit_tests)
+
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(navicore_unit_tests)
+endif()
 
 # Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe
 # fijarse antes de project(). Ver src/targets/pico2_hardware/CMakeLists.txt

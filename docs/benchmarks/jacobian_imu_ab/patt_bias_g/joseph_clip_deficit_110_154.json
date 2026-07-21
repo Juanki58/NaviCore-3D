@@ -1,0 +1,62 @@
+{
+  "window_s": [
+    1.1,
+    1.54
+  ],
+  "n_ticks": 44,
+  "dP_start": 1.0380055999999714e-05,
+  "dP_end": 0.0023634312680000003,
+  "dP_observed_growth": 0.0023530512120000006,
+  "sum_joseph_deficit": 0.0020167152410000035,
+  "sum_predict_excess": 0.0005832749879999951,
+  "sum_linear_total": 0.0025999902289999986,
+  "frac_linear_explains_growth": 1.1049441745001842,
+  "frac_joseph_of_growth": 0.8570638967461636,
+  "recon_rmse": 0.0,
+  "recon_end_err": 0.0,
+  "recon_rel_rmse": 0.0,
+  "x260": {
+    "max_abs_dP_onset": 8.109957000000147e-06,
+    "max_abs_dP_late": 0.0023634312680000003,
+    "ratio_late_over_onset": 291.4234031080507,
+    "note": "\u00d7260 = max|\u0394P| late / max|\u0394P| onset \u2014 baseline onset is tiny, not a compound factor on joseph."
+  },
+  "deficit_stats": {
+    "mean": 4.5834437295454624e-05,
+    "mean_abs": 4.5834437295454624e-05,
+    "cv": 1.3444482047093227,
+    "mean_early": 6.65080727272741e-06,
+    "mean_late": 8.501806731818185e-05,
+    "late_over_early": 12.783119978052987
+  },
+  "corr_abs_deficit_vs_abs_P_l": {
+    "pearson": 0.3879719250997962,
+    "mean_abs_deficit": 4.5834437295454624e-05,
+    "mean_abs_P_l": 0.00472885142715909,
+    "max_abs_deficit": 0.0002464188729999993,
+    "max_abs_P_l": 0.004999201279
+  },
+  "corr_abs_deficit_vs_abs_dP": {
+    "pearson": 0.9984654031435475,
+    "mean_abs_deficit": 4.5834437295454624e-05,
+    "mean_abs_dP": 0.0004716991415,
+    "max_abs_deficit": 0.0002464188729999993,
+    "max_abs_dP": 0.0023634312680000003
+  },
+  "counterfactual_ctrl_joseph_on_latch_predict": {
+    "P_cf_end": 0.0029094784979999955,
+    "P_latch_end": 0.004679774866,
+    "P_ctrl_end": 0.002316343598,
+    "cf_minus_latch": -0.0017702963680000048,
+    "cf_minus_ctrl": 0.0005931348999999955
+  },
+  "toy_22pct_of_mean_ctrl_joseph": {
+    "toy_sum_end_dP": 0.0020565486886399997,
+    "flat_n_times": 0.0020565486886399997
+  },
+  "verdict": {
+    "label": "JOSEPH_DEFICIT_LINEAR_SUFFICES",
+    "reading": "\u03a3 joseph underclip (+ predict excess) reconstructs the latch\u2212ctrl \u0394P to 110% (rmse/|\u0394P_end|=0.00%). The \u00d7260 is vs a tiny onset baseline, not a nonlinear compound beyond the sum of per-tick deficits. Boring complete explanation: less Joseph cut, linear accumulate."
+  },
+  "figure": "C:\\NaviCore-3D\\docs\\benchmarks\\jacobian_imu_ab\\patt_bias_g\\fig_joseph_clip_deficit_110_154.png"
+}

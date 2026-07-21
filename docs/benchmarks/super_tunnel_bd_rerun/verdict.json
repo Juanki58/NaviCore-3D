@@ -1,0 +1,113 @@
+{
+  "protocol": "docs/diagnostics/16-super-tunnel-ieee952-rerun-protocol.md",
+  "thresholds": {
+    "C1_max_clean_penalty_m": 50.0,
+    "C2_min_dirty_penalty_m": 400.0,
+    "C3_min_dirty_minus_clean_m": 300.0,
+    "D1_min_clean_penalty_m": 400.0,
+    "D2_max_abs_diff_m": 150.0,
+    "jump_drift_h_m": 5.0,
+    "jump_p_vv_rel": 0.5
+  },
+  "drifts_exit_m": {
+    "A": 299.072144,
+    "A_dirty": 303.63562,
+    "B": 995.251648,
+    "B_dirty": 1220.814697,
+    "N_always": 1421.555786,
+    "N_always_dirty": 1327.375732
+  },
+  "panel_B_constant_vel": {
+    "delta_clean_m": 696.1795040000001,
+    "delta_dirty_m": 917.179077,
+    "delta_dirty_minus_clean_m": 220.99957299999994,
+    "C1": false,
+    "C2": true,
+    "C3": false,
+    "D1": true,
+    "D2": false,
+    "verdict": "IEEE952_BIAS_REJECTED"
+  },
+  "panel_N_always": {
+    "delta_clean_m": 1122.483642,
+    "delta_dirty_m": 1023.740112,
+    "delta_dirty_minus_clean_m": -98.74352999999996,
+    "C1": false,
+    "C2": true,
+    "C3": false,
+    "D1": true,
+    "D2": true,
+    "verdict": "IEEE952_BIAS_REJECTED"
+  },
+  "anatomy": {
+    "A": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\A_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": true,
+      "jump_event_count": 1,
+      "jump_events_head": [
+        {
+          "t_ms": 55010,
+          "reasons": [
+            "d_drift_h=-296.989",
+            "d_P_vv_rel=0.987"
+          ],
+          "drift_h_m": 2.082886,
+          "P_vv_frob": 21.5411129,
+          "nhc_applied": 0
+        }
+      ]
+    },
+    "A_dirty": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\A_dirty_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": true,
+      "jump_event_count": 1,
+      "jump_events_head": [
+        {
+          "t_ms": 55010,
+          "reasons": [
+            "d_drift_h=-301.553",
+            "d_P_vv_rel=0.987"
+          ],
+          "drift_h_m": 2.082764,
+          "P_vv_frob": 21.35898781,
+          "nhc_applied": 0
+        }
+      ]
+    },
+    "B": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\B_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": false,
+      "jump_event_count": 0,
+      "jump_events_head": []
+    },
+    "B_dirty": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\B_dirty_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": false,
+      "jump_event_count": 0,
+      "jump_events_head": []
+    },
+    "N_always": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\N_always_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": false,
+      "jump_event_count": 0,
+      "jump_events_head": []
+    },
+    "N_always_dirty": {
+      "path": "C:\\NaviCore-3D\\docs\\benchmarks\\super_tunnel_bd_rerun\\N_always_dirty_anatomy.csv",
+      "rows": 6001,
+      "single_tick_jump": false,
+      "jump_event_count": 0,
+      "jump_events_head": []
+    }
+  },
+  "autopsy_required_panel_B": true,
+  "autopsy_required_panel_N_always": true,
+  "overall_verdict": "IEEE952_BIAS_REJECTED",
+  "note": "Autopsy required before attributing to IEEE-952 (clean-IMU worsening and/or single-tick jump).",
+  "provenance_note": "Current binary != original 481/1416 run; see protocol \u00a70. Do not treat original figures as today's measurement."
+}

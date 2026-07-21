@@ -1,0 +1,64 @@
+{
+  "routes": {
+    "REF_19082026": {
+      "v1": {
+        "accepts": 18,
+        "rejects": 663,
+        "accept_rate": 0.02643171806167401,
+        "final_drift_h_m": 158140.031,
+        "residual_h_at_60s_m": null
+      },
+      "v2": {
+        "accepts": 681,
+        "rejects": 0,
+        "accept_rate": 1.0,
+        "final_drift_h_m": 35.288,
+        "residual_h_at_60s_m": null
+      },
+      "verdict": {
+        "accept_rate_improved": true,
+        "drift_improved": true
+      }
+    },
+    "ALT_16072026": {
+      "v1": {
+        "accepts": 8,
+        "rejects": 323,
+        "accept_rate": 0.02416918429003021,
+        "final_drift_h_m": 856262.25,
+        "residual_h_at_60s_m": null
+      },
+      "v2": {
+        "accepts": 331,
+        "rejects": 0,
+        "accept_rate": 1.0,
+        "final_drift_h_m": 38.002,
+        "residual_h_at_60s_m": null
+      },
+      "verdict": {
+        "accept_rate_improved": true,
+        "drift_improved": true
+      }
+    },
+    "JUL17_20260717": {
+      "v1": {
+        "accepts": 76,
+        "rejects": 639,
+        "accept_rate": 0.1062937062937063,
+        "final_drift_h_m": 332215.656,
+        "residual_h_at_60s_m": null
+      },
+      "v2": {
+        "accepts": 715,
+        "rejects": 0,
+        "accept_rate": 1.0,
+        "final_drift_h_m": 110.295,
+        "residual_h_at_60s_m": null
+      },
+      "verdict": {
+        "accept_rate_improved": true,
+        "drift_improved": true
+      }
+    }
+  }
+}

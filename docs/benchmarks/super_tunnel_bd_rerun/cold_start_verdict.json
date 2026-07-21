@@ -1,0 +1,126 @@
+{
+  "arm": "N_always",
+  "window": "0_to_10s_pre_outage",
+  "milestones": [
+    {
+      "t_ms": 0,
+      "drift_h_m": 0.230058,
+      "P_vv_frob": 1.621827126,
+      "P_pv_frob": 0.01621689461,
+      "vel_norm": 25.0,
+      "k_max": 0.147929,
+      "innov_norm": 1e-06,
+      "dx_pos": 0.0,
+      "dx_vel": 0.0
+    },
+    {
+      "t_ms": 100,
+      "drift_h_m": 1.028067,
+      "P_vv_frob": 1.618523479,
+      "P_pv_frob": 0.09876681864,
+      "vel_norm": 24.951324,
+      "k_max": 0.037979,
+      "innov_norm": 0.00285,
+      "dx_pos": 2e-06,
+      "dx_vel": 4.3e-05
+    },
+    {
+      "t_ms": 200,
+      "drift_h_m": 1.60576,
+      "P_vv_frob": 1.630310655,
+      "P_pv_frob": 0.1797354072,
+      "vel_norm": 24.856152,
+      "k_max": 0.031267,
+      "innov_norm": 0.015028,
+      "dx_pos": 8e-06,
+      "dx_vel": 0.0001
+    },
+    {
+      "t_ms": 350,
+      "drift_h_m": 1.934841,
+      "P_vv_frob": 1.629673958,
+      "P_pv_frob": 0.2957796454,
+      "vel_norm": 24.760773,
+      "k_max": 0.017436,
+      "innov_norm": 0.102472,
+      "dx_pos": 6.5e-05,
+      "dx_vel": 0.000583
+    },
+    {
+      "t_ms": 500,
+      "drift_h_m": 2.144341,
+      "P_vv_frob": 1.580560803,
+      "P_pv_frob": 0.3917972744,
+      "vel_norm": 24.684744,
+      "k_max": 0.012293,
+      "innov_norm": 0.467567,
+      "dx_pos": 0.001173,
+      "dx_vel": 0.005826
+    },
+    {
+      "t_ms": 1000,
+      "drift_h_m": 4.361059,
+      "P_vv_frob": 0.955419302,
+      "P_pv_frob": 0.3996803164,
+      "vel_norm": 20.389601,
+      "k_max": 0.330306,
+      "innov_norm": 3.617099,
+      "dx_pos": 0.078923,
+      "dx_vel": 0.177145
+    },
+    {
+      "t_ms": 2000,
+      "drift_h_m": 15.828415,
+      "P_vv_frob": 0.7956537008,
+      "P_pv_frob": 0.52124089,
+      "vel_norm": 8.574,
+      "k_max": 0.064417,
+      "innov_norm": 0.408029,
+      "dx_pos": 0.013593,
+      "dx_vel": 0.023749
+    },
+    {
+      "t_ms": 5000,
+      "drift_h_m": 92.963356,
+      "P_vv_frob": 8.267807007,
+      "P_pv_frob": 16.53727531,
+      "vel_norm": 6.653036,
+      "k_max": 0.078106,
+      "innov_norm": 4.483581,
+      "dx_pos": 0.347085,
+      "dx_vel": 0.1954
+    },
+    {
+      "t_ms": 10000,
+      "drift_h_m": 255.270111,
+      "P_vv_frob": 3.903028965,
+      "P_pv_frob": 18.02156258,
+      "vel_norm": 4.922023,
+      "k_max": 0.753216,
+      "innov_norm": 3.710648,
+      "dx_pos": 2.793306,
+      "dx_vel": 0.580898
+    }
+  ],
+  "classification": {
+    "P_pv_frob_0": 0.01621689461,
+    "P_pv_frob_10s": 18.02156258,
+    "P_pv_ratio_10s_over_0": 1111.2832026969681,
+    "n_ppv_rel_jumps_gt_10": 0,
+    "n_high_k_tiny_innov": 0,
+    "early_k_max_0_500ms": 0.147929,
+    "bayes_n_samples": 992,
+    "bayes_mean_abs_k_residual": 0.7993829184486451,
+    "bayes_max_abs_k_residual": 0.9884957739343926,
+    "bayes_consistent_proxy": false,
+    "family": "COLD_START_HIGH_P_GROWTH_GRADUAL",
+    "explains_original_always_nhc_worsening_without_ieee952": true
+  },
+  "drift_thresholds_t_ms": {
+    "first_t_ms_drift_ge_10": 1700,
+    "first_t_ms_drift_ge_50": 3530,
+    "first_t_ms_drift_ge_100": 5240,
+    "first_t_ms_drift_ge_200": 8350
+  },
+  "note_gnss": "N_always is NOT GNSS-free in 0\u201310 s: GPS updates still run when fix_valid. Naked NHC+cold-start interacts with GNSS until tunnel; outage starts at 10 s."
+}

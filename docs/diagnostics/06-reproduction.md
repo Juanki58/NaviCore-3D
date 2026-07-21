@@ -34,6 +34,7 @@ python audit_imu_chain.py --export-calibration calibration/imu_mount.json
 .\build\NaviCore3D_Replay.exe `
   --input docs/benchmarks/real_run_replay.csv `
   --output docs/benchmarks/h9_predict_only_output.csv `
+  --constraint-policy disabled `
   --predict-only --predict-only-end-s 60 `
   --h9a-gravity-tilt-init `
   --mount-calibration calibration/imu_mount.json `

@@ -4,6 +4,40 @@
 
 #include <math.h>
 
+#ifndef NAVICORE_CONFIDENCE_AGE_SLOPE_PER_S
+#define NAVICORE_CONFIDENCE_AGE_SLOPE_PER_S 0.05f
+#endif
+
+#ifndef NAVICORE_CONFIDENCE_AGE_QUALITY_MAX
+#define NAVICORE_CONFIDENCE_AGE_QUALITY_MAX 0.75f
+#endif
+
+#ifndef NAVICORE_CONFIDENCE_AGE_QUALITY_MIN
+#define NAVICORE_CONFIDENCE_AGE_QUALITY_MIN 0.15f
+#endif
+
+static float nav_confidence_clampf(float value, float min_value, float max_value)
+{
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
+float nav_confidence_quality_from_fix_age_ms(uint32_t fix_age_ms)
+{
+    const float age_s = (float)fix_age_ms * 0.001f;
+    const float quality =
+        NAVICORE_CONFIDENCE_AGE_QUALITY_MAX - (age_s * NAVICORE_CONFIDENCE_AGE_SLOPE_PER_S);
+    return nav_confidence_clampf(
+        quality,
+        NAVICORE_CONFIDENCE_AGE_QUALITY_MIN,
+        NAVICORE_CONFIDENCE_AGE_QUALITY_MAX);
+}
+
 NavConfidence nav_confidence_make(bool gps_trusted, uint8_t satellites, uint32_t fix_age_ms, float estimate_quality)
 {
     NavConfidence confidence{};

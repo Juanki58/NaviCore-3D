@@ -1,0 +1,55 @@
+{
+  "tool": "cppcheck",
+  "status": "ok",
+  "exit_code": 0,
+  "xml": "docs/benchmarks/static_analysis/cppcheck_baseline_20260721.xml",
+  "issue_count": 32,
+  "top_ids": [
+    [
+      "normalCheckLevelMaxBranches",
+      9
+    ],
+    [
+      "memsetClassFloat",
+      8
+    ],
+    [
+      "compareValueOutOfTypeRangeError",
+      3
+    ],
+    [
+      "passedByValue",
+      3
+    ],
+    [
+      "unsignedPositive",
+      3
+    ],
+    [
+      "checkersReport",
+      1
+    ],
+    [
+      "constParameterPointer",
+      1
+    ],
+    [
+      "dangerousTypeCast",
+      1
+    ],
+    [
+      "knownConditionTrueFalse",
+      1
+    ],
+    [
+      "variableScope",
+      1
+    ],
+    [
+      "wrongPrintfScanfArgNum",
+      1
+    ]
+  ],
+  "scope": "src/core",
+  "flags": "--enable=all --std=c++17"
+}

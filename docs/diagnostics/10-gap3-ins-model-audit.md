@@ -788,7 +788,7 @@ Ver §9 de [12-gap3-synthesis.md](12-gap3-synthesis.md) y protocolo **[13-gap4-g
 Tareas legacy GAP-3 (opcionales, no bloquean cierre):
 
 1. Residuo B predict-only (~24 %) — atribución pitch vs artefacto
-2. Re-run `super_tunnel` con `--constraint-policy imu_stationary`
+2. ~~Re-run `super_tunnel` con `--constraint-policy imu_stationary`~~ — **error de categoría** (ese flag es solo replay; `super_tunnel` hardcodea ZUPT off). Ver repetición limpia B/B_dirty: [`16-super-tunnel-ieee952-rerun-protocol.md`](16-super-tunnel-ieee952-rerun-protocol.md) + `docs/benchmarks/super_tunnel_bd_rerun/`
 3. Instrumentar detector estacionariedad (reason/window/confidence) para Exp C vs D
 
 ---

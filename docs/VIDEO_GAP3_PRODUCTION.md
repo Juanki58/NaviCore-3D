@@ -23,10 +23,9 @@ python tools\plot_gap3_video_assets.py
 
 ### A — Rápido (sin Unity, hoy)
 
-1. Editor de vídeo (CapCut / DaVinci / Premiere).  
-2. Timeline: title → bars → policy → CTA GitHub.  
-3. VO desde el guion (ES). Duración 90–120 s.  
-4. Export 1080p30; subir a un unlisted YouTube / LinkedIn; link en README cuando exista.
+**Guía de principiante (sigue esta):** [`VIDEO_GAP3_HOWTO.md`](VIDEO_GAP3_HOWTO.md) — CapCut + 3 PNG + VO leída en voz alta.
+
+Resumen: timeline title → bars → policy → export 1080p30 → YouTube no listado → link en README.
 
 ### B — Instrumento (Unity + Cesium, local)
 

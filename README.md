@@ -214,7 +214,7 @@ Not a marketing “NHC always helps” claim. Super-tunnel + R-sweep artefacts i
 
 G-arm dose-response (lateral/vertical σ variants) is fully tabulated in the manifest — every published arm **worse** than NHC-off at exit.
 
-**Finding (GAP-3 closed):** naive high-rate NHC over-observes body velocity, compresses `P_vv`, and can **worsen** coasting vs NHC-off; dose-response N=1…20 documented. Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”.
+**Finding (GAP-3 closed):** naive high-rate NHC over-observes body velocity, compresses `P_vv`, and can **worsen** coasting vs NHC-off; dose-response N=1…20 documented. Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”. Frozen in code: [`nhc_ops_policy.hpp`](src/core/nhc_ops_policy.hpp) · [`docs/NHC_OPS_POLICY.md`](docs/NHC_OPS_POLICY.md) · CI `[nhc_ops]`.
 
 Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md).
 
@@ -237,6 +237,8 @@ python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
 | Check | Result |
 |-------|--------|
 | Teleport +500 m with `fix_valid=true` (short gap) | Rejected · `reject_reason=3` · test `gnss_physical_inconsistency_spoof` |
+| RapidCheck: random teleport 200–800 m (short gap) | Reject · `MEAS_REJECT_INCONSISTENT` · state/P hold · `[rapidcheck][integrity]` |
+| RapidCheck: sub-metre GNSS nudge | Never classified as physical spoof |
 | RF GPS spoof / jam | **Out of scope** — illegal in ES/EU without CNMC authorisation |
 
 ### Catch2 unit tests (isolated — not the Sim pipeline)
@@ -249,6 +251,8 @@ Formal C++ unit tests (**Catch2 v3**, FetchContent) over kernels only — no Mon
 | `tests/unit/test_ins_ekf_math.cpp` | `navicore_quat_normalize` (zero→identity), `mat_invert2x2/3x3` singular → false |
 | `tests/unit/test_fusion_isolated.cpp` | `dead_reckoning_*` init + NaN/Inf reject |
 | `tests/unit/test_properties_rapidcheck.cpp` | **RapidCheck** properties (see below) |
+| `tests/unit/test_ins_ekf_edge.cpp` | EKF init/NaN/invalid GNSS/dt edge cases |
+| `tests/unit/test_nhc_ops_policy.cpp` | GAP-3 NHC ops freeze (`OFF` default; `ALWAYS` not production-safe) |
 
 Math kernels live in [`src/core/ins_ekf_math.hpp`](src/core/ins_ekf_math.hpp) so the ESKF can be tested **without** linking Sim/Replay.
 
@@ -263,6 +267,8 @@ Properties that must hold for *all* generated inputs (default **300** trials via
 | Quaternion | after normalize, ‖q‖ ≈ 1 (zero-norm → identity, no `/0`) |
 | S⁻¹ | if `invert2x2` succeeds ⇒ `S·S⁻¹ ≈ I` |
 | EKF @ 100 Hz | one 10 ms predict: horizontal ‖Δp‖ ≤ civil envelope (~1.3 m for \|v\|≤80, \|a\|≤40) |
+| Integrity teleport | short-gap jump 200–800 m ⇒ reject `INCONSISTENT`; position & `P_nn`/`P_ee` hold |
+| Integrity nudge | \|Δp\| ≤ 2 m ⇒ never `INCONSISTENT` / not suspect |
 
 This is stricter than Monte Carlo over fixed scenarios: the fuzzer searches for breaks, not just average drift.
 
@@ -1099,10 +1105,10 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 
 | Phase | Target |
 |-------|--------|
-| **Done** | **MC · NHC · Allan tooling · EKF v2** · estimate↔nav vocab · A5 triage · EKF edge tests · GAP-3 video script · fuzz · CI |
-| **Now** | A3 domain Q/R profiles · expand error-path cover · harden cppcheck findings |
+| **Done** | **MC · NHC · Allan tooling · EKF v2** · estimate↔nav vocab · A5 triage · EKF edge · **NHC ops policy + integrity RapidCheck** · GAP-3 video script · fuzz · CI |
+| **Now** | A3 domain Q/R profiles · Allan fit (static IMU hours) · harden clang-tidy gate |
 | **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
-| **Also pending** | Allan **fit** publish (static IMU hours) · WCET S0–S7 on-board (protocol ready) |
+| **Also pending** | Allan **fit** publish · WCET S0–S7 on-board (protocol ready) · fault-injection bank artefacts |
 | **Visibility** | GAP-3 **guion** listo · grabación Unity pendiente · comunidades con PPK2/campo |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).

@@ -170,6 +170,7 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/unit/test_sensor_wire_and_health.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_nav_mode_transitions.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_edge.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_nhc_ops_policy.cpp
         ${NAVICORE_CORE_DIR}/NavState.cpp
         ${NAVICORE_CORE_DIR}/vector3d.cpp
         ${NAVICORE_CORE_DIR}/ins_ekf_math.cpp

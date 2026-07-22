@@ -8,8 +8,8 @@
 //   parada segura.
 ```
 
-**ES** · Núcleo **INS/ESKF 15 estados** para MCU edge: **resiliencia de navegación cuando el GNSS se degrada o deniega** (dead reckoning + integridad), no un “autopiloto multidominio” completo. Pico 2 W · replay real · lab Comarruga. Consumo: **medir con PPK2**.  
-**EN** · **15-state INS/ESKF** edge core aimed at **navigation resilience under degraded/denied GNSS** (dead reckoning + integrity) — not a full multi-domain autopilot. Pico 2 W · real-run replay · Comarruga lab. Power: **measure with PPK2**.
+**ES** · Núcleo **INS/ESKF 15 estados** para MCU edge: **resiliencia de navegación cuando el GNSS se degrada o deniega** (dead reckoning + integridad), no un “autopiloto multidominio” completo. Target Pico 2 W (implementado; banco físico pendiente) · replay SensorLogger · diseño lab Comarruga. Consumo: **medir con PPK2**.  
+**EN** · **15-state INS/ESKF** edge core aimed at **navigation resilience under degraded/denied GNSS** (dead reckoning + integrity) — not a full multi-domain autopilot. Pico 2 W target (implemented; powered-bench validation pending) · SensorLogger replay · Comarruga lab design. Power: **measure with PPK2**.
 
 ---
 
@@ -112,7 +112,7 @@ Volume and urgency sit in that middle band: enough GNSS dependency to hurt when 
 | GNSS NIS reject / accept | ESKF update | Integrity vs inconsistent innovation |
 | INS predict without GNSS | ESKF @ ~100 Hz | Dead reckoning backbone |
 | v2 fusion policy | `--ekf-core v2` | Keep position when velocity NIS fails (lab, 3 drives) |
-| Pico 2 W + `safe_log` | Embedded DUT | Real outage / spoof-stress measurement |
+| Pico 2 W + `safe_log` | Embedded **target** (builds) | Designed for real outage / spoof-stress **once** bench is powered — not yet a published Pico DUT campaign |
 | Consistency gate (`reject_reason=3`) | ESKF GNSS update | Fix present but IMU-incompatible → reject (SW spoof) |
 
 Today you mostly react to **loss of fix** (age, reject, sats). That is necessary but not what “PNT resilience” sells hardest.
@@ -144,7 +144,7 @@ Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent i
 
 | | **English** | **Español** |
 |---|---|---|
-| **Mission** | **GPS-degraded / denied resilience** on edge MCUs: coast with INS when the fix fails, expose integrity (`estimate_quality`, modes), auditable Q/R, zero heap. Multidomain = shared state, not the product slogan. | **Resiliencia GNSS degradado/denegado** en MCU edge: costa con INS, integridad (`estimate_quality`, modos), Q/R auditable, zero heap. Multidominio = estado compartido, no el eslogan. |
+| **Mission** | Provide a single navigation state model across domains, with dead reckoning when GNSS fails, on bare-metal MCUs. Fusion validated with real-world IMU+GPS traces (SensorLogger, mobile capture); embedded target (Pico 2 W) implemented and building, hardware bench validation pending. | Ofrecer un modelo único de estado de navegación en todos los dominios, con navegación estimada cuando falla el GNSS, en MCUs bare-metal. Fusión validada con trazas reales de IMU+GPS (SensorLogger, captura móvil); target embebido (Pico 2 W) implementado y compilando, validación en banco físico pendiente. |
 | **Estimator** | Explicit ESKF: position, velocity, attitude error, accel/gyro biases @ ~100 Hz. See [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). | ESKF explícito: posición, velocidad, error de actitud, sesgos @ ~100 Hz. Ver [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). |
 | **Language** | C++17, embedded-oriented: fixed structs, no heap in `core/`. | C++17, estilo embebido: estructuras fijas, sin heap en `core/`. |
 | **Memory** | **Zero dynamic allocation** in `core/`: no `std::vector`, no `std::string`, fixed buffers, stack-only hot paths. | **Cero asignación dinámica** en `core/`: sin `std::vector`/`std::string`, buffers fijos, hot path en stack. |
@@ -168,13 +168,13 @@ This is the leap in method — not just “scenarios that look good.” Artefact
 | **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 · mean exit drift **13.0 m** · p95 **16.1 m** · **0%** diverge (>30 m) | `docs/monte_carlo/run_0000…0099` · `python run_monte_carlo.py --runs 100` |
 | **NHC matrix** (super-tunnel + R/G arms) | **Done** (GAP-3 closed) | NHC-off baseline **493 m** exit; `B_always` **1408 m** — naive high-rate NHC can **hurt** | [`docs/nhc_experiments/manifest.json`](docs/nhc_experiments/manifest.json) · `NaviCore3D_Sim.exe --nhc-experiments` |
 | **Allan variance** (IEEE Std 952) | **Tooling done** · fit publish pending | Overlapping σ_A(τ) → ARW/VRW, BI, RRW; Q today = engineering σ_a/σ_g | [`analyze_allan.py`](analyze_allan.py) · needs multi-hour `docs/imu_static_log.csv` |
-| **EKF v2 vs v1** (3 phone drives) | **Done** | Accept 2–10% → **100%**; drift km → **~35 / 38 / 110 m** | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) |
+| **EKF v2 vs v1** (3 phone drives) | **Done** | Accept 2–10% → **100%**; drift km → **~35 / 38 / 110 m** | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) · **SensorLogger mobile**, not Pico bench |
 
-**Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: PPK2 mA, Pico outage curve, Allan **fit** from hours of static IMU (tool already ships).
+**Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: **powered Pico2** Allan fit, Pico outage curve, PPK2 mA (tooling/checklists ship; DUT campaigns pending).
 
 ### EKF v2 vs v1 — real phone drives (NHC-off shell)
 
-Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/).
+Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) — **SensorLogger mobile IMU+GNSS**, not a powered Pico 2 W bench campaign.
 
 | Route | Core | GNSS accept rate | Final horizontal drift |
 |-------|------|------------------|------------------------|
@@ -370,7 +370,7 @@ Before multi-cycle brownout/WDT: confirm the lab build is **not** writing flash/
 | Field + PPK2 artefacts published | Coast curve + mA/mW still empty — needed before “going viral” | Both visible in README |
 
 **Do not break the sequence:** vídeo (done) → Allan → outage Pico → PPK2 → then external talk / Artemis–Ambiq silicon.  
-**Do not wait for Artemis to start Allan or outage** — both run on the existing Pico2 + WT61C Comarruga bank. PPK2 needs the Nordic instrument (independent buy), still measured on Pico2 first ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
+**Do not wait for Artemis to start Allan or outage** — both target the **Pico2 + WT61C/NEO-M9N Comarruga design** (firmware builds today). They need the **physical bench powered**, not the Artemis kit. PPK2 needs the Nordic instrument (independent buy), still measured on Pico2 first ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
 
 
 ### Diagnostic campaign (real-run)
@@ -540,12 +540,13 @@ Phone IMU + phone GNSS stay in the loop on the published city drives. Between fi
 
 ## What validates the real firmware — Pico 2 W
 
-The **device under test (DUT)** for NaviCore-3D is the firmware that already runs on the **Raspberry Pi Pico 2 W (RP2350)** — the same C++ ESKF in `src/core/`, not a reimplementation elsewhere.
+The **intended DUT** for NaviCore-3D is the firmware that **targets** the **Raspberry Pi Pico 2 W (RP2350)** — the same C++ ESKF in `src/core/`, not a reimplementation elsewhere. **Firmware is implemented and builds; powered-bench validation with Comarruga sensors is still pending.** Published fusion Evidence to date is from **mobile SensorLogger** drives (EKF v2 A/B), not from a Pico-on-desk campaign.
 
 | Role | Platform | Validates? |
 |------|----------|------------|
-| **DUT / instrument** | **Pico 2 W** + USB CDC to PC (`safe_log.*`, non-blocking stdio) | **Yes** — the real EKF binary, WCET, UART rings, field/lab telemetry |
+| **DUT / instrument (goal)** | **Pico 2 W** + USB CDC (`safe_log.*`) | **When powered + wired** — real EKF binary, WCET, UART rings, lab telemetry |
 | Host replay | `NaviCore3D_Replay` on PC | Deterministic regression on logged CSVs — same algorithms, **not** a substitute for embedded timing/I/O |
+| Mobile SensorLogger traces | Phone IMU+GNSS CSVs | **Current** published fusion A/B evidence (see Evidence scorecard) |
 | Optional external truth | e.g. Pi Zero / phone / survey GNSS logging in parallel | Independent **reference track** to compare *against* Pico estimate — **not** a second NaviCore |
 | Python / Ambiq / other MCU ports | Parallel approximations | Useful experiments; **do not** claim they validate Pico firmware |
 
@@ -575,11 +576,11 @@ Replay of phone CSVs remains valuable for algorithm A/B (v1/v2); **embedded DR p
 
 The project tagline includes **ultra-low power / edge MCU**. That claim is currently **architectural** (zero-heap hot path, Pico 2 W target, non-blocking USB) — **not** yet backed by a published current draw from a Nordic **Power Profiler Kit II (PPK2)** or equivalent.
 
-**Priority before adding Pi Zero, Ambiq, or Artemis:** measure the **Pico 2 W** running the real firmware. Allan fit and field outage also use that **same Comarruga Pico2 bank** — they do **not** wait on the Artemis/GPS/IMU order. The Nordic **PPK2 instrument** is a separate purchase from Artemis; when you have it, profile Pico2 first, then port.
+**Priority before adding Pi Zero, Ambiq, or Artemis:** power the **Pico 2 W** with the real firmware and measure it. Allan fit and field outage also use that **same Pico2 + Comarruga sensor design** — they do **not** wait on the Artemis/GPS/IMU order, but they **do** require the Pico bench powered (implementation exists; physical validation pending). The Nordic **PPK2 instrument** is a separate purchase from Artemis; when you have it, profile Pico2 first, then port.
 
-| Do first (Pico2 already on bench) | Do later |
-|-----------------------------------|----------|
-| Allan static hours on WT61C → README | Wait for Artemis kit to start science |
+| Do first (Pico2 target — power on bench) | Do later |
+|------------------------------------------|----------|
+| Power Pico2 + WT61C; Allan static hours → README | Wait for Artemis kit to start Pico science |
 | Field outage + phone GPX → README | Port to Ambiq **before** Pico PPK2 baseline |
 | PPK2 on Pico 2 W + document mA / mW here | Claim “ultra-low power” without measured mA |
 | After Pico numbers: Artemis/Apollo3 same GPS-denied scenario | Skip Artemis and jump straight to Apollo510 |
@@ -622,7 +623,7 @@ NaviCore-3D/
 │   ├── scenarios/                 # TUNNEL_STRESS, SLALOM
 │   └── targets/
 │       ├── generic_pc/            # Sim, VehicleDemo, Replay, benchmarks
-│       └── pico2_hardware/        # Pico 2 W @ 100 Hz (banco Comarruga)
+│       └── pico2_hardware/        # Pico 2 W @ 100 Hz (Comarruga design; bench validation pending)
 ├── data/
 │   └── real_run/                  # CSVs Android Sensor Logger (~332 s)
 ├── calibration/
@@ -758,7 +759,11 @@ cmake --build build_asan --target navicore_regression_test
 CI: [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) (cppcheck · clang-tidy · ASan · Catch2+RapidCheck).  
 Report: [`docs/benchmarks/static_analysis/REPORT_LATEST.md`](docs/benchmarks/static_analysis/REPORT_LATEST.md) · standard: [`docs/SAFETY_CODING_STANDARD.md`](docs/SAFETY_CODING_STANDARD.md).
 
-### Pico 2 W (`NaviCore3D_Pico2`)
+### Pico 2 W — target implementado, banco físico pendiente
+
+**Estado real:** el firmware `NaviCore3D_Pico2` está implementado y compila para el target (ver `src/targets/pico2_hardware/`), con mapa de pines y presupuestos de tiempo documentados en [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md). **Esto describe el diseño e implementación del target, no una validación en hardware físico encendido.** La validación de fusión disponible hasta la fecha proviene de trazas reales de IMU+GPS capturadas con SensorLogger en móvil (ver Evidence scorecard, EKF v2), no del propio Pico 2 W en banco.
+
+**Pendiente:** encendido físico del Pico 2 W con sensores conectados (WT61C-232, NEO-M9N, UPS Waveshare), Allan variance real, curva de outage real y medida PPK2 — ver [`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md).
 
 Requires [Pico SDK](https://github.com/raspberrypi/pico-sdk) and Ninja:
 
@@ -770,8 +775,10 @@ cmake --build build_pico2
 
 Copy `src/targets/pico2_hardware/wifi_config.h.example` → `wifi_config.h` before building Wi-Fi features.
 
-Hardware notes: [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md).  
-Validated lab release tag: `pico2-comarruga-banco-v1`.
+Hardware design notes: [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md).  
+Release tag: `pico2-comarruga-banco-v1`.
+
+> **Nota (2026-07-22):** el nombre de este tag hace referencia al target de hardware, no a una validación en banco físico completada — corregido en README tras auditoría interna. Ver estado real arriba.
 
 ---
 
@@ -1127,9 +1134,9 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 MP4 ES+EN** · host fault smoke · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | **Allan + outage on Pico2 Comarruga now** (no wait for Artemis) → README · **PPK2** when Nordic instrument available · then Artemis |
-| **Hardware** | Pico2 bank first: Allan → field outage → **PPK2 on Pico** → **then** Artemis/Apollo3 — **not** Ambiq/Artemis first |
-| **Also pending** | Nordic PPK2 instrument (separate buy if missing) · physical fault bank · WCET S0–S7 · A3 domain Q/R |
+| **Now (you)** | **Power Pico2 bench** → Allan + outage → README (no wait for Artemis) · **PPK2** when Nordic instrument available · then Artemis |
+| **Hardware** | Pico2 first: power-on → Allan → field outage → **PPK2 on Pico** → **then** Artemis/Apollo3 — **not** Ambiq/Artemis first |
+| **Also pending** | Physical Pico2 bench validation · Nordic PPK2 instrument · fault bank on hardware · WCET S0–S7 on-board · A3 domain Q/R |
 | **Visibility** | **GAP-3 published on GitHub** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · pack [VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md) |
 | **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |
 

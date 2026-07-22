@@ -1134,10 +1134,10 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 MP4 ES+EN** · host fault smoke · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | **Power Pico2 bench** → Allan + outage → README (no wait for Artemis) · **PPK2** when Nordic instrument available · then Artemis |
-| **Hardware** | Pico2 first: power-on → Allan → field outage → **PPK2 on Pico** → **then** Artemis/Apollo3 — **not** Ambiq/Artemis first |
-| **Also pending** | Physical Pico2 bench validation · Nordic PPK2 instrument · fault bank on hardware · WCET S0–S7 on-board · A3 domain Q/R |
-| **Visibility** | **GAP-3 published on GitHub** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · pack [VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md) |
+| **Now (you)** | Obtain **Nordic PPK2** · power a DUT (Pico2 and/or Adalogger) → Allan/outage → README · **GAP-3 video done** |
+| **Hardware** | PPK2 on whatever you actually power first · Adalogger port = **software first** ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · then Artemis/Ambiq ladder |
+| **Also pending** | `rp2040_adalogger` BSP (MTK3339 PMTK + I2C AMG) · physical fault bank · WCET on-board · A3 domain Q/R |
+| **Visibility** | **GAP-3 published** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) |
 | **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).

@@ -98,7 +98,7 @@ Esquema CSV (una línea por muestra):
 
 | # | Acción | Estado |
 |---|--------|--------|
-| C1 | Vídeo 1–2 min Unity/Cesium: GAP-3 NHC | **Pack listo** · falta grabar/publicar | [VIDEO_GAP3_PRODUCTION.md](VIDEO_GAP3_PRODUCTION.md) · stills `docs/video_gap3/stills/` · guion [VIDEO_SCRIPT_GAP3_NHC.md](VIDEO_SCRIPT_GAP3_NHC.md) |
+| C1 | Vídeo 1–2 min GAP-3 NHC | **MP4 ES+EN en repo** · falta URL YouTube | [ES](video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](video_gap3/NaviCore_GAP3_NHC_en.mp4) · [PRODUCTION](VIDEO_GAP3_PRODUCTION.md) |
 | C2 | Repo + README PNT + **Evidence scorecard** (MC/NHC/Allan/v2) | **Hecho (v1)** en GitHub — ampliar con PPK2/campo |
 | C3 | Comunidades + Show HN **con** campo + PPK2 (± Ambiq cuando haya) | Pendiente |
 | C4 | LinkedIn: 2–3 posts técnicos espaciados | Pendiente |

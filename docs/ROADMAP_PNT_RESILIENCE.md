@@ -56,12 +56,12 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 
 | # | Prueba | Estado | Notas |
 |---|--------|--------|-------|
-| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Pendiente | DUT = **Pico 2 W** |
+| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Checklist listo · run pendiente | [field_outage/CHECKLIST.md](benchmarks/field_outage/CHECKLIST.md) · DUT Pico 2 W |
 | B2 | Vibración real (vehículo/dron) | Pendiente | El sintético no sustituye |
 | B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** | Baseline obligatorio antes de comparar Ambiq |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
-| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Protocolo listo | [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) — registrar artefactos |
-| B6 | Log estático multi-hora → **Allan fit** publicado | Pendiente dato | Cierra S3 (herramienta ya existe) |
+| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | [20260722_host](benchmarks/fault_injection/20260722_host/) · [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) |
+| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook + smoke · falta DUT horas | [allan/RUNBOOK.md](allan/RUNBOOK.md) · smoke ≠ publish |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
@@ -98,7 +98,7 @@ Esquema CSV (una línea por muestra):
 
 | # | Acción | Estado |
 |---|--------|--------|
-| C1 | Vídeo 1–2 min Unity/Cesium: GAP-3 NHC | **Guion listo** | [VIDEO_SCRIPT_GAP3_NHC.md](VIDEO_SCRIPT_GAP3_NHC.md) — falta grabación |
+| C1 | Vídeo 1–2 min Unity/Cesium: GAP-3 NHC | **Pack listo** · falta grabar/publicar | [VIDEO_GAP3_PRODUCTION.md](VIDEO_GAP3_PRODUCTION.md) · stills `docs/video_gap3/stills/` · guion [VIDEO_SCRIPT_GAP3_NHC.md](VIDEO_SCRIPT_GAP3_NHC.md) |
 | C2 | Repo + README PNT + **Evidence scorecard** (MC/NHC/Allan/v2) | **Hecho (v1)** en GitHub — ampliar con PPK2/campo |
 | C3 | Comunidades + Show HN **con** campo + PPK2 (± Ambiq cuando haya) | Pendiente |
 | C4 | LinkedIn: 2–3 posts técnicos espaciados | Pendiente |
@@ -110,15 +110,15 @@ Esquema CSV (una línea por muestra):
 
 ## Orden operativo recomendado
 
-0. **Ya bancado (no rehacer):** S1–S5 + Evidence scorecard en README  
-1. **PPK2 Pico** (B3) → publicar tabla mA/mW en README  
+0. **Ya bancado (no rehacer):** S1–S5 + Evidence + A12 NHC ops + integrity RapidCheck + GAP-3 video **pack** + host fault smoke  
+1. **Grabar/publicar vídeo GAP-3** (C1 — stills listos; 90–120 s)  
 2. Log estático → **Allan fit** (B6 / cierra S3)  
-3. Campo outage Pico (B1) + fault-injection banco (B5) + vídeo Unity (C1)  
+3. **PPK2 Pico** (B3) + campo outage (B1) + fault físico (B5)  
 4. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
 5. Apollo4 + A2b si el mercado lo pide  
 6. Visibilidad externa fuerte (C3+) solo con números medidos de hardware  
 
-Prioridad de código en paralelo (barato): Allan fit / A3 Q/R · fault-injection banco · grabar vídeo GAP-3. **A12 NHC ops + integrity RapidCheck ya cerrados.**
+**Tu turno (hardware / VO):** dejar IMU quieto horas · grabar VO del pack · una salida Pico con outage.
 
 ---
 

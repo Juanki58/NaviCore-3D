@@ -71,3 +71,5 @@ cmake --build build_fuzz --target navicore_sensor_wire_fuzz
 ## Record
 
 Store pass/fail + CDC excerpts under `docs/benchmarks/fault_injection/<YYYYMMDD>/` when a campaign is run.
+
+**Host smoke (policy mirrors, 2026-07-22):** [`docs/benchmarks/fault_injection/20260722_host/`](benchmarks/fault_injection/20260722_host/) — re-run with `python tools/run_fault_injection_host_smoke.py`.

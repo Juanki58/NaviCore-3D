@@ -98,7 +98,7 @@ Esquema CSV (una línea por muestra):
 
 | # | Acción | Estado |
 |---|--------|--------|
-| C1 | Vídeo 1–2 min GAP-3 NHC | **MP4 ES+EN en repo** · falta URL YouTube | [ES](video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](video_gap3/NaviCore_GAP3_NHC_en.mp4) · [PRODUCTION](VIDEO_GAP3_PRODUCTION.md) |
+| C1 | Vídeo 1–2 min GAP-3 NHC | **Publicado en GitHub** (ES+EN) | [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · YouTube opcional |
 | C2 | Repo + README PNT + **Evidence scorecard** (MC/NHC/Allan/v2) | **Hecho (v1)** en GitHub — ampliar con PPK2/campo |
 | C3 | Comunidades + Show HN **con** campo + PPK2 (± Ambiq cuando haya) | Pendiente |
 | C4 | LinkedIn: 2–3 posts técnicos espaciados | Pendiente |
@@ -118,15 +118,15 @@ No adelantar Ambiq, ZUPT “porque apetece”, ni visibilidad fuerte porque lleg
 **Regla de cierre:** Allan, outage y fault-injection **físico** terminan cada uno con tabla en **README Evidence**, no solo CSV — [`EVIDENCE_CLOSEOUT.md`](EVIDENCE_CLOSEOUT.md).
 
 0. **Ya bancado (no rehacer):** S1–S5 + Evidence + A12 NHC ops + integrity RapidCheck + GAP-3 video **pack** + host fault smoke  
-1. **Grabar/publicar vídeo GAP-3** (C1 — stills listos; 90–120 s) + link en README Visibility  
+1. **GAP-3 MP4 publicados en GitHub** (C1) + link en README Visibility  
 2. Log estático → **Allan fit** (B6) → **pegar ARW/BI en README**  
 3. Campo outage Pico (B1) → **pegar curva en README** + fault físico (B5) → **pegar pass/fail en README** (cuidado flash en brownout: ver FAULT_INJECTION_LAB)  
 4. **PPK2 Pico** (B3) → tabla mA/mW en README Power  
 5. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
 6. Apollo4 + A2b si el mercado lo pide  
-7. Visibilidad externa fuerte (C3+) **solo** con números medidos de hardware en Evidence  
+7. Visibilidad externa fuerte (C3+) **solo** con números medidos de hardware en Evidence · YouTube mirror del GAP-3 opcional  
 
-**Tu turno (hardware / VO):** grabar VO del pack · IMU quieto horas · una salida Pico con outage · PPK2.
+**Tu turno (hardware):** IMU quieto horas · una salida Pico con outage · PPK2.
 
 ---
 

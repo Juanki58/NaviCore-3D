@@ -56,12 +56,12 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 
 | # | Prueba | Estado | Notas |
 |---|--------|--------|-------|
-| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Checklist listo · **hacer ya en Pico2** | No espera Artemis · [field_outage/CHECKLIST.md](benchmarks/field_outage/CHECKLIST.md) · **cierra con README** |
+| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Checklist listo · **tras encender Pico2** | No espera Artemis · validación física Pico **pendiente** · [CHECKLIST](benchmarks/field_outage/CHECKLIST.md) · **cierra con README** |
 | B2 | Vibración real (vehículo/dron) | Pendiente | El sintético no sustituye |
-| B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** si falta el instrumento Nordic | Compra **aparte** de Artemis · baseline Pico → tabla mA/mW en README |
+| B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** si falta instrumento Nordic | Compra **aparte** de Artemis · Pico alimentado → tabla mA/mW en README |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
-| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | Pico2 Comarruga · **cierra con README** · cuidado flash |
-| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook listo · **hacer ya en Pico2/WT61C** | No espera Artemis · [allan/RUNBOOK.md](allan/RUNBOOK.md) · **cierra con README** |
+| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | Diseño Comarruga · Pico encendido · **cierra con README** · cuidado flash |
+| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook listo · **tras encender Pico2/WT61C** | No espera Artemis · fusión publicada hoy = SensorLogger · [RUNBOOK](allan/RUNBOOK.md) · **cierra con README** |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
@@ -119,24 +119,24 @@ No adelantar Ambiq/Artemis, ZUPT “porque apetece”, ni visibilidad fuerte por
 
 | Pendiente | ¿Espera el pedido Artemis/GPS/IMU? | Qué necesitas |
 |-----------|-------------------------------------|---------------|
-| **Allan fit (B6)** | **No** | Pico 2 W + WT61C ya en banco Comarruga · quieto horas · [`allan/RUNBOOK.md`](allan/RUNBOOK.md) |
-| **Outage Pico (B1)** | **No** | Pico 2 W en marcha + GPX del móvil (túnel/parking) · [`field_outage/CHECKLIST.md`](benchmarks/field_outage/CHECKLIST.md) |
-| **PPK2 (B3)** | **No** (independiente de Artemis) | Instrumento **Nordic Power Profiler Kit II** — compra aparte si no lo tienes · medida sobre **Pico 2 W** ya operativo |
+| **Allan fit (B6)** | **No** | Encender Pico 2 W + WT61C (diseño Comarruga; firmware ya compila) · quieto horas · [`allan/RUNBOOK.md`](allan/RUNBOOK.md) |
+| **Outage Pico (B1)** | **No** | Pico 2 W alimentado + GPX móvil (túnel/parking) · [`field_outage/CHECKLIST.md`](benchmarks/field_outage/CHECKLIST.md) |
+| **PPK2 (B3)** | **No** (independiente de Artemis) | Instrumento **Nordic Power Profiler Kit II** — compra aparte · medida sobre Pico 2 W cuando esté encendido |
 | Artemis / Apollo3 | **Sí, después** | Solo tras baseline PPK2 del Pico (“PPK2 Pico → field → Artemis”) |
 
-**Puedes avanzar Allan y outage ahora mismo** con el banco que ya tienes. El PPK2 solo bloquea si falta el instrumento de medida Nordic — no si falta la RedBoard Artemis.
+**No esperes Artemis** para Allan/outage. **Sí necesitas** el Pico2 **físicamente encendido** (hoy: target implementado/compilando; validación en hardware pendiente — fusión publicada = SensorLogger móvil, no banco Pico).
 
 **Regla de cierre:** Allan, outage y fault-injection **físico** terminan cada uno con tabla en **README Evidence**, no solo CSV — [`EVIDENCE_CLOSEOUT.md`](EVIDENCE_CLOSEOUT.md).
 
-0. **Ya bancado (no rehacer):** S1–S5 + Evidence + A12 NHC ops + integrity RapidCheck + GAP-3 MP4 ES/EN + host fault smoke  
-1. **Allan fit** (B6) sobre Pico2/WT61C Comarruga → **pegar ARW/BI en README**  
-2. **Outage Pico** (B1) → **pegar curva en README** (+ fault físico B5 cuando toque; cuidado flash)  
-3. **PPK2 Pico** (B3) cuando tengas el instrumento Nordic → tabla mA/mW en README Power  
+0. **Ya bancado (no rehacer):** S1–S5 + Evidence (MC/NHC/SensorLogger EKF v2) + A12 + GAP-3 MP4 + host fault smoke · **no** = banco Pico validado  
+1. **Encender Pico2** + sensores → **Allan fit** (B6) → README  
+2. **Outage Pico** (B1) → README (+ fault físico B5; cuidado flash)  
+3. **PPK2 Pico** (B3) con instrumento Nordic → README Power  
 4. Port Artemis/Apollo3 + A/B vs Pico (**después** de 3)  
 5. Apollo4 + A2b si el mercado lo pide  
 6. Visibilidad externa fuerte (C3+) **solo** con números medidos en Evidence  
 
-**Ahora (sin esperar Mouser/Artemis):** dejar IMU quieto horas (Allan) · una salida con outage + GPX.  
+**Ahora:** alimentar Pico2 + WT61C (Allan) · trayecto outage + GPX.  
 **En paralelo si falta:** pedir Nordic PPK2 (no es el kit Artemis).
 
 

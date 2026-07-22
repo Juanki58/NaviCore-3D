@@ -131,12 +131,13 @@ NaviCore-3D/
 
 ### FASE B: Hardware Real (Medio Plazo)
 
-> **Target activo:** `src/targets/pico2_hardware/` — banco Comarruga validado. Ver [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md).
+> **Target activo:** `src/targets/pico2_hardware/` — implementado y compilando; **validación en banco físico pendiente**. Diseño: [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md). Fusión publicada hasta la fecha: trazas SensorLogger (móvil), no Pico encendido.
 
 **Fase 1 — Banco de pruebas (mesa de laboratorio):**
 
-- [x] Raspberry Pi Pico 2 W + WT61C-232 (UART0) + NEO-M9N (UART1) + UPS Waveshare (I2C)
-- [x] Analizador lógico 8ch @ 24 MHz — GP22 (tick), GP21 (Wi-Fi poll)
+- [x] Diseño + firmware: Raspberry Pi Pico 2 W + WT61C-232 (UART0) + NEO-M9N (UART1) + UPS Waveshare (I2C) — ver mapa de pines
+- [ ] **Encendido físico** Pico 2 W + sensores cableados y telemetría CDC estable
+- [x] Plan analizador lógico 8ch @ 24 MHz — GP22 (tick), GP21 (Wi-Fi poll) documentado
 
 **Fase 2 — Endurecimiento RT (en curso):**
 

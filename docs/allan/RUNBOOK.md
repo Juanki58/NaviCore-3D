@@ -9,7 +9,8 @@ Replace engineering Q (σ_a / σ_g compile defaults) with **measured** ARW/VRW, 
 
 ## Capture (hardware)
 
-**DUT:** Pico 2 W + WT61C already on the Comarruga bank — **do not wait for Artemis**.
+**DUT:** Pico 2 W + WT61C per Comarruga design — **do not wait for Artemis**.  
+**Status:** firmware builds; **powered-bench capture still required** (not yet a completed Pico campaign).
 
 1. Mount IMU (WT61C) rigid, no fans/vibration, constant temperature if possible.
 2. Warm-up ≥ 10 min powered; then record **≥ 2 h** (prefer 4–8 h) at fixed rate (100 Hz OK).

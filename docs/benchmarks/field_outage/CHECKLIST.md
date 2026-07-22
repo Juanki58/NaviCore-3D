@@ -2,7 +2,7 @@
 
 **Status:** template ready · **artefacts pending** a real DUT run  
 **Goal:** one honest coast curve vs ground truth (phone GPX OK) — beats another synthetic MC for external credibility.  
-**Hardware:** Pico 2 W already validated at Comarruga — **do not wait for Artemis** / Mouser kit.
+**Hardware:** Pico 2 W Comarruga **design** (firmware builds) — **do not wait for Artemis**. Requires **powered** Pico + sensors; physical bench validation is still pending (published fusion Evidence today = SensorLogger mobile).
 
 ## Scenario
 

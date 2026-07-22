@@ -9,7 +9,9 @@ Replace engineering Q (σ_a / σ_g compile defaults) with **measured** ARW/VRW, 
 
 ## Capture (hardware)
 
-1. Mount IMU (WT61C / flight IMU) rigid, no fans/vibration, constant temperature if possible.
+**DUT:** Pico 2 W + WT61C already on the Comarruga bank — **do not wait for Artemis**.
+
+1. Mount IMU (WT61C) rigid, no fans/vibration, constant temperature if possible.
 2. Warm-up ≥ 10 min powered; then record **≥ 2 h** (prefer 4–8 h) at fixed rate (100 Hz OK).
 3. CSV columns (any time name from the tool’s list):
 

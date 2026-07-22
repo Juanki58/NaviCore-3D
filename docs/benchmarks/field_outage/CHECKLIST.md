@@ -1,7 +1,8 @@
 # Field outage capture checklist (Pico 2 W)
 
 **Status:** template ready · **artefacts pending** a real DUT run  
-**Goal:** one honest coast curve vs ground truth (phone GPX OK) — beats another synthetic MC for external credibility.
+**Goal:** one honest coast curve vs ground truth (phone GPX OK) — beats another synthetic MC for external credibility.  
+**Hardware:** Pico 2 W already validated at Comarruga — **do not wait for Artemis** / Mouser kit.
 
 ## Scenario
 

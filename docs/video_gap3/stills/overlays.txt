@@ -1,0 +1,6 @@
+HOOK: En INS embargado, mucha gente pone NHC a tope. Nosotros medimos.
+SETUP: Mismo túnel, mismo IMU — solo cambia la política NHC.
+RESULT A (off): 493 m @ exit
+RESULT B_always: 1408 m @ exit
+TAKEAWAY: NHC agresivo puede empeorar el coast. Preferir OFF o gap-triggered.
+CTA: docs/nhc_experiments · NaviCore3D_Sim --nhc-experiments

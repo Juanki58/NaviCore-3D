@@ -216,7 +216,7 @@ G-arm dose-response (lateral/vertical σ variants) is fully tabulated in the man
 
 **Finding (GAP-3 closed):** naive high-rate NHC over-observes body velocity, compresses `P_vv`, and can **worsen** coasting vs NHC-off; dose-response N=1…20 documented. Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”. Frozen in code: [`nhc_ops_policy.hpp`](src/core/nhc_ops_policy.hpp) · [`docs/NHC_OPS_POLICY.md`](docs/NHC_OPS_POLICY.md) · CI `[nhc_ops]`.
 
-Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md).
+Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md) · **video pack** [`docs/VIDEO_GAP3_PRODUCTION.md`](docs/VIDEO_GAP3_PRODUCTION.md).
 
 ### Allan variance (IEEE 952) — methodology shipped
 
@@ -225,9 +225,14 @@ Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnost
 | Tool | [`analyze_allan.py`](analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW (IEEE Std 952-1997) |
 | Shipped Q scalars | σ_a = **0.05 m/s²**, σ_g = **0.002 rad/s** (car-log / mount order of magnitude in `ins_ekf.hpp`) |
 | **Published ARW/BI table from multi-hour static IMU** | **Pending data** — commit `docs/imu_static_log.csv` (hours), run Allan, paste IEEE units into this section |
+| Capture / publish steps | [`docs/allan/RUNBOOK.md`](docs/allan/RUNBOOK.md) |
+| Tool smoke (synthetic 60 s — **not** for Evidence) | `docs/allan/smoke/` · `tools/generate_imu_static_smoke.py` |
 
 ```powershell
 python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
+# smoke only (do not publish numbers):
+python tools\generate_imu_static_smoke.py
+python analyze_allan.py docs\allan\smoke\imu_static_smoke_60s.csv --sensor gyro --axis gyro_z -o docs\allan\smoke\allan_gyro_z_smoke.png
 ```
 
 **Honest framing:** the **pipeline** for replacing Q folklore with IEEE numbers is done and documented; the **published fit table** waits on a multi-hour static log. Until then, treat Q as engineering defaults — not a certified IMU datasheet.
@@ -1105,11 +1110,11 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 
 | Phase | Target |
 |-------|--------|
-| **Done** | **MC · NHC · Allan tooling · EKF v2** · estimate↔nav vocab · A5 triage · EKF edge · **NHC ops policy + integrity RapidCheck** · GAP-3 video script · fuzz · CI |
-| **Now** | A3 domain Q/R profiles · Allan fit (static IMU hours) · harden clang-tidy gate |
+| **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 video pack/stills** · **host fault smoke** · Allan runbook/smoke · field-outage checklist |
+| **Now (you)** | **Record/publish GAP-3 video** · multi-hour IMU → Allan **fit** · Pico outage CSV · **PPK2** |
 | **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
-| **Also pending** | Allan **fit** publish · WCET S0–S7 on-board (protocol ready) · fault-injection bank artefacts |
-| **Visibility** | GAP-3 **guion** listo · grabación Unity pendiente · comunidades con PPK2/campo |
+| **Also pending** | Physical fault-injection bank · WCET S0–S7 on-board · A3 domain Q/R |
+| **Visibility** | GAP-3 **pack** ready ([VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md)) · publish link when recorded |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).
 

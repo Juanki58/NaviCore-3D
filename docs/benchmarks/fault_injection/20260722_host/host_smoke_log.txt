@@ -1,0 +1,73 @@
+NaviCore-3D host fault/integrity smoke
+UTC: 2026-07-22T08:23:11Z
+
+$ C:\NaviCore-3D\build\navicore_unit_tests.exe [fault],[nmea],[ubx],[wt61c],[nhc_ops],[rapidcheck][integrity] --reporter compact
+Filters: [fault],[nmea],[ubx],[wt61c],[nhc_ops],[rapidcheck] [integrity]
+RNG seed: 1676260875
+Using configuration: max_success=300 seed=1784708591
+
+- SW spoof jump on continuous track must trip consistency gate
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+OK, passed 300 tests
+
+- sub-metre multipath-scale jump must not trip spoof consistency
+OK, passed 300 tests
+All tests passed (542 assertions in 16 test cases)
+
+
+
+[exit 0]
+
+$ C:\NaviCore-3D\build\navicore_regression_test.exe --safety-inject
+NaviCore-3D safety-inject suite (CI)
+====================================
+[TEST] ins_ekf_gravity_compensation
+  PASS
+[TEST] gnss_physical_inconsistency_spoof
+GNSS_NIS_DECISION t_ms=0 n_meas=3 NIS_used=0.000000 thr=11.345000 innov=[0.000,0.000,-0.000,0.000,0.000] contrib=[0.000,0.000,-0.000,0.000,0.000] S_diag=[10.000,10.000,15.000,0.000,0.000] decision=accept reason=0
+  PASS
+[TEST] imu_nan_reject
+  PASS
+[TEST] waypoint_full_ingest_reject
+  PASS
+[TEST] time_guard_wcet
+  PASS
+[TEST] geometry_guard_discontinuity
+  PASS
+[TEST] nmea_ubx_corrupt_wire
+  PASS
+[TEST] fault_imu_silence_policy
+  PASS
+[TEST] fault_uart_overflow_and_power
+  PASS
+====================================
+Regression report: docs/regression_report.json
+RESULT: OK (9 safety-inject tests)
+
+[exit 0]
+
+SUMMARY unit=0 safety_inject=0

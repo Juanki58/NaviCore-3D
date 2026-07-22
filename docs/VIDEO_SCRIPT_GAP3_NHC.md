@@ -4,9 +4,10 @@
 **Escena:** Unity EKF Explorer / Cesium (mapa + HUD de modo/calidad)  
 **Mensaje único:** *“NHC always-on no es gratis — en nuestro banco, empeora el dead reckoning frente a NHC off.”*
 
-Artefactos: [`docs/nhc_experiments/manifest.json`](nhc_experiments/manifest.json) · Evidence scorecard en README.
+Artefactos: [`docs/nhc_experiments/manifest.json`](nhc_experiments/manifest.json) · Evidence scorecard en README.  
+**Producción:** [`VIDEO_GAP3_PRODUCTION.md`](VIDEO_GAP3_PRODUCTION.md) · stills `docs/video_gap3/stills/` (title / bars / policy).
 
-Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”. See [`docs/NHC_OPS_POLICY.md`](NHC_OPS_POLICY.md).
+Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”. See [`NHC_OPS_POLICY.md`](NHC_OPS_POLICY.md).
 
 ---
 

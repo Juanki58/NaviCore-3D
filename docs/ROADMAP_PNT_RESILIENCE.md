@@ -61,11 +61,12 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 | B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** si falta instrumento Nordic | Compra **aparte** de Artemis · Pico alimentado → tabla mA/mW en README |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
 | B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | Diseño Comarruga · Pico encendido · **cierra con README** · cuidado flash |
-| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook listo · **tras encender Pico2/WT61C** | No espera Artemis · fusión publicada hoy = SensorLogger · [RUNBOOK](allan/RUNBOOK.md) · **cierra con README** |
+| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook listo · **tras encender DUT** | Pico2 o Adalogger cuando esté powered · [RUNBOOK](allan/RUNBOOK.md) · **cierra con README** |
+| B7 | Target **rp2040_adalogger** + MTK3339 (NMEA/PMTK) + IMU I2C AMG | **Plan listo** · al llegar pedido | Software primero — [TARGET_RP2040_ADALOGGER_PORT.md](TARGET_RP2040_ADALOGGER_PORT.md) · no reutilizar WT61C/NEO-M9N BSP tal cual |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
-**No cambiar de chip hasta tener el número PPK2 del Pico.** Luego, mismo escenario GPS-denied documentado en cada placa:
+**No cambiar de chip de marketing hasta tener PPK2 en el DUT que realmente enciendas** (Pico2 y/o Adalogger). Luego A/B consumo/latencia.
 
 | Paso | Plataforma | Esfuerzo | Objetivo |
 |------|------------|----------|----------|
@@ -136,8 +137,12 @@ No adelantar Ambiq/Artemis, ZUPT “porque apetece”, ni visibilidad fuerte por
 5. Apollo4 + A2b si el mercado lo pide  
 6. Visibilidad externa fuerte (C3+) **solo** con números medidos en Evidence  
 
-**Ahora:** alimentar Pico2 + WT61C (Allan) · trayecto outage + GPX.  
-**En paralelo si falta:** pedir Nordic PPK2 (no es el kit Artemis).
+**En paralelo (no espera el pedido Adalogger/Artemis):**  
+- GAP-3 MP4 **hecho**.  
+- **Conseguir Nordic PPK2** — el dato que más pesa antes de hablar fuera.  
+- Si puedes: encender Pico2 Comarruga (Allan/outage).  
+
+**Cuando llegue el pedido Adalogger:** trabajo **de software primero** — port `pico2_hardware` → `rp2040_adalogger`, drivers MTK3339 (NMEA/PMTK) + IMU I2C AMG — ver [TARGET_RP2040_ADALOGGER_PORT.md](TARGET_RP2040_ADALOGGER_PORT.md). Luego README con DUT real (Adalogger ≠ Pico2), misma disciplina que `33f4739`.
 
 
 ---

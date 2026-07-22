@@ -35,5 +35,15 @@
 ## After the run
 
 1. Commit CSV + short `NOTES.md` (route, weather, IMU, GNSS module).  
-2. Paste table into README Evidence (field section).  
-3. Optional: still plot for LinkedIn alongside GAP-3 video.
+2. **Mandatory:** paste drift @ 30/60/120 s (+ reacquire) into **README Evidence** — see [`EVIDENCE_CLOSEOUT.md`](../../EVIDENCE_CLOSEOUT.md).  
+3. Flip roadmap **B1** to Hecho with links to folder **and** README anchor.  
+4. Optional: still plot for LinkedIn alongside GAP-3 video.
+
+## Done when
+
+- [ ] CSV + NOTES under `docs/benchmarks/field_outage/<date>/`  
+- [ ] README Evidence table updated (not only the folder)  
+- [ ] Honest numbers — no cherry-pick  
+
+**CSV alone does not close B1.**
+

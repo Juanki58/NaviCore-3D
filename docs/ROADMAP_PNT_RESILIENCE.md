@@ -56,12 +56,12 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 
 | # | Prueba | Estado | Notas |
 |---|--------|--------|-------|
-| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Checklist listo · run pendiente | [field_outage/CHECKLIST.md](benchmarks/field_outage/CHECKLIST.md) · DUT Pico 2 W |
+| B1 | Campo + verdad de terreno (túnel/urbano) — GPX móvil OK | Checklist listo · run pendiente | [field_outage/CHECKLIST.md](benchmarks/field_outage/CHECKLIST.md) · **cierra con README** ([EVIDENCE_CLOSEOUT](EVIDENCE_CLOSEOUT.md)) |
 | B2 | Vibración real (vehículo/dron) | Pendiente | El sintético no sustituye |
-| B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** | Baseline obligatorio antes de comparar Ambiq |
+| B3 | Consumo **PPK2 en Pico 2 W** | **Bloqueante** | Baseline → tabla mA/mW en README Power |
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
-| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | [20260722_host](benchmarks/fault_injection/20260722_host/) · [FAULT_INJECTION_LAB.md](FAULT_INJECTION_LAB.md) |
-| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook + smoke · falta DUT horas | [allan/RUNBOOK.md](allan/RUNBOOK.md) · smoke ≠ publish |
+| B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | [20260722_host](benchmarks/fault_injection/20260722_host/) · **cierra con README** · cuidado flash ([lab](FAULT_INJECTION_LAB.md)) |
+| B6 | Log estático multi-hora → **Allan fit** publicado | Runbook + smoke · falta DUT horas | [allan/RUNBOOK.md](allan/RUNBOOK.md) · **cierra con README** Evidence Allan |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
@@ -110,15 +110,23 @@ Esquema CSV (una línea por muestra):
 
 ## Orden operativo recomendado
 
-0. **Ya bancado (no rehacer):** S1–S5 + Evidence + A12 NHC ops + integrity RapidCheck + GAP-3 video **pack** + host fault smoke  
-1. **Grabar/publicar vídeo GAP-3** (C1 — stills listos; 90–120 s)  
-2. Log estático → **Allan fit** (B6 / cierra S3)  
-3. **PPK2 Pico** (B3) + campo outage (B1) + fault físico (B5)  
-4. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
-5. Apollo4 + A2b si el mercado lo pide  
-6. Visibilidad externa fuerte (C3+) solo con números medidos de hardware  
+**Secuencia mínima (no romper):**  
+`vídeo GAP-3` → `Allan fit` → `outage Pico` → `PPK2` → **entonces** hablar fuera / pensar silicio (Ambiq).
 
-**Tu turno (hardware / VO):** dejar IMU quieto horas · grabar VO del pack · una salida Pico con outage.
+No adelantar Ambiq, ZUPT “porque apetece”, ni visibilidad fuerte porque llegó un kit — el orden es esfuerzo/impacto, no moda.
+
+**Regla de cierre:** Allan, outage y fault-injection **físico** terminan cada uno con tabla en **README Evidence**, no solo CSV — [`EVIDENCE_CLOSEOUT.md`](EVIDENCE_CLOSEOUT.md).
+
+0. **Ya bancado (no rehacer):** S1–S5 + Evidence + A12 NHC ops + integrity RapidCheck + GAP-3 video **pack** + host fault smoke  
+1. **Grabar/publicar vídeo GAP-3** (C1 — stills listos; 90–120 s) + link en README Visibility  
+2. Log estático → **Allan fit** (B6) → **pegar ARW/BI en README**  
+3. Campo outage Pico (B1) → **pegar curva en README** + fault físico (B5) → **pegar pass/fail en README** (cuidado flash en brownout: ver FAULT_INJECTION_LAB)  
+4. **PPK2 Pico** (B3) → tabla mA/mW en README Power  
+5. Port Artemis/Apollo3 + A/B consumo/latencia vs Pico  
+6. Apollo4 + A2b si el mercado lo pide  
+7. Visibilidad externa fuerte (C3+) **solo** con números medidos de hardware en Evidence  
+
+**Tu turno (hardware / VO):** grabar VO del pack · IMU quieto horas · una salida Pico con outage · PPK2.
 
 ---
 

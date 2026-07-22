@@ -51,5 +51,8 @@ python analyze_allan.py --csv docs\allan\smoke\imu_static_smoke_60s.csv --sensor
 ## Done when
 
 - [ ] `docs/imu_static_log.csv` (hours) committed or linked  
-- [ ] PNG + ARW/BI numbers in README Evidence scorecard  
-- [ ] One-line note: DUT model, fs, duration, date
+- [ ] PNG + ARW/BI numbers in **README Evidence scorecard** (mandatory — see [`EVIDENCE_CLOSEOUT.md`](../EVIDENCE_CLOSEOUT.md))  
+- [ ] One-line note: DUT model, fs, duration, date  
+
+**CSV alone does not close B6 / S3.**
+

@@ -45,6 +45,16 @@ parsers). This document is the **on-target** checklist: physical faults must mov
 3. Restore power; confirm boot banner + `health_monitor_init` path; no hung WDT loop.
 4. Pass criteria: boot completes; sensors re-init; no permanent CRITICAL latch without cause.
 
+### Care — flash wear (brownout / WDT campaigns)
+
+Repeated brownout or forced-reset cycles can **consume flash endurance** if the firmware writes configuration / logs / counters on every boot. Before a full multi-cycle bank campaign:
+
+1. Confirm the **lab build** does not `flash`/`EEPROM`/filesystem-commit config on each cold start (prefer RAM-only or one-shot factory defaults for stress runs).  
+2. Prefer fewer deliberate cuts with clear CDC evidence over hundreds of unsupervised power cycles.  
+3. If a future build adds persistent config, use a **no-persist** lab flag for B5.
+
+This is hardware care, not a change to the fault-injection methodology.
+
 ## Procedure — task starvation (debug)
 
 1. In GDB, break inside a long critical section **or** busy-wait > `PICO2_RX_PUMP_MAX_IDLE_US` without feeding WDT (careful: may reset).
@@ -72,4 +82,7 @@ cmake --build build_fuzz --target navicore_sensor_wire_fuzz
 
 Store pass/fail + CDC excerpts under `docs/benchmarks/fault_injection/<YYYYMMDD>/` when a campaign is run.
 
+**Closeout (physical bank):** update **README Evidence** with a pass/fail table — CSV folder alone is not enough ([`EVIDENCE_CLOSEOUT.md`](EVIDENCE_CLOSEOUT.md)).
+
 **Host smoke (policy mirrors, 2026-07-22):** [`docs/benchmarks/fault_injection/20260722_host/`](benchmarks/fault_injection/20260722_host/) — re-run with `python tools/run_fault_injection_host_smoke.py`.
+

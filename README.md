@@ -327,10 +327,12 @@ cmake --build build --target navicore_sensor_wire_fuzz_standalone
 
 CI job: `sensor-wire-fuzz` in [code-audit.yml](.github/workflows/code-audit.yml).
 
-### Hardware fault injection (lab)
+## Hardware fault injection (lab)
 
 Host tests assert **policy**. On-target checklist (unplug IMU, UART flood, UPS/I2C, hard power cut, WDT):  
 [`docs/FAULT_INJECTION_LAB.md`](docs/FAULT_INJECTION_LAB.md). Pico now treats IMU silence ≥ `PICO2_IMU_SILENCE_DEGRADE_MS` as `imu_degraded`.
+
+Before multi-cycle brownout/WDT: confirm the lab build is **not** writing flash/config on every boot (flash endurance). Physical campaign closeout = pass/fail table in Evidence ([`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md)).
 
 ### Code audit (A5) — baseline + CI
 
@@ -348,13 +350,18 @@ Host tests assert **policy**. On-target checklist (unplug IMU, UART flood, UPS/I
 
 ### Still missing for “demo-ready” credibility
 
-| Gap | Why it matters |
-|-----|----------------|
-| PPK2 current on Pico 2 W | “Ultra-low power” stays architectural until measured |
-| Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware |
-| Allan **fit** table from hours of static IMU | Tool ships; paste IEEE ARW/BI here after `imu_static_log.csv` |
-| Logged lab fault-injection campaign | Host policy covered; fill `docs/benchmarks/fault_injection/` after bank run |
-| Field + PPK2 artefacts published | Coast curve + mA/mW table still empty — needed before “going viral” |
+**Closeout rule:** Allan fit, Pico field outage, and physical fault-injection each end with a **README Evidence** table — not only a CSV folder. See [`docs/EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md).
+
+| Gap | Why it matters | Done when |
+|-----|----------------|-----------|
+| PPK2 current on Pico 2 W | “Ultra-low power” stays architectural until measured | mA/mW table in README Power |
+| Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware | CSV **+** Evidence drift table ([checklist](docs/benchmarks/field_outage/CHECKLIST.md)) |
+| Allan **fit** table from hours of static IMU | Tool ships; paste IEEE ARW/BI after `imu_static_log.csv` | PNG **+** Evidence Allan row ([runbook](docs/allan/RUNBOOK.md)) |
+| Logged lab fault-injection campaign | Host smoke done; physical bank pending | Pass/fail **+** Evidence table ([lab](docs/FAULT_INJECTION_LAB.md); care: flash on brownout cycles) |
+| Field + PPK2 artefacts published | Coast curve + mA/mW still empty — needed before “going viral” | Both visible in README |
+
+**Do not break the sequence:** vídeo → Allan → outage Pico → PPK2 → then external talk / Ambiq silicon. Do not jump to Ambiq or early ZUPT because hardware arrived or curiosity spiked ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
+
 
 ### Diagnostic campaign (real-run)
 
@@ -1111,10 +1118,11 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 video pack/stills** · **host fault smoke** · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | **Record/publish GAP-3 video** · multi-hour IMU → Allan **fit** · Pico outage CSV · **PPK2** |
-| **Hardware** | **PPK2 Pico** → field outage → Artemis/Apollo3 A/B → Apollo4 |
-| **Also pending** | Physical fault-injection bank · WCET S0–S7 on-board · A3 domain Q/R |
+| **Now (you)** | **Record/publish GAP-3 video** · Allan fit → **README** · Pico outage → **README** · fault bank → **README** · **PPK2** |
+| **Hardware** | Stay on sequence: PPK2 Pico → field → Artemis/Apollo3 — **not** Ambiq first |
+| **Also pending** | Physical fault-injection bank (flash-wear care) · WCET S0–S7 · A3 domain Q/R |
 | **Visibility** | GAP-3 **pack** ready ([VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md)) · publish link when recorded |
+| **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).
 

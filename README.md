@@ -369,7 +369,8 @@ Before multi-cycle brownout/WDT: confirm the lab build is **not** writing flash/
 | Logged lab fault-injection campaign | Host smoke done; physical bank pending | Pass/fail **+** Evidence table ([lab](docs/FAULT_INJECTION_LAB.md); care: flash on brownout cycles) |
 | Field + PPK2 artefacts published | Coast curve + mA/mW still empty — needed before “going viral” | Both visible in README |
 
-**Do not break the sequence:** vídeo → Allan → outage Pico → PPK2 → then external talk / Ambiq silicon. Do not jump to Ambiq or early ZUPT because hardware arrived or curiosity spiked ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
+**Do not break the sequence:** vídeo (done) → Allan → outage Pico → PPK2 → then external talk / Artemis–Ambiq silicon.  
+**Do not wait for Artemis to start Allan or outage** — both run on the existing Pico2 + WT61C Comarruga bank. PPK2 needs the Nordic instrument (independent buy), still measured on Pico2 first ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
 
 
 ### Diagnostic campaign (real-run)
@@ -574,15 +575,14 @@ Replay of phone CSVs remains valuable for algorithm A/B (v1/v2); **embedded DR p
 
 The project tagline includes **ultra-low power / edge MCU**. That claim is currently **architectural** (zero-heap hot path, Pico 2 W target, non-blocking USB) — **not** yet backed by a published current draw from a Nordic **Power Profiler Kit II (PPK2)** or equivalent.
 
-**Priority before adding Pi Zero, Ambiq, or other boards:** measure the **Pico 2 W** running the real firmware. It is the cheapest, fastest experiment and the one that most directly supports (or falsifies) the central product claim.
+**Priority before adding Pi Zero, Ambiq, or Artemis:** measure the **Pico 2 W** running the real firmware. Allan fit and field outage also use that **same Comarruga Pico2 bank** — they do **not** wait on the Artemis/GPS/IMU order. The Nordic **PPK2 instrument** is a separate purchase from Artemis; when you have it, profile Pico2 first, then port.
 
-| Do first | Do later |
-|----------|----------|
-| PPK2 on Pico 2 W + document mA / mW here | Pi Zero as parallel truth logger |
-| Same for IMU+GNSS on / off profiles | Port to Ambiq **before** Pico PPK2 baseline |
-| After Pico numbers: Artemis/Apollo3 same GPS-denied scenario | Claim “ultra-low power” without measured mA |
-| Later: Apollo4 (+ edge AI for richer integrity) | Skip Artemis and jump straight to Apollo510 |
-| Freeze build hash + profile in the table | Marketing “µA-class” without numbers |
+| Do first (Pico2 already on bench) | Do later |
+|-----------------------------------|----------|
+| Allan static hours on WT61C → README | Wait for Artemis kit to start science |
+| Field outage + phone GPX → README | Port to Ambiq **before** Pico PPK2 baseline |
+| PPK2 on Pico 2 W + document mA / mW here | Claim “ultra-low power” without measured mA |
+| After Pico numbers: Artemis/Apollo3 same GPS-denied scenario | Skip Artemis and jump straight to Apollo510 |
 
 ### Measurement protocol (lab)
 
@@ -1127,9 +1127,9 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 MP4 ES+EN** · host fault smoke · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | Allan fit → **README** · Pico outage → **README** · fault bank → **README** · **PPK2** · (optional YouTube mirror of GAP-3) |
-| **Hardware** | Stay on sequence: PPK2 Pico → field → Artemis/Apollo3 — **not** Ambiq first |
-| **Also pending** | Physical fault-injection bank (flash-wear care) · WCET S0–S7 · A3 domain Q/R |
+| **Now (you)** | **Allan + outage on Pico2 Comarruga now** (no wait for Artemis) → README · **PPK2** when Nordic instrument available · then Artemis |
+| **Hardware** | Pico2 bank first: Allan → field outage → **PPK2 on Pico** → **then** Artemis/Apollo3 — **not** Ambiq/Artemis first |
+| **Also pending** | Nordic PPK2 instrument (separate buy if missing) · physical fault bank · WCET S0–S7 · A3 domain Q/R |
 | **Visibility** | **GAP-3 published on GitHub** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · pack [VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md) |
 | **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |
 

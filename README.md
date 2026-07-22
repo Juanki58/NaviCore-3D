@@ -218,14 +218,14 @@ G-arm dose-response (lateral/vertical σ variants) is fully tabulated in the man
 
 Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnostics/10-gap3-ins-model-audit.md`](docs/diagnostics/10-gap3-ins-model-audit.md) · **video pack** [`docs/VIDEO_GAP3_PRODUCTION.md`](docs/VIDEO_GAP3_PRODUCTION.md).
 
-**Explainer videos (stills + TTS, in-repo):**
+**Explainer videos (published on GitHub):**
 
-| Lang | File |
-|------|------|
-| ES | [`docs/video_gap3/NaviCore_GAP3_NHC.mp4`](docs/video_gap3/NaviCore_GAP3_NHC.mp4) |
-| EN | [`docs/video_gap3/NaviCore_GAP3_NHC_en.mp4`](docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) |
+| Lang | Watch / download |
+|------|------------------|
+| ES | [blob](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [raw](https://raw.githubusercontent.com/Juanki58/NaviCore-3D/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) |
+| EN | [blob](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · [raw](https://raw.githubusercontent.com/Juanki58/NaviCore-3D/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) |
 
-Regenerate: `python tools/render_gap3_video.py`. YouTube/LinkedIn public URLs → paste under Roadmap Visibility when published (Evidence closeout).
+Pack / regenerate: [`docs/VIDEO_GAP3_PRODUCTION.md`](docs/VIDEO_GAP3_PRODUCTION.md) · `python tools/render_gap3_video.py`. Optional YouTube mirrors: paste URLs here when uploaded.
 
 ### Allan variance (IEEE 952) — methodology shipped
 
@@ -1127,10 +1127,10 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 MP4 ES+EN** · host fault smoke · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | **Publish GAP-3 videos** (YouTube unlisted → link here) · Allan fit → **README** · Pico outage → **README** · fault bank → **README** · **PPK2** |
+| **Now (you)** | Allan fit → **README** · Pico outage → **README** · fault bank → **README** · **PPK2** · (optional YouTube mirror of GAP-3) |
 | **Hardware** | Stay on sequence: PPK2 Pico → field → Artemis/Apollo3 — **not** Ambiq first |
 | **Also pending** | Physical fault-injection bank (flash-wear care) · WCET S0–S7 · A3 domain Q/R |
-| **Visibility** | MP4 in repo: [ES](docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · pack [VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md) · **YouTube URLs TBD** |
+| **Visibility** | **GAP-3 published on GitHub** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · pack [VIDEO_GAP3_PRODUCTION.md](docs/VIDEO_GAP3_PRODUCTION.md) |
 | **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |
 
 **Spoofing:** validate only via **software NMEA / trajectory injection**. Do **not** RF-spoof or jam GNSS without spectrum authorisation (illegal in ES/EU).

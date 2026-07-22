@@ -1,4 +1,26 @@
-# Cómo hacer el vídeo GAP-3 (paso a paso, sin Unity)
+# Cómo hacer el vídeo GAP-3
+
+## Opción 0 — Ya está hecho (recomendado)
+
+Hay un MP4 generado automáticamente:
+
+`C:\NaviCore-3D\docs\video_gap3\NaviCore_GAP3_NHC.mp4`
+
+(~70 s, stills del manifiesto + voz TTS en español)
+
+1. Ábrelo y comprueba que suena bien.  
+2. Súbelo a [YouTube](https://www.youtube.com/upload) → visibilidad **No listado**.  
+3. Pega la URL aquí en el chat o en README Visibility.
+
+Regenerar:
+
+```powershell
+python tools\render_gap3_video.py
+```
+
+---
+
+## Opción 1 — CapCut a mano (si quieres tu voz)
 
 No hace falta Cesium ni saber editar. Solo: **3 imágenes del repo + tu voz + CapCut**.
 

@@ -21,11 +21,15 @@ python tools\plot_gap3_video_assets.py
 
 ## Dos caminos de grabación
 
-### A — Rápido (sin Unity, hoy)
+**Guía de principiante (CapCut):** [`VIDEO_GAP3_HOWTO.md`](VIDEO_GAP3_HOWTO.md)
 
-**Guía de principiante (sigue esta):** [`VIDEO_GAP3_HOWTO.md`](VIDEO_GAP3_HOWTO.md) — CapCut + 3 PNG + VO leída en voz alta.
+**MP4 ya generado (sin CapCut):** `docs/video_gap3/NaviCore_GAP3_NHC.mp4`  
+Regenerar: `python tools/render_gap3_video.py` (voz TTS española + stills).
 
-Resumen: timeline title → bars → policy → export 1080p30 → YouTube no listado → link en README.
+### A — Rápido (sin Unity)
+
+1. Abre el MP4 generado **o** sigue el HOWTO CapCut.  
+2. Sube a YouTube (no listado) → pega URL en README Visibility.
 
 ### B — Instrumento (Unity + Cesium, local)
 

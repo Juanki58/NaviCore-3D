@@ -26,6 +26,7 @@ telemetry_log.csv
 _tmp_*.py
 *.zip
 ekf_explorer/
+docs/video_gap3/_render_work/
 data/real_run/_peek_0717/
 docs/benchmarks/static_analysis/coverage_html/
 **/nhc_block_audit.csv

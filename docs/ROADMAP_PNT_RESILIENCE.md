@@ -26,16 +26,17 @@ Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan
 | # | Ítem | Estado | Notas |
 |---|------|--------|-------|
 | A1 | Documentar ESKF (estado, Q/R, innovaciones) | **Hecho** | [README § Fusion algorithm](../README.md#fusion-algorithm--what-it-is--what-it-is-not) |
-| A2 | Detección de **inconsistencia** (reglas / gate) | **Hecho (v1)** | `reject_reason=3`; gap corto; test SW spoof. **No** bloquea B-Ambiq |
+| A2 | Detección de **inconsistencia** (reglas / gate) | **Hecho (v1)** | `reject_reason=3`; gap corto; test SW spoof + **RapidCheck integrity** |
 | A2b | Spoof / inconsistencia **on-device ligero** (reglas→modelo) | Más tarde | Ideal en **Apollo4** (edge AI); no sustituye A2 v1 |
 | A3 | Perfiles de dominio configurables (Q/R tierra/aire/mar) | Pendiente | Núcleo unificado + tuning por vertical |
-| A4 | Suite de tests formal + spoof + properties | **Parcial→mejorado** | Catch2 + RapidCheck + `--safety-inject` + **`test_ins_ekf_edge`** (init/NaN/invalid/dt) |
+| A4 | Suite de tests formal + spoof + properties | **Mejorado** | Catch2 + RapidCheck + `--safety-inject` + edge + **integrity props** + **NHC ops CI** |
 | A5 | cppcheck / clang-tidy + sanitizers + cobertura | **Triage hecho** | [TRIAGE_A5.md](benchmarks/static_analysis/TRIAGE_A5.md); fixes style; tidy CI soft; ASan hard |
 | A6 | Fuzzing parsers NMEA/UBX/WT61C (libFuzzer) | **Hecho (v1)** | CI smoke 60 s; corpus `tests/fuzz/corpus/` |
 | A7 | Fault injection policy (host) + lab protocol | **Parcial** | Host OK; banco físico pendiente de campaña registrada |
 | A8 | Matriz NavMode documentada + tests | **Hecho (v1)** | [NAV_MODE_DEGRADATION.md](NAV_MODE_DEGRADATION.md) |
 | A9 | WDT externo independiente del die | **API lista** | `bsp_ext_wdt` + GP15 |
 | A11 | Vocabulario genérico estimate vs Nav* | **Hecho (v1)** | [ESTIMATE_ENGINE_VS_NAV_VOCAB.md](ESTIMATE_ENGINE_VS_NAV_VOCAB.md) · aliases · sin rewrite EKF |
+| A12 | Política NHC operativa (GAP-3 freeze) | **Hecho (v1)** | [NHC_OPS_POLICY.md](NHC_OPS_POLICY.md) · `nhc_ops_policy.hpp` · `ALWAYS` no production-safe |
 
 ### Spoofing — solo software
 
@@ -117,7 +118,7 @@ Esquema CSV (una línea por muestra):
 5. Apollo4 + A2b si el mercado lo pide  
 6. Visibilidad externa fuerte (C3+) solo con números medidos de hardware  
 
-Prioridad de código en paralelo (barato): **A5** (sanitizers/tidy triage) → **A4** (más edge cases EKF) → fuzz ya en v1.
+Prioridad de código en paralelo (barato): Allan fit / A3 Q/R · fault-injection banco · grabar vídeo GAP-3. **A12 NHC ops + integrity RapidCheck ya cerrados.**
 
 ---
 

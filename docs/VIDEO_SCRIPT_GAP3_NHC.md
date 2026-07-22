@@ -6,6 +6,8 @@
 
 Artefactos: [`docs/nhc_experiments/manifest.json`](nhc_experiments/manifest.json) · Evidence scorecard en README.
 
+Operational policy: **NHC off** or **gap-triggered (v2)** — not “always on”. See [`docs/NHC_OPS_POLICY.md`](NHC_OPS_POLICY.md).
+
 ---
 
 ## Hook (0–10 s)

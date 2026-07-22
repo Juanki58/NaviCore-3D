@@ -1,5 +1,10 @@
 # NaviCore-3D: Edge INS for GPS-degraded / GPS-denied resilience
 
+> **Auditors / cached fetches:** do not trust a stale HTML view of `/`. Pin a commit.  
+> Current `main` HEAD at push of this note: see latest on GitHub. Correction of overclaimed Pico bench: **`33f4739`**. Latest plan docs: **`ea07d37`**.  
+> Raw README (no HTML cache): https://raw.githubusercontent.com/Juanki58/NaviCore-3D/ea07d37/README.md  
+> Mission row must say *hardware bench validation pending* + *SensorLogger* — **not** “Pico 2 W validated in Comarruga lab”.
+
 ```cpp
 // Haiku del Programador Defensivo en C++
 //

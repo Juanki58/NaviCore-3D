@@ -2,20 +2,24 @@
 
 ## Opción 0 — Ya está hecho (recomendado)
 
-Hay un MP4 generado automáticamente:
+MP4 generados automáticamente:
 
-`C:\NaviCore-3D\docs\video_gap3\NaviCore_GAP3_NHC.mp4`
+| Idioma | Archivo |
+|--------|---------|
+| ES | `C:\NaviCore-3D\docs\video_gap3\NaviCore_GAP3_NHC.mp4` |
+| EN | `C:\NaviCore-3D\docs\video_gap3\NaviCore_GAP3_NHC_en.mp4` |
 
-(~70 s, stills del manifiesto + voz TTS en español)
+(~70 s, stills del manifiesto + voz TTS)
 
-1. Ábrelo y comprueba que suena bien.  
-2. Súbelo a [YouTube](https://www.youtube.com/upload) → visibilidad **No listado**.  
-3. Pega la URL aquí en el chat o en README Visibility.
+1. Ábrelos y comprueba que suenan bien.  
+2. Súbelos a [YouTube](https://www.youtube.com/upload) → visibilidad **No listado** (puedes hacer dos vídeos o un playlist).  
+3. Pega las URLs aquí en el chat o en README Visibility.
 
 Regenerar:
 
 ```powershell
-python tools\render_gap3_video.py
+python tools\render_gap3_video.py          # ES + EN
+python tools\render_gap3_video.py --lang en
 ```
 
 ---

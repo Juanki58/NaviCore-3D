@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Render GAP-3 explainer MP4 from banked stills + Spanish TTS (edge-tts).
+"""Render GAP-3 explainer MP4 from banked stills + TTS (edge-tts).
 
-No CapCut/Unity required. Output: docs/video_gap3/NaviCore_GAP3_NHC.mp4
+No CapCut/Unity required.
+  ES: docs/video_gap3/NaviCore_GAP3_NHC.mp4
+  EN: docs/video_gap3/NaviCore_GAP3_NHC_en.mp4
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -17,13 +21,12 @@ REPO = Path(__file__).resolve().parents[1]
 STILLS = REPO / "docs" / "video_gap3" / "stills"
 OUT_DIR = REPO / "docs" / "video_gap3"
 WORK = OUT_DIR / "_render_work"
-OUT_MP4 = OUT_DIR / "NaviCore_GAP3_NHC.mp4"
 
-# Spanish neural voice (Microsoft Edge TTS)
-VOICE = "es-ES-AlvaroNeural"
-
-# Full VO matching HOWTO / script (synthetic bank numbers from manifest)
-VO_SCRIPT = """
+LANGS = {
+    "es": {
+        "voice": "es-ES-AlvaroNeural",
+        "out": OUT_DIR / "NaviCore_GAP3_NHC.mp4",
+        "script": """
 En navegación inercial sin GPS, mucha gente pone Non-Holonomic Constraints a tope.
 Nosotros medimos qué pasa.
 
@@ -44,14 +47,41 @@ NaviCore-3D: resiliencia GNSS con evidencia publicada.
 Monte Carlo, matriz NHC, tooling Allan. MIT, zero-heap, auditable.
 GitHub: Juanki58 / NaviCore-3D.
 Reproduce con NaviCore3D Sim, opción nhc-experiments.
-""".strip()
+""".strip(),
+    },
+    "en": {
+        "voice": "en-US-GuyNeural",
+        "out": OUT_DIR / "NaviCore_GAP3_NHC_en.mp4",
+        "script": """
+In GPS-denied inertial navigation, a lot of people turn Non-Holonomic Constraints all the way up.
+We measured what happens.
 
-# Visual beats (fractions of total audio length)
+Same synthetic super-tunnel scenario, same IMU, same exit.
+Only the NHC policy changes.
+
+With NHC off, tunnel-exit drift is about four hundred ninety-three metres,
+and when GNSS returns, it re-anchors.
+
+With NHC always-on, exit drift jumps to about one thousand four hundred eight metres.
+The filter trusts vehicle velocity too much, and coasting gets worse.
+Even the best tuning arm still loses to turning NHC off.
+
+That is why we do not ship NHC always-on in production.
+Policy: NHC off, or gap-triggered in the v2 core — not always-on.
+
+NaviCore-3D: GNSS resilience with published evidence.
+Monte Carlo, NHC matrix, Allan tooling. MIT, zero-heap, auditable.
+GitHub: Juanki58 / NaviCore-3D.
+Reproduce with NaviCore3D Sim, flag nhc-experiments.
+""".strip(),
+    },
+}
+
 BEATS = [
     ("00_title_card.png", 0.12),
     ("01_exit_drift_bars.png", 0.50),
     ("02_policy_card.png", 0.23),
-    ("00_title_card.png", 0.15),  # end card reuse
+    ("00_title_card.png", 0.15),
 ]
 
 
@@ -65,15 +95,14 @@ def fit_1080(src: Path, dst: Path) -> None:
     canvas.save(dst, "PNG")
 
 
-async def synth_voice(mp3: Path) -> None:
+async def synth_voice(mp3: Path, text: str, voice: str) -> None:
     import edge_tts
 
-    communicate = edge_tts.Communicate(VO_SCRIPT, VOICE)
+    communicate = edge_tts.Communicate(text, voice)
     await communicate.save(str(mp3))
 
 
 def ffprobe_duration(ffmpeg: str, media: Path) -> float:
-    # imageio-ffmpeg ships ffmpeg only; parse duration via ffmpeg -i stderr
     p = subprocess.run(
         [ffmpeg, "-i", str(media)],
         capture_output=True,
@@ -82,12 +111,6 @@ def ffprobe_duration(ffmpeg: str, media: Path) -> float:
         errors="replace",
     )
     err = p.stderr or ""
-    for part in err.replace(",", " ").split():
-        # look for Duration: HH:MM:SS.xx
-        pass
-    # Robust parse
-    import re
-
     m = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.\d+)", err)
     if not m:
         raise RuntimeError(f"Could not parse duration from {media}\n{err[-800:]}")
@@ -98,19 +121,19 @@ def ffprobe_duration(ffmpeg: str, media: Path) -> float:
 def build_concat_list(durations: list[tuple[Path, float]], list_path: Path) -> None:
     lines: list[str] = []
     for path, dur in durations:
-        # ffmpeg concat demuxer wants forward slashes on Windows too
         p = path.resolve().as_posix()
         lines.append(f"file '{p}'")
         lines.append(f"duration {dur:.3f}")
-    # last file must be repeated without duration for concat demuxer
     last = durations[-1][0].resolve().as_posix()
     lines.append(f"file '{last}'")
     list_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def main() -> int:
+def render_one(lang: str) -> int:
+    cfg = LANGS[lang]
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
-    WORK.mkdir(parents=True, exist_ok=True)
+    work = WORK / lang
+    work.mkdir(parents=True, exist_ok=True)
 
     for name, _ in BEATS:
         src = STILLS / name
@@ -118,81 +141,108 @@ def main() -> int:
             print(f"Missing still: {src}", file=sys.stderr)
             return 1
 
-    print("1/4 TTS Spanish voice…")
-    mp3 = WORK / "vo_es.mp3"
-    asyncio.run(synth_voice(mp3))
+    print(f"[{lang}] 1/4 TTS…")
+    mp3 = work / "vo.mp3"
+    asyncio.run(synth_voice(mp3, cfg["script"], cfg["voice"]))
 
-    print("2/4 Fit stills to 1080p…")
+    print(f"[{lang}] 2/4 Fit stills…")
     fitted: list[Path] = []
     for i, (name, _) in enumerate(BEATS):
-        dst = WORK / f"frame_{i:02d}.png"
+        dst = work / f"frame_{i:02d}.png"
         fit_1080(STILLS / name, dst)
         fitted.append(dst)
 
     audio_s = ffprobe_duration(ffmpeg, mp3)
-    print(f"   VO duration: {audio_s:.1f} s")
+    print(f"[{lang}]    VO duration: {audio_s:.1f} s")
     fracs = [f for _, f in BEATS]
     s = sum(fracs)
     fracs = [f / s for f in fracs]
     durations = [(fitted[i], max(1.0, audio_s * fracs[i])) for i in range(len(fitted))]
-    # nudge so sum ~= audio
     drift = audio_s - sum(d for _, d in durations)
     path0, d0 = durations[-1]
     durations[-1] = (path0, d0 + drift)
 
-    concat = WORK / "concat.txt"
+    concat = work / "concat.txt"
     build_concat_list(durations, concat)
 
-    print("3/4 Encode MP4…")
-    silent = WORK / "video_silent.mp4"
-    cmd1 = [
-        ffmpeg,
-        "-y",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        str(concat),
-        "-vf",
-        "fps=30,format=yuv420p",
-        "-c:v",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        str(silent),
-    ]
-    r1 = subprocess.run(cmd1, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    print(f"[{lang}] 3/4 Encode…")
+    silent = work / "video_silent.mp4"
+    r1 = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat),
+            "-vf",
+            "fps=30,format=yuv420p",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(silent),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if r1.returncode != 0:
         print(r1.stderr[-2000:], file=sys.stderr)
         return 1
 
-    print("4/4 Mux voice…")
-    cmd2 = [
-        ffmpeg,
-        "-y",
-        "-i",
-        str(silent),
-        "-i",
-        str(mp3),
-        "-c:v",
-        "copy",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "192k",
-        "-shortest",
-        str(OUT_MP4),
-    ]
-    r2 = subprocess.run(cmd2, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    out_mp4: Path = cfg["out"]
+    print(f"[{lang}] 4/4 Mux…")
+    r2 = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-i",
+            str(silent),
+            "-i",
+            str(mp3),
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-shortest",
+            str(out_mp4),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if r2.returncode != 0:
         print(r2.stderr[-2000:], file=sys.stderr)
         return 1
 
-    size_mb = OUT_MP4.stat().st_size / (1024 * 1024)
-    print(f"OK -> {OUT_MP4} ({size_mb:.1f} MB, ~{audio_s:.0f}s)")
-    print("Next: upload to YouTube (unlisted) and paste the URL into README Visibility.")
+    size_mb = out_mp4.stat().st_size / (1024 * 1024)
+    print(f"[{lang}] OK -> {out_mp4} ({size_mb:.1f} MB, ~{audio_s:.0f}s)")
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Render GAP-3 stills+TTS video")
+    ap.add_argument(
+        "--lang",
+        choices=("es", "en", "both"),
+        default="both",
+        help="Language (default: both)",
+    )
+    args = ap.parse_args(argv)
+    langs = ["es", "en"] if args.lang == "both" else [args.lang]
+    rc = 0
+    for lang in langs:
+        r = render_one(lang)
+        if r != 0:
+            rc = r
+    return rc
 
 
 if __name__ == "__main__":

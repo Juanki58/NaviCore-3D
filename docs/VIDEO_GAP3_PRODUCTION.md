@@ -23,8 +23,11 @@ python tools\plot_gap3_video_assets.py
 
 **Guía de principiante (CapCut):** [`VIDEO_GAP3_HOWTO.md`](VIDEO_GAP3_HOWTO.md)
 
-**MP4 ya generado (sin CapCut):** `docs/video_gap3/NaviCore_GAP3_NHC.mp4`  
-Regenerar: `python tools/render_gap3_video.py` (voz TTS española + stills).
+**MP4 ya generados (sin CapCut):**  
+- ES: `docs/video_gap3/NaviCore_GAP3_NHC.mp4`  
+- EN: `docs/video_gap3/NaviCore_GAP3_NHC_en.mp4`  
+
+Regenerar: `python tools/render_gap3_video.py` (default: both) · `--lang es` / `--lang en`
 
 ### A — Rápido (sin Unity)
 

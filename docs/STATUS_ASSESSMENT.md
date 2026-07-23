@@ -1,7 +1,7 @@
 # Status assessment — NaviCore-3D
 
 **Date:** 2026-07-23  
-**Repo HEAD at write:** `b1fd0ea` (update this line when revising the assessment).  
+**Repo HEAD at write:** `a057e67` (update this line when revising the assessment).  
 **Nature:** honest internal snapshot — not marketing.
 
 ---

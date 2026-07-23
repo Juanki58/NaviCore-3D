@@ -109,6 +109,25 @@ Esquema CSV (una línea por muestra):
 
 ---
 
+## D · Investigación futura (no adelantar Evidence)
+
+**Estado:** anotado · **no** abre implementación hasta Allan / outage / PPK2 en README.  
+**Relación con el kit:** BNO055 en AMG ya entrega magnetómetro — útil más adelante como *aiding* indoor, no como sustituto del ESKF GNSS-denied actual.
+
+Ideas a explorar **después** del bucle físico (DUT medido):
+
+| Tema | Qué aporta | Referencias concretas |
+|------|------------|------------------------|
+| **Fingerprinting magnético** | Mapa / base de firmas del campo B en un edificio; localización por coincidencia (infraestructura-free indoor) | He & Shin et al. survey: *A Survey of Magnetic-Field-Based Indoor Localization*, Electronics 11(6):864, 2022 — [MDPI](https://www.mdpi.com/2079-9292/11/6/864) (secciones fingerprinting / landmarks) |
+| **Magnetic-Field SLAM** | Construir mapa de anomalías magnéticas **a la vez** que se localiza (sin fingerprint previo); acota drift indoor | Kok, Solin et al.: *Scalable Magnetic Field SLAM in 3D Using Gaussian Process Maps*, arXiv:1804.01926 — [arXiv](https://arxiv.org/abs/1804.01926) · [PDF](https://arxiv.org/pdf/1804.01926) |
+
+**Reglas:**
+- No mezclar con el claim actual de producto (coast GNSS + integridad SW).
+- No usar fusión NDOF del BNO055 como “Magnetic SLAM hecho”.
+- Si se abre: capa opcional de aiding / mapa, vocabulario genérico `estimate_*`, tests, y Evidence propia — misma disciplina de closeout.
+
+---
+
 ## Orden operativo recomendado
 
 **Secuencia mínima (no romper):**  

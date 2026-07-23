@@ -151,3 +151,5 @@ No adelantar Ambiq/Artemis, ZUPT “porque apetece”, ni visibilidad fuerte por
 
 Honeywell, BAE, Thales, Northrop, Collins = fuera de alcance.  
 Hueco: civil barato, MIT, auditable, zero-heap, resiliencia + ULP medible (Ambiq como destino de silicio, no como claim vacío).
+
+Snapshot honesto (potencial / techo / riesgos): [`STATUS_ASSESSMENT.md`](STATUS_ASSESSMENT.md).

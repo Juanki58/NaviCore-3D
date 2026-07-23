@@ -62,7 +62,7 @@ Historia vendible: **tracker / boya meses con pila + navegación resiliente a p�
 | B4 | Marino cualitativo (lago/piscina + metal) | Opcional | Solo si se apunta AUV |
 | B5 | Fault injection **en banco** (IMU unplug, UART, power, WDT) | Host smoke **hecho** · físico pendiente | Diseño Comarruga · Pico encendido · **cierra con README** · cuidado flash |
 | B6 | Log estático multi-hora → **Allan fit** publicado | Runbook listo · **tras encender DUT** | Pico2 o Adalogger cuando esté powered · [RUNBOOK](allan/RUNBOOK.md) · **cierra con README** |
-| B7 | Target **rp2040_adalogger** + MTK3339 (NMEA/PMTK) + IMU I2C AMG | **Plan listo** · al llegar pedido | Software primero — [TARGET_RP2040_ADALOGGER_PORT.md](TARGET_RP2040_ADALOGGER_PORT.md) · no reutilizar WT61C/NEO-M9N BSP tal cual |
+| B7 | Target **rp2040_adalogger** + **PA1010D** (NMEA/PMTK) + **BNO055 AMG** | **BOM verified** · al llegar pedido | [KIT_BOM…](KIT_BOM_ADALOGGER_BNO055_PA1010D.md) · [PORT](TARGET_RP2040_ADALOGGER_PORT.md) · no WT61C/NEO-M9N |
 
 ### B2 · Escalera Ambiq (menor → mayor esfuerzo)
 
@@ -142,7 +142,7 @@ No adelantar Ambiq/Artemis, ZUPT “porque apetece”, ni visibilidad fuerte por
 - **Conseguir Nordic PPK2** — el dato que más pesa antes de hablar fuera.  
 - Si puedes: encender Pico2 Comarruga (Allan/outage).  
 
-**Cuando llegue el pedido Adalogger:** trabajo **de software primero** — port `pico2_hardware` → `rp2040_adalogger`, drivers MTK3339 (NMEA/PMTK) + IMU I2C AMG — ver [TARGET_RP2040_ADALOGGER_PORT.md](TARGET_RP2040_ADALOGGER_PORT.md). Luego README con DUT real (Adalogger ≠ Pico2), misma disciplina que `33f4739`.
+**Cuando llegue el pedido Adalogger:** trabajo **de software primero** — PA1010D + BNO055 AMG — ver [KIT_BOM…](KIT_BOM_ADALOGGER_BNO055_PA1010D.md) · [PORT](TARGET_RP2040_ADALOGGER_PORT.md). README con DUT real (Adalogger ≠ Pico2), misma disciplina que `33f4739`.
 
 
 ---

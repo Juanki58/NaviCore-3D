@@ -1,55 +1,67 @@
-# Target port plan — RP2040 Adalogger + MTK3339 + I2C IMU (AMG)
+# Target port plan — RP2040 Adalogger + PA1010D + BNO055 (AMG)
 
-**Status:** planned · **starts when kit arrives** · **not** a substitute for Pico2 Evidence (Allan / outage / PPK2)
+**Status:** planned · **starts when kit arrives** · **not** a substitute for Evidence until powered  
+**BOM check:** [`KIT_BOM_ADALOGGER_BNO055_PA1010D.md`](KIT_BOM_ADALOGGER_BNO055_PA1010D.md)
 
 ## Principle
 
 First work is **software**, not wiring: new BSP target + sensor drivers. Do **not** pretend WT61C-232 / NEO-M9N code will drop in unchanged.
 
-When this platform is what actually runs, update README with the **same honesty** as the Comarruga correction (`33f4739`): say **Adalogger validated** only after powered evidence — never “Pico 2 W validated” if the DUT is Adalogger.
+When this platform is what actually runs, update README with the **same honesty** as the Comarruga correction (`33f4739`): say **Adalogger + PA1010D + BNO055 validated** only after powered evidence — never “Pico 2 W validated” if the DUT is Adalogger.
+
+## Intended BOM (kit)
+
+| Role | Part |
+|------|------|
+| MCU / SD / STEMMA | Adafruit Feather **RP2040 Adalogger** (5980) |
+| IMU | Adafruit **BNO055** (ADA2472) — **AMG mode only** for ESKF |
+| GNSS | Adafruit Mini GPS **PA1010D** — NMEA + **PMTK** (UART preferred) |
+| RF (optional) | u.FL→SMA + magnetic antenna **if** breakout has u.FL |
+| Power | 3.7 V Li-ion/LiPo **JST-PH** |
 
 ## Intended tree
 
 ```
-src/targets/rp2040_adalogger/   # working name — rename if board SKU differs
-  CMakeLists.txt                # Pico SDK / RP2040 (same family patterns as pico2_hardware)
-  hw_config.hpp                 # pins: UART GPS, I2C IMU, SD if present
-  bsp_gnss_mtk3339.*            # NMEA + PMTK (not u-blox UBX path)
-  bsp_imu_i2c_amg.*             # I2C accel/gyro/mag “AMG” mode (not WT61C UART 0x55)
-  main.cpp                      # same core ESKF / NavState / safe_log pattern
+src/targets/rp2040_adalogger/
+  CMakeLists.txt                 # Pico SDK / RP2040 (patterns from pico2_hardware)
+  hw_config.hpp                  # STEMMA I2C, UART GPS, SD SPI, battery N/A in FW
+  bsp_gnss_pa1010d.*             # NMEA + PMTK (not u-blox UBX)
+  bsp_imu_bno055_amg.*           # I2C BNO055 CONFIG→AMG → ImuSample (not WT61C)
+  main.cpp                       # same core ESKF / NavState / safe_log pattern
 ```
 
-Reuse from `pico2_hardware/` where possible: `safe_log`, health/WDT patterns, loop timing, `NavState` USB CSV. **Replace** `bsp_wt61c` + `bsp_gnss` (NEO-M9N/UBX assumptions).
+Reuse from `pico2_hardware/` where possible: `safe_log`, health/WDT patterns, loop timing, `NavState` USB CSV. **Replace** `bsp_wt61c` + NEO-M9N-oriented `bsp_gnss`.
 
-## Sensor gaps vs current repo
+## Sensor gaps vs Comarruga design
 
-| Need | Current Comarruga design | New kit |
-|------|--------------------------|---------|
-| GNSS | NEO-M9N · NMEA/UBX-oriented BSP | **MTK3339** · NMEA + **PMTK** config |
-| IMU | WT61C-232 · UART binary frames | **I2C IMU** · **AMG** mode (accel/gyro/mag) |
-| MCU board | Pico 2 W | **RP2040 Adalogger** (Feather-class logger) |
+| Need | Comarruga design | This kit |
+|------|------------------|----------|
+| GNSS | NEO-M9N · NMEA/UBX | **PA1010D** · NMEA + **PMTK** |
+| IMU | WT61C-232 · UART 0x55 | **BNO055** · I2C **AMG** |
+| MCU | Pico 2 W | **RP2040 Adalogger** + microSD |
 
-Host parsers already have generic NMEA (`nmea_parser`) — still need **PMTK** setup (baud, update rate, sentences) and an I2C AMG driver that fills `ImuSample`.
+Host `nmea_parser` helps; still need PMTK init + BNO055 AMG → `ImuSample` (FRD axes).
 
 ## Arrival checklist (software-first)
 
-1. [ ] Scaffold `src/targets/rp2040_adalogger/` from `pico2_hardware` (strip Wi-Fi if unused).  
-2. [ ] `bsp_gnss_mtk3339`: UART RX ring → NMEA assembler → `GpsSample`; PMTK init sequence documented.  
-3. [ ] `bsp_imu_i2c_amg`: init + read → `ImuSample` (units, axes, FRD contract).  
-4. [ ] Bring-up: CDC NavState @ ≥50–100 Hz without heap in core.  
-5. [ ] **README Evidence closeout:** state clearly DUT = Adalogger + MTK3339 + I2C IMU; Pico2 remains “implemented / pending” unless separately powered and measured.  
-6. [ ] Only then: Allan / outage / PPK2 on **this** DUT if it becomes the primary bench (or keep Pico as primary — pick one and document).
+1. [ ] Scaffold `src/targets/rp2040_adalogger/` from `pico2_hardware` (strip Wi-Fi).  
+2. [ ] `bsp_gnss_pa1010d`: UART RX ring → NMEA → `GpsSample`; PMTK rate/sentences documented.  
+3. [ ] `bsp_imu_bno055_amg`: force AMG; fill `ImuSample`; **reject** accidental NDOF as nav input.  
+4. [ ] Bring-up: CDC NavState @ ≥50–100 Hz, zero heap in core.  
+5. [ ] README Evidence: DUT = Adalogger + PA1010D + BNO055 AMG.  
+6. [ ] Allan / outage / PPK2 on this DUT if it is primary (or keep Pico separate and label both).
 
 ## Parallel (do not wait for the parcel)
 
 | Item | Status |
 |------|--------|
-| GAP-3 videos ES/EN | **Done** — GitHub `docs/video_gap3/` |
-| Nordic **PPK2** instrument | **Buy / obtain** — still the heaviest external-credibility datum once *any* board is powered |
-| Pico2 power-on (if available) | Still valid path for Allan/outage **without** Adalogger |
+| GAP-3 videos ES/EN | **Done** |
+| Nordic **PPK2** | **Obtain** — still the heaviest external-credibility datum |
+| Pico2 power-on | Valid alternate path if available |
 
 ## Anti-patterns
 
-- Wiring party before UART/I2C drivers compile on host stubs / target.  
-- Claiming “hardware validated” because the kit arrived.  
-- Mixing M8U closed DR into the product story without labeling it **reference only**.
+- Wiring before UART/I2C drivers compile.  
+- Using BNO055 fusion output as the product navigator.  
+- Claiming “hardware validated” on unboxing.  
+- README still saying Pico2 when the logged DUT is Adalogger.

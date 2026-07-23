@@ -1134,7 +1134,7 @@ SIL architecture notes: [`docs/sil_architecture.md`](docs/sil_architecture.md).
 ## Roadmap
 
 Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):  
-[`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md)
+[`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md) · honest snapshot: [`docs/STATUS_ASSESSMENT.md`](docs/STATUS_ASSESSMENT.md)
 
 | Phase | Target |
 |-------|--------|

@@ -659,7 +659,8 @@ NaviCore-3D/
 | `src/targets/pico2_hardware/` | Embedded: BSP IMU/GNSS/UPS, health monitor, WDT |
 | `tests/unit/` | Catch2 + RapidCheck formal units/properties |
 | `data/real_run/` | Entrada cruda del vehículo (Android Sensor Logger), carpetas por fecha |
-| `docs/benchmarks/` | Evidence + audits (bulk regenerable CSV ignored — see `.gitignore`) |
+| `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally — see `.gitignore`) |
+| `data/real_run/` | Phone SensorLogger logs — **local only** (not in git; see `data/real_run/README.md`) |
 | `docs/diagnostics/` | Documentación científica del pipeline EKF |
 | `tools/` | Scripts Python de visualización, regresión y GAP |
 | `calibration/` | Calibración de montaje IMU |

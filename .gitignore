@@ -21,7 +21,10 @@ Makefile
 cmake_install.cmake
 *.rsp
 
-# Local / regenerable bulk (GitHub 100 MB file limit + repo size)
+# ── Regenerable / bulk artefacts (do NOT track; keep local for analysis) ──
+# Evidence that stays in git: *.md, *.json, *.png under docs/, plus tiny samples
+# explicitly force-added (docs/replay_sample.csv, docs/allan/smoke/*).
+
 telemetry_log.csv
 _tmp_*.py
 *.zip
@@ -29,9 +32,35 @@ ekf_explorer/
 docs/video_gap3/_render_work/
 data/real_run/_peek_0717/
 docs/benchmarks/static_analysis/coverage_html/
+**/gnss_k_block.jsonl
+
+# Audit dumps (names + prefixes)
 **/nhc_block_audit.csv
 **/cov_step_audit.csv
-**/kinematic_identity_audit*.csv
+**/*cov_step_audit*.csv
 **/constraint_pipeline_audit.csv
 **/tick_stage_audit*.csv
-**/gnss_k_block.jsonl
+**/kinematic_identity_audit*.csv
+**/gnss_nis_audit.csv
+**/cov_propagation_audit.csv
+**/controller_audit.csv
+**/vel_source_audit.csv
+**/imu_constraint_audit.csv
+**/replay_output.csv
+**/*_telemetry.csv
+**/out.csv
+
+# Whole trees of regenerable CSV / raw phone logs
+docs/benchmarks/**/*.csv
+docs/monte_carlo/**/*.csv
+docs/nhc_experiments/**/*.csv
+docs/_archive_short_run_jul15/
+data/real_run/**/*.csv
+
+# Large ad-hoc telemetries at docs root
+docs/telemetria_navicore.csv
+docs/mi_paseo_comarruga.csv
+
+# Exceptions: tiny samples needed for docs / smoke demos
+!docs/replay_sample.csv
+!docs/allan/smoke/*.csv

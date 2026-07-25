@@ -35,10 +35,15 @@ def run_command(label: str, command: list[str], cwd: Path | None = None) -> int:
 
 
 def run_python_unittests(pattern: str) -> int:
+    """Descubre tests bajo tools/sil/ (ubicación post-reorg)."""
     print(f"\n== python unittest ({pattern}) ==")
-    suite = unittest.TestLoader().discover(str(TOOLS_DIR), pattern=pattern)
+    start = TOOLS_DIR / "sil"
+    suite = unittest.TestLoader().discover(str(start), pattern=pattern)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
+    if result.testsRun == 0:
+        print(f"FAIL: python unittest ({pattern}) — no se descubrieron tests en {start}")
+        return 1
     if result.wasSuccessful():
         print(f"OK: python unittest ({pattern})")
         return 0
@@ -165,6 +170,7 @@ def main() -> int:
     if not args.skip_python and failures == 0:
         failures += run_python_unittests("test_sil_protocol.py")
         failures += run_python_unittests("test_udp_telemetry.py")
+        failures += run_python_unittests("test_udp_faults.py")
 
     print("\n============================")
     if failures == 0:

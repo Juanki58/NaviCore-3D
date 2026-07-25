@@ -5,10 +5,16 @@ from __future__ import annotations
 
 import math
 import socket
+import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(TOOLS_DIR))
+_REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO / "tools" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from navicore_paths import ensure_tools_path  # noqa: E402
+
+ensure_tools_path(_REPO)
 
 from telemetry_protocol import (  # noqa: E402
     COLOR_MAP,

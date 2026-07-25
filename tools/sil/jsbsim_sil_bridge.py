@@ -7,12 +7,17 @@ import argparse
 import json
 import math
 import socket
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
+_REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO / "tools" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from navicore_paths import ensure_tools_path  # noqa: E402
+
+ensure_tools_path(_REPO)
 
 from sil_protocol import (  # noqa: E402
     SIL_FLAG_ATT_VALID,

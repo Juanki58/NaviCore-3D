@@ -4,17 +4,22 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
+_REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO / "tools" / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from navicore_paths import ensure_tools_path  # noqa: E402
 
-from telemetry_protocol import COLOR_MAP, UNITY_TELEMETRY_DEFAULT_PORT
-from telemetry_receiver import TelemetryReceiver
+ensure_tools_path(_REPO)
+
+from telemetry_protocol import COLOR_MAP, UNITY_TELEMETRY_DEFAULT_PORT  # noqa: E402
+from telemetry_receiver import TelemetryReceiver  # noqa: E402
 
 
 class RemoteVisualizer:

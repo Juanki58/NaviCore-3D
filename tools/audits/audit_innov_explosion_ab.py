@@ -30,7 +30,7 @@ def load_base_course() -> float:
     """Prefer header constant if available."""
     try:
         from pathlib import Path as P
-        text = (P(__file__).resolve().parents[1] / "src/scenarios/slalom_benchmark.hpp").read_text(
+        text = (P(__file__).resolve().parents[2] / "src/scenarios/slalom_benchmark.hpp").read_text(
             encoding="utf-8", errors="ignore"
         )
         for line in text.splitlines():

@@ -14,6 +14,10 @@
 typedef struct NAVICORE_ALIGNAS(4) {
     float accel_mps2[3];
     float gyro_radps[3];
+    /*
+     * NOTE: defined but not yet consumed by ins_ekf.cpp as a measurement
+     * update. Roadmap item — do not assume fusion just because the type exists.
+     */
     float mag_ut[3];
     uint32_t timestamp_ms;
     bool valid;
@@ -30,6 +34,10 @@ typedef struct NAVICORE_ALIGNAS(4) {
     uint8_t _pad[2];
 } GpsSample;
 
+/*
+ * NOTE: defined but not yet consumed by ins_ekf.cpp as a measurement
+ * update. Roadmap item — do not assume fusion just because the type exists.
+ */
 typedef struct NAVICORE_ALIGNAS(4) {
     float pressure_pa;
     float temperature_c;

@@ -427,6 +427,12 @@ Optional MPU-6050 on I2C0 (GP8/9): compares with WT61C; on disagreement sets `im
 This is the section a serious reviewer should read first.  
 **Not** a vague “dead reckoning + sensor fusion” blend: a **15-state error-state Kalman filter (ESKF)** with an explicit state, explicit innovations, and **documented Q / R / P₀** (source of truth: [`src/core/ins_ekf.hpp`](src/core/ins_ekf.hpp) + `ins_ekf_init` / `ins_ekf_build_process_noise`).
 
+**Sensor fusion status:** IMU + GNSS actively fused in the 15-state EKF.
+Magnetometer and barometer are scaffolded ([`sensor_types.hpp`](src/core/sensor_types.hpp)) but not yet
+consumed as measurement updates. NHC (non-holonomic constraints) exists as
+an optional correction, gated OFF by default in production per the GAP-3
+finding — see [`docs/NHC_OPS_POLICY.md`](docs/NHC_OPS_POLICY.md).
+
 ### What it is
 
 | Item | Fact |

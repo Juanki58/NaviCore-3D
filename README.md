@@ -942,6 +942,10 @@ Pipeline experimental sobre grabaciones reales: consistencia NEES/NIS, geodesia 
 
 **Index:** [`docs/diagnostics/README.md`](docs/diagnostics/README.md)
 
+### Aiding design (future)
+
+Índice: [`docs/design/README.md`](docs/design/README.md) — orden **ZUPT → mag/baro → ultrasonido (reserva)**. ZUPT: diseño **abierto** ([ZUPT_DESIGN.md](docs/design/ZUPT_DESIGN.md)); no implementar hasta cerrar checklist de detector por dominio.
+
 ### Document map
 
 | Doc | Content |

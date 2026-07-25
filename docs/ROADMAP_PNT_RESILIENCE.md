@@ -114,6 +114,8 @@ Esquema CSV (una línea por muestra):
 **Estado:** anotado · **no** abre implementación hasta Allan / outage / PPK2 en README.  
 **Relación con el kit:** BNO055 en AMG ya entrega magnetómetro — útil más adelante como *aiding* indoor, no como sustituto del ESKF GNSS-denied actual.
 
+**Hoja de ruta de aiding (diseño, no código):** índice único en [`docs/design/README.md`](design/README.md) — orden **ZUPT → mag/baro → ultrasonido (reserva)**. ZUPT está **abierto** (detector por dominio pendiente de banco); ultrasonido cerrado en papel pero no adelantar.
+
 Ideas a explorar **después** del bucle físico (DUT medido):
 
 | Tema | Qué aporta | Referencias concretas |
@@ -125,6 +127,7 @@ Ideas a explorar **después** del bucle físico (DUT medido):
 - No mezclar con el claim actual de producto (coast GNSS + integridad SW).
 - No usar fusión NDOF del BNO055 como “Magnetic SLAM hecho”.
 - Si se abre: capa opcional de aiding / mapa, vocabulario genérico `estimate_*`, tests, y Evidence propia — misma disciplina de closeout.
+
 
 ---
 

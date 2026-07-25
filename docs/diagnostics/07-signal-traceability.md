@@ -2,7 +2,7 @@
 
 Documento de **ingeniería de sistemas**: cada magnitud tiene un significado físico único y ese significado debe conservarse en toda la cadena. Complementa la campaña experimental H0–H9d; no abre nuevas hipótesis numeradas.
 
-**Auditoría Android (identidad física):** `tools/audit_android_signal_identity.py` → `docs/benchmarks/android_signal_identity_audit.json`
+**Auditoría Android (identidad física):** `tools/audits/audit_android_signal_identity.py` → `docs/benchmarks/android_signal_identity_audit.json`
 
 ---
 
@@ -39,7 +39,7 @@ Integración velocidad / posición (usa a_lin)
 | **Sensor Logger** | `Gravity.csv` | Estimación Android de gravedad en device frame (fusión AHRS) | Device | m/s² | Solo g (filtrada) | \|vector\| mean = 9.8066 m/s² |
 | **Sensor Logger** | `Accelerometer.csv` | Aceleración lineal (Android TYPE_LINEAR_ACCELERATION vía app) | Device | **m/s²** (no g en este dataset) | **No** | Identidad: `Uncal ≈ Gravity + Accelerometer` con residual median 0.001 m/s², p95 ≈ 0.35–0.48 m/s² por régimen |
 | **Sensor Logger** | `Orientation.csv` | Actitud Android (fusión propietaria) | Device / ENU-like | deg | N/A | Referencia externa; no alimenta el EKF |
-| **parse_mobile_log** | `row.accel` | Copia directa de Uncalibrated (x,y,z) | Device | m/s² | **Sí** | `parse_mobile_log.py`: `ACCEL_FILE = AccelerometerUncalibrated.csv` |
+| **parse_mobile_log** | `row.accel` | Copia directa de Uncalibrated (x,y,z) | Device | m/s² | **Sí** | `tools/analysis/parse_mobile_log.py`: `ACCEL_FILE = AccelerometerUncalibrated.csv` |
 | **Replay** | `row.accel` | Igual que CSV de entrada | Device | m/s² | **Sí** | `real_run_replay.cpp` lectura replay |
 | **Mount** | `aligned_accel` | `R_mount · v_sensor` — specific force en body | Body (target: Z+ down) | m/s² | **Sí** | `mat3_vec3_mul(mount_matrix, row.accel, …)` una sola vez. Residual estático L1 ≈ 0 (`imu_mount.json`) |
 | **Mount** | `aligned_gyro` | `R_mount · ω_sensor` | Body | rad/s | N/A | Misma matriz que accel |
@@ -85,7 +85,7 @@ Por régimen (residual de identidad, m/s²):
 | 1 | **Body frame** | `imu_mount.json` declara target `"body Z+ (EKF down)"`; docs EKF dicen **FRD**. ¿Z+ body = eje D FRD? | Documentar ejes body con diagrama; verificar con vector gravedad post-mount |
 | 2 | **Device frame** | Ejes x,y,z Android no documentados en repo como FLU/FRD explícito | Cruzar con `Orientation.csv` y tríada estática; no reutilizar nombre “NED” para device |
 | 3 | **Entrada EKF vs Android** | EKF usa **Uncalibrated**; comparaciones con Orientation usan otro estimador | Separar “ground truth” de “referencia cruzada” en informes |
-| 4 | **`a_lin_h`** | Magnitud horizontal **NED** — mezcla longitudinal/lateral/error de marco | Usar descomposición vehículo (`tools/vehicle_frame_nav_audit.py`) o `a_nav_pre_g` por ejes |
+| 4 | **`a_lin_h`** | Magnitud horizontal **NED** — mezcla longitudinal/lateral/error de marco | Usar descomposición vehículo (`tools/audits/vehicle_frame_nav_audit.py`) o `a_nav_pre_g` por ejes |
 | 5 | **Signo gravedad** | Android device ≠ NED Down+; mount debe absorber cambio de convención | Confirmar que solo `a_lin` resta g en NED, nunca en body |
 
 ---
@@ -125,10 +125,10 @@ Por régimen (residual de identidad, m/s²):
 
 | Script | Propósito |
 |--------|-----------|
-| `tools/audit_android_signal_identity.py` | Identidad Gravity + Linear vs Uncal |
-| `tools/vehicle_frame_nav_audit.py` | `a_nav_pre_g` en ejes vehículo (long/lat/vert) |
-| `audit_attitude_conventions.py` | Coherencia interna quat/DCM/body↔NED |
-| `audit_imu_chain.py` | Cadena sensor→mount→body |
+| `tools/audits/audit_android_signal_identity.py` | Identidad Gravity + Linear vs Uncal |
+| `tools/audits/vehicle_frame_nav_audit.py` | `a_nav_pre_g` en ejes vehículo (long/lat/vert) |
+| `tools/experiments/audit_attitude_conventions.py` | Coherencia interna quat/DCM/body↔NED |
+| `tools/experiments/audit_imu_chain.py` | Cadena sensor→mount→body |
 
 ---
 

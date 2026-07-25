@@ -245,7 +245,7 @@ docs/benchmarks/gap5_adaptive_nhc/
   controller_audit.csv    # lazo cerrado — trazabilidad
 ```
 
-Script previsto: `tools/run_gap5_adaptive_nhc_poc.py` — **bloqueado** hasta GAP-5 v2 (observable validado en passive). Ver [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md).
+Script previsto: `tools/campaigns/run_gap5_adaptive_nhc_poc.py` — **bloqueado** hasta GAP-5 v2 (observable validado en passive). Ver [15-gap5-passive-outcome.md](15-gap5-passive-outcome.md).
 
 ---
 
@@ -287,7 +287,7 @@ gap4-diagnostic-complete
   §11 P_pv (separado; no mezclar brazos)
 ```
 
-**Nota (2026-07-18):** el camino `run_gap5_adaptive_nhc_poc.py` → `gap5-poc-complete` **no se ejecutó** y **no debe ejecutarse** con la instancia v1. El outcome passive refuta la operacionalización Γ̄, no la hipótesis H5-PoC en abstracto.
+**Nota (2026-07-18):** el camino `tools/campaigns/run_gap5_adaptive_nhc_poc.py` → `gap5-poc-complete` **no se ejecutó** y **no debe ejecutarse** con la instancia v1. El outcome passive refuta la operacionalización Γ̄, no la hipótesis H5-PoC en abstracto.
 
 **Regla:** una hipótesis (§4.0), una palanca (NHC frecuencia), un experimento, una interpretación.
 

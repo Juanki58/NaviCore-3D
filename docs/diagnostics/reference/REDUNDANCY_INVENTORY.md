@@ -10,13 +10,13 @@
 
 | Grupo | Scripts | Nota |
 |-------|---------|------|
-| GAP-3 cliff / fix2–3 | `audit_gap3_f1_cliff_anatomy.py`, `audit_gap3_nhc_cliff_mechanism.py`, `audit_gap3_fix2_fix3_tick_reconstruction.py`, `audit_gap3_fix2_fix3_autoconsume.py` | Misma ventana temática; roles distintos en síntesis — conservar; marcar canónico en 12-synthesis |
-| GAP-3 GNSS NIS / K | `audit_gap3_gnss_nis_anatomy.py`, `audit_gap3_f1_nis_gate_anatomy.py`, `audit_gap3_gnss_k_block.py`, `audit_gap3_gnss_accepted_autopsy.py` | Anatomía vs accept autopsy |
-| GAP-3 cov | `audit_gap3_cov_propagation.py`, `audit_gap3_cov_step_cycle.py`, `audit_gap3_observation_cycle.py` | Capas de instrumentación |
-| GAP-4 P_pv post-hoc | `audit_gap4_ppv_gate_autopsy.py`, `audit_gap4_ppv_k_consistency.py`, `audit_gap4_ppv_truth_table.py`, `audit_gap4_ppv_divergence_tree.py` | Familia §10.x |
-| GAP-4 cos / threshold | `audit_gap4_direct_cos_gate.py`, `audit_gap4_threshold_discrimination.py`, `audit_gap4_alignment_sweep.py` | Exploratorio vs discrimination |
-| GAP-5 runners | `run_gap5_p0_passive_validation.py`, `run_gap5_adaptive_nhc_poc.py` | PoC activo **no ejecutar** con v1 (doc 14/15) — script sigue en repo |
-| GAP-1 mount | `audit_gap1_delta_psi_constancy.py`, `audit_gap1_body_forward_axis.py` | Complementarios |
+| GAP-3 cliff / fix2–3 | `tools/audits/audit_gap3_f1_cliff_anatomy.py`, `tools/audits/audit_gap3_nhc_cliff_mechanism.py`, `tools/audits/audit_gap3_fix2_fix3_tick_reconstruction.py`, `tools/audits/audit_gap3_fix2_fix3_autoconsume.py` | Misma ventana temática; roles distintos en síntesis — conservar; marcar canónico en 12-synthesis |
+| GAP-3 GNSS NIS / K | `tools/audits/audit_gap3_gnss_nis_anatomy.py`, `tools/audits/audit_gap3_f1_nis_gate_anatomy.py`, `tools/audits/audit_gap3_gnss_k_block.py`, `tools/audits/audit_gap3_gnss_accepted_autopsy.py` | Anatomía vs accept autopsy |
+| GAP-3 cov | `tools/audits/audit_gap3_cov_propagation.py`, `tools/audits/audit_gap3_cov_step_cycle.py`, `tools/audits/audit_gap3_observation_cycle.py` | Capas de instrumentación |
+| GAP-4 P_pv post-hoc | `tools/audits/audit_gap4_ppv_gate_autopsy.py`, `tools/audits/audit_gap4_ppv_k_consistency.py`, `tools/audits/audit_gap4_ppv_truth_table.py`, `tools/audits/audit_gap4_ppv_divergence_tree.py` | Familia §10.x |
+| GAP-4 cos / threshold | `tools/audits/audit_gap4_direct_cos_gate.py`, `tools/audits/audit_gap4_threshold_discrimination.py`, `tools/audits/audit_gap4_alignment_sweep.py` | Exploratorio vs discrimination |
+| GAP-5 runners | `tools/campaigns/run_gap5_p0_passive_validation.py`, `tools/campaigns/run_gap5_adaptive_nhc_poc.py` | PoC activo **no ejecutar** con v1 (doc 14/15) — script sigue en repo |
+| GAP-1 mount | `tools/audits/audit_gap1_delta_psi_constancy.py`, `tools/audits/audit_gap1_body_forward_axis.py` | Complementarios |
 
 ---
 

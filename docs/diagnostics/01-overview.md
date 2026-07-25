@@ -84,6 +84,6 @@ El tramo **0–2 s** es el punto donde Android, acelerómetro y EKF coinciden (~
 
 ## Próximo trabajo (sin H10)
 
-1. Auditoría formal de convenciones (`audit_attitude_conventions.py`, `audit_reference_chain.py`).
+1. Auditoría formal de convenciones (`tools/experiments/audit_attitude_conventions.py`, `tools/experiments/audit_reference_chain.py`).
 2. Análisis temporal fino L2 / L5 / L6 en ventana 5–8 s.
 3. Solo revisar `ins_ekf.cpp` si la divergencia EKF ↔ Android-gravity persiste en crucero con `a_lin,h` bajo.

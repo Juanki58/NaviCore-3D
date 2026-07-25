@@ -31,4 +31,4 @@ A/B preregistrado: [18-jacobian-imu-ab-protocol.md](../diagnostics/18-jacobian-i
 - Brazo A: Jacobiano correcto + IMU **ideal**
 - Brazo B: Jacobiano correcto + IMU **dirty**
 
-Orquestador: `python tools/run_jacobian_imu_ab.py`
+Orquestador: `python tools/campaigns/run_jacobian_imu_ab.py`

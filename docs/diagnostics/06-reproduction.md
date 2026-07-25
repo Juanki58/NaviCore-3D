@@ -19,13 +19,13 @@ cmake --build C:\NaviCore-3D\build --target NaviCore3D_Replay
 Si no existe `docs/benchmarks/real_run_replay.csv`:
 
 ```powershell
-python parse_mobile_log.py --input-dir data/real_run --output docs/benchmarks/real_run_replay.csv
+python tools/analysis/parse_mobile_log.py --input-dir data/real_run --output docs/benchmarks/real_run_replay.csv
 ```
 
 ## 3. Montaje IMU (opcional regenerar)
 
 ```powershell
-python audit_imu_chain.py --export-calibration calibration/imu_mount.json
+python tools/experiments/audit_imu_chain.py --export-calibration calibration/imu_mount.json
 ```
 
 ## 4. Corrida predict-only base (H9)
@@ -42,7 +42,7 @@ python audit_imu_chain.py --export-calibration calibration/imu_mount.json
 ```
 
 ```powershell
-python run_h9_predict_only_isolation.py
+python tools/experiments/run_h9_predict_only_isolation.py
 ```
 
 ## 5. Bloque actitud H9a–H9d (orden sugerido)
@@ -50,14 +50,14 @@ python run_h9_predict_only_isolation.py
 Cada script invoca el replay con los flags necesarios y escribe informes en `docs/benchmarks/`.
 
 ```powershell
-python run_h9a_gravity_init.py
-python run_h9a_gravity_alignment_audit.py
-python run_h9_1_tilt_diagnostic.py
-python run_h9b_attitude_propagation_audit.py
-python run_h9c_orientation_ref_audit.py
-python run_h9d_gravity_subtraction_audit.py
-python run_propagation_chain_audit.py
-python run_rb_forward_heading_audit.py
+python tools/experiments/run_h9a_gravity_init.py
+python tools/experiments/run_h9a_gravity_alignment_audit.py
+python tools/experiments/run_h9_1_tilt_diagnostic.py
+python tools/experiments/run_h9b_attitude_propagation_audit.py
+python tools/experiments/run_h9c_orientation_ref_audit.py
+python tools/experiments/run_h9d_gravity_subtraction_audit.py
+python tools/experiments/run_propagation_chain_audit.py
+python tools/experiments/run_rb_forward_heading_audit.py
 ```
 
 ## 6. Auditorías de convenciones y referencias
@@ -65,41 +65,41 @@ python run_rb_forward_heading_audit.py
 Requiere `propagation_chain_audit.csv` (generado por el paso anterior).
 
 ```powershell
-python run_gravity_triad_audit.py
-python audit_attitude_conventions.py
+python tools/experiments/run_gravity_triad_audit.py
+python tools/experiments/audit_attitude_conventions.py
 ```
 
 Solo sintético:
 
 ```powershell
-python audit_attitude_conventions.py --synthetic-only
+python tools/experiments/audit_attitude_conventions.py --synthetic-only
 ```
 
 Solo cadena empírica:
 
 ```powershell
-python audit_attitude_conventions.py --empirical-only
+python tools/experiments/audit_attitude_conventions.py --empirical-only
 ```
 
 ## 7. Experimentos anteriores (H3–H8)
 
 ```powershell
-python run_h3_experiment.py
-python run_h4_experiment.py
-python run_h4_sweep.py
-python run_h5_sync_analysis.py
-python run_h5_grid_search.py
-python run_h6_sync_audit.py
-python run_h7_gnss_audit.py
-python run_h7_gnss_chain_audit.py
-python run_h7b_unified_origin.py
-python run_h8_propagation_audit.py
+python tools/experiments/run_h3_experiment.py
+python tools/experiments/run_h4_experiment.py
+python tools/experiments/run_h4_sweep.py
+python tools/experiments/run_h5_sync_analysis.py
+python tools/experiments/run_h5_grid_search.py
+python tools/experiments/run_h6_sync_audit.py
+python tools/experiments/run_h7_gnss_audit.py
+python tools/experiments/run_h7_gnss_chain_audit.py
+python tools/experiments/run_h7b_unified_origin.py
+python tools/experiments/run_h8_propagation_audit.py
 ```
 
 ## 8. Análisis general real run
 
 ```powershell
-python analyze_real_run.py `
+python tools/analysis/analyze_real_run.py `
   --replay docs/benchmarks/real_run_replay.csv `
   --output docs/benchmarks/real_run_output.csv `
   --input-dir data/real_run
@@ -122,8 +122,8 @@ La documentación en `docs/diagnostics/` describe los experimentos y resultados 
 
 | Problema | Solución |
 |----------|----------|
-| Falta `real_run_replay.csv` | Ejecutar `parse_mobile_log.py` |
-| Falta `propagation_chain_audit.csv` | Ejecutar `run_propagation_chain_audit.py` |
+| Falta `real_run_replay.csv` | Ejecutar `tools/analysis/parse_mobile_log.py` |
+| Falta `propagation_chain_audit.csv` | Ejecutar `tools/experiments/run_propagation_chain_audit.py` |
 | `Orientation.csv` no encontrado | Pasar `--input-dir data/real_run` o copiar CSV |
 | PowerShell `&&` falla | Usar `; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }` |
 | Unicode en consola | Scripts usan ASCII en stdout |

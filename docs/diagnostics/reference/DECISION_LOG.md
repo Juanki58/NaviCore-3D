@@ -76,7 +76,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| Decision | Block `run_gap5_adaptive_nhc_poc.py` by default |
+| Decision | Block `tools/campaigns/run_gap5_adaptive_nhc_poc.py` by default |
 | Reason | v1 inactive would measure B0 disguised as P0; separates property → observable → controller |
 | Date | 2026-07-18 |
 | Evidence | [15-gap5-passive-outcome.md](../15-gap5-passive-outcome.md), [16-gap5-v2-observable-selection.md](../16-gap5-v2-observable-selection.md) |

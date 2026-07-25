@@ -2,7 +2,7 @@
 
 **Síntesis / modelo de régimen: diferida** — no hay ganador en este archivo.
 
-Protocolo v1.2 · bindings D18 · script `tools/audit_gap5_v2_observable_selection.py`
+Protocolo v1.2 · bindings D18 · script `tools/audits/audit_gap5_v2_observable_selection.py`
 
 ## C-F1
 

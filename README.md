@@ -78,7 +78,7 @@ python tools\run_regression_suite.py
 Real-run EKF replay (datos en `data/real_run/`):
 
 ```powershell
-python parse_mobile_log.py --input-dir data\real_run --output docs\benchmarks\real_run_replay.csv
+python tools/analysis/parse_mobile_log.py --input-dir data\real_run --output docs\benchmarks\real_run_replay.csv
 cmake --build build --target NaviCore3D_Replay
 .\build\NaviCore3D_Replay.exe --help
 ```
@@ -166,13 +166,13 @@ Numbers below are from **artefacts already in the repo** (not aspirational). Rep
 
 ### Scientific rigor scorecard (what is already done)
 
-This is the leap in method — not just “scenarios that look good.” Artefacts live under `docs/monte_carlo/`, `docs/nhc_experiments/`, and `analyze_allan.py`.
+This is the leap in method — not just “scenarios that look good.” Artefacts live under `docs/monte_carlo/`, `docs/nhc_experiments/`, and `tools/analysis/analyze_allan.py`.
 
 | Campaign | Status | Headline result | Artefacts / how to reproduce |
 |----------|--------|-----------------|------------------------------|
-| **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 · mean exit drift **13.0 m** · p95 **16.1 m** · **0%** diverge (>30 m) | `docs/monte_carlo/run_0000…0099` · `python run_monte_carlo.py --runs 100` |
+| **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 · mean exit drift **13.0 m** · p95 **16.1 m** · **0%** diverge (>30 m) | `docs/monte_carlo/run_0000…0099` · `python tools/benchmarks/run_monte_carlo.py --runs 100` |
 | **NHC matrix** (super-tunnel + R/G arms) | **Done** (GAP-3 closed) | NHC-off baseline **493 m** exit; `B_always` **1408 m** — naive high-rate NHC can **hurt** | [`docs/nhc_experiments/manifest.json`](docs/nhc_experiments/manifest.json) · `NaviCore3D_Sim.exe --nhc-experiments` |
-| **Allan variance** (IEEE Std 952) | **Tooling done** · fit publish pending | Overlapping σ_A(τ) → ARW/VRW, BI, RRW; Q today = engineering σ_a/σ_g | [`analyze_allan.py`](analyze_allan.py) · needs multi-hour `docs/imu_static_log.csv` |
+| **Allan variance** (IEEE Std 952) | **Tooling done** · fit publish pending | Overlapping σ_A(τ) → ARW/VRW, BI, RRW; Q today = engineering σ_a/σ_g | [`tools/analysis/analyze_allan.py`](tools/analysis/analyze_allan.py) · needs multi-hour `docs/imu_static_log.csv` |
 | **EKF v2 vs v1** (3 phone drives) | **Done** | Accept 2–10% → **100%**; drift km → **~35 / 38 / 110 m** | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) · **SensorLogger mobile**, not Pico bench |
 
 **Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: **powered Pico2** Allan fit, Pico outage curve, PPK2 mA (tooling/checklists ship; DUT campaigns pending).
@@ -194,7 +194,7 @@ Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_
 
 ### Monte Carlo — `TUNNEL_STRESS` (synthetic)
 
-`run_monte_carlo.py` → `docs/monte_carlo/run_0000…run_0099` (**N = 100** seeds). Metric: horizontal drift at tunnel exit **t = 30 s**.
+`tools/benchmarks/run_monte_carlo.py` → `docs/monte_carlo/run_0000…run_0099` (**N = 100** seeds). Metric: horizontal drift at tunnel exit **t = 30 s**.
 
 | Stat | Value |
 |------|------:|
@@ -230,23 +230,23 @@ Reproduce: `NaviCore3D_Sim.exe --nhc-experiments` · diagnostics [`docs/diagnost
 | ES | [blob](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [raw](https://raw.githubusercontent.com/Juanki58/NaviCore-3D/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) |
 | EN | [blob](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) · [raw](https://raw.githubusercontent.com/Juanki58/NaviCore-3D/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) |
 
-Pack / regenerate: [`docs/VIDEO_GAP3_PRODUCTION.md`](docs/VIDEO_GAP3_PRODUCTION.md) · `python tools/render_gap3_video.py`. Optional YouTube mirrors: paste URLs here when uploaded.
+Pack / regenerate: [`docs/VIDEO_GAP3_PRODUCTION.md`](docs/VIDEO_GAP3_PRODUCTION.md) · `python tools/media/render_gap3_video.py`. Optional YouTube mirrors: paste URLs here when uploaded.
 
 ### Allan variance (IEEE 952) — methodology shipped
 
 | Item | Status |
 |------|--------|
-| Tool | [`analyze_allan.py`](analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW (IEEE Std 952-1997) |
+| Tool | [`tools/analysis/analyze_allan.py`](tools/analysis/analyze_allan.py) — overlapping Allan σ_A(τ); ARW/VRW, bias instability, RRW (IEEE Std 952-1997) |
 | Shipped Q scalars | σ_a = **0.05 m/s²**, σ_g = **0.002 rad/s** (car-log / mount order of magnitude in `ins_ekf.hpp`) |
 | **Published ARW/BI table from multi-hour static IMU** | **Pending data** — commit `docs/imu_static_log.csv` (hours), run Allan, paste IEEE units into this section |
 | Capture / publish steps | [`docs/allan/RUNBOOK.md`](docs/allan/RUNBOOK.md) |
-| Tool smoke (synthetic 60 s — **not** for Evidence) | `docs/allan/smoke/` · `tools/generate_imu_static_smoke.py` |
+| Tool smoke (synthetic 60 s — **not** for Evidence) | `docs/allan/smoke/` · `tools/media/generate_imu_static_smoke.py` |
 
 ```powershell
-python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
+python tools/analysis/analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
 # smoke only (do not publish numbers):
 python tools\generate_imu_static_smoke.py
-python analyze_allan.py docs\allan\smoke\imu_static_smoke_60s.csv --sensor gyro --axis gyro_z -o docs\allan\smoke\allan_gyro_z_smoke.png
+python tools/analysis/analyze_allan.py docs\allan\smoke\imu_static_smoke_60s.csv --sensor gyro --axis gyro_z -o docs\allan\smoke\allan_gyro_z_smoke.png
 ```
 
 **Honest framing:** the **pipeline** for replacing Q folklore with IEEE numbers is done and documented; the **published fit table** waits on a multi-hour static log. Until then, treat Q as engineering defaults — not a certified IMU datasheet.
@@ -360,7 +360,7 @@ Before multi-cycle brownout/WDT: confirm the lab build is **not** writing flash/
 | Catch2 + RapidCheck | **CI job** `navicore_unit_tests` — units + properties + wire/health |
 | libFuzzer (NMEA/UBX/WT61C) | **CI job** `sensor-wire-fuzz` — 60 s smoke on corpus |
 | Workflow | [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) |
-| Runner (local) | `python tools/run_static_analysis.py --cppcheck` · `--clang-tidy` · `--coverage-build` |
+| Runner (local) | `python tools/ci/run_static_analysis.py --cppcheck` · `--clang-tidy` · `--coverage-build` |
 
 ### Still missing for “demo-ready” credibility
 
@@ -643,8 +643,18 @@ NaviCore-3D/
 │   ├── monte_carlo/               # Trazas Monte Carlo
 │   ├── nhc_experiments/           # Experimentos NHC del sim
 │   └── telemetria_navicore.csv    # Black-box del simulador
-├── tools/                         # Visualizers, regression, audits, static analysis
-├── parse_mobile_log.py            # Sensor Logger → replay CSV
+├── tools/                         # Python tooling (categorized — see tools/README.md)
+│   ├── lib/                       # Shared modules (geodesy, codecs, path bootstrap)
+│   ├── analysis/                  # Allan, parse_mobile_log, plots
+│   ├── benchmarks/                # run_all_benchmarks, Monte Carlo
+│   ├── experiments/               # H-series / NHC experiment runners
+│   ├── audits/                    # GAP / autopsy one-offs
+│   ├── campaigns/                 # run_gap*, run_ekf*, slalom campaigns
+│   ├── sil/                       # Visualizers + UDP/SIL tests
+│   ├── field/                     # Serial NavState capture
+│   ├── ci/                        # Static analysis + regression (GitHub Actions)
+│   ├── media/                     # Video / EKF Explorer helpers
+│   └── reports/
 ├── CMakeLists.txt                 # Build PC (+ optional unit tests)
 ├── DEVELOPMENT.md
 ├── README.md
@@ -658,11 +668,10 @@ NaviCore-3D/
 | `src/targets/generic_pc/` | Host: sim, replay, UDP telemetry, adaptive NHC controller |
 | `src/targets/pico2_hardware/` | Embedded: BSP IMU/GNSS/UPS, health monitor, WDT |
 | `tests/unit/` | Catch2 + RapidCheck formal units/properties |
-| `data/real_run/` | Entrada cruda del vehículo (Android Sensor Logger), carpetas por fecha |
-| `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally — see `.gitignore`) |
 | `data/real_run/` | Phone SensorLogger logs — **local only** (not in git; see `data/real_run/README.md`) |
+| `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally — see `.gitignore`) |
 | `docs/diagnostics/` | Documentación científica del pipeline EKF |
-| `tools/` | Scripts Python de visualización, regresión y GAP |
+| `tools/` | Categorized Python tooling — map in [`tools/README.md`](tools/README.md) |
 | `calibration/` | Calibración de montaje IMU |
 
 Unity EKF Explorer (`ekf_explorer/`) is **local-only** (Cesium/Unity binaries ≫ GitHub limits). Protocol: [`docs/diagnostics/19-ekf-explorer-protocol.md`](docs/diagnostics/19-ekf-explorer-protocol.md).
@@ -819,7 +828,7 @@ Vehicle bus demo:
 Quantitative sim benchmarks:
 
 ```powershell
-python run_all_benchmarks.py
+python tools/benchmarks/run_all_benchmarks.py
 ```
 
 Live / offline visualization:
@@ -866,7 +875,7 @@ Short legacy capture archived under `docs/_archive_short_run_jul15/`.
 ### Prepare replay CSV
 
 ```powershell
-python parse_mobile_log.py `
+python tools/analysis/parse_mobile_log.py `
   --input-dir data\real_run `
   --output docs\benchmarks\real_run_replay.csv
 ```
@@ -976,12 +985,12 @@ Frozen reference set: [`docs/diagnostics/reference/`](docs/diagnostics/reference
 
 | Area | Scripts (examples) |
 |------|--------------------|
-| GAP-1 | `audit_gap1_delta_psi_constancy.py`, `audit_gap1_body_forward_axis.py` |
-| GAP-2 | `audit_gap2_gravity_identity_tick.py`, `audit_gap2_specific_force_decomposition.py`, `audit_gap2_predict_chain_break.py` |
-| GAP-3 | `run_gap3_constraint_matrix.py`, `run_gap3_f1_nhc_dose_response.py`, `audit_gap3_*.py` |
-| GAP-4 | `run_gap4_*.py`, `audit_gap4_*.py`, `render_gap4_diagnostic_synthesis.py` |
-| GAP-5 | `run_gap5_p0_passive_validation.py`, `audit_gap5_passive_controller_validation.py` |
-| Support | `audit_body_frame_conformance.py`, `audit_android_signal_identity.py`, `audit_imu_chain.py` |
+| GAP-1 | `tools/audits/audit_gap1_delta_psi_constancy.py`, `tools/audits/audit_gap1_body_forward_axis.py` |
+| GAP-2 | `tools/audits/audit_gap2_gravity_identity_tick.py`, `tools/audits/audit_gap2_specific_force_decomposition.py`, `tools/audits/audit_gap2_predict_chain_break.py` |
+| GAP-3 | `tools/campaigns/run_gap3_constraint_matrix.py`, `tools/campaigns/run_gap3_f1_nhc_dose_response.py`, `audit_gap3_*.py` |
+| GAP-4 | `run_gap4_*.py`, `audit_gap4_*.py`, `tools/media/render_gap4_diagnostic_synthesis.py` |
+| GAP-5 | `tools/campaigns/run_gap5_p0_passive_validation.py`, `tools/audits/audit_gap5_passive_controller_validation.py` |
+| Support | `tools/audits/audit_body_frame_conformance.py`, `tools/audits/audit_android_signal_identity.py`, `tools/experiments/audit_imu_chain.py` |
 
 Artifacts land in `docs/benchmarks/` (and subfolders `gap3_*`, `gap4_gnss_velocity/`, `gap5_adaptive_nhc/`, `constraint_matrix/`, …).
 
@@ -993,12 +1002,12 @@ Artifacts land in `docs/benchmarks/` (and subfolders `gap3_*`, `gap4_gnss_veloci
 
 Primary mount calibration: [`calibration/imu_mount.json`](calibration/imu_mount.json)
 
-- Method: gravity-alignment Rodrigues (`audit_imu_chain.py`)
+- Method: gravity-alignment Rodrigues (`tools/experiments/audit_imu_chain.py`)
 - Maps sensor frame → vehicle body **FRD**
 - Applied in replay via `--mount-calibration` / `--mount-mode calibration`
 
 ```powershell
-python audit_imu_chain.py --export-calibration calibration\imu_mount.json
+python tools/experiments/audit_imu_chain.py --export-calibration calibration\imu_mount.json
 ```
 
 ### Allan variance (IMU noise → Q)
@@ -1007,14 +1016,14 @@ Methodology and CLI are **shipped** — see [Evidence scorecard](#scientific-rig
 
 ```powershell
 # Needs multi-hour static IMU CSV (see analyze_allan.py header for columns)
-python analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
+python tools/analysis/analyze_allan.py --csv docs\imu_static_log.csv --axis gyro_z
 ```
 
 Until the fit table is pasted into Evidence, process-noise defaults remain the σ_a / σ_g macros in `ins_ekf.hpp`.
 ### Monte Carlo
 
 ```powershell
-python run_monte_carlo.py --runs 100
+python tools/benchmarks/run_monte_carlo.py --runs 100
 # Artefacts: docs\monte_carlo\run_*.csv
 ```
 
@@ -1030,18 +1039,18 @@ pip install numpy matplotlib pandas
 
 | Script | Role |
 |--------|------|
-| `analyze_allan.py` | Allan variance (IEEE 952) → ARW/VRW / BI / RRW |
-| `run_monte_carlo.py` | TUNNEL_STRESS Monte Carlo → `docs/monte_carlo/` |
-| `tools/run_static_analysis.py` | cppcheck / clang-tidy / gcov coverage runner |
-| `tools/run_regression_suite.py` | Orchestrates Catch2 units + `--safety-inject` |
+| `tools/analysis/analyze_allan.py` | Allan variance (IEEE 952) → ARW/VRW / BI / RRW |
+| `tools/benchmarks/run_monte_carlo.py` | TUNNEL_STRESS Monte Carlo → `docs/monte_carlo/` |
+| `tools/ci/run_static_analysis.py` | cppcheck / clang-tidy / gcov coverage runner |
+| `tools/ci/run_regression_suite.py` | Orchestrates Catch2 units + `--safety-inject` |
 | `.github/workflows/code-audit.yml` | CI: cppcheck · tidy · ASan · Catch2+RapidCheck |
-| `parse_mobile_log.py` | Sensor Logger folder → `real_run_replay.csv` |
-| `audit_imu_chain.py` | IMU chain audit + mount export |
-| `run_all_benchmarks.py` | Quantitative sim benchmarks |
-| `tools/visualizer.py` | Offline 3D CSV replay |
-| `tools/serial_navstate_capture.py` | USB CDC → NavState CSV (Pico/Artemis; EKF on-device) |
-| `tools/remote_visualizer.py` | Live UDP telemetry |
-| `tools/run_regression_suite.py` | Regression orchestrator (`--full` includes ring stress) |
+| `tools/analysis/parse_mobile_log.py` | Sensor Logger folder → `real_run_replay.csv` |
+| `tools/experiments/audit_imu_chain.py` | IMU chain audit + mount export |
+| `tools/benchmarks/run_all_benchmarks.py` | Quantitative sim benchmarks |
+| `tools/sil/visualizer.py` | Offline 3D CSV replay |
+| `tools/field/serial_navstate_capture.py` | USB CDC → NavState CSV (Pico/Artemis; EKF on-device) |
+| `tools/sil/remote_visualizer.py` | Live UDP telemetry |
+| `tools/ci/run_regression_suite.py` | Regression orchestrator (`--full` includes ring stress) |
 | `tools/audit_gap*.py` / `tools/run_gap*.py` | Scientific GAP campaign |
 | Root `run_h*.py` | H-series experiment runners |
 
@@ -1124,7 +1133,7 @@ Representación estática del frame UART / consola del simulador (`NaviCore3D_Si
 
 Export uses **`fprintf`** — no dynamic allocations inside the simulation loop. Suitable as a reference pattern for SD-card logging on target hardware.
 
-UDP telemetry v3 (32-byte frames) feeds `tools/remote_visualizer.py` for live HIL-style visualization.
+UDP telemetry v3 (32-byte frames) feeds `tools/sil/remote_visualizer.py` for live HIL-style visualization.
 
 **Next step for the twin:** ingest CSV → time-series store → 3D scene (Cesium / Unity / Unreal) with mode/confidence colour coding.
 

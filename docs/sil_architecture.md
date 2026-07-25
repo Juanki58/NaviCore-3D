@@ -80,7 +80,7 @@ Configurable vía `docs/sil_fleet_manifest.example.json` (esquema: `docs/manifes
 
 ## Paquetes binarios
 
-Definición canónica: `src/core/sil_protocol.hpp` · espejo Python: `tools/sil_protocol.py`.
+Definición canónica: `src/core/sil_protocol.hpp` · espejo Python: `tools/lib/sil_protocol.py`.
 
 ### SilTruthPacket — 48 B, magic `0x4E54`
 
@@ -117,7 +117,7 @@ NaviCore mantiene **X=lat°, Y=lon°, Z=alt m** en `GpsSample`; el bridge JSBSim
 
 ## Banco de validación (Paso 3)
 
-1. Lanzar 7 bridges: `python tools/sil_fleet_launcher.py`
+1. Lanzar 7 bridges: `python tools/sil/sil_fleet_launcher.py`
 2. Arrancar motor gráfico con manifiesto → 7 meshes en posiciones iniciales.
 3. Escalón de mando solo en UAV 3 (`control_step` en manifiesto) → solo UAV 3 asciende.
 4. Inyectar fallo GPS en UAV 5 → evento `GPS_LOST` en telemetría `:5205`, mesh sigue con truth.
@@ -126,10 +126,10 @@ NaviCore mantiene **X=lat°, Y=lon°, Z=alt m** en `GpsSample`; el bridge JSBSim
 
 | Herramienta | Rol |
 |-------------|-----|
-| `tools/jsbsim_sil_bridge.py` | Publica truth + sensor UDP por UAV (modo sintético o JSBSim) |
-| `tools/sil_fleet_launcher.py` | Arranca N instancias del bridge según manifiesto |
-| `tools/sil_truth_monitor.py` | Monitor de consola para validar flota |
-| `tools/test_sil_protocol.py` | Pruebas de codec y aislamiento multi-UAV |
+| `tools/sil/jsbsim_sil_bridge.py` | Publica truth + sensor UDP por UAV (modo sintético o JSBSim) |
+| `tools/sil/sil_fleet_launcher.py` | Arranca N instancias del bridge según manifiesto |
+| `tools/sil/sil_truth_monitor.py` | Monitor de consola para validar flota |
+| `tools/sil/test_sil_protocol.py` | Pruebas de codec y aislamiento multi-UAV |
 
 ## Fases siguientes
 

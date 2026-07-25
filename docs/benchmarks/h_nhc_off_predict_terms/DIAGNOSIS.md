@@ -240,7 +240,7 @@ Without `--gap3-gnss-nis-audit-csv`:
 
 
 
-`tools/run_h_nhc_off_predict_terms.py` never passed any `--gap3-*-audit-csv`, while `tools/run_h_nhc_policy_ab.py` always did -- so A/B and predict-terms were **not** the same filter experiment.
+`tools/campaigns/run_h_nhc_off_predict_terms.py` never passed any `--gap3-*-audit-csv`, while `tools/campaigns/run_h_nhc_policy_ab.py` always did -- so A/B and predict-terms were **not** the same filter experiment.
 
 
 

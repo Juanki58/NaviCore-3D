@@ -22,7 +22,7 @@
 | Formatos salida | **Sí** | §10 JSON + regime_model.md + figures | No |
 | Prohibiciones mid-run | **Sí** | §0.2, §8, §11 | No |
 | Resultado inconcluso | **Sí** | Escenario B §5.1; «ninguno cumple I2» §9 | No |
-| Script nombrado | **Previsto, no existe** | §10 `audit_gap5_v2_observable_selection.py` | Implementar = ingeniería del protocolo, no ciencia nueva |
+| Script nombrado | **Previsto, no existe** | §10 `tools/audits/audit_gap5_v2_observable_selection.py` | Implementar = ingeniería del protocolo, no ciencia nueva |
 
 ---
 

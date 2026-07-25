@@ -42,9 +42,10 @@ NaviCore-3D/
 │   ├── comarruga_lab_hardware.md
 │   ├── sil_architecture.md
 │   └── telemetria_navicore.csv
-├── tools/
-│   ├── visualizer.py
-│   └── remote_visualizer.py
+├── tools/                      # Categorized — see tools/README.md
+│   ├── sil/visualizer.py
+│   ├── sil/remote_visualizer.py
+│   └── lib/telemetry_protocol.py
 ├── CMakeLists.txt
 └── build/
 ```
@@ -56,9 +57,9 @@ NaviCore-3D/
 - **`src/core/vehicle_bus_adapter.*`**: Adaptador que traduce tramas de bus CAN (`ImuCanFrame`, `OdoCanFrame`) al formato nativo del filtro (`ImuSample`).
 - **`src/targets/generic_pc/`**: Simulador de estrés en PC (`NaviCore3D_Sim`) y Demo de bus de coche (`NaviCore3D_VehicleDemo`).
 - **`src/targets/pico2_hardware/`**: ★ Target validado en banco — Raspberry Pi Pico 2 W, laboratorio Comarruga @ 100 Hz (`NaviCore3D_Pico2`). Ver `docs/comarruga_lab_hardware.md`.
-- **`tools/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
-- **`tools/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
-- **`tools/telemetry_protocol.py`** / **`tools/telemetry_receiver.py`**: Codec y capa de transporte UDP compartida.
+- **`tools/sil/visualizer.py`**: Visualizador dinámico e interactivo 3D en Python (replay CSV).
+- **`tools/sil/remote_visualizer.py`**: Visualizador UDP en tiempo real (10 Hz HIL) para telemetría remota.
+- **`tools/lib/telemetry_protocol.py`** / **`tools/sil/telemetry_receiver.py`**: Codec y capa de transporte UDP compartida.
 
 ---
 
@@ -166,17 +167,17 @@ cmake --build build --target NaviCore3D_VehicleDemo
 ./build/NaviCore3D_VehicleDemo.exe
 
 # Lanzar el Gemelo Digital (requiere: pip install matplotlib pandas)
-python tools/visualizer.py
+python tools/sil/visualizer.py
 
 # Telemetría UDP en vivo (requiere: pip install matplotlib numpy)
-python tools/remote_visualizer.py
+python tools/sil/remote_visualizer.py
 ./build/NaviCore3D_Sim.exe
 ./build/NaviCore3D_Sim.exe --no-udp   # sin red (CI / headless)
 
 # Pruebas del protocolo UDP (32 bytes v3: escenario, nav_mode, cross/along, temperatura)
-python tools/test_udp_telemetry.py
-python tools/test_udp_faults.py
-python tools/test_udp_integration.py
+python tools/sil/test_udp_telemetry.py
+python tools/sil/test_udp_faults.py
+python tools/sil/test_udp_integration.py
 ```
 
 **Salida esperada — VehicleDemo (5 ticks):**

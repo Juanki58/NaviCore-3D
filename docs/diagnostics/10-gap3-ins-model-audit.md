@@ -3,7 +3,7 @@
 **Estado:** **cerrado** — síntesis congelada en **[12-gap3-synthesis.md](12-gap3-synthesis.md)** (2026-07-18)  
 **Prerequisitos:** GAP-1 cerrado, GAP-2 pasos 1–3  
 **Referencias:** [08-body-frame-contract.md](08-body-frame-contract.md), [09-predict-conformance-audit.md](09-predict-conformance-audit.md), **[11-replay-zupt-provenance.md](11-replay-zupt-provenance.md)**, **[12-gap3-synthesis.md](12-gap3-synthesis.md)**  
-**Artefactos GAP-2 paso 3:** `tools/audit_gap2_specific_force_decomposition.py` → `gap2_specific_force_decomposition_report.json`
+**Artefactos GAP-2 paso 3:** `tools/audits/audit_gap2_specific_force_decomposition.py` → `gap2_specific_force_decomposition_report.json`
 
 > **⚠ Validez experimental (H9 → GAP-3.7):** Los runs full-filter con política legacy `forced_time` están **condicionados** por ZUPT espurio. Baseline científico = ZUPT OFF. Ver [11-replay-zupt-provenance.md](11-replay-zupt-provenance.md).
 
@@ -72,7 +72,7 @@ Init estático H9a usa accel para roll/pitch inicial y bias; **después solo gyr
 
 ## 5. Resultados A/B/C/D — lectura matizada
 
-Experimento: `tools/audit_gap2_specific_force_decomposition.py` (Patrón Oro, **predict-only**, 2–10 s).
+Experimento: `tools/audits/audit_gap2_specific_force_decomposition.py` (Patrón Oro, **predict-only**, 2–10 s).
 
 | Prueba | `\|a_lin,h\|` mean | Lectura |
 |--------|------------------:|---------|
@@ -176,7 +176,7 @@ Si correlacionan → propagación reproduce dinámica medida; “leak” es acel
 
 ### 8.2 Eficacia de corrección (full filter, no predict-only) — **EJECUTADO**
 
-Script: `tools/audit_gap3_correction_efficacy.py`  
+Script: `tools/audits/audit_gap3_correction_efficacy.py`  
 Artefactos: `gap3_correction_efficacy_report.json`, `gap3_predict_only_h8.csv`, `gap3_full_filter_h8.csv`, `gap3_full_filter_h7.csv`
 
 Config común: H9a, mount Rodrigues, yaw=0, Patrón Oro.
@@ -210,7 +210,7 @@ Instrumentación (EKF + replay):
 
 CLI replay: `--gap3-observation-audit-csv <csv>`
 
-Script: `tools/audit_gap3_observation_cycle.py`  
+Script: `tools/audits/audit_gap3_observation_cycle.py`  
 Artefactos: `gap3_observation_cycle.csv`, `gap3_observation_cycle_report.json`, `gap3_observation_cycle_analysis.png`
 
 Clasificación de mecanismos por ciclo:
@@ -247,7 +247,7 @@ Comparación obligatoria PO vs FF confirma: propagación del **estado nominal** 
 | **3.3** | ¿GNSS→velocidad acopla? | pseudo-innovación `v_pred − v_gps`, `dx_vel` vs `dx_pos` en aceptadas |
 
 CLI: `--gap3-gnss-nis-audit-csv`  
-Script: `tools/audit_gap3_gnss_nis_anatomy.py`  
+Script: `tools/audits/audit_gap3_gnss_nis_anatomy.py`  
 Artefactos: `gap3_gnss_nis_anatomy.csv`, `gap3_gnss_nis_anatomy_report.json`, gráficos timeline / NIS / acoplamiento
 
 **Nota:** el update GNSS observa **solo posición** (3D). No hay innovación de velocidad en el modelo; la pseudo-innovación de velocidad compara `v_EKF` con `speed/course` GPS para GAP-3.3.
@@ -269,7 +269,7 @@ Artefactos: `gap3_gnss_nis_anatomy.csv`, `gap3_gnss_nis_anatomy_report.json`, gr
 **Respuesta en código:** solo posición. `update_gnss()` forma `y = z − pos_` (3D), `S = P[pos,pos] + R`, `K = P[:,pos] · S⁻¹`. No hay filas de `H` sobre velocidad; `GpsSample` incluye `speed_mps` / `course_deg` pero el EKF **no los usa** en la corrección (solo posición LLA→NED).
 
 CLI: `--gap3-gnss-k-block-audit-json`  
-Script: `tools/audit_gap3_gnss_k_block.py`  
+Script: `tools/audits/audit_gap3_gnss_k_block.py`  
 Artefactos: `gap3_gnss_k_block_audit.json`, `gap3_gnss_k_block_report.json`
 
 **Fix auditado:** última GNSS **aceptada** antes del primer rechazo, **t ≈ 10.55 s** (NIS=8.6, `innov_h`≈25 m).
@@ -318,7 +318,7 @@ Artefactos: `gap3_gnss_k_block_audit.json`, `gap3_gnss_k_block_report.json`
 | **P₀** | **solo diagonal** — bloques cruzados inicializan en cero |
 
 CLI: `--gap3-cov-propagation-audit-csv`  
-Script: `tools/audit_gap3_cov_propagation.py`  
+Script: `tools/audits/audit_gap3_cov_propagation.py`  
 Artefactos: `gap3_cov_propagation_audit.csv`, `gap3_cov_propagation_report.json`
 
 **Matiz:** «implementación del predict consistente con strapdown» ≠ «modelo suficiente para el problema».
@@ -346,7 +346,7 @@ Artefactos: `gap3_cov_propagation_audit.csv`, `gap3_cov_propagation_report.json`
 ### 8.8 GAP-3.6 — Ciclo pre/post por update (¿quién destruye P_pv?)
 
 CLI: `--gap3-cov-step-audit-csv`  
-Script: `tools/audit_gap3_cov_step_cycle.py`  
+Script: `tools/audits/audit_gap3_cov_step_cycle.py`  
 Artefactos: `gap3_cov_step_audit.csv` (~138k filas), `gap3_cov_step_audit_report.json`, gráficos ventana / P_vv ruta / reducción por update
 
 **Serie temporal confirmada (mediana Δ post−pre por IMU):**
@@ -378,7 +378,7 @@ Artefactos: `gap3_cov_step_audit.csv` (~138k filas), `gap3_cov_step_audit_report
 GAP-3.5 responde B; GAP-3.7 responde A instrumentando **quién escribe `vel_`**, no quién podría hacerlo.
 
 CLI: `--gap3-vel-source-audit-csv`, `--gap3-imu-constraint-audit-csv`  
-Script: `tools/audit_gap3_question_a.py`  
+Script: `tools/audits/audit_gap3_question_a.py`  
 Artefactos: `gap3_vel_source_audit.csv`, `gap3_imu_constraint_audit.csv`, `gap3_question_a_report.json`, gráficos `gap3_vel_accumulation_by_source.png`, `gap3_zupt_vs_gps_speed.png`, `gap3_bias_ax_vs_abody_x.png`
 
 #### 8.9.1 Σ‖Δv‖ acumulado por fuente (Patrón Oro, 332 s)
@@ -446,7 +446,7 @@ GNSS pos-only: K_vel,pos ≈ 10⁻⁷  (Pregunta B, ya cerrada)
 ### 8.10 GAP-3.8 — Matriz de políticas de restricciones (A–E)
 
 CLI: `--constraint-policy`, `--nhc-policy`, `--gap3-constraint-pipeline-audit-csv`  
-Script: `tools/run_gap3_constraint_matrix.py`  
+Script: `tools/campaigns/run_gap3_constraint_matrix.py`  
 Artefactos: `docs/benchmarks/constraint_matrix/{A..E}/`, `gap3_constraint_matrix_report.json`
 
 **Políticas ZUPT (`--constraint-policy`):**
@@ -520,7 +520,7 @@ Hipótesis abiertas sobre NHC (no excluyentes): σ demasiado fuerte, P infravalo
 **Prioridad #1** antes de GNSS+velocidad. **No tocar** Q/R/gains/predict hasta cerrar causalidad.
 
 CLI: `--gap3-nhc-block-audit-csv`  
-Script: `tools/audit_gap3_nhc_block.py`  
+Script: `tools/audits/audit_gap3_nhc_block.py`  
 Artefactos: `docs/benchmarks/gap3_nhc_block/{B_nhc_on,E_nhc_off}/`, `gap3_nhc_block_report.json`, plots timeline/NIS/v_body/ΔP-vs-Δx
 
 **Diseño:** ZUPT OFF (`--constraint-policy disabled`), comparar NHC ON (B) vs OFF (E).
@@ -551,7 +551,7 @@ predict → estado OK → NHC → Δx≈0 pero ΔP_vv/P_pv≪0
 | B (NHC ON) | 32 845 | **7** | 27.2 m |
 | E (NHC OFF) | 0 | **56** | 7.7 m |
 
-**Verdict:** `NHC_DOMINATES_GNSS_ACCEPTANCE` — re-ejecutar `audit_gap3_nhc_block.py` tras ampliar CSV para métricas ΔP/v_body/NIS por componente.
+**Verdict:** `NHC_DOMINATES_GNSS_ACCEPTANCE` — re-ejecutar `tools/audits/audit_gap3_nhc_block.py` tras ampliar CSV para métricas ΔP/v_body/NIS por componente.
 
 **Detector estacionariedad (fase 2):** reason / window / confidence para C vs D — pendiente.
 
@@ -559,7 +559,7 @@ predict → estado OK → NHC → Δx≈0 pero ΔP_vv/P_pv≪0
 
 **Sin más escenarios.** Sólo exp B (ZUPT OFF, NHC ON), ventana **[-2 s, +0.5 s]** por fix.
 
-Script: `tools/audit_gap3_gnss_accepted_autopsy.py`  
+Script: `tools/audits/audit_gap3_gnss_accepted_autopsy.py`  
 Artefactos: `docs/benchmarks/gap3_gnss_accepted_autopsy/`
 
 **Por fix:** innov, S, cond(S), NIS, gate, P pre/post GNSS, K, Δx, v before/after, Σ|ΔP|_NHC y ΣΔv (predict/NHC/ZUPT) en -2 s.
@@ -568,7 +568,7 @@ Artefactos: `docs/benchmarks/gap3_gnss_accepted_autopsy/`
 
 ### 8.11 GAP-3.11 — Comparativa fix #2 vs #7
 
-Script: `tools/audit_gap3_fix2_vs_fix7.py`  
+Script: `tools/audits/audit_gap3_fix2_vs_fix7.py`  
 Artefactos: `docs/benchmarks/gap3_fix2_vs_fix7/`
 
 Dos estados del mismo sistema (no mejor/peor): innov ~ mismo orden, cond(S)≈1, k_vel cae ~10×.
@@ -578,11 +578,11 @@ Métricas: **P_vv(t), P_pv(t), P_aa(t)** escalera pre/post NHC; **ΔP/P**; **Σ|
 ### 8.12 GAP-3.12 — Exp F: NHC cada N ticks
 
 CLI: `--nhc-every-n-ticks N`  
-Script: `tools/run_gap3_nhc_decimation.py`
+Script: `tools/campaigns/run_gap3_nhc_decimation.py`
 
 ### 8.13 GAP-3.13 — Autoconsumo Joseph fix #2 vs erosión inter-fix (prioridad sobre #2 vs #7)
 
-Script: `tools/audit_gap3_fix2_fix3_autoconsume.py`  
+Script: `tools/audits/audit_gap3_fix2_fix3_autoconsume.py`  
 Artefactos: `docs/benchmarks/gap3_fix2_fix3_autoconsume/`
 
 **Comprobación de una línea (post#2 vs pre#3):**
@@ -613,7 +613,7 @@ La identidad literal post#2 ≈ pre#3 **no se cumple**. Joseph en fix#2 consume 
 
 ### 8.14 GAP-3.14 — Reconstrucción tick-a-tick fix#2→#3 + Joseph fix#2
 
-Script: `tools/audit_gap3_fix2_fix3_tick_reconstruction.py`  
+Script: `tools/audits/audit_gap3_fix2_fix3_tick_reconstruction.py`  
 Artefactos: `docs/benchmarks/gap3_fix2_fix3_tick_reconstruction/`
 
 **Joseph fix#2 (89.6→62.0):** reconstrucción `P+_vv` con bloques pos-vel de JSONL + `R` escalar → post predicho **58.7** vs obs **62.0** (Δ≈3.3 frob, ~5 %). Drop predicho 30.9 vs obs 27.6 (~12 %). **Sin bug Joseph evidente** — residual compatible con acoplamiento att/bias no exportado en k-block JSONL.
@@ -634,7 +634,7 @@ Artefactos: `docs/benchmarks/gap3_fix2_fix3_tick_reconstruction/`
 
 ### 8.15 GAP-3.15 — F1 NHC dose-response (falsificación)
 
-Script: `tools/run_gap3_f1_nhc_dose_response.py`  
+Script: `tools/campaigns/run_gap3_f1_nhc_dose_response.py`  
 Artefactos: `docs/benchmarks/gap3_f1_nhc_dose_response/`
 
 Curva N = 1, 2, 5, 10, 20, OFF (∞). ZUPT OFF. Métricas mecanísticas (no RMSE).
@@ -661,7 +661,7 @@ Curva N = 1, 2, 5, 10, 20, OFF (∞). ZUPT OFF. Métricas mecanísticas (no RMSE
 
 ### 8.16 GAP-3.16 — Mecanismo del cliff NHC (4 comprobaciones)
 
-Script: `tools/audit_gap3_nhc_cliff_mechanism.py`  
+Script: `tools/audits/audit_gap3_nhc_cliff_mechanism.py`  
 Artefactos: `docs/benchmarks/gap3_nhc_cliff_mechanism/`
 
 **1. ¿K≈1?** No. Ticks 2–4: K_scalar_z=HPH/(HPH+R) ∈ [0.36, 0.55]; k_vel_max 2.3–3.5. Cliff tick 3: NIS≈0.03, ||ΔP||/||Δx||≈**47** → covarianza se consume con innovación pequeña. **Geometría multivariable**, no saturación escalar.
@@ -674,7 +674,7 @@ Artefactos: `docs/benchmarks/gap3_nhc_cliff_mechanism/`
 
 ### 8.17 GAP-3.17 — F1.1 Anatomía del gate NIS (cuello de botella)
 
-Script: `tools/audit_gap3_f1_nis_gate_anatomy.py`  
+Script: `tools/audits/audit_gap3_f1_nis_gate_anatomy.py`  
 Artefactos: `docs/benchmarks/gap3_f1_nis_gate_anatomy/` (`rejected_fixes_nis_anatomy.csv`, report JSON/MD, plots)
 
 **Cadena dividida por F1:**
@@ -718,7 +718,7 @@ En los cuatro casos el primer reject **domina el eje N** (contrib_N ≫ contrib_
 
 ### 8.18 GAP-3.18 — F1.2 Anatomía del cliff NHC
 
-Script: `tools/audit_gap3_f1_cliff_anatomy.py`  
+Script: `tools/audits/audit_gap3_f1_cliff_anatomy.py`  
 Artefactos: `docs/benchmarks/gap3_f1_cliff_anatomy/` (`gap_ticks_all_policies.csv`, `nhc_events_state_conditioned.csv`, plots)
 
 **Pregunta:** ¿el burst depende del **estado** (P_pre al disparar NHC) o solo de la **frecuencia**?
@@ -802,7 +802,7 @@ Tareas legacy GAP-3 (opcionales, no bloquean cierre):
 | 1.2 | 2026-07-18 | GAP-3.8 matriz políticas A–E + pipeline vel por tick |
 | 1.3 | 2026-07-18 | Regla proveniencia: H9→GAP-3.7 condicionados; re-run `imu_stationary` — doc 11 |
 | 1.4 | 2026-07-18 | 8.10.2 árbol causal dual ZUPT→v, NHC→GNSS accepts; GAP-3.9 NHC block audit plan |
-| 1.5 | 2026-07-18 | GAP-3.9 implementado: `--gap3-nhc-block-audit-csv`, `audit_gap3_nhc_block.py` |
+| 1.5 | 2026-07-18 | GAP-3.9 implementado: `--gap3-nhc-block-audit-csv`, `tools/audits/audit_gap3_nhc_block.py` |
 | 1.6 | 2026-07-18 | GAP-3.10 autopsia 7 fixes GNSS; cond(S) GNSS/NHC; K-block JSONL |
 | 1.7 | 2026-07-18 | GAP-3.11 #2 vs #7; GAP-3.12 Exp F `--nhc-every-n-ticks` |
 | 1.8 | 2026-07-18 | GAP-3.13 post#2 vs pre#3; híbrido Joseph+NHC; K_vel algebra; innov_h plano |

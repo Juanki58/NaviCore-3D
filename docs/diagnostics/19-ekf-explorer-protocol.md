@@ -52,7 +52,7 @@ El Explorer **consume** session packs. No calcula el EKF. No redefine umbrales.
 ## 4. Contrato de datos — Session pack v1
 
 **Schema id:** `navicore.ekf_explorer.session/v1`  
-**Exportador:** `tools/export_ekf_explorer_session.py`  
+**Exportador:** `tools/media/export_ekf_explorer_session.py`  
 **Artefactos:** `docs/ekf_explorer/sessions/<name>/session.json` (+ opcional `session.czml`)
 
 ### Campos mínimos
@@ -120,7 +120,7 @@ ekf_explorer/
 4. Abrir/`crear` proyecto en `ekf_explorer/UnityProject`.  
 5. Package Manager → add **Cesium for Unity** (registry Cesium / OpenUPM según doc vigente).  
 6. Cesium ion token (cuenta gratuita) → `CesiumIonToken` local.  
-7. `python tools/export_ekf_explorer_session.py --preset slalom` y cargar `session.json`.
+7. `python tools/media/export_ekf_explorer_session.py --preset slalom` y cargar `session.json`.
 
 ---
 

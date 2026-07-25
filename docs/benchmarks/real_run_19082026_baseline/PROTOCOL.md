@@ -31,7 +31,7 @@ Validar si el **modelo mecanicista** congelado en GAP-3/4 (NHC burst, compresió
 1. Artefactos **solo** bajo `docs/benchmarks/real_run_19082026_baseline/`.
 2. No escribir en `gap4_gnss_velocity/G1/` ni reutilizar sus CSV como entrada.
 3. Única variable deliberada: el **recorrido** (CSV de replay).
-4. Configuración = shell G1 (§11.1 / `tools/run_gap4_arm.py --arm G1`):
+4. Configuración = shell G1 (§11.1 / `tools/campaigns/run_gap4_arm.py --arm G1`):
    - `--gnss-obs-mode pos_vel`
    - `--p-pv-policy none`
    - `--constraint-policy disabled` (ZUPT OFF)

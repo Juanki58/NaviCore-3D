@@ -66,10 +66,10 @@ El problema **no** está en el EKF, ni en F1, ni en GAP-4. Está en la **traducc
 **Scripts:**
 
 ```bash
-python tools/run_gap5_p0_passive_validation.py --profile f1-bridge
-python tools/run_gap5_p0_passive_validation.py --profile gap5-poc
-python tools/audit_gap5_passive_controller_validation.py --run-dir docs/benchmarks/gap5_adaptive_nhc/p0_passive_f1_bridge --plot
-python tools/audit_gap5_passive_controller_validation.py --run-dir docs/benchmarks/gap5_adaptive_nhc/p0_passive_validation --plot
+python tools/campaigns/run_gap5_p0_passive_validation.py --profile f1-bridge
+python tools/campaigns/run_gap5_p0_passive_validation.py --profile gap5-poc
+python tools/audits/audit_gap5_passive_controller_validation.py --run-dir docs/benchmarks/gap5_adaptive_nhc/p0_passive_f1_bridge --plot
+python tools/audits/audit_gap5_passive_controller_validation.py --run-dir docs/benchmarks/gap5_adaptive_nhc/p0_passive_validation --plot
 ```
 
 ---

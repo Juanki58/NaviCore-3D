@@ -268,15 +268,15 @@ flowchart TB
 
 | GAP | Script | Output |
 |-----|--------|--------|
-| 3.8 | `run_gap3_constraint_matrix.py` | `constraint_matrix/` |
-| 3.9 | `audit_gap3_nhc_block.py` | `gap3_nhc_block/` |
-| 3.10 | `audit_gap3_gnss_accepted_autopsy.py` | `gap3_gnss_accepted_autopsy/` |
-| 3.13 | `audit_gap3_fix2_fix3_autoconsume.py` | `gap3_fix2_fix3_autoconsume/` |
-| 3.14 | `audit_gap3_fix2_fix3_tick_reconstruction.py` | `gap3_fix2_fix3_tick_reconstruction/` |
-| 3.15 F1 | `run_gap3_f1_nhc_dose_response.py` | `gap3_f1_nhc_dose_response/` |
-| 3.16 | `audit_gap3_nhc_cliff_mechanism.py` | `gap3_nhc_cliff_mechanism/` |
-| 3.17 F1.1 | `audit_gap3_f1_nis_gate_anatomy.py` | `gap3_f1_nis_gate_anatomy/` |
-| 3.18 F1.2 | `audit_gap3_f1_cliff_anatomy.py` | `gap3_f1_cliff_anatomy/` |
+| 3.8 | `tools/campaigns/run_gap3_constraint_matrix.py` | `constraint_matrix/` |
+| 3.9 | `tools/audits/audit_gap3_nhc_block.py` | `gap3_nhc_block/` |
+| 3.10 | `tools/audits/audit_gap3_gnss_accepted_autopsy.py` | `gap3_gnss_accepted_autopsy/` |
+| 3.13 | `tools/audits/audit_gap3_fix2_fix3_autoconsume.py` | `gap3_fix2_fix3_autoconsume/` |
+| 3.14 | `tools/audits/audit_gap3_fix2_fix3_tick_reconstruction.py` | `gap3_fix2_fix3_tick_reconstruction/` |
+| 3.15 F1 | `tools/campaigns/run_gap3_f1_nhc_dose_response.py` | `gap3_f1_nhc_dose_response/` |
+| 3.16 | `tools/audits/audit_gap3_nhc_cliff_mechanism.py` | `gap3_nhc_cliff_mechanism/` |
+| 3.17 F1.1 | `tools/audits/audit_gap3_f1_nis_gate_anatomy.py` | `gap3_f1_nis_gate_anatomy/` |
+| 3.18 F1.2 | `tools/audits/audit_gap3_f1_cliff_anatomy.py` | `gap3_f1_cliff_anatomy/` |
 
 ---
 

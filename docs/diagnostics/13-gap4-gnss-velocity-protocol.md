@@ -284,7 +284,7 @@ Patrón GAP-3.10 — **todo arm desde el primer replay**:
 | Γ gap | Σ\|ΔP\|_NHC / ΣΔP_predict | **19.7** | — |
 | top3/B_uniform | burst guardrail | **9.37×** | — |
 
-**G0 PASS** — artefactos: `docs/benchmarks/gap4_gnss_velocity/G0/`, reporte `gap4_g0_baseline_report.json`, script `tools/run_gap4_g0_baseline.py`.
+**G0 PASS** — artefactos: `docs/benchmarks/gap4_gnss_velocity/G0/`, reporte `gap4_g0_baseline_report.json`, script `tools/campaigns/run_gap4_g0_baseline.py`.
 
 Reporte JSON: comparativa G0 vs G1 vs G2 con veredicto H1/P1–P5.
 
@@ -325,7 +325,7 @@ Reporte JSON: comparativa G0 vs G1 vs G2 con veredicto H1/P1–P5.
 
 **Descartado:** subir σ_v global (opción 2) — moderaría arranque legítimo en G2 sin resolver acoplamiento G1.
 
-Artefactos: `docs/benchmarks/gap4_gnss_velocity/{G0,G2,G1}/`, script `tools/gap4_abort_guardrail.py`.
+Artefactos: `docs/benchmarks/gap4_gnss_velocity/{G0,G2,G1}/`, script `tools/lib/gap4_abort_guardrail.py`.
 
 ### 10.2 Anatomía k_vel G2 — dos de dos LEGITIMATE_HIGH_GAIN
 
@@ -334,7 +334,7 @@ Artefactos: `docs/benchmarks/gap4_gnss_velocity/{G0,G2,G1}/`, script `tools/gap4
 | fix#2 | 0,975 | 89,6 m²/s² | ✓ | −0,018 m/s | LEGITIMATE_HIGH_GAIN |
 | fix#3 | 0,561 | 2,88 m²/s² | ✓ | −0,059 m/s | LEGITIMATE_HIGH_GAIN |
 
-Informe: `G2/gap4_g2_kvel_anatomy_report.json`, script `tools/audit_gap4_g2_kvel_anatomy.py`.
+Informe: `G2/gap4_g2_kvel_anatomy_report.json`, script `tools/audits/audit_gap4_g2_kvel_anatomy.py`.
 
 ### 10.3 G1 fix#2 — verificación álgebra 5D (bug vs acoplamiento)
 
@@ -348,7 +348,7 @@ Tres chequeos sobre update H apilado + Joseph N-dimensional en fix#2 (`t=5,664 s
 
 **Mecanismo (descompuesto):** Δv = K_vel,pos·y_pos + K_vel,vel·y_vel. En fix#2 el término cruzado domina (~**69%** de ‖Δv‖) porque y_pos≈39,6 m e P_pv≈140.
 
-Informe: `G1/gap4_g1_fix2_5d_algebra_report.json` (fix#2), script `tools/audit_gap4_g1_fix2_5d_algebra.py`.
+Informe: `G1/gap4_g1_fix2_5d_algebra_report.json` (fix#2), script `tools/audits/audit_gap4_g1_fix2_5d_algebra.py`.
 
 ### 10.4 Tres puntos — colinealidad tiempo vs ‖y_pos‖ (n=3, tendencia)
 
@@ -388,7 +388,7 @@ Informe n=3: `G1/gap4_coupling_collinearity_report.json`.
 
 ### 10.4c Barrido completo — cos(dv_pos, err_pre) en todos los accepts k_block (n=45 / G2 n=33)
 
-**Script:** `tools/audit_gap4_alignment_sweep.py`  
+**Script:** `tools/audits/audit_gap4_alignment_sweep.py`  
 **Informe:** `G1/gap4_alignment_sweep_report.json`  
 **Cobertura:** accepts con `gnss_k_block.jsonl` + speed (G0 6/7, G1 6/8, G2 33/33). Contrafactual 5D pos+vel en todos los brazos. **Pool primario: G2 n=33** (evita triple-conteo del mismo fix físico en G0/G1/G2).
 
@@ -428,7 +428,7 @@ Informe n=3: `G1/gap4_coupling_collinearity_report.json`.
 
 ### 10.4d Discriminación gap vs ‖y_pos‖ — ¿qué condicionar en 1a? (G2 n=33)
 
-**Script:** `tools/audit_gap4_threshold_discrimination.py`  
+**Script:** `tools/audits/audit_gap4_threshold_discrimination.py`  
 **Informe:** `G1/gap4_threshold_discrimination_report.json`
 
 | Criterio | ‖y_pos‖ | gap (`effective_gap`) |
@@ -455,7 +455,7 @@ Informe n=3: `G1/gap4_coupling_collinearity_report.json`.
 
 ### 10.4e Gate causal directo — simulación exploratoria H1d vs proxies (G2 n=33)
 
-**Script:** `tools/audit_gap4_direct_cos_gate.py`  
+**Script:** `tools/audits/audit_gap4_direct_cos_gate.py`  
 **Informe:** `G1/gap4_direct_cos_gate_report.json`
 
 **Variable causal en tiempo real (sin look-ahead):** cos(dv_pos, err_pre) con err_pre = v_pred − v_GPS (medida entrante); dv_pos = K_vel,pos·y_pos disponible pre-corrección.
@@ -498,7 +498,7 @@ Informe n=3: `G1/gap4_coupling_collinearity_report.json`.
 | 2 | `fig2_causal_chain.png` | Cadena mecanicista predict → P → gate → trayectoria |
 | 3 | `fig3_ppv_ratio_vs_cos_scatter.png` | \|P_pv\|/P_vv vs cos (post-bifurcación) |
 
-Regenerar: `python tools/render_gap4_diagnostic_synthesis.py` (requiere `ppv_divergence_tree.json`).
+Regenerar: `python tools/media/render_gap4_diagnostic_synthesis.py` (requiere `ppv_divergence_tree.json`).
 
 **Criterio de éxito post-diagnóstico:** la intervención debe ser coherente con este modelo mecanicista — no basta «acepta más GNSS» o «baja RMSE».
 
@@ -519,7 +519,7 @@ La divergencia no es un bug de implementación del zero de P_pv: el gate **no di
 
 1. Toda hipótesis sobre alineación, disparo del gate o dominio de validez de `cos_pos` / `cos_tot` debe apoyarse en campos logueados al final de cada fila de `gnss_nis_audit.csv`: `ppv_policy`, `ppv_triggered`, `cos_dv_pos_err_pre`, `cos_dv_tot_err_pre`, `ppv_frob_pre`, `ppv_frob_post`.
 2. Scripts de autopsia que recomputan K o cos desde CSV de replay son **exploratorios**; no pueden contradecir ni sustituir el log del filtro.
-3. Comparaciones 1d vs 1d′ (truth table fix#2–7, gps#32) usan replays con logging directo (`arm_1d_cos_pos_0_40s_logged`, `arm_1d_prime_cos_tot_0_40s_logged`); agregación: `tools/audit_gap4_ppv_truth_table.py`.
+3. Comparaciones 1d vs 1d′ (truth table fix#2–7, gps#32) usan replays con logging directo (`arm_1d_cos_pos_0_40s_logged`, `arm_1d_prime_cos_tot_0_40s_logged`); agregación: `tools/audits/audit_gap4_ppv_truth_table.py`.
 
 **Implicación:** antes de modificar 1d′ o ampliar el gate, caracterizar el **dominio de validez** de `cos_tot` con valores logueados — no introducir heurísticas ad hoc en estado degradado.
 
@@ -538,8 +538,8 @@ A partir de ahí existen **dos instancias** del filtro. Comparar `cos` en fix#6�
 
 **Artefactos:**
 
-- Truth table: `ppv_truth_table_1d_vs_1dprime.json` — `tools/audit_gap4_ppv_truth_table.py`
-- Árbol de divergencia: `ppv_divergence_tree.json`, diagrama Mermaid `ppv_divergence_tree.mmd` — `tools/audit_gap4_ppv_divergence_tree.py`
+- Truth table: `ppv_truth_table_1d_vs_1dprime.json` — `tools/audits/audit_gap4_ppv_truth_table.py`
+- Árbol de divergencia: `ppv_divergence_tree.json`, diagrama Mermaid `ppv_divergence_tree.mmd` — `tools/audits/audit_gap4_ppv_divergence_tree.py`
 - Magnitudes por nodo: \|P_pv\|, P_vv (Frobenius), ratio \|P_pv\|/P_vv, cos_pos, cos_tot, NIS, accept/reject
 
 **Hipótesis causal pendiente (no refutada):** `cos` puede ser **observable** de la geometría de P (bloque P_pv vs P_vv), no la variable de diseño primaria. Tras fix#4, la rama 1d′ acumula \|P_pv\| y ratio \|P_pv\|/P_vv más altos; el signo de `cos` en fix#6–7 se invierte respecto a 1d **junto con** el cambio de nominal, no como efecto aislado del ángulo.
@@ -554,7 +554,7 @@ A partir de ahí existen **dos instancias** del filtro. Comparar `cos` en fix#6�
 
 **Estado:** ejecutado (familia 1a/1d/1e → **FAIL** / ABORT @ fix#2; H1e omisión PASS)  
 **Fecha:** 2026-07-18  
-**Prerequisito:** §10 diagnóstico cerrado; guardrail §3.3 implementado (`tools/gap4_abort_guardrail.py`)
+**Prerequisito:** §10 diagnóstico cerrado; guardrail §3.3 implementado (`tools/lib/gap4_abort_guardrail.py`)
 
 ### 11.0 Pregunta e hipótesis
 
@@ -668,7 +668,7 @@ docs/benchmarks/gap4_gnss_velocity/G1_intervention/
   gap4_intervention_report.json
 ```
 
-Script: `tools/run_gap4_arm.py` (`--ppv-policy`), orquestador `tools/run_gap4_intervention.py` (`--run-all`, `--g2-reference`).  
+Script: `tools/campaigns/run_gap4_arm.py` (`--ppv-policy`), orquestador `tools/campaigns/run_gap4_intervention.py` (`--run-all`, `--g2-reference`).  
 Replay: `--p-pv-policy {none,gap_le_1s,zero,cos_pos,cos_tot,innov_h}` en `NaviCore3D_Replay.exe`.
 
 ---
@@ -799,7 +799,7 @@ Tratar **fix#2** con una **intervención directa sobre el evento**, no con un ga
 |---------|-------|-------|
 | 1.0 | 2026-07-18 | Protocolo preregistrado; evidencia F1/F1.1 inline; falsación explícita; G2 vel-only; R_vel; instrumentación obligatoria |
 | 1.1 | 2026-07-18 | §1.0 ancla k_vel; F1d caveat n=2; §3.1 veredicto tres vías; ΔP/P abort complementario |
-| 1.2 | 2026-07-18 | **G0 ejecutado** — 7 accepts, métricas §1/§6 reproducidas; `run_gap4_g0_baseline.py` |
+| 1.2 | 2026-07-18 | **G0 ejecutado** — 7 accepts, métricas §1/§6 reproducidas; `tools/campaigns/run_gap4_g0_baseline.py` |
 | 1.3 | 2026-07-18 | **`--gnss-obs-mode`** (pos/pos_vel/vel_only) + R_vel σ=1.5 m/s; **G2 ejecutado** |
 | 1.4 | 2026-07-18 | Guardarraíl §3.3 condicional (k∧Δerr componente observada); G2/G1 corridos; anatomía k_vel G2 |
 | 1.5 | 2026-07-18 | Cierre diagnóstico §10 — álgebra 5D ALGEBRA_CONSISTENT; comparativa fix#2/#7 (n=2) |

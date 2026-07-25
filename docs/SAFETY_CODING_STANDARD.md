@@ -37,7 +37,7 @@ Avionics / automotive reviewers share a vocabulary with MISRA-style rules even w
 | ASan + UBSan (PC builds) | Runtime UB / buffer issues on host |
 | gcov/lcov | Line coverage of `core/` (+ `fusion`) under regression |
 
-See [`docs/benchmarks/static_analysis/`](benchmarks/static_analysis/) for published runs, [`tools/run_static_analysis.py`](../tools/run_static_analysis.py), and CI [`.github/workflows/code-audit.yml`](../.github/workflows/code-audit.yml).
+See [`docs/benchmarks/static_analysis/`](benchmarks/static_analysis/) for published runs, [`tools/ci/run_static_analysis.py`](../tools/ci/run_static_analysis.py), and CI [`.github/workflows/code-audit.yml`](../.github/workflows/code-audit.yml).
 
 ## When adding code to `src/core/`
 

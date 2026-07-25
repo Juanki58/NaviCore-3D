@@ -15,7 +15,7 @@
 ## DUT
 
 - Firmware: `NaviCore3D_Pico2` + `safe_log` CDC  
-- Capture: `python tools/serial_navstate_capture.py` → CSV under  
+- Capture: `python tools/field/serial_navstate_capture.py` → CSV under  
   `docs/benchmarks/field_outage/<YYYYMMDD>/`
 
 ## Metrics to publish

@@ -13,7 +13,7 @@
 | `docs/video_gap3/stills/01_exit_drift_bars.png` | Resultado 25–70 s (A vs B_always) |
 | `docs/video_gap3/stills/02_policy_card.png` | Cierre / takeaway |
 | `docs/video_gap3/stills/overlays.txt` | Textos para subtítulos / TextMeshPro |
-| `tools/plot_gap3_video_assets.py` | Regenerar stills tras nuevo manifiesto |
+| `tools/media/plot_gap3_video_assets.py` | Regenerar stills tras nuevo manifiesto |
 
 ```powershell
 python tools\plot_gap3_video_assets.py
@@ -27,7 +27,7 @@ python tools\plot_gap3_video_assets.py
 - ES: `docs/video_gap3/NaviCore_GAP3_NHC.mp4`  
 - EN: `docs/video_gap3/NaviCore_GAP3_NHC_en.mp4`  
 
-Regenerar: `python tools/render_gap3_video.py` (default: both) · `--lang es` / `--lang en`
+Regenerar: `python tools/media/render_gap3_video.py` (default: both) · `--lang es` / `--lang en`
 
 ### A — Rápido (sin Unity)
 

@@ -15,7 +15,7 @@ Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan
 |---|---------|--------|------------------------|
 | S1 | **Monte Carlo** `TUNNEL_STRESS` | **Hecho** | N=100 · mean **13.0 m** @ t=30 s · p95 16.1 m · 0% diverge · `docs/monte_carlo/` |
 | S2 | **NHC experiment matrix** | **Hecho** (GAP-3 CLOSED) | NHC-off 493 m exit vs `B_always` 1408 m — NHC agresivo empeora · `docs/nhc_experiments/manifest.json` |
-| S3 | **Allan variance** IEEE Std 952 | **Herramienta hecha** · tabla ARW/BI pendiente de log | [`analyze_allan.py`](../analyze_allan.py) · falta `docs/imu_static_log.csv` (horas) |
+| S3 | **Allan variance** IEEE Std 952 | **Herramienta hecha** · tabla ARW/BI pendiente de log | [`tools/analysis/analyze_allan.py`](../analyze_allan.py) · falta `docs/imu_static_log.csv` (horas) |
 | S4 | **EKF v2 vs v1** (3 phone drives) | **Hecho** | Accept → 100% · drift ~35 / 38 / 110 m · `docs/benchmarks/ekf_v2_ab_3routes/` |
 | S5 | GAP-1…4 / G-ext diagnostics | **CLOSED** | Mapa en README § EKF diagnostics |
 
@@ -84,7 +84,7 @@ Pi Zero: solo logger de verdad de terreno, **no** segundo NaviCore.
 | Nivel | Herramienta | Para qué |
 |-------|-------------|----------|
 | Debug crudo | Arduino Serial Monitor / Serial Plotter | Ver líneas y grafos en vivo; cero instalación extra |
-| Captura de campo | `tools/serial_navstate_capture.py` | Un solo USB CDC → CSV estructurado (comparable a Sim/Replay) |
+| Captura de campo | `tools/field/serial_navstate_capture.py` | Un solo USB CDC → CSV estructurado (comparable a Sim/Replay) |
 
 **Decisión de firmware (bloqueada):** el EKF corre **en el MCU**; el host solo recibe **NavState fusionado** (texto CSV, mismo esquema que `TelemetryFileLogger` / `NavigationState`).  
 No validar el core enviando IMU/GPS crudo al PC y fusionando ahí — eso no prueba el silicio. Crudos opcionales solo como canal de debug, no como verdad del experimento.

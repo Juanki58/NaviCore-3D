@@ -117,7 +117,7 @@ Evaluar en **t ∈ [0, 6] s** salvo t_sep.
 
 ## 7. Resultado ctrl vs H1 (2026-07-20) — preregistro intacto
 
-Corrida: `tools/run_h_seed_v.py` · artefactos `docs/benchmarks/h_seed_v/`  
+Corrida: `tools/campaigns/run_h_seed_v.py` · artefactos `docs/benchmarks/h_seed_v/`  
 H1 applied @ **t=4.301 s** · speed=8.38 · course=93.6° (primer GPS con speed≥3).
 
 | Gate | Ctrl | H1 | ¿PASS? |
@@ -143,5 +143,5 @@ P2 falla el umbral por ~0.3 s (timing del primer GPS elegible).
 ## 8. Enlace
 
 Programa: [`docs/ekf_explorer/RESEARCH_PROGRAM.md`](../ekf_explorer/RESEARCH_PROGRAM.md)  
-Auditorías previas: `tools/audit_velocity_provenance.py`, `tools/audit_stage_invariants.py`  
-Runner: `tools/run_h_seed_v.py`
+Auditorías previas: `tools/audits/audit_velocity_provenance.py`, `tools/audits/audit_stage_invariants.py`  
+Runner: `tools/campaigns/run_h_seed_v.py`

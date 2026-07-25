@@ -8,7 +8,7 @@ parsers). This document is the **on-target** checklist: physical faults must mov
 
 - Firmware: `NaviCore3D_Pico2` with `safe_log` on USB CDC
 - Scope on GP22 (sensors_tick) optional
-- Serial capture: `python tools/serial_navstate_capture.py` **or** `minicom`/`picocom` watching `HM:` lines
+- Serial capture: `python tools/field/serial_navstate_capture.py` **or** `minicom`/`picocom` watching `HM:` lines
 - Do **not** use RF GNSS spoof/jam (illegal in ES/EU without CNMC). Use cable / power / UART only.
 
 ## Expected reactions (policy table)
@@ -84,5 +84,5 @@ Store pass/fail + CDC excerpts under `docs/benchmarks/fault_injection/<YYYYMMDD>
 
 **Closeout (physical bank):** update **README Evidence** with a pass/fail table — CSV folder alone is not enough ([`EVIDENCE_CLOSEOUT.md`](EVIDENCE_CLOSEOUT.md)).
 
-**Host smoke (policy mirrors, 2026-07-22):** [`docs/benchmarks/fault_injection/20260722_host/`](benchmarks/fault_injection/20260722_host/) — re-run with `python tools/run_fault_injection_host_smoke.py`.
+**Host smoke (policy mirrors, 2026-07-22):** [`docs/benchmarks/fault_injection/20260722_host/`](benchmarks/fault_injection/20260722_host/) — re-run with `python tools/campaigns/run_fault_injection_host_smoke.py`.
 

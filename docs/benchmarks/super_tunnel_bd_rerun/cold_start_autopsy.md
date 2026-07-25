@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-07-18  
 **Artefactos:** `cold_start_verdict.json`, anatomía/trazas en este directorio  
-**Script:** `tools/audit_super_tunnel_cold_start.py`
+**Script:** `tools/audits/audit_super_tunnel_cold_start.py`
 
 ---
 

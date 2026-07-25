@@ -22,7 +22,7 @@ jobs:
       - name: Run cppcheck
         run: |
           mkdir -p docs/benchmarks/static_analysis
-          python3 tools/run_static_analysis.py --cppcheck --tag ci_${{ github.run_id }}
+          python3 tools/ci/run_static_analysis.py --cppcheck --tag ci_${{ github.run_id }}
       - name: Upload cppcheck artefacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -40,7 +40,7 @@ jobs:
       - name: Run clang-tidy
         run: |
           mkdir -p docs/benchmarks/static_analysis
-          python3 tools/run_static_analysis.py --clang-tidy --tag ci_${{ github.run_id }}
+          python3 tools/ci/run_static_analysis.py --clang-tidy --tag ci_${{ github.run_id }}
         continue-on-error: true
       - name: Upload clang-tidy log
         if: always()

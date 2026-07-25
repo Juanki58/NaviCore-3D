@@ -78,7 +78,7 @@ Cuatro marcos. No más. No mezclar nombres (`device` ≠ `body` ≠ `NED`).
 | **Relación con vehículo** | **Ninguna.** No se asume forward/right/down del coche |
 | **Unidades** | m/s² |
 | **Magnitud medida** | **Specific force** (fuerza específica aparente, incluye reacción de gravedad) |
-| **Verificación dataset** | `Uncalibrated ≈ Gravity + Linear` (Sensor Logger 1.61+, Patrón Oro); ver `tools/audit_android_signal_identity.py` |
+| **Verificación dataset** | `Uncalibrated ≈ Gravity + Linear` (Sensor Logger 1.61+, Patrón Oro); ver `tools/audits/audit_android_signal_identity.py` |
 
 ### 3.2 Body frame (B) — **definición normativa**
 
@@ -194,7 +194,7 @@ Una implementación conforme debe respetar estos invariantes **en las condicione
 
 **Condición:** aceleración del vehículo **solo longitudinal** en body (`a_x ≠ 0`, `a_y ≈ 0`, `a_z ≈ 0` en body, sin roll/pitch).  
 **Invariante:** la proyección en NED no debe aparecer como componente **lateral** dominante salvo **rotación física** del vehículo (curva, cambio de rumbo).  
-**Uso diagnóstico:** descomponer `a_nav_pre_g` en ejes vehículo (`tools/vehicle_frame_nav_audit.py`); comparar con `d(GPS speed)/dt`.
+**Uso diagnóstico:** descomponer `a_nav_pre_g` en ejes vehículo (`tools/audits/vehicle_frame_nav_audit.py`); comparar con `d(GPS speed)/dt`.
 
 ### I6 — Identidad Android (dataset)
 
@@ -238,7 +238,7 @@ Dataset: `data/real_run/`. Herramientas en `tools/`.
 |------------|--------------------------------|-------------|
 | I1 | `\|f_B\|` mean ≈ 9.81 m/s² | H8 / mount audit |
 | I2–I3 estático 0–2 s | `\|a_lin\|_h` ≲ 0.05 m/s²; tilt ≲ 0.1° | H9c |
-| I6 | identity median ≲ 0.01 m/s² | `audit_android_signal_identity.py` |
+| I6 | identity median ≲ 0.01 m/s² | `tools/audits/audit_android_signal_identity.py` |
 | Dinámica (regresión) | Si cambio en `predict()` no mejora **simultáneamente** tilt, `a_lin_h`, GPS %, RMSE → no conforme o hipótesis M* rota | Replay + benchmarks |
 
 **Regresión mínima tras cualquier cambio en propagación:**
@@ -258,11 +258,11 @@ Mejora sustancial simultánea ⇒ cambio alineado con contrato; sin mejora ⇒ r
 
 | Artefacto | Rol |
 |-----------|-----|
-| `parse_mobile_log.py` | Device → replay CSV |
+| `tools/analysis/parse_mobile_log.py` | Device → replay CSV |
 | `real_run_replay.cpp` | `R_mount`, llamada a `predict()` |
 | `ins_ekf.cpp` | `predict()`, NHC, `body_to_ned` |
 | `calibration/imu_mount.json` | `R_mount` persistido |
-| `attitude_kinematics.py` | Réplica matemática para auditoría |
+| `tools/lib/attitude_kinematics.py` | Réplica matemática para auditoría |
 | [07-signal-traceability.md](07-signal-traceability.md) | Trazabilidad señal a señal |
 
 **Conformidad:** la implementación actual satisface **I1, I2, I3, I6, I7 en estático**. En dinámica, **I2/I3 fallan** (leak horizontal en `a_nav_pre_g` antes de −g), lo que indica **no conformidad en régimen dinámico** bajo M2–M7, no necesariamente violación de la sintaxis de `body_to_ned`.

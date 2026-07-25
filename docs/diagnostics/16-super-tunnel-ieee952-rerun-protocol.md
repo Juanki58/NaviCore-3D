@@ -3,7 +3,7 @@
 **Estado:** preregistrado (antes de ejecutar)  
 **Fecha:** 2026-07-18  
 **CLI:** `NaviCore3D_Sim.exe --nhc-bd-rerun`  
-**Análisis:** `python tools/audit_super_tunnel_bd_rerun.py`  
+**Análisis:** `python tools/audits/audit_super_tunnel_bd_rerun.py`  
 **Artefactos:** `docs/benchmarks/super_tunnel_bd_rerun/`
 
 ---
@@ -100,7 +100,7 @@ Si el veredicto agregado es “NHC empeora con IMU limpia” **o** hay `single_t
 1. Congelar este documento (umbrales arriba).  
 2. Build `NaviCore3D_Sim`.  
 3. `.\build\NaviCore3D_Sim.exe --nhc-bd-rerun`  
-4. `python tools/audit_super_tunnel_bd_rerun.py` → escribe `verdict.json` **solo** evaluando §2–§3.  
+4. `python tools/audits/audit_super_tunnel_bd_rerun.py` → escribe `verdict.json` **solo** evaluando §2–§3.  
 5. Si aplica autopsia → no declarar cierre IEEE-952 en este paso.
 
 ---

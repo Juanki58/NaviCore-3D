@@ -261,7 +261,7 @@ Ejecutar en orden. Duración mínima por escenario: **120 s** (WCET es evento ra
 
 ```powershell
 # Host Windows/Linux — adaptar IP y puerto de wifi_config.h
-python tools/telemetry_receiver.py   # en una terminal
+python tools/sil/telemetry_receiver.py   # en una terminal
 # Emisor: NaviCore cuando UDP esté activo, o iperf:
 iperf3 -u -c <IP_PICO> -p 5005 -b 2M -t 120
 ```
@@ -537,8 +537,8 @@ Desarrollo concurrente al plan por trimestres; ningún algoritmo se mergea sin v
 
 | Herramienta | Ruta | Evolución planificada |
 |-------------|------|----------------------|
-| **Visualizador de telemetría** | `tools/visualizer.py` | Mapa interactivo trayectoria real vs. ideal; perfil de velocidad y climb; panel de NIS/innovación; elipse de incertidumbre geométrica a partir de √diag(P) del EKF. |
-| **Receptor UDP live** | `tools/remote_visualizer.py` | Telemetría en vuelo desde banco Comarruga vía Wi-Fi. |
+| **Visualizador de telemetría** | `tools/sil/visualizer.py` | Mapa interactivo trayectoria real vs. ideal; perfil de velocidad y climb; panel de NIS/innovación; elipse de incertidumbre geométrica a partir de √diag(P) del EKF. |
+| **Receptor UDP live** | `tools/sil/remote_visualizer.py` | Telemetría en vuelo desde banco Comarruga vía Wi-Fi. |
 | **FlightRecorder CSV** | `docs/telemetria_navicore.csv` | Esquema v1 (22 columnas legacy + 56 de estado interno); compatible con replay offline. |
 | **SIL multi-UAV** | `tools/sil_*.py`, `docs/sil_architecture.md` | Flota JSBSim × NaviCore para validación autónoma pre-vuelo. |
 
@@ -562,4 +562,4 @@ Desarrollo concurrente al plan por trimestres; ningún algoritmo se mergea sin v
 | `src/core/flight_recorder.*` | Caja negra expandida — esquema CSV v1 (T2) |
 | `src/core/guidance.*` | Guiado 3D Pure Pursuit / LOS (T3) |
 | `src/core/mission.*` | Mission HFSM y failsafe estratégico (T3) |
-| `tools/visualizer.py` | Visualizador de telemetría (infraestructura de depuración) |
+| `tools/sil/visualizer.py` | Visualizador de telemetría (infraestructura de depuración) |

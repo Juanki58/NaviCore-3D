@@ -74,7 +74,7 @@ Overlay pequeño: `NaviCore3D_Sim --nhc-experiments` · `docs/nhc_experiments/`.
 ## Notas de producción
 
 - **No** RF spoof; no claims mil-grade.
-- Si el gemelo aún no reproduce ambos brazos en vivo: grabar Sim CSV → `tools/export_ekf_explorer_session.py` / replay de trazas `*_trace.csv` del experimento.
+- Si el gemelo aún no reproduce ambos brazos en vivo: grabar Sim CSV → `tools/media/export_ekf_explorer_session.py` / replay de trazas `*_trace.csv` del experimento.
 - Música: baja; prioridad a VO + números.
 - CTA: “Reproduce: `--nhc-experiments`.”
 

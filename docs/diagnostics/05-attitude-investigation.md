@@ -14,7 +14,7 @@ NaviCore3D_Replay \
 
 ## H9a — Inicialización tilt desde gravedad
 
-**Scripts:** `run_h9a_gravity_init.py`, `run_h9a_gravity_alignment_audit.py`
+**Scripts:** `tools/experiments/run_h9a_gravity_init.py`, `tools/experiments/run_h9a_gravity_alignment_audit.py`
 
 | Ventana | Error gravedad | `a_lin,h` |
 |---------|----------------|-----------|
@@ -27,7 +27,7 @@ NaviCore3D_Replay \
 
 ## H9b — Propagación de actitud
 
-**Script:** `run_h9b_attitude_propagation_audit.py`  
+**Script:** `tools/experiments/run_h9b_attitude_propagation_audit.py`  
 **Flag:** `--h9b-attitude-propagation-audit-csv`
 
 Compara integración giroscópica (`Δθ_integrated`) vs paso observado en vector gravedad (`Δθ_gravity`).
@@ -43,7 +43,7 @@ Compara integración giroscópica (`Δθ_integrated`) vs paso observado en vecto
 
 ## H9c — Referencia Orientation.csv
 
-**Script:** `run_h9c_orientation_ref_audit.py`
+**Script:** `tools/experiments/run_h9c_orientation_ref_audit.py`
 
 | Ventana | δ tilt EKF–Orient | `corr(δpitch, a_lin,h)` |
 |---------|-------------------|-------------------------|
@@ -58,7 +58,7 @@ Compara integración giroscópica (`Δθ_integrated`) vs paso observado en vecto
 
 ## H9d — Cadena de resta de gravedad
 
-**Script:** `run_h9d_gravity_subtraction_audit.py`  
+**Script:** `tools/experiments/run_h9d_gravity_subtraction_audit.py`  
 **Flag:** `--h9d-gravity-subtraction-audit-csv`
 
 Descompone: `a_body → R_bn → g_ned → a_lin`
@@ -69,7 +69,7 @@ Descompone: `a_body → R_bn → g_ned → a_lin`
 
 ## Cadena de propagación completa
 
-**Script:** `run_propagation_chain_audit.py`  
+**Script:** `tools/experiments/run_propagation_chain_audit.py`  
 **Flag:** `--propagation-chain-audit-csv`
 
 Etapas registradas por tick: `a_raw`, `a_body`, bias, `a_corr`, `a_nav_body`, `a_nav_corr`, `a_lin`, `g_body_pred`, `g_body_meas`.
@@ -86,7 +86,7 @@ Etapas registradas por tick: `a_raw`, `a_body`, bias, `a_corr`, `a_nav_body`, `a
 
 ## Auditoría heading longitudinal
 
-**Script:** `run_rb_forward_heading_audit.py`
+**Script:** `tools/experiments/run_rb_forward_heading_audit.py`
 
 `u = R_bn · (1,0,0)` comparado con bearing GPS.
 
@@ -101,7 +101,7 @@ En el **onset**, el eje longitudinal apunta bien; el problema es **inclinación*
 
 ## Triada gravitatoria (pred / ref / meas)
 
-**Script:** `run_gravity_triad_audit.py`
+**Script:** `tools/experiments/run_gravity_triad_audit.py`
 
 En cada tick, tres vectores en body:
 
@@ -123,7 +123,7 @@ En cada tick, tres vectores en body:
 
 ## Cadena de referencias
 
-**Script:** `audit_reference_chain.py` (también vía `audit_attitude_conventions.py`)
+**Script:** `tools/experiments/audit_reference_chain.py` (también vía `tools/experiments/audit_attitude_conventions.py`)
 
 ```
 Sensor → R_mount → Body → Android → NED → EKF
@@ -147,7 +147,7 @@ Sensor → R_mount → Body → Android → NED → EKF
 
 ## Auditoría de convenciones (sintética)
 
-**Script:** `audit_attitude_conventions.py`
+**Script:** `tools/experiments/audit_attitude_conventions.py`
 
 | Test | Resultado |
 |------|-----------|

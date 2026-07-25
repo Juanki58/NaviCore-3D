@@ -3,7 +3,7 @@
 **Referencia normativa:** [08-body-frame-contract.md](08-body-frame-contract.md)  
 **Dataset:** Patrón Oro (`data/real_run/`)  
 **Informe machine-readable:** `docs/benchmarks/body_frame_conformance_audit.json`  
-**Herramienta:** `tools/audit_body_frame_conformance.py`
+**Herramienta:** `tools/audits/audit_body_frame_conformance.py`
 
 ---
 
@@ -73,7 +73,7 @@ const float pitch = atan2f(-ax, sqrtf(horiz_sq));
 
 ## 3. Resultados de invariantes (Patrón Oro)
 
-Generado por `tools/audit_body_frame_conformance.py` sobre `h9d_gravity_subtraction.csv`.
+Generado por `tools/audits/audit_body_frame_conformance.py` sobre `h9d_gravity_subtraction.csv`.
 
 ### 3.1 Montaje estático (`R_mount`)
 
@@ -121,7 +121,7 @@ Generado por `tools/audit_body_frame_conformance.py` sobre `h9d_gravity_subtract
 **Criterio de éxito (constancia, no coincidencia):**  
 `delta_psi = heading(R_bn·e_x) − bearing_GPS` — ¿es **constante** o **varía**?
 
-**Script principal:** `tools/audit_gap1_delta_psi_constancy.py` → `gap1_delta_psi_constancy_report.json`
+**Script principal:** `tools/audits/audit_gap1_delta_psi_constancy.py` → `gap1_delta_psi_constancy_report.json`
 
 | Ventana | delta_psi media | std circular | p95 desv | ¿Constante? |
 |---------|-----------------|--------------|----------|-------------|
@@ -136,13 +136,13 @@ Generado por `tools/audit_body_frame_conformance.py` sobre `h9d_gravity_subtract
 1. En recto, delta_psi **es constante** → offset fijo calibrable por régimen.
 2. Estático (−39°) vs crucero (−135°) difiere ~96° → el offset **sigue al bearing** porque `forward_heading ≈ 0°` (yaw=0): es **yaw misinit**, no yaw de montaje Rodrigues independiente.
 3. En giro 2–10 s, std 123° → delta **cambia dinámicamente** (giro + yaw=0).
-4. Complemento: `audit_gap1_body_forward_axis.py` — con yaw=GPS, residual forward = 0°.
+4. Complemento: `tools/audits/audit_gap1_body_forward_axis.py` — con yaw=GPS, residual forward = 0°.
 
 **Veredicto:** `GAP-1_CLOSED_YAW_INIT_REQUIRED` — Rodrigues + **yaw_init H2** cierran el contrato FRD. Sin segundo ajuste mecánico de mount.
 
 ### GAP-2 — Dinámica: transformación medida → NED (prioridad alta)
 
-**Prueba tick a tick (GAP-2 paso 1):** `tools/audit_gap2_gravity_identity_tick.py`
+**Prueba tick a tick (GAP-2 paso 1):** `tools/audits/audit_gap2_gravity_identity_tick.py`
 
 Identidad: `|a_lin,h| ≈ g·sin(δ_tilt)` **en cada muestra** (2–10 s), no solo media.
 
@@ -156,7 +156,7 @@ H9d reconfirmado: `a_lin,h ≡ |a_nav_pre_g|_h` (max diff ≈ 1e-5).
 
 **Veredicto paso 2:** **BREAK_AT_SPECIFIC_FORCE_CONTAMINATION** — primera ruptura E4 @ t≈3.7 s; `pred_tilt` permanece bajo (~1°) mientras crece `meas_tilt` / `f_horizontal`.
 
-**Paso 3 — A/B/C/D:** `tools/audit_gap2_specific_force_decomposition.py`
+**Paso 3 — A/B/C/D:** `tools/audits/audit_gap2_specific_force_decomposition.py`
 
 | Prueba | `\|a_lin,h\|` mean 2–10 s | Lectura |
 |--------|--------------------------:|---------|
@@ -221,7 +221,7 @@ Antes de merge en `predict()` / replay / mount:
 - [ ] §6: I1–I3 PASS en estático Patrón Oro
 - [ ] §6: I2–I3 en dinámica — objetivo **medir mejora**, no solo “no empeorar”
 - [ ] §8: regresión cuádruple (tilt, `a_lin_h`, GPS %, RMSE)
-- [ ] `tools/audit_body_frame_conformance.py` ejecutado
+- [ ] `tools/audits/audit_body_frame_conformance.py` ejecutado
 - [ ] Sin nueva hipótesis H*n* — solo cierre de GAP-*
 
 ---
@@ -240,4 +240,4 @@ Antes de merge en `predict()` / replay / mount:
 | Versión | Fecha | Notas |
 |---------|-------|-------|
 | 1.0 | 2026-07-18 | Primera auditoría post Body Frame Contract v1.0 |
-| 1.2 | 2026-07-18 | GAP-1: criterio constancia delta_psi (`audit_gap1_delta_psi_constancy.py`) |
+| 1.2 | 2026-07-18 | GAP-1: criterio constancia delta_psi (`tools/audits/audit_gap1_delta_psi_constancy.py`) |

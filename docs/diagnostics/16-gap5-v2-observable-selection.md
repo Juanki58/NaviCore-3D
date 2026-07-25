@@ -371,7 +371,7 @@ docs/benchmarks/gap5_v2_observable_selection/
   figures/                           # series temporales por régimen
 ```
 
-Script previsto (post-tag): `tools/audit_gap5_v2_observable_selection.py`
+Script previsto (post-tag): `tools/audits/audit_gap5_v2_observable_selection.py`
 
 ---
 

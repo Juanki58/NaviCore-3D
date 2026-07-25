@@ -32,5 +32,5 @@ Log: [`host_smoke_log.txt`](host_smoke_log.txt)
 Re-run:
 
 ```powershell
-python tools/run_fault_injection_host_smoke.py
+python tools/campaigns/run_fault_injection_host_smoke.py
 ```

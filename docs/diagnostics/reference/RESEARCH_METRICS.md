@@ -70,9 +70,9 @@ Tags históricos de la misma línea v2 (`…-frozen`, `…-v1.1`) no suman campa
 
 | # | Qué | Evidencia |
 |---|-----|-----------|
-| 1 | G0 baseline (reproducibilidad pos-only) | `tools/run_gap4_g0_baseline.py` / `G0/` |
+| 1 | G0 baseline (reproducibilidad pos-only) | `tools/campaigns/run_gap4_g0_baseline.py` / `G0/` |
 | 2 | G1 control twin `ppv=none` | `G1_control_full_ppv_none/` |
-| 3 | G-ext = mismo shell G1, otro CSV | `real_run_19082026_baseline/` + `run_gext_19082026_baseline.py` |
+| 3 | G-ext = mismo shell G1, otro CSV | `real_run_19082026_baseline/` + `tools/campaigns/run_gext_19082026_baseline.py` |
 | 4 | GAP-5 v1 f1-bridge vs PoC config | `p0_passive_f1_bridge` / `p0_passive_validation` |
 
 ---

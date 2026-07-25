@@ -60,13 +60,13 @@ Frame NED (N)
 | Euler | Secuencia 3-2-1 (roll, pitch, yaw) |
 | NHC Jacobiano | Alineado con perturbación derecha (`q' = q * dq`) |
 
-Tests sintéticos de coherencia interna: `audit_attitude_conventions.py` (todos PASS).
+Tests sintéticos de coherencia interna: `tools/experiments/audit_attitude_conventions.py` (todos PASS).
 
 ## Montaje IMU
 
 **Archivo:** `calibration/imu_mount.json`
 
-- Generado por `audit_imu_chain.py` (Rodrigues / alineación gravedad).
+- Generado por `tools/experiments/audit_imu_chain.py` (Rodrigues / alineación gravedad).
 - `rotation_matrix`: transformación **sensor → body**.
 - Residual en replay: **~0 m/s²** en todo el registro (L1 cadena de referencias).
 

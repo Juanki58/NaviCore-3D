@@ -1,6 +1,6 @@
 # Allan variance — capture & publish runbook
 
-**Tool (shipped):** [`analyze_allan.py`](../analyze_allan.py) — IEEE Std 952 overlapping σ_A(τ)  
+**Tool (shipped):** [`tools/analysis/analyze_allan.py`](../analyze_allan.py) — IEEE Std 952 overlapping σ_A(τ)  
 **Published ARW/BI table in README:** still **pending** a multi-hour static DUT log.
 
 ## Goal
@@ -26,14 +26,14 @@ time_ms,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z
 4. Save as `docs/imu_static_log.csv` (git-lfs if huge) **or** `docs/allan/<DUT>_<YYYYMMDD>.csv`.
 
 Host capture ideas:
-- Pico CDC / `tools/serial_navstate_capture.py` if you log raw IMU rates  
+- Pico CDC / `tools/field/serial_navstate_capture.py` if you log raw IMU rates  
 - USB IMU vendor logger → convert column names to the schema above
 
 ## Fit
 
 ```powershell
-python tools/generate_imu_static_smoke.py   # optional: prove tool wiring (NOT publish)
-python analyze_allan.py --csv docs\imu_static_log.csv --sensor both --axis auto
+python tools/media/generate_imu_static_smoke.py   # optional: prove tool wiring (NOT publish)
+python tools/analysis/analyze_allan.py --csv docs\imu_static_log.csv --sensor both --axis auto
 ```
 
 Paste IEEE units into README § Allan **only** from the real multi-hour file. Mark DUT, rate, duration, temperature notes.
@@ -46,8 +46,8 @@ Paste IEEE units into README § Allan **only** from the real multi-hour file. Ma
 | `docs/allan/smoke/README.md` | Disclaimer |
 
 ```powershell
-python tools/generate_imu_static_smoke.py
-python analyze_allan.py --csv docs\allan\smoke\imu_static_smoke_60s.csv --sensor gyro --axis gyro_z --output docs\allan\smoke\allan_gyro_z_smoke.png
+python tools/media/generate_imu_static_smoke.py
+python tools/analysis/analyze_allan.py --csv docs\allan\smoke\imu_static_smoke_60s.csv --sensor gyro --axis gyro_z --output docs\allan\smoke\allan_gyro_z_smoke.png
 ```
 
 

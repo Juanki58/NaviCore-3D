@@ -256,7 +256,7 @@ Constantes propuestas para freeze (editables solo **antes** del primer binario c
 
 - [x] Diseño D1–D6 + números congelados
 - [x] Alcance solo Z; barrido λ; ρ=1,20 por escenario; solo b1
-- [x] Implementar `--nhc-att-z-forget` + runner `tools/run_hatt_b1.py`
+- [x] Implementar `--nhc-att-z-forget` + runner `tools/campaigns/run_hatt_b1.py`
 - [x] Ejecutar barrido; scorear sin retocar umbrales
 
 ### 11.5 Resultado H-ATT-b1 (2026-07-19) — sin reinterpretar umbrales
@@ -804,7 +804,7 @@ Tras descartar Joseph in-tick, P_att cruzado puro, P_yy, y S (escala absoluta):
 - `K_y0` diverge de forma gradual post-latch; aceleración **[1,10→1,54]** co-tiempo con `P[ATT_Y,VEL_N]` (relΔ→0,59).
 - Hipótesis económica: el mismo `f_va` (predict) que ensucia vel_NED (§13.13–§14) **construye** el bloque cruzado P_att–vel; en ctrl Joseph+`dx_att_z` lo recorta; en latch no.
 
-**Comprobación:** `tools/audit_fva_pattvel_110_154.py` — ΔP_predict vs `f_va[VN,ATT_Y]` en [1,10→1,54], con `CORR_ABS_SCALE`.
+**Comprobación:** `tools/audits/audit_fva_pattvel_110_154.py` — ΔP_predict vs `f_va[VN,ATT_Y]` en [1,10→1,54], con `CORR_ABS_SCALE`.
 
 **Resultado: `FVA_NOT_PATTVEL_DRIVER` (con matiz Joseph).**
 

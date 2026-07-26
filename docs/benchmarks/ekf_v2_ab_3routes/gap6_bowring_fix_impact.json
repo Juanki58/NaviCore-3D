@@ -1,0 +1,42 @@
+{
+  "before_note": "pre-Bowring-fix SUMMARY + gap6_d_axis_autopsy frame_check",
+  "after_note": "post-fix run of tools/campaigns/run_ekf_v2_ab_3routes.py",
+  "v2": [
+    {
+      "route": "REF_19082026",
+      "accept_rate_before": 1.0,
+      "accept_rate_after": 0.8781,
+      "before_H_m": 35.288,
+      "after_H_m": 13.852,
+      "before_V_log_m": 41.561,
+      "after_V_log_m": 123.335,
+      "before_3d_log_m": 54.52,
+      "after_3d_log_m": 124.11,
+      "contrib_d_mean_after": 21.87
+    },
+    {
+      "route": "ALT_16072026",
+      "accept_rate_before": 1.0,
+      "accept_rate_after": 1.0,
+      "before_H_m": 38.002,
+      "after_H_m": 6.233,
+      "before_V_log_m": 24.631,
+      "after_V_log_m": 3.995,
+      "before_3d_log_m": 45.28,
+      "after_3d_log_m": 7.40,
+      "contrib_d_mean_after": 0.60
+    },
+    {
+      "route": "JUL17_20260717",
+      "accept_rate_before": 1.0,
+      "accept_rate_after": 0.9790,
+      "before_H_m": 110.295,
+      "after_H_m": 87.551,
+      "before_V_log_m": 57.961,
+      "after_V_log_m": 22.964,
+      "before_3d_log_m": 124.61,
+      "after_3d_log_m": 90.51,
+      "contrib_d_mean_after": 0.62
+    }
+  ]
+}

@@ -173,7 +173,7 @@ This is the leap in method — not just “scenarios that look good.” Artefact
 | **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 · mean exit drift **13.0 m** · p95 **16.1 m** · **0%** diverge (>30 m) | `docs/monte_carlo/run_0000…0099` · `python tools/benchmarks/run_monte_carlo.py --runs 100` |
 | **NHC matrix** (super-tunnel + R/G arms) | **Done** (GAP-3 closed) | NHC-off baseline **493 m** exit; `B_always` **1408 m** — naive high-rate NHC can **hurt** | [`docs/nhc_experiments/manifest.json`](docs/nhc_experiments/manifest.json) · `NaviCore3D_Sim.exe --nhc-experiments` |
 | **Allan variance** (IEEE Std 952) | **Tooling done** · fit publish pending | Overlapping σ_A(τ) → ARW/VRW, BI, RRW; Q today = engineering σ_a/σ_g | [`tools/analysis/analyze_allan.py`](tools/analysis/analyze_allan.py) · needs multi-hour `docs/imu_static_log.csv` |
-| **EKF v2 vs v1** (3 phone drives) | **Done** | Accept 2–10% → **100%**; drift km → **~35 / 38 / 110 m** | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) · **SensorLogger mobile**, not Pico bench |
+| **EKF v2 vs v1** (3 phone drives) | **Done** (post Bowring fix) | Accept → **~88 / 100 / 98%**; drift H → **~14 / 6 / 88 m** (was ~35 / 38 / 110 m pre-fix) | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) · **SensorLogger mobile**, not Pico bench |
 
 **Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: **powered Pico2** Allan fit, Pico outage curve, PPK2 mA (tooling/checklists ship; DUT campaigns pending).
 
@@ -181,16 +181,16 @@ This is the leap in method — not just “scenarios that look good.” Artefact
 
 Same logs, same harness; only `--ekf-core`. Source: [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) — **SensorLogger mobile IMU+GNSS**, not a powered Pico 2 W bench campaign.
 
-| Route | Core | GNSS accept rate | Final horizontal drift |
-|-------|------|------------------|------------------------|
-| REF_19082026 | v1 | 2.6% | **~158 km** |
-| REF_19082026 | **v2** | **100%** | **~35 m** |
-| ALT_16072026 | v1 | 2.4% | **~856 km** |
-| ALT_16072026 | **v2** | **100%** | **~38 m** |
-| JUL17_20260717 | v1 | 10.6% | **~332 km** |
-| JUL17_20260717 | **v2** | **100%** | **~110 m** |
+| Route | Core | GNSS accept rate | Final horizontal drift | V_log / 3D_log (post-fix) |
+|-------|------|------------------|------------------------|----------------------------|
+| REF_19082026 | v1 | ~33% | (see SUMMARY) | — |
+| REF_19082026 | **v2** | **~88%** | **~14 m** | ~123 m / ~124 m |
+| ALT_16072026 | v1 | ~10% | hundreds of km | — |
+| ALT_16072026 | **v2** | **100%** | **~6 m** | ~4 m / **~7 m** |
+| JUL17_20260717 | v1 | ~11% | hundreds of km | — |
+| JUL17_20260717 | **v2** | **~98%** | **~88 m** | ~23 m / ~91 m |
 
-**Verdict:** v2 keeps position anchoring when velocity NIS fails (5-DoF joint reject in v1). Drift still **tens–hundreds of metres** — civil DR, not rail-grade.
+**Verdict:** v2 still anchors far better than v1. After the GAP-6 Bowring `ecef_to_lla` fix, reported H improved; ALT 3D is now **~7 m**. Pre-fix headlines (~35 / 38 / 110 m H) can include up to **~30 m** systematic adapter offset — see [`gap6_origin_mismatch_investigation.md`](docs/benchmarks/ekf_v2_ab_3routes/gap6_origin_mismatch_investigation.md). Pico GNSS path unaffected.
 
 ### Monte Carlo — `TUNNEL_STRESS` (synthetic)
 

@@ -16,7 +16,7 @@ Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan
 | S1 | **Monte Carlo** `TUNNEL_STRESS` | **Hecho** | N=100 · mean **13.0 m** @ t=30 s · p95 16.1 m · 0% diverge · `docs/monte_carlo/` |
 | S2 | **NHC experiment matrix** | **Hecho** (GAP-3 CLOSED) | NHC-off 493 m exit vs `B_always` 1408 m — NHC agresivo empeora · `docs/nhc_experiments/manifest.json` |
 | S3 | **Allan variance** IEEE Std 952 | **Herramienta hecha** · tabla ARW/BI pendiente de log | [`tools/analysis/analyze_allan.py`](../analyze_allan.py) · falta `docs/imu_static_log.csv` (horas) |
-| S4 | **EKF v2 vs v1** (3 phone drives) | **Hecho** | Accept → 100% · drift ~35 / 38 / 110 m · `docs/benchmarks/ekf_v2_ab_3routes/` |
+| S4 | **EKF v2 vs v1** (3 phone drives) | **Hecho** (post Bowring) | Accept ~88/100/98% · drift H ~14/6/88 m · GAP-6 `ecef_to_lla` fix · `docs/benchmarks/ekf_v2_ab_3routes/` |
 | S5 | GAP-1…4 / G-ext diagnostics | **CLOSED** | Mapa en README § EKF diagnostics |
 
 ---

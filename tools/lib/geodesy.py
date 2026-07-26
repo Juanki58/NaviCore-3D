@@ -51,16 +51,19 @@ def lla_to_ecef(point: LLA) -> ECEF:
 
 
 def ecef_to_lla(point: ECEF) -> LLA:
+    # Bowring (WGS84): b = a*sqrt(1-e^2), e'^2 = e^2/(1-e^2).
+    b = WGS84_A * math.sqrt(1.0 - WGS84_E2)
+    e_prime_sq = WGS84_E2 / (1.0 - WGS84_E2)
+
     x = point.x_m
     y = point.y_m
     z = point.z_m
     p = math.hypot(x, y)
-    theta = math.atan2(z * WGS84_A, p * (WGS84_A * (1.0 - WGS84_E2)))
+    theta = math.atan2(z * WGS84_A, p * b)
     sin_theta = math.sin(theta)
     cos_theta = math.cos(theta)
     lat = math.atan2(
-        z
-        + (WGS84_E2 * (1.0 - WGS84_E2) * WGS84_A * sin_theta**3) / (1.0 - WGS84_E2),
+        z + e_prime_sq * b * sin_theta**3,
         p - WGS84_E2 * WGS84_A * cos_theta**3,
     )
     lon = math.atan2(y, x)

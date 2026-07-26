@@ -1,0 +1,32 @@
+{
+  "experiment": "GAP-6 D-axis NIS autopsy post Bowring ecef_to_lla fix",
+  "see_also": [
+    "gap6_d_axis_autopsy.md",
+    "gap6_bowring_fix_impact.json",
+    "gap6_origin_mismatch_investigation.md"
+  ],
+  "post_bowring_v2": {
+    "REF_19082026": {
+      "accepted": 598,
+      "rejects": 83,
+      "nis_contrib_d_mean": 21.87,
+      "nis_contrib_d_median": 9.68,
+      "log_minus_z_approx_m": [0.0, 0.0, 0.0]
+    },
+    "ALT_16072026": {
+      "accepted": 331,
+      "rejects": 0,
+      "nis_contrib_d_mean": 0.60,
+      "nis_contrib_d_median": 0.31,
+      "log_minus_z_approx_m": [0.0, 0.0, 0.0]
+    },
+    "JUL17_20260717": {
+      "accepted": 700,
+      "rejects": 15,
+      "nis_contrib_d_mean": 0.62,
+      "nis_contrib_d_median": 0.19,
+      "log_minus_z_approx_m": [0.0, 0.0, 0.0]
+    }
+  },
+  "verdict": "contrib-D still high only on REF; log_gps vs audit_z offset gone"
+}

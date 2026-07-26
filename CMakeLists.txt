@@ -164,6 +164,7 @@ if(NAVICORE_BUILD_UNIT_TESTS)
 
     add_executable(navicore_unit_tests
         ${CMAKE_SOURCE_DIR}/tests/unit/test_navstate_math.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_geodesy_bowring.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_math.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_fusion_isolated.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_properties_rapidcheck.cpp

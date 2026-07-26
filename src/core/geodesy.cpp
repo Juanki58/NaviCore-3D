@@ -49,18 +49,21 @@ ECEF lla_to_ecef(const LLA &point)
 
 LLA ecef_to_lla(const ECEF &point)
 {
+    /* Bowring (WGS84): b = a*sqrt(1-e^2), e'^2 = e^2/(1-e^2). */
+    const double b = kWgs84A * std::sqrt(1.0 - kWgs84E2);
+    const double e_prime_sq = kWgs84E2 / (1.0 - kWgs84E2);
+
     const double x = point.x_m;
     const double y = point.y_m;
     const double z = point.z_m;
 
     const double p = std::sqrt((x * x) + (y * y));
-    const double theta = std::atan2(z * kWgs84A, p * (kWgs84A * (1.0 - kWgs84E2)));
+    const double theta = std::atan2(z * kWgs84A, p * b);
     const double sin_theta = std::sin(theta);
     const double cos_theta = std::cos(theta);
 
     const double lat = std::atan2(
-        z + (kWgs84E2 * (1.0 - kWgs84E2) * kWgs84A * sin_theta * sin_theta * sin_theta)
-            / (1.0 - kWgs84E2),
+        z + (e_prime_sq * b * sin_theta * sin_theta * sin_theta),
         p - (kWgs84E2 * kWgs84A * cos_theta * cos_theta * cos_theta));
     const double lon = std::atan2(y, x);
 

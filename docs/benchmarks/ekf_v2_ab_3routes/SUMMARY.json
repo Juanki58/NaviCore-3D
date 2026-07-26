@@ -2,37 +2,37 @@
   "routes": {
     "REF_19082026": {
       "v1": {
-        "accepts": 18,
-        "rejects": 663,
-        "accept_rate": 0.02643171806167401,
-        "final_drift_h_m": 158140.031,
+        "accepts": 227,
+        "rejects": 454,
+        "accept_rate": 0.3333333333333333,
+        "final_drift_h_m": null,
         "residual_h_at_60s_m": null
       },
       "v2": {
-        "accepts": 681,
-        "rejects": 0,
-        "accept_rate": 1.0,
-        "final_drift_h_m": 35.288,
+        "accepts": 598,
+        "rejects": 83,
+        "accept_rate": 0.8781204111600588,
+        "final_drift_h_m": 13.852,
         "residual_h_at_60s_m": null
       },
       "verdict": {
         "accept_rate_improved": true,
-        "drift_improved": true
+        "drift_improved": false
       }
     },
     "ALT_16072026": {
       "v1": {
-        "accepts": 8,
-        "rejects": 323,
-        "accept_rate": 0.02416918429003021,
-        "final_drift_h_m": 856262.25,
+        "accepts": 32,
+        "rejects": 299,
+        "accept_rate": 0.09667673716012085,
+        "final_drift_h_m": 352260.031,
         "residual_h_at_60s_m": null
       },
       "v2": {
         "accepts": 331,
         "rejects": 0,
         "accept_rate": 1.0,
-        "final_drift_h_m": 38.002,
+        "final_drift_h_m": 6.233,
         "residual_h_at_60s_m": null
       },
       "verdict": {
@@ -45,14 +45,14 @@
         "accepts": 76,
         "rejects": 639,
         "accept_rate": 0.1062937062937063,
-        "final_drift_h_m": 332215.656,
+        "final_drift_h_m": 354011.25,
         "residual_h_at_60s_m": null
       },
       "v2": {
-        "accepts": 715,
-        "rejects": 0,
-        "accept_rate": 1.0,
-        "final_drift_h_m": 110.295,
+        "accepts": 700,
+        "rejects": 15,
+        "accept_rate": 0.9790209790209791,
+        "final_drift_h_m": 87.551,
         "residual_h_at_60s_m": null
       },
       "verdict": {

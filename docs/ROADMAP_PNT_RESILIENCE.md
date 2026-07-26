@@ -18,6 +18,7 @@ Estas campañas **ya están hechas** (artefactos en repo). No confundir “Allan
 | S3 | **Allan variance** IEEE Std 952 | **Herramienta hecha** · tabla ARW/BI pendiente de log | [`tools/analysis/analyze_allan.py`](../analyze_allan.py) · falta `docs/imu_static_log.csv` (horas) |
 | S4 | **EKF v2 vs v1** (3 phone drives) | **Hecho** (post Bowring) | Accept ~88/100/98% · drift H ~14/6/88 m · GAP-6 `ecef_to_lla` fix · `docs/benchmarks/ekf_v2_ab_3routes/` |
 | S5 | GAP-1…4 / G-ext diagnostics | **CLOSED** | Mapa en README § EKF diagnostics |
+| S6 | **GAP-6 + GAP-7** (origen NED / REF divergencia) | **CLOSED** | Bug de geodesia corregido (offset sistemático ~30 m); divergencia residual de REF explicada por multipath GNSS genuino con gate de consistencia funcionando correctamente — **no requiere cambio de arquitectura** (desacoplo H/V descartado como prioridad). Docs: [`22-gap7…`](diagnostics/22-gap7-ref-vertical-divergence.md) · [`23-gap7…`](diagnostics/23-gap7-consistency-gate-calibration.md) · Bowring: [`gap6_origin_mismatch…`](benchmarks/ekf_v2_ab_3routes/gap6_origin_mismatch_investigation.md). **Nota futura:** REF es caso de prueba natural para ZUPT / ultrasonido en huecos GNSS reales ya cartografiados (t≈220–240, 390–420, 580–640 s). |
 
 ---
 

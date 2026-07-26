@@ -45,11 +45,11 @@ Rule: **bursty** if top3_share > 0.5 OR B > 0.25 (B = max\|Δ\| / Σ\|Δ\|).
 
 | Window | B | top3_share | bursty | sum\|Δ\| |
 |--------|---|------------|--------|---------|
-| early_0_4s | 0.0690 | 0.1648 | **False** | 16.028 |
-| late_14_25s | 0.0037 | 0.0109 | **False** | 160.267 |
-| burst_win_22_25s | 0.0100 | 0.0294 | **False** | 59.212 |
+| early_0_4s | 0.0690 | 0.1648 | **False** | 16.028[^gap6-abs] |
+| late_14_25s | 0.0037 | 0.0109 | **False** | 160.267[^gap6-abs] |
+| burst_win_22_25s | 0.0100 | 0.0294 | **False** | 59.212[^gap6-abs] |
 
-Dominating ticks in 22–25 s (`|drift_A|`):
+Dominating ticks in 22–25 s (`|drift_A|`); `dx` en metros[^gap6-abs]:
 
 - rank 1: t∈[22.540,22.550] s, dx=-0.5906, share=0.010
 - rank 2: t∈[22.550,22.560] s, dx=-0.5842, share=0.010
@@ -69,3 +69,5 @@ Prior label `FEEDBACK_CONTINUES_OMEGA_DECOUPLED` stays a **working hypothesis** 
 2. 22–25s shape: `NOT_BURSTY_CONTINUOUS_LIKE` (bursty=False).
 
 **Not** a closed basis for a late-regime §11-style success criterion yet.
+
+[^gap6-abs]: cifra absoluta pre-fix de geodesia GAP-6; offset sistemático de ~30m posible, ver GAP6_BLAST_RADIUS_AUDIT.md

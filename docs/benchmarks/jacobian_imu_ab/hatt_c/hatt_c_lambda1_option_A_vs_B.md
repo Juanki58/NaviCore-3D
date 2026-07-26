@@ -10,8 +10,8 @@ Tras latch con λ=1, `dx_att_z` **aplicado** queda en cero → Σdx applied **pl
 
 | Brazo | Latch | \|drift\| @ latch | \|drift\| final | Share post-latch | Slope latch→2 s |
 |-------|-------|-------------------|-----------------|------------------|-----------------|
-| c-E-l1 | 0,39 s | **0,0049 m** | 95,8 m | **99,995 %** | 0,64 m/s |
-| c-L-l1 | 0,58 s | **0,0073 m** | 65,4 m | **99,989 %** | 0,72 m/s |
+| c-E-l1 | 0,39 s | **0,0049 m**[^gap6-abs] | 95,8 m[^gap6-abs] | **99,995 %** | 0,64 m/s |
+| c-L-l1 | 0,58 s | **0,0073 m**[^gap6-abs] | 65,4 m[^gap6-abs] | **99,989 %** | 0,72 m/s |
 
 ## Veredicto
 
@@ -29,3 +29,5 @@ El FEEDBACK_GROWTH de P3-A con λ=1 en 0–0,75 s es en parte artefacto de la m�
 ## Siguiente paso barato (antes de preregistro reset)
 
 Comparar post-latch: `yaw−des_heading` y `bias_gz` en c-E-l1 vs control — si el error de yaw a latch ya es grande y sigue, favorece B1; si yaw está bien y bias_gz/otro diverge, favorece B2.
+
+[^gap6-abs]: cifra absoluta pre-fix de geodesia GAP-6; offset sistemático de ~30m posible, ver GAP6_BLAST_RADIUS_AUDIT.md

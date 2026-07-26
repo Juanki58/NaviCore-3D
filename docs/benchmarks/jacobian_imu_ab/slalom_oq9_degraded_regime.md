@@ -12,7 +12,9 @@
 
 ## Drift budget (|drift_A| accrual)
 
-Final |drift_A| ≈ **53.37 m**; first ≥20 m @ t≈16.0 s.
+Final |drift_A| ≈ **53.37 m**[^gap6-abs]; first ≥20 m @ t≈16.0 s[^gap6-abs].
+
+Columna `Δ|drift_A|`: cifras absolutas[^gap6-abs]. `frac` y `Δ(drift_A−C)` son relativas / A−C.
 
 | Epoch | Δ|drift_A| | frac of final | Δ(drift_A−C) |
 |-------|------------|---------------|--------------|
@@ -29,9 +31,11 @@ Final |drift_A| ≈ **53.37 m**; first ≥20 m @ t≈16.0 s.
 - tail 22–25 s: **45.6%**
 - **late total t≥14 s: 80.5%** (post-~20 m ≈ 62.9%)
 
-Headline: the ω-locked early turns are **not** where most of the 54 m is earned.
+Headline: the ω-locked early turns are **not** where most of the 54 m[^gap6-abs] is earned.
 
 ## Per-turn NHC (stim ±1 s)
+
+Columna `drift_A`: cifras absolutas[^gap6-abs]. `innov A/C` es ratio relativo.
 
 | Turn | role | drift_A | innov_A | innov A/C | |v_by|_A | k_att_A | P_aa_A | P_pv_A | P_aa_C | P_pv_C | opp dx_att_z |
 |------|------|---------|---------|-----------|---------|--------|--------|--------|--------|--------|-------------|
@@ -62,6 +66,8 @@ Turns 9–10 still show loud A≫C innov/|v_body_y|, but per-turn xcorr vs |ω| 
 → **`slalom_oq9_late_p_and_burstiness.md`**: what “P_C explodes” means (`P_pp`/`P_pv` numbers); mirror test; burstiness of 22–25 s.
 
 Do not preregister a late-regime success criterion on this label alone.
+
+[^gap6-abs]: cifra absoluta pre-fix de geodesia GAP-6; offset sistemático de ~30m posible, ver GAP6_BLAST_RADIUS_AUDIT.md
 
 ## Next (still no code)
 

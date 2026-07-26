@@ -32,15 +32,15 @@ Time axis: treated as microseconds (t_s = time_us * 1e-6). Duration ~ 25.000 s, 
 
 ### A (jcorrect)
 
-- max |drift| = 53.998676 m at t=24.8700 s
-- first |drift| > 0.15 m: t=1.5200s (drift=0.152123 m)
-- first |drift| > 1 m: t=2.2000s (drift=1.014509 m)
-- first |drift| > 10 m: t=4.7400s (drift=10.074031 m)
+- max |drift| = 53.998676 m at t=24.8700 s[^gap6-abs]
+- first |drift| > 0.15 m: t=1.5200s (drift=0.152123 m)[^gap6-abs]
+- first |drift| > 1 m: t=2.2000s (drift=1.014509 m)[^gap6-abs]
+- first |drift| > 10 m: t=4.7400s (drift=10.074031 m)[^gap6-abs]
 
 ### C (jlegacy)
 
-- max |drift| = 0.376852 m at t=25.0000 s
-- first |drift| > 0.15 m: t=9.9700s (drift=0.150010 m)
+- max |drift| = 0.376852 m at t=25.0000 s[^gap6-abs]
+- first |drift| > 0.15 m: t=9.9700s (drift=0.150010 m)[^gap6-abs]
 - first |drift| > 1 m: never
 - first |drift| > 10 m: never
 
@@ -52,13 +52,15 @@ Time axis: treated as microseconds (t_s = time_us * 1e-6). Duration ~ 25.000 s, 
 
 Descriptive only (no causal theory):
 
-- max single-tick |ddrift| **A**: 1.105820 m at t=3.3900 s
-- max single-tick |ddrift| **C**: 0.000228 m at t=23.3600 s
+- max single-tick |ddrift| **A**: 1.105820 m at t=3.3900 s[^gap6-abs]
+- max single-tick |ddrift| **C**: 0.000228 m at t=23.3600 s[^gap6-abs]
 - max single-tick |d(drift_A - drift_C)|: 1.105958 m at t=3.3900 s
 - at 0.01 m crossing: {"i": 135, "t_s": 1.3499999999999999, "delta_abs_diff_this_tick": 0.0011909999999999994, "abs_diff_prev": 0.00949, "abs_diff_here": 0.010681, "single_tick_dA": -0.0010260000000000009, "single_tick_dC": 0.00016499999999999848}
 - **pattern:** `gradual_accumulation`
 
 ## Samples every 1 s (first 30 s)
+
+Columnas `drift_A` / `drift_C`: cifras absolutas[^gap6-abs]. La columna de ratio es A/B relativa.
 
 | t_s | drift_A | drift_C | |dA|/max(|dC|,1e-6) |
 |-----|---------|---------|---------------------|
@@ -95,3 +97,5 @@ Descriptive only (no causal theory):
 | 30 | 53.367836 | 0.376852 | 141.6148 |
 
 Machine-readable: `slalom_a_vs_c_autopsy.json`.
+
+[^gap6-abs]: cifra absoluta pre-fix de geodesia GAP-6; offset sistemático de ~30m posible, ver GAP6_BLAST_RADIUS_AUDIT.md

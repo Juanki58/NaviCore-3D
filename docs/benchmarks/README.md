@@ -14,3 +14,10 @@ headlines. Investigation:
 [`ekf_v2_ab_3routes/gap6_origin_mismatch_investigation.md`](ekf_v2_ab_3routes/gap6_origin_mismatch_investigation.md).
 
 Pico 2 firmware GNSS updates are **not** affected (LLA in → `lla_to_ned` only).
+
+## Integrity gate (SW injection)
+
+Detection-boundary sweep + plain-language use cases:
+[`integrity_gate_experiment/`](integrity_gate_experiment/) ·
+[`../diagnostics/24-integrity-gate-experiment.md`](../diagnostics/24-integrity-gate-experiment.md).
+Regenerate: `python tools/campaigns/run_integrity_gate_experiment.py`.

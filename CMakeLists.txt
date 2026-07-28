@@ -168,6 +168,7 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_math.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_fusion_isolated.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_properties_rapidcheck.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_integrity_gate_sweep.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_sensor_wire_and_health.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_nav_mode_transitions.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_edge.cpp

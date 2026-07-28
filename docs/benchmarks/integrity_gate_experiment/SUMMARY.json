@@ -1,0 +1,23 @@
+{
+  "utc": "2026-07-28T19:11:45Z",
+  "exit_codes": {
+    "sweep": 0,
+    "rapidcheck_integrity": 0,
+    "safety_inject": 0
+  },
+  "sweep_claims": {
+    "n_trials": 32,
+    "short_gap_teleport_gt_120m_detected": true,
+    "short_gap_teleport_gt_120m_n": 8,
+    "short_gap_nudge_le_2m_not_spoof": true,
+    "long_gap_teleport_not_classified_spoof": true,
+    "velocity_lie_60mps_detected": true,
+    "claims_ok": true
+  },
+  "thresholds": {
+    "MAX_GAP_S": 2,
+    "MAX_POS_JUMP_M": 120,
+    "POS_MARGIN_M": 30,
+    "MAX_VEL_JUMP_MPS": 35
+  }
+}

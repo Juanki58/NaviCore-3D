@@ -258,6 +258,7 @@ python tools/analysis/analyze_allan.py docs\allan\smoke\imu_static_smoke_60s.csv
 | Teleport +500 m with `fix_valid=true` (short gap) | Rejected · `reject_reason=3` · test `gnss_physical_inconsistency_spoof` |
 | RapidCheck: random teleport 200–800 m (short gap) | Reject · `MEAS_REJECT_INCONSISTENT` · state/P hold · `[rapidcheck][integrity]` |
 | RapidCheck: sub-metre GNSS nudge | Never classified as physical spoof |
+| **Gate sweep** (jumps 1–500 m × gaps 0.2/1/3 s + velocity lie) | `claims_ok` · [`integrity_gate_experiment/`](docs/benchmarks/integrity_gate_experiment/) · [`24-integrity…`](docs/diagnostics/24-integrity-gate-experiment.md) |
 | RF GPS spoof / jam | **Out of scope** — illegal in ES/EU without CNMC authorisation |
 
 ### Catch2 unit tests (isolated — not the Sim pipeline)

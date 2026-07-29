@@ -1,6 +1,7 @@
 build/
 build_asan/
 build_coverage/
+build_dbg/
 build_pico2/
 src/targets/pico2_hardware/wifi_config.h
 __pycache__/
@@ -26,6 +27,7 @@ cmake_install.cmake
 # explicitly force-added (docs/replay_sample.csv, docs/allan/smoke/*).
 
 telemetry_log.csv
+sweep_out.txt
 _tmp_*.py
 *.zip
 ekf_explorer/

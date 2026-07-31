@@ -96,7 +96,7 @@ Documentación de reproducción completa: [`docs/diagnostics/06-reproduction.md`
 | “Unified land / air / sea navigation core” | **Navigation resilience when GNSS is degraded, denied, or lying** (civil *assured PNT*-style coast + integrity) |
 | Multi-domain as the product | Shared ESKF + `NavState` **machinery**; domain aiding still per vertical |
 | Compete with Honeywell / BAE / Thales / Collins | **Do not.** That tier is certified, export-controlled, defence/avionics-priced |
-| Compete with ArduPilot / sealed u-blox modules | Fill the gap below mil-grade: **lightweight, auditable, MIT, zero-heap** resilience for cost-sensitive platforms |
+| Compete with ArduPilot / sealed u-blox modules | Fill the gap below mil-grade: **lightweight, auditable, open-source (GPL or commercial), zero-heap** resilience for cost-sensitive platforms |
 
 ### Who this is (and is not) for
 
@@ -526,7 +526,7 @@ Replay can raise GNSS σ from phone accuracy columns (floored) and override `--g
 
 | Claim to avoid | Reality |
 |----------------|---------|
-| “Competes with u-blox / full ArduPilot stack” | Different product class. Niche: **lightweight, auditable, zero-heap ESKF core** (MIT) between heavy autopilot stacks and sealed commercial modules — **potential**, not traction yet. |
+| “Competes with u-blox / full ArduPilot stack” | Different product class. Niche: **lightweight, auditable, zero-heap ESKF core** (GPL-3.0-or-later or commercial) between heavy autopilot stacks and sealed commercial modules — **potential**, not traction yet. |
 | “One untuned filter owns land/air/sea ops” | Shared **state + predict**; each domain still needs its own aiding/R. Multidomain is **architecture**, not the headline — see [Positioning](#positioning--gps-denied--pnt-resilience). |
 | “Assured PNT / anti-jam product” | Civil **integrity + DR** story only. No RF anti-jam; spoof gate = **EKF consistency check** (`reject_reason=3`, SW injection only), not mil stack. No Honeywell comparison. |
 | “Proven automotive / maritime DR” | **Not yet.** Phone-log replay ≠ certified outage campaign on Pico+M9N. |
@@ -1175,7 +1175,21 @@ Pico RT detail (health monitor / WCET protocol): [`DEVELOPMENT.md`](DEVELOPMENT.
 ## License & Author
 
 **Author:** Juan Carlos Pulido Mellado  
-**License:** [MIT License](LICENSE) — Copyright (c) 2026 Juan Carlos Pulido Mellado
+**Copyright:** © 2026 Juan Carlos Pulido Mellado
 
-Hosted on GitHub (`origin/main`). Decide dual licence **before** going widely public / viral if commercial use is intended.  
+**License (dual):** **GPL-3.0-or-later** *or* a **commercial** license from the copyright holder.
+
+| Path | Where | Use when |
+|------|--------|----------|
+| Open / copyleft | [LICENSE](LICENSE) (GPL-3.0-or-later) | Community, research, products that can meet GPL obligations |
+| Commercial | [COMMERCIAL.md](COMMERCIAL.md) · [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) | Proprietary embed / OEM / redistribution without GPL obligations |
+
+Contributions require accepting the Individual CLA — see [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md). **No CLA → no merge.**
+
+**Historical MIT:** tag `v0.1.0-mit-last` marks the last commit published under MIT. Those snapshots remain MIT as tagged; they are not revoked. Going forward, do **not** treat this repo as MIT-only.
+
+**Contact (commercial):** `navicore.licensing@yahoo.com`
+
+*Draft licensing docs pending counsel review — not legal advice.*
+
 **NaviCore-3D** — *Resilience when the sky lies. Zero heap on the edge.*

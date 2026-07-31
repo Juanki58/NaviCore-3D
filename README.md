@@ -1177,11 +1177,11 @@ Pico RT detail (health monitor / WCET protocol): [`DEVELOPMENT.md`](DEVELOPMENT.
 **Author:** Juan Carlos Pulido Mellado  
 **Copyright:** © 2026 Juan Carlos Pulido Mellado
 
-**License (dual):** **GPL-3.0-or-later** *or* a **commercial** license from the copyright holder.
+**License (dual):** **GPL-3.0-or-later** *or* a **commercial** license from the copyright holder. See also [NOTICE](NOTICE).
 
 | Path | Where | Use when |
 |------|--------|----------|
-| Open / copyleft | [LICENSE](LICENSE) (GPL-3.0-or-later) | Community, research, products that can meet GPL obligations |
+| Open / copyleft | [LICENSE](LICENSE) (GPL-3.0 / GPL-3.0-or-later) | Community, research, products that can meet GPL obligations |
 | Commercial | [COMMERCIAL.md](COMMERCIAL.md) · [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) | Proprietary embed / OEM / redistribution without GPL obligations |
 
 Contributions require accepting the Individual CLA — see [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md). **No CLA → no merge.**

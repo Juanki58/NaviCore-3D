@@ -1,0 +1,22 @@
+NaviCore-3D
+Copyright (C) 2026 Juan Carlos Pulido Mellado
+
+Dual licensing
+--------------
+This software is available under the GNU General Public License v3 (or later),
+as set out in the LICENSE file, OR under a separate commercial license from
+the copyright holder.
+
+See COMMERCIAL.md and LICENSE-COMMERCIAL.md for the commercial path.
+Contact: navicore.licensing@yahoo.com
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+Historical MIT
+--------------
+Tag v0.1.0-mit-last marks the last commit distributed under the MIT License.
+Those historical snapshots remain available under MIT as tagged; they are not
+revoked. Current mainline is GPL-3.0-or-later or commercial — not MIT-only.
+
+This NOTICE is not legal advice; have counsel review dual licensing and CLA
+terms before relying on them in production.

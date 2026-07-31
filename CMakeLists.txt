@@ -51,6 +51,7 @@ set(NAVICORE_CORE_SOURCES
     ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
     ${NAVICORE_CORE_DIR}/health_policy.cpp
     ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+    ${NAVICORE_CORE_DIR}/technique_arbiter.cpp
     ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
 )
 
@@ -171,6 +172,7 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${CMAKE_SOURCE_DIR}/tests/unit/test_integrity_gate_sweep.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_sensor_wire_and_health.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_nav_mode_transitions.cpp
+        ${CMAKE_SOURCE_DIR}/tests/unit/test_technique_arbiter.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_ins_ekf_edge.cpp
         ${CMAKE_SOURCE_DIR}/tests/unit/test_nhc_ops_policy.cpp
         ${NAVICORE_CORE_DIR}/NavState.cpp
@@ -187,6 +189,7 @@ if(NAVICORE_BUILD_UNIT_TESTS)
         ${NAVICORE_CORE_DIR}/wt61c_parser.cpp
         ${NAVICORE_CORE_DIR}/health_policy.cpp
         ${NAVICORE_CORE_DIR}/nav_mode_policy.cpp
+        ${NAVICORE_CORE_DIR}/technique_arbiter.cpp
         ${NAVICORE_CORE_DIR}/imu_cross_check.cpp
     )
     target_link_libraries(navicore_unit_tests PRIVATE Catch2::Catch2WithMain rapidcheck)

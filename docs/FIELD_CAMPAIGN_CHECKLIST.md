@@ -2,6 +2,8 @@
 
 **Goal:** turn architectural claims into **measured** Evidence. Do not expand multi-technique fusion this week.
 
+**After smoke is green:** run the adversarial plan — [FIELD_ADVERSARIAL_CAMPAIGN.md](FIELD_ADVERSARIAL_CAMPAIGN.md) (hard / cheap / legal stress).
+
 **Out of scope this campaign:** STEMMA optical env as product claim, TinyML, acoustic/DVL product path, Show HN.
 
 ---

@@ -1,21 +1,21 @@
-# Field campaign checklist — Pico DUT (from 2026-08-03)
+# Field campaign checklist — Adalogger DUT (from 2026-08-03)
 
-**Goal:** turn architectural claims into **measured** Evidence. Do not expand multi-technique fusion this week.
+**Goal:** turn architectural claims into **measured** Evidence on the **Adafruit** kit. Do not expand multi-technique fusion this week.
 
 **After smoke is green:** run the adversarial plan — [FIELD_ADVERSARIAL_CAMPAIGN.md](FIELD_ADVERSARIAL_CAMPAIGN.md) (hard / cheap / legal stress).
 
-**Out of scope this campaign:** STEMMA optical env as product claim, TinyML, acoustic/DVL product path, Show HN.
+**Out of scope this campaign:** STEMMA optical env as product claim, TinyML, acoustic/DVL product path, Show HN. **Pico 2 W / Comarruga is archived** — do not mix pin maps.
 
 ---
 
 ## 0. Before power-on
 
-- [ ] Confirm last piece arrived and BOM matches locked blueprint / Pico 2 W bank
+- [ ] Confirm kit: Adalogger 5980 + BNO055 + GPS FeatherWing/PA1010D + antenna + battery + PPK2 ([KIT BOM](KIT_BOM_ADALOGGER_BNO055_PA1010D.md))
 - [ ] Laptop + serial capture: `tools/field/serial_navstate_capture.py` (or current field logger)
-- [ ] Note firmware SHA / tag on the device (`git rev-parse --short HEAD`)
+- [ ] Note firmware SHA / tag on the device (`git rev-parse --short HEAD`) when Adalogger FW exists
 - [ ] Wall clock / NTP sync on host (timestamps must be comparable)
 - [ ] Spare cables, SD/logs folder empty and named `campaign_YYYYMMDD/`
-
+- [ ] BNO055 checklist: **AMG mode only** (not NDOF as nav truth)
 ## 1. Health smoke (15–30 min)
 
 - [ ] Boot → `INITIALIZING` → `HYBRID` with outdoor sky view

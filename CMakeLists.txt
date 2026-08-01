@@ -127,7 +127,7 @@ add_executable(navicore_regression_test
 )
 
 # Host: test de estrés SPSC UART (campaña S7, ver docs/comarruga_lab_hardware.md)
-set(NAVICORE_PICO2_HW_DIR ${CMAKE_SOURCE_DIR}/src/targets/pico2_hardware)
+set(NAVICORE_PICO2_HW_DIR ${CMAKE_SOURCE_DIR}/src/targets/archive/pico2_hardware)
 
 add_executable(ring_stress_test
     ${NAVICORE_PICO2_HW_DIR}/ring_stress_host_test.cpp
@@ -236,7 +236,7 @@ if(NAVICORE_BUILD_FUZZERS)
         NAVICORE_FUZZ_STANDALONE=1)
 endif()
 
-# Pico 2 W (laboratorio físico Comarruga): build standalone — PICO_BOARD debe
-# fijarse antes de project(). Ver src/targets/pico2_hardware/CMakeLists.txt
-#   cmake -S src/targets/pico2_hardware -B build_pico2 -G Ninja
+# Pico 2 W Comarruga target ARCHIVED under src/targets/archive/pico2_hardware/
+# Active DUT: Adalogger — see docs/TARGET_RP2040_ADALOGGER_PORT.md
+#   cmake -S src/targets/archive/pico2_hardware -B build_pico2 -G Ninja  # reference only
 #   cmake --build build_pico2

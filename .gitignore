@@ -3,6 +3,8 @@ build_asan/
 build_coverage/
 build_dbg/
 build_pico2/
+src/targets/archive/pico2_hardware/wifi_config.h
+# legacy path (pre-archive)
 src/targets/pico2_hardware/wifi_config.h
 __pycache__/
 *.pyc

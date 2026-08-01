@@ -1,10 +1,10 @@
-# Laboratorio físico Comarruga — Hardware validado
+# Laboratorio físico Comarruga — Hardware (ARCHIVADO)
 
-> **Target CMake:** `src/targets/pico2_hardware/` → `NaviCore3D_Pico2`  
-> **Placa:** `PICO_BOARD=pico2_w`  
-> **Firmware de referencia:** commit `fc28d70` y posteriores (`RuntimeHealth`, `health_monitor`, `SystemHealth`)
+> **ARCHIVED 2026-08-01** — no longer the active DUT. Active path: Adalogger kit ([`KIT_BOM_ADALOGGER_BNO055_PA1010D.md`](KIT_BOM_ADALOGGER_BNO055_PA1010D.md) · [`TARGET_RP2040_ADALOGGER_PORT.md`](TARGET_RP2040_ADALOGGER_PORT.md)).  
+> Firmware reference kept under `src/targets/archive/pico2_hardware/`.  
+> **Former target:** `NaviCore3D_Pico2` · `PICO_BOARD=pico2_w`
 
-Este documento describe el hardware del banco Comarruga, la arquitectura de tiempo real del firmware, el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB, y el **plan estratégico de desarrollo** del NaviCore Runtime (horizonte 12 meses).
+Este documento describe el hardware del banco Comarruga (histórico), la arquitectura de tiempo real del firmware, el **procedimiento de validación en banco** diseñado para medir WCET (Worst-Case Execution Time) con osciloscopio y telemetría USB, y el **plan estratégico de desarrollo** del NaviCore Runtime (horizonte 12 meses).
 
 ---
 

@@ -1,13 +1,13 @@
 # Target port plan — RP2040 Adalogger + PA1010D + BNO055 (AMG)
 
-**Status:** planned · **starts when kit arrives** · **not** a substitute for Evidence until powered  
-**BOM check:** [`KIT_BOM_ADALOGGER_BNO055_PA1010D.md`](KIT_BOM_ADALOGGER_BNO055_PA1010D.md)
+**Active desk DUT (2026-08):** Adafruit Adalogger kit — Pico 2 W Comarruga **archived** under `src/targets/archive/pico2_hardware/` (reference for port only).
 
-## Principle
+When this platform is what actually runs, update README with the **same honesty** as the Comarruga correction (`33f4739`): say **Adalogger + GPS + BNO055 validated** only after powered evidence — never “Pico 2 W validated”.
 
-First work is **software**, not wiring: new BSP target + sensor drivers. Do **not** pretend WT61C-232 / NEO-M9N code will drop in unchanged.
+## Scaffold note
 
-When this platform is what actually runs, update README with the **same honesty** as the Comarruga correction (`33f4739`): say **Adalogger + PA1010D + BNO055 validated** only after powered evidence — never “Pico 2 W validated” if the DUT is Adalogger.
+Copy patterns from `src/targets/archive/pico2_hardware/` (safe_log, rings, health) into `src/targets/rp2040_adalogger/` — do **not** revive Comarruga as the product story.
+
 
 ## Intended BOM (kit)
 

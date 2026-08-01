@@ -3,7 +3,7 @@
 > **Auditors / cached fetches:** do not trust a stale HTML view of `/`. Pin a commit.  
 > Current `main` HEAD at push of this note: see latest on GitHub. Correction of overclaimed Pico bench: **`33f4739`**. Latest plan docs: **`ea07d37`**.  
 > Raw README (no HTML cache): https://raw.githubusercontent.com/Juanki58/NaviCore-3D/ea07d37/README.md  
-> Mission row must say *hardware bench validation pending* + *SensorLogger* — **not** “Pico 2 W validated in Comarruga lab”.
+> Mission row must say *hardware bench validation pending* + *SensorLogger* — **not** “Pico 2 W validated”. **Active DUT path:** Adafruit Adalogger kit (see Roadmap).
 
 ```cpp
 // Haiku del Programador Defensivo en C++
@@ -13,8 +13,8 @@
 //   parada segura.
 ```
 
-**ES** · Núcleo **INS/ESKF 15 estados** para MCU edge: **resiliencia de navegación cuando el GNSS se degrada o deniega** (dead reckoning + integridad), no un “autopiloto multidominio” completo. Target Pico 2 W (implementado; banco físico pendiente) · replay SensorLogger · diseño lab Comarruga. Consumo: **medir con PPK2**.  
-**EN** · **15-state INS/ESKF** edge core aimed at **navigation resilience under degraded/denied GNSS** (dead reckoning + integrity) — not a full multi-domain autopilot. Pico 2 W target (implemented; powered-bench validation pending) · SensorLogger replay · Comarruga lab design. Power: **measure with PPK2**.
+**ES** · Núcleo **INS/ESKF 15 estados** para MCU edge: **resiliencia de navegación cuando el GNSS se degrada o deniega** (dead reckoning + integridad), no un “autopiloto multidominio” completo. **DUT activo (pedido):** Feather RP2040 Adalogger + BNO055 + GPS Adafruit · port en curso · replay SensorLogger. Consumo: **medir con PPK2**.  
+**EN** · **15-state INS/ESKF** edge core aimed at **navigation resilience under degraded/denied GNSS** (dead reckoning + integrity) — not a full multi-domain autopilot. **Active DUT (ordered):** Feather RP2040 Adalogger + BNO055 + Adafruit GPS · port in progress · SensorLogger replay. Power: **measure with PPK2**.
 
 ---
 
@@ -117,7 +117,7 @@ Volume and urgency sit in that middle band: enough GNSS dependency to hurt when 
 | GNSS NIS reject / accept | ESKF update | Integrity vs inconsistent innovation |
 | INS predict without GNSS | ESKF @ ~100 Hz | Dead reckoning backbone |
 | v2 fusion policy | `--ekf-core v2` | Keep position when velocity NIS fails (lab, 3 drives) |
-| Pico 2 W + `safe_log` | Embedded **target** (builds) | Designed for real outage / spoof-stress **once** bench is powered — not yet a published Pico DUT campaign |
+| Adalogger + `safe_log` (port) | Embedded **DUT path** | Adafruit kit on desk — Evidence only after powered bring-up ([port](docs/TARGET_RP2040_ADALOGGER_PORT.md)) |
 | Consistency gate (`reject_reason=3`) | ESKF GNSS update | Fix present but IMU-incompatible → reject (SW spoof) |
 
 Today you mostly react to **loss of fix** (age, reject, sats). That is necessary but not what “PNT resilience” sells hardest.
@@ -149,7 +149,7 @@ Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent i
 
 | | **English** | **Español** |
 |---|---|---|
-| **Mission** | Provide a single navigation state model across domains, with dead reckoning when GNSS fails, on bare-metal MCUs. Fusion validated with real-world IMU+GPS traces (SensorLogger, mobile capture); embedded target (Pico 2 W) implemented and building, hardware bench validation pending. | Ofrecer un modelo único de estado de navegación en todos los dominios, con navegación estimada cuando falla el GNSS, en MCUs bare-metal. Fusión validada con trazas reales de IMU+GPS (SensorLogger, captura móvil); target embebido (Pico 2 W) implementado y compilando, validación en banco físico pendiente. |
+| **Mission** | Provide a single navigation state model across domains, with dead reckoning when GNSS fails, on bare-metal MCUs. Fusion validated with real-world IMU+GPS traces (SensorLogger); **active DUT:** Adalogger kit (port pending). | Ofrecer un modelo único de estado de navegación; fusión validada con SensorLogger; **DUT activo:** kit Adalogger (port pendiente). |
 | **Estimator** | Explicit ESKF: position, velocity, attitude error, accel/gyro biases @ ~100 Hz. See [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). | ESKF explícito: posición, velocidad, error de actitud, sesgos @ ~100 Hz. Ver [Fusion algorithm](#fusion-algorithm--what-it-is--what-it-is-not). |
 | **Language** | C++17, embedded-oriented: fixed structs, no heap in `core/`. | C++17, estilo embebido: estructuras fijas, sin heap en `core/`. |
 | **Memory** | **Zero dynamic allocation** in `core/`: no `std::vector`, no `std::string`, fixed buffers, stack-only hot paths. | **Cero asignación dinámica** en `core/`: sin `std::vector`/`std::string`, buffers fijos, hot path en stack. |
@@ -546,69 +546,67 @@ Replay can raise GNSS σ from phone accuracy columns (floored) and override `--g
 
 Phone IMU + phone GNSS stay in the loop on the published city drives. Between fixes, attitude / `R·f` errors still write Δv. Expect **tens–hundreds of metres** residual with current Q/R — not rail-grade — until **field outage residuals** are used to retune Q/R and (later) domain aiding.
 
-**Next evidence that raises confidence more than any feature:** forced GNSS outage on a real drive or Pico+M9N, with residual growth vs time and the Q/R used frozen in the report.
+**Next evidence that raises confidence more than any feature:** forced GNSS outage on the **Adalogger** DUT (or phone replay), with residual growth vs time and the Q/R used frozen in the report.
 
 ---
 
-## What validates the real firmware — Pico 2 W
+## What validates the real firmware — Adalogger DUT
 
-The **intended DUT** for NaviCore-3D is the firmware that **targets** the **Raspberry Pi Pico 2 W (RP2350)** — the same C++ ESKF in `src/core/`, not a reimplementation elsewhere. **Firmware is implemented and builds; powered-bench validation with Comarruga sensors is still pending.** Published fusion Evidence to date is from **mobile SensorLogger** drives (EKF v2 A/B), not from a Pico-on-desk campaign.
+The **active desk DUT** is the **Adafruit Feather RP2040 Adalogger** stack (BNO055 AMG + Adafruit GPS + PPK2), not the archived Pico 2 W Comarruga bank. Same C++ ESKF in `src/core/`; new BSP under `src/targets/rp2040_adalogger/` (planned). **Do not** label Evidence as Pico-validated if the hardware is Adalogger.
+
+Reference-only former target: `src/targets/archive/pico2_hardware/` · [`docs/archive_comarruga_lab_hardware.md`](docs/archive_comarruga_lab_hardware.md).
+
+Published fusion Evidence to date is still largely from **mobile SensorLogger** drives (EKF v2 A/B), not from a powered Adalogger campaign.
 
 | Role | Platform | Validates? |
 |------|----------|------------|
-| **DUT / instrument (goal)** | **Pico 2 W** + USB CDC (`safe_log.*`) | **When powered + wired** — real EKF binary, WCET, UART rings, lab telemetry |
+| **DUT / instrument (goal)** | **Adalogger** + USB CDC / microSD | **When ported + powered** — real ESKF binary on the desk kit |
 | Host replay | `NaviCore3D_Replay` on PC | Deterministic regression on logged CSVs — same algorithms, **not** a substitute for embedded timing/I/O |
 | Mobile SensorLogger traces | Phone IMU+GNSS CSVs | **Current** published fusion A/B evidence (see Evidence scorecard) |
-| Optional external truth | e.g. Pi Zero / phone / survey GNSS logging in parallel | Independent **reference track** to compare *against* Pico estimate — **not** a second NaviCore |
-| Python / Ambiq / other MCU ports | Parallel approximations | Useful experiments; **do not** claim they validate Pico firmware |
+| Optional external truth | e.g. phone / survey GNSS logging in parallel | Independent **reference track** — **not** a second NaviCore |
+| Archived Pico 2 W tree | `src/targets/archive/pico2_hardware/` | Reference BSP patterns only — **not** the active Evidence DUT |
 
 ### Why not “run NaviCore on a Pi Zero instead”
 
-A Python (or other) EKF on a Pi Zero measures **that** stack. It does **not** measure:
+A Python (or other) EKF on a Pi Zero measures **that** stack. It does **not** measure the zero-heap C++ core on the Adalogger RP2040, the real IMU/GNSS path, or on-device logging under the nav loop.
 
-- the zero-heap C++ core on RP2350,
-- the real IMU/GNSS UART path,
-- `safe_log` / USB budget inside the 100 Hz loop,
-- WDT / health behaviour under load.
-
-Use a second board only if you need a **ground-truth logger** (or independent estimator) riding along — then compare truth vs Pico USB stream. Wiring: [docs/comarruga_lab_hardware.md](docs/comarruga_lab_hardware.md) (USB CDC, `safe_log_flush_pending`, pin map).
+Use a second device only if you need a **ground-truth logger** riding along — then compare truth vs Adalogger stream.
 
 ### Correct next measurement (dead reckoning)
 
-1. Flash current Pico 2 W firmware (same core as lab).
-2. PC captures USB/`safe_log` (and/or on-device log) while GNSS is **denied or blocked** for a known interval.
-3. Score residual growth vs time on **that** stream — optionally vs a parallel truth logger.
+1. Bring up Adalogger firmware (`rp2040_adalogger` port) with BNO055 **AMG** + Adafruit GPS.
+2. PC / microSD captures NavState while GNSS is **denied or blocked** for a known interval.
+3. Score residual growth vs time — optionally vs a parallel truth logger.
 4. Freeze Q/R used in the report.
 
-Replay of phone CSVs remains valuable for algorithm A/B (v1/v2); **embedded DR proof** requires the Pico path above.
+Replay of phone CSVs remains valuable for algorithm A/B (v1/v2); **embedded DR proof** requires the Adalogger path above.
 
 ---
 
 ## Power — measure before more hardware (PPK2)
 
-The project tagline includes **ultra-low power / edge MCU**. That claim is currently **architectural** (zero-heap hot path, Pico 2 W target, non-blocking USB) — **not** yet backed by a published current draw from a Nordic **Power Profiler Kit II (PPK2)** or equivalent.
+The project tagline includes **ultra-low power / edge MCU**. That claim is currently **architectural** (zero-heap hot path, RP2040 target, non-blocking USB) — **not** yet backed by a published current draw from a Nordic **Power Profiler Kit II (PPK2)** or equivalent.
 
-**Priority before adding Pi Zero, Ambiq, or Artemis:** power the **Pico 2 W** with the real firmware and measure it. Allan fit and field outage also use that **same Pico2 + Comarruga sensor design** — they do **not** wait on the Artemis/GPS/IMU order, but they **do** require the Pico bench powered (implementation exists; physical validation pending). The Nordic **PPK2 instrument** is a separate purchase from Artemis; when you have it, profile Pico2 first, then port.
+**Priority:** power the **Adalogger kit** you already ordered and measure it with **PPK2**. Allan fit and field outage use **that same DUT**.
 
-| Do first (Pico2 target — power on bench) | Do later |
-|------------------------------------------|----------|
-| Power Pico2 + WT61C; Allan static hours → README | Wait for Artemis kit to start Pico science |
-| Field outage + phone GPX → README | Port to Ambiq **before** Pico PPK2 baseline |
-| PPK2 on Pico 2 W + document mA / mW here | Claim “ultra-low power” without measured mA |
-| After Pico numbers: Artemis/Apollo3 same GPS-denied scenario | Skip Artemis and jump straight to Apollo510 |
+| Do first (Adalogger DUT) | Do later |
+|--------------------------|----------|
+| Power Adalogger + BNO055 AMG + GPS; Allan static → README | Artemis / Ambiq ladder |
+| Field outage + truth GPX → README | Claim ULP without mA |
+| PPK2 on Adalogger + document mA / mW here | Revive archived Pico2 as product story |
 
 ### Measurement protocol (lab)
 
 1. **Instrument:** Nordic PPK2 (source or ampere meter mode as appropriate for the board supply).
-2. **DUT:** Pico 2 W flashed with `pico2_hardware` firmware under test (record git commit / build id).
-3. **Supply:** Measure **board + MCU path** you care about; note whether Wi-Fi, USB CDC, external IMU (WT61C), GNSS (NEO-M9N) are powered from the same rail.
+2. **DUT:** Adalogger with firmware under test (record git commit / build id).
+3. **Supply:** Measure **board + MCU path**; note USB CDC vs battery, GPS+IMU on.
 4. **Profiles** (run ≥30–60 s steady each; report mean and peak):
 
 | ID | Profile | Expected intent |
 |----|---------|-----------------|
 | P0 | MCU idle / clocks only (if available) | Floor |
-| P1 | Nav loop @ 100 Hz, USB CDC on, **no** Wi-Fi, sensors as in Comarruga bank | Typical lab estimate |
-| P2 | P1 + Wi-Fi activity (if enabled in build) | Upper bound with radio |
+| P1 | Nav loop, USB CDC on, sensors as wired | Typical lab estimate |
+| P2 | P1 + microSD logging | Upper bound with logger |
 | P3 | Deep sleep / safe shutdown path (if exercised) | Conservation claim |
 
 5. **Publish:** fill the table below — do **not** invent placeholders as facts. Until filled, treat “ultra-low power” as **design goal**, not measured evidence.
@@ -618,7 +616,7 @@ The project tagline includes **ultra-low power / edge MCU**. That claim is curre
 | Profile | V_supply [V] | I_mean [mA] | I_peak [mA] | P_mean [mW] | Build / commit | Date | Notes |
 |---------|-------------:|------------:|------------:|------------:|----------------|------|-------|
 | P0 | — | **TBD** | TBD | TBD | | | |
-| P1 | — | **TBD** | TBD | TBD | | | Comarruga sensors |
+| P1 | — | **TBD** | TBD | TBD | | | Adalogger + sensors |
 | P2 | — | **TBD** | TBD | TBD | | | |
 | P3 | — | **TBD** | TBD | TBD | | | |
 
@@ -635,7 +633,8 @@ NaviCore-3D/
 │   ├── scenarios/                 # TUNNEL_STRESS, SLALOM
 │   └── targets/
 │       ├── generic_pc/            # Sim, VehicleDemo, Replay, benchmarks
-│       └── pico2_hardware/        # Pico 2 W @ 100 Hz (Comarruga design; bench validation pending)
+│       └── archive/pico2_hardware/ # ARCHIVED Comarruga Pico 2 W (reference only)
+│       └── rp2040_adalogger/      # ACTIVE DUT path (scaffold when kit arrives)
 ├── data/
 │   └── real_run/                  # CSVs Android Sensor Logger (~332 s)
 ├── calibration/
@@ -673,7 +672,8 @@ NaviCore-3D/
 | `src/core/` | INS/EKF 15-state (ESKF), NavState, geodesy WGS84, guards — see Fusion algorithm |
 | `src/scenarios/` | Escenarios cuantitativos (`tunnel_stress`, `slalom_scenario`) |
 | `src/targets/generic_pc/` | Host: sim, replay, UDP telemetry, adaptive NHC controller |
-| `src/targets/pico2_hardware/` | Embedded: BSP IMU/GNSS/UPS, health monitor, WDT |
+| `src/targets/archive/pico2_hardware/` | **Archived** Comarruga Pico 2 W BSP (reference for Adalogger port) |
+| `src/targets/rp2040_adalogger/` | **Active** DUT target (planned) — see port doc |
 | `tests/unit/` | Catch2 + RapidCheck formal units/properties |
 | `data/real_run/` | Phone SensorLogger logs — **local only** (not in git; see `data/real_run/README.md`) |
 | `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally — see `.gitignore`) |
@@ -781,26 +781,18 @@ cmake --build build_asan --target navicore_regression_test
 CI: [`.github/workflows/code-audit.yml`](.github/workflows/code-audit.yml) (cppcheck · clang-tidy · ASan · Catch2+RapidCheck).  
 Report: [`docs/benchmarks/static_analysis/REPORT_LATEST.md`](docs/benchmarks/static_analysis/REPORT_LATEST.md) · standard: [`docs/SAFETY_CODING_STANDARD.md`](docs/SAFETY_CODING_STANDARD.md).
 
-### Pico 2 W — target implementado, banco físico pendiente
+### Pico 2 W — ARCHIVED (reference only)
 
-**Estado real:** el firmware `NaviCore3D_Pico2` está implementado y compila para el target (ver `src/targets/pico2_hardware/`), con mapa de pines y presupuestos de tiempo documentados en [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md). **Esto describe el diseño e implementación del target, no una validación en hardware físico encendido.** La validación de fusión disponible hasta la fecha proviene de trazas reales de IMU+GPS capturadas con SensorLogger en móvil (ver Evidence scorecard, EKF v2), no del propio Pico 2 W en banco.
+**Active DUT:** Adalogger kit ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)).
 
-**Pendiente:** encendido físico del Pico 2 W con sensores conectados (WT61C-232, NEO-M9N, UPS Waveshare), Allan variance real, curva de outage real y medida PPK2 — ver [`docs/ROADMAP_PNT_RESILIENCE.md`](docs/ROADMAP_PNT_RESILIENCE.md).
-
-Requires [Pico SDK](https://github.com/raspberrypi/pico-sdk) and Ninja:
+Former Comarruga firmware lives under `src/targets/archive/pico2_hardware/` · notes: [`docs/archive_comarruga_lab_hardware.md`](docs/archive_comarruga_lab_hardware.md).
 
 ```powershell
+# Reference build only — not the product Evidence path
 $env:PICO_SDK_PATH = 'C:\path\to\pico-sdk'
-cmake -S src\targets\pico2_hardware -B build_pico2 -G Ninja
+cmake -S src\targets\archive\pico2_hardware -B build_pico2 -G Ninja
 cmake --build build_pico2
 ```
-
-Copy `src/targets/pico2_hardware/wifi_config.h.example` → `wifi_config.h` before building Wi-Fi features.
-
-Hardware design notes: [`docs/comarruga_lab_hardware.md`](docs/comarruga_lab_hardware.md).  
-Release tag: `pico2-comarruga-banco-v1`.
-
-> **Nota (2026-07-22):** el nombre de este tag hace referencia al target de hardware, no a una validación en banco físico completada — corregido en README tras auditoría interna. Ver estado real arriba.
 
 ---
 
@@ -1160,8 +1152,8 @@ Prioridades vigentes (código / hardware / visibilidad — **no** solo WCET):
 | Phase | Target |
 |-------|--------|
 | **Done** | MC · NHC · Allan tooling · EKF v2 · estimate vocab · A5 · edge · NHC ops + integrity RC · **GAP-3 MP4 ES+EN** · host fault smoke · Allan runbook/smoke · field-outage checklist |
-| **Now (you)** | Obtain **Nordic PPK2** · power a DUT (Pico2 and/or Adalogger) → Allan/outage → README · **GAP-3 video done** |
-| **Hardware** | PPK2 on whatever you actually power first · Adalogger port = **software first** ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · then Artemis/Ambiq ladder |
+| **Now (you)** | Power **Adalogger kit** + **PPK2** → Allan/outage → README · port BSP ([plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) |
+| **Hardware** | DUT = Adalogger + BNO055 AMG + Adafruit GPS · Pico2 **archived** (reference only) |
 | **Also pending** | `rp2040_adalogger` BSP (MTK3339 PMTK + I2C AMG) · physical fault bank · WCET on-board · A3 domain Q/R |
 | **Visibility** | **GAP-3 published** — [ES](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC.mp4) · [EN](https://github.com/Juanki58/NaviCore-3D/blob/main/docs/video_gap3/NaviCore_GAP3_NHC_en.mp4) |
 | **Closeout** | [`EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md) — CSV without README does not count |

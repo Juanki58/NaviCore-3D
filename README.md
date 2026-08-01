@@ -707,10 +707,10 @@ flowchart LR
         CAL[calibration/imu_mount.json]
         CSV[docs/benchmarks]
     end
-    subgraph Embedded["Pico 2 W"]
-        PICO[NaviCore3D_Pico2]
-        IMU[WT61C IMU]
-        GNSS[NEO-M9N GNSS]
+    subgraph Embedded["Adalogger DUT (active)"]
+        PICO[rp2040_adalogger]
+        IMU[BNO055 AMG]
+        GNSS[Adafruit GPS]
     end
 
     RR --> PY

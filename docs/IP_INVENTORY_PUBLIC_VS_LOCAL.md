@@ -61,10 +61,23 @@ On **this** clone: `ekf_explorer/` and `docs/monte_carlo/` were **not present**;
 
 ---
 
-## D — Outside the repo (fill in)
+## D — Outside the repo (machine search 2026-08-01)
 
-No second “private math” tree was found under obvious Desktop/Documents names on this PC.  
-**You should list** any of:
+Searched on this PC:
+
+| Location | Result |
+|----------|--------|
+| `C:\NaviCore-3D` only | Sole `Navi*` project at drive root |
+| Desktop | No Navi/EKF folders (only screenshots / shortcuts) |
+| `OneDrive\Documentos` | No Navi/EKF dirs; no `.ipynb` / `.nb` hits |
+| `C:\Users\juanc\projects` | `automation-scripts`, `solar-telemetry` only |
+| Cursor projects | Stale name `…Factor-Inversion-AMBQ` (no Desktop folder left; not a math tree) |
+| `CrossDevice\OPPO…` | Present; no `Navi*` / `ekf*` files found in quick pass |
+| `D:\` | Not mounted |
+| `E:\` | System/apps volume; no NaviCore project tree |
+
+**Conclusion of search:** no second private “módulo matemático” tree found on this machine.  
+If you remember another path (USB, otro PC, Drive web, WhatsApp docs), add it here:
 
 - [ ] Notebooks / Mathematica / hand derivations  
 - [ ] Another folder of filter code not in git  

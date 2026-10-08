@@ -70,7 +70,7 @@ Searched on this PC:
 | `C:\NaviCore-3D` only | Sole `Navi*` project at drive root |
 | Desktop | No Navi/EKF folders (only screenshots / shortcuts) |
 | `OneDrive\Documentos` | No Navi/EKF dirs; no `.ipynb` / `.nb` hits |
-| `C:\Users\juanc\projects` | `automation-scripts`, `solar-telemetry` only |
+| `C:\Users\juanc\projects` | Separate repos (incl. `automation-scripts`, `solar-telemetry`); **not** NaviCore code — see `docs/REPO_BOUNDARY.md` |
 | Cursor projects | Stale name `…Factor-Inversion-AMBQ` (no Desktop folder left; not a math tree) |
 | `CrossDevice\OPPO…` | Present; no `Navi*` / `ekf*` files found in quick pass |
 | `D:\` | Not mounted |

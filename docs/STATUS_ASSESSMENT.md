@@ -1,7 +1,7 @@
 # Status assessment — NaviCore-3D
 
 **Date:** 2026-07-23  
-**Repo HEAD at write:** `a057e67` (update this line when revising the assessment).  
+**Repo HEAD at write:** refresh on this honesty pass (see git log).  
 **Nature:** honest internal snapshot — not marketing.
 
 ---
@@ -21,7 +21,7 @@ Engineering core above average for MIT inertial-fusion repos; **not** OEM-ready.
 - Inconsistency gate with tests + RapidCheck integrity properties
 - Frozen NHC ops policy (`OFF` / gap-triggered; `ALWAYS` not production-safe)
 - GAP-3 explainers (ES/EN) with banked numbers
-- Public correction of overclaim: “Comarruga bench validated” → fusion Evidence is **SensorLogger** mobile; Pico2 = implemented/building, powered-bench pending (`33f4739`)
+- Public correction of overclaim: “Comarruga bench validated” → fusion Evidence is **SensorLogger** mobile; **active DUT path = Adalogger** (port pending); Pico2 archived reference only (`33f4739` lineage)
 
 That discipline is rarer — and worth more — than “yet another 15-state ESKF.”
 
@@ -31,12 +31,13 @@ That discipline is rarer — and worth more — than “yet another 15-state ESK
 
 Still largely a **promise**:
 
-- Pico2 **builds**; no published powered campaign
+- Adalogger declared DUT; `rp2040_adalogger/` **not scaffolded** yet
+- Pico2 **archived** (builds as reference only); no published powered campaign on either board
 - No Allan **fit** from multi-hour static IMU on a DUT
-- No Pico field-outage curve in Evidence
+- No Adalogger field-outage curve in Evidence
 - No PPK2 mA/mW table
 
-Until those land in the README Evidence scorecard, “edge / low-power / Comarruga” means **design + PC/mobile lab**, not a characterized DUT. Coast at hundreds of metres is civil and honest — it does not compete with tactical INS or sealed u-blox modules.
+Until those land in the README Evidence scorecard, “edge / low-power” means **design + PC/mobile lab**, not a characterized DUT. Coast at hundreds of metres is civil and honest — it does not compete with tactical INS or sealed u-blox modules.
 
 ---
 
@@ -48,7 +49,7 @@ Niche: civil GNSS-degraded/denied resilience on zero-heap MCUs, MIT, falsifiable
 
 ### Levers that raise value (order)
 
-1. Power a DUT (Pico2 and/or Adalogger) → Allan + outage → README  
+1. Scaffold + power **Adalogger** DUT → Allan + outage → README  
 2. Nordic **PPK2** → “ultra-low power” stops being architecture-only  
 3. Clean Adalogger port (MTK3339 NMEA/PMTK + I2C AMG) without lying about the DUT — [`TARGET_RP2040_ADALOGGER_PORT.md`](TARGET_RP2040_ADALOGGER_PORT.md)  
 4. Domain Q/R profiles + richer aiding policy (**without** reopening NHC always-on)  

@@ -21,28 +21,42 @@
 
 ---
 
+## Proven vs Planned
+
+| Bucket | Status (honest) |
+|--------|-----------------|
+| **Proven (repo / host)** | Zero-heap `src/core/` ESKF · PC Sim + Replay · Catch2/RapidCheck + CI audits · NHC experiment summaries in git · EKF v2 A/B on **SensorLogger mobile** traces · GAP-3 videos |
+| **Reproducible, not shipped as artefacts** | Monte Carlo `TUNNEL_STRESS` runner (`tools/benchmarks/run_monte_carlo.py`) — regenerate locally; bulk CSVs under `docs/monte_carlo/` are **gitignored** / may be absent in a fresh clone |
+| **Planned DUT** | **Adafruit Feather RP2040 Adalogger** + BNO055 AMG + Adafruit GPS · BSP `src/targets/rp2040_adalogger/` **not scaffolded yet** ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · powered Allan / field outage / PPK2 **pending** |
+| **Archived (not active Evidence)** | Pico 2 W Comarruga tree → `src/targets/archive/pico2_hardware/` — **do not** read as “Pico validated” |
+
+**Maturity:** method/lab strong; **hardware Evidence not closed**. Snapshot: [`docs/STATUS_ASSESSMENT.md`](docs/STATUS_ASSESSMENT.md).
+
+---
+
 ## Contents / Contenido
 
-1. [Quick start (local)](#quick-start-local)
-2. [Positioning â€” GPS-denied resilience](#positioning--gps-denied--pnt-resilience)
-3. [Executive summary](#executive-summary--resumen-ejecutivo)
-4. [Evidence â€” published results](#evidence--published-results)
-5. [NavMode degradation matrix](#navmode-degradation-matrix)
-6. [Fusion algorithm (audit)](#fusion-algorithm--what-it-is--what-it-is-not)
-7. [What validates the real firmware](#what-validates-the-real-firmware--pico-2-w)
-8. [Power â€” measure before more hardware](#power--measure-before-more-hardware-ppk2)
-9. [Repository layout](#repository-layout--estructura)
-10. [Architecture](#architecture--arquitectura)
-11. [Build](#build--compilar)
-12. [Run simulator](#run-simulator--ejecutar-simulador)
-13. [Real-run replay pipeline](#real-run-replay-pipeline)
-14. [EKF diagnostics (H0â€“H9d, GAP-1â€¦5)](#ekf-diagnostics-real-run)
-15. [Calibration](#calibration--calibraciÃ³n)
-16. [Python tooling](#python-tooling)
-17. [Validated stress scenarios](#validated-stress-scenarios)
-18. [Digital Twin / telemetry](#digital-twin--telemetry)
-19. [Roadmap](#roadmap)
-20. [License](#license--author)
+1. [Proven vs Planned](#proven-vs-planned)
+2. [Quick start (local)](#quick-start-local)
+3. [Positioning â€” GPS-denied resilience](#positioning--gps-denied--pnt-resilience)
+4. [Executive summary](#executive-summary--resumen-ejecutivo)
+5. [Evidence â€” published results](#evidence--published-results)
+6. [NavMode degradation matrix](#navmode-degradation-matrix)
+7. [Fusion algorithm (audit)](#fusion-algorithm--what-it-is--what-it-is-not)
+8. [What validates the real firmware](#what-validates-the-real-firmware--adalogger-dut)
+9. [Power â€” measure before more hardware](#power--measure-before-more-hardware-ppk2)
+10. [Repository layout](#repository-layout--estructura)
+11. [Architecture](#architecture--arquitectura)
+12. [Build](#build--compilar)
+13. [Run simulator](#run-simulator--ejecutar-simulador)
+14. [Real-run replay pipeline](#real-run-replay-pipeline)
+15. [EKF diagnostics (H0â€“H9d, GAP-1â€¦5)](#ekf-diagnostics-real-run)
+16. [Calibration](#calibration--calibraciÃ³n)
+17. [Python tooling](#python-tooling)
+18. [Validated stress scenarios](#validated-stress-scenarios)
+19. [Digital Twin / telemetry](#digital-twin--telemetry)
+20. [Roadmap](#roadmap)
+21. [License](#license--author)
 
 ---
 
@@ -140,7 +154,7 @@ Do **not** claim anti-jam RF, CRPA, or mil anti-spoof. Claim: **IMU-consistent i
 
 | Gap | Why |
 |-----|-----|
-| Forced **outage** coast curve on Pico (+ optional truth logger) | Residual vs time under deny |
+| Forced **outage** coast curve on **Adalogger** DUT (+ optional truth logger) | Residual vs time under deny |
 | Forced **spoof-like** injection in replay (teleport / velocity lie) | Shows the new detector before field RF |
 | PPK2 current | Edge/low-power claim |
 
@@ -173,12 +187,12 @@ This is the leap in method â€” not just â€œscenarios that look good.â�
 
 | Campaign | Status | Headline result | Artefacts / how to reproduce |
 |----------|--------|-----------------|------------------------------|
-| **Monte Carlo** `TUNNEL_STRESS` | **Done** | N=100 Â· mean exit drift **13.0 m** Â· p95 **16.1 m** Â· **0%** diverge (>30 m) | `docs/monte_carlo/run_0000â€¦0099` Â· `python tools/benchmarks/run_monte_carlo.py --runs 100` |
+| **Monte Carlo** `TUNNEL_STRESS` | **Done** (re-run locally; CSVs gitignored) | N=100 Â· mean exit drift **13.0 m** Â· p95 **16.1 m** Â· **0%** diverge (>30 m) | `docs/monte_carlo/run_0000â€¦0099` Â· `python tools/benchmarks/run_monte_carlo.py --runs 100` |
 | **NHC matrix** (super-tunnel + R/G arms) | **Done** (GAP-3 closed) | NHC-off baseline **493 m** exit; `B_always` **1408 m** â€” naive high-rate NHC can **hurt** | [`docs/nhc_experiments/manifest.json`](docs/nhc_experiments/manifest.json) Â· `NaviCore3D_Sim.exe --nhc-experiments` |
 | **Allan variance** (IEEE Std 952) | **Tooling done** Â· fit publish pending | Overlapping Ïƒ_A(Ï„) â†’ ARW/VRW, BI, RRW; Q today = engineering Ïƒ_a/Ïƒ_g | [`tools/analysis/analyze_allan.py`](tools/analysis/analyze_allan.py) Â· needs multi-hour `docs/imu_static_log.csv` |
 | **EKF v2 vs v1** (3 phone drives) | **Done** (post Bowring fix) | Accept â†’ **~88 / 100 / 98%**; drift H â†’ **~14 / 6 / 88 m** (was ~35 / 38 / 110 m pre-fix) | [`docs/benchmarks/ekf_v2_ab_3routes/`](docs/benchmarks/ekf_v2_ab_3routes/) Â· **SensorLogger mobile**, not Pico bench |
 
-**Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: **powered Pico2** Allan fit, Pico outage curve, PPK2 mA (tooling/checklists ship; DUT campaigns pending).
+**Integrator takeaway:** coasting and aiding policy are **measured and falsifiable**, not folklore. Remaining for field credibility: **powered Adalogger** Allan fit, Adalogger outage curve, PPK2 mA (tooling/checklists ship; DUT campaigns pending).
 
 ### EKF v2 vs v1 â€” real phone drives (NHC-off shell)
 
@@ -368,18 +382,18 @@ Before multi-cycle brownout/WDT: confirm the lab build is **not** writing flash/
 
 ### Still missing for â€œdemo-readyâ€ credibility
 
-**Closeout rule:** Allan fit, Pico field outage, and physical fault-injection each end with a **README Evidence** table â€” not only a CSV folder. See [`docs/EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md).
+**Closeout rule:** Allan fit, Adalogger field outage, and physical fault-injection each end with a **README Evidence** table â€” not only a CSV folder. See [`docs/EVIDENCE_CLOSEOUT.md`](docs/EVIDENCE_CLOSEOUT.md).
 
 | Gap | Why it matters | Done when |
 |-----|----------------|-----------|
-| PPK2 current on Pico 2 W | â€œUltra-low powerâ€ stays architectural until measured | mA/mW table in README Power |
-| Forced field outage (Pico + truth GPX) | Coast curve vs time on hardware | CSV **+** Evidence drift table ([checklist](docs/benchmarks/field_outage/CHECKLIST.md)) |
+| PPK2 current on **Adalogger** DUT | â€œUltra-low powerâ€ stays architectural until measured | mA/mW table in README Power |
+| Forced field outage (**Adalogger** + truth GPX) | Coast curve vs time on hardware | CSV **+** Evidence drift table ([checklist](docs/benchmarks/field_outage/CHECKLIST.md)) |
 | Allan **fit** table from hours of static IMU | Tool ships; paste IEEE ARW/BI after `imu_static_log.csv` | PNG **+** Evidence Allan row ([runbook](docs/allan/RUNBOOK.md)) |
 | Logged lab fault-injection campaign | Host smoke done; physical bank pending | Pass/fail **+** Evidence table ([lab](docs/FAULT_INJECTION_LAB.md); care: flash on brownout cycles) |
 | Field + PPK2 artefacts published | Coast curve + mA/mW still empty â€” needed before â€œgoing viralâ€ | Both visible in README |
 
-**Do not break the sequence:** vÃ­deo (done) â†’ Allan â†’ outage Pico â†’ PPK2 â†’ then external talk / Artemisâ€“Ambiq silicon.  
-**Do not wait for Artemis to start Allan or outage** â€” both target the **Pico2 + WT61C/NEO-M9N Comarruga design** (firmware builds today). They need the **physical bench powered**, not the Artemis kit. PPK2 needs the Nordic instrument (independent buy), still measured on Pico2 first ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
+**Do not break the sequence:** GAP-3 video (done) → Allan on **Adalogger** → outage Adalogger → PPK2 → then external talk / Artemis–Ambiq silicon.
+**Do not wait for Artemis to start Allan or outage** — both target the **active Adalogger desk DUT** (BSP port still planned; archived Pico2 is reference only). They need the **physical bench powered**, not the Artemis kit. PPK2 needs the Nordic instrument (independent buy), measured on **Adalogger** first ([roadmap](docs/ROADMAP_PNT_RESILIENCE.md#orden-operativo-recomendado)).
 
 
 ### Diagnostic campaign (real-run)
@@ -400,7 +414,7 @@ Full map: [EKF diagnostics](#ekf-diagnostics-real-run).
 Integrator-facing contract (transitions + honest precision envelopes):  
 **[`docs/NAV_MODE_DEGRADATION.md`](docs/NAV_MODE_DEGRADATION.md)**
 
-| Mode | When (EKF / Pico) | Trust sketch |
+| Mode | When (EKF / DUT) | Trust sketch |
 |------|-------------------|--------------|
 | `HYBRID` | Fix valid **and** GNSS accept â‰¤ 2 s | Highest â€” INS+GNSS; quality `0.55+0.03Ã—sats` âˆˆ [0.55, 0.95] |
 | `GPS` | Fix valid, accept **stale** (> 2 s) | Weak GNSS â€” quality 0.65; do not treat as fresh hybrid |
@@ -532,7 +546,7 @@ Replay can raise GNSS Ïƒ from phone accuracy columns (floored) and override `-
 | â€œCompetes with u-blox / full ArduPilot stackâ€ | Different product class. Niche: **lightweight, auditable, zero-heap ESKF core** (GPL-3.0-or-later or commercial) between heavy autopilot stacks and sealed commercial modules â€” **potential**, not traction yet. |
 | â€œOne untuned filter owns land/air/sea opsâ€ | Shared **state + predict**; each domain still needs its own aiding/R. Multidomain is **architecture**, not the headline â€” see [Positioning](#positioning--gps-denied--pnt-resilience). |
 | â€œAssured PNT / anti-jam productâ€ | Civil **integrity + DR** story only. No RF anti-jam; spoof gate = **EKF consistency check** (`reject_reason=3`, SW injection only), not mil stack. No Honeywell comparison. |
-| â€œProven automotive / maritime DRâ€ | **Not yet.** Phone-log replay â‰  certified outage campaign on Pico+M9N. |
+| â€œProven automotive / maritime DRâ€ | **Not yet.** Phone-log replay â‰  certified outage campaign on the Adalogger DUT. |
 | â€œBaro/mag already in the EKFâ€ | **Not in the update.** See innovation table. |
 | â€œv2 is a smaller toy filterâ€ | Same 15-state ESKF; different fusion **policy**. |
 
@@ -637,7 +651,7 @@ NaviCore-3D/
 â”‚   â””â”€â”€ targets/
 â”‚       â”œâ”€â”€ generic_pc/            # Sim, VehicleDemo, Replay, benchmarks
 â”‚       â””â”€â”€ archive/pico2_hardware/ # ARCHIVED Comarruga Pico 2 W (reference only)
-â”‚       â””â”€â”€ rp2040_adalogger/      # ACTIVE DUT path (scaffold when kit arrives)
+â”‚       â””â”€â”€ rp2040_adalogger/      # PLANNED active DUT (dir not in tree yet - see port doc)
 â”œâ”€â”€ data/
 â”‚   â””â”€â”€ real_run/                  # CSVs Android Sensor Logger (~332 s)
 â”œâ”€â”€ calibration/
@@ -676,7 +690,7 @@ NaviCore-3D/
 | `src/scenarios/` | Escenarios cuantitativos (`tunnel_stress`, `slalom_scenario`) |
 | `src/targets/generic_pc/` | Host: sim, replay, UDP telemetry, adaptive NHC controller |
 | `src/targets/archive/pico2_hardware/` | **Archived** Comarruga Pico 2 W BSP (reference for Adalogger port) |
-| `src/targets/rp2040_adalogger/` | **Active** DUT target (planned) â€” see port doc |
+| `src/targets/rp2040_adalogger/` | **Planned** active DUT (directory not scaffolded yet) â€” see port doc |
 | `tests/unit/` | Catch2 + RapidCheck formal units/properties |
 | `data/real_run/` | Phone SensorLogger logs â€” **local only** (not in git; see `data/real_run/README.md`) |
 | `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally â€” see `.gitignore`) |

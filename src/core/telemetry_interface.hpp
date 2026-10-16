@@ -178,6 +178,9 @@ private:
     uint8_t unity_dest_[16];
     uint16_t unity_dest_len_;
 #endif
+#if defined(_WIN32)
+    bool winsock_initialized_;
+#endif
 };
 
 #endif /* NAVICORE_TELEMETRY_INTERFACE_HPP */

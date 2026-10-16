@@ -34,10 +34,6 @@ namespace {
 
 TelemetryInterface *g_active_telemetry = NULL;
 
-#if defined(_WIN32)
-bool g_winsock_ready = false;
-#endif
-
 void euler_ned_to_quaternion(
     float roll_rad,
     float pitch_rad,
@@ -100,6 +96,10 @@ TelemetryInterface::TelemetryInterface()
       unity_socket_(TELEMETRY_SOCKET_INVALID),
       unity_dest_len_(0U)
 #endif
+#if defined(_WIN32)
+      ,
+      winsock_initialized_(false)
+#endif
 {
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
     memset(unity_dest_, 0, sizeof(unity_dest_));
@@ -152,12 +152,12 @@ bool TelemetryInterface::open_unity_socket()
     const uint16_t port = (config_.unity_port != 0U) ? config_.unity_port : UNITY_TELEMETRY_DEFAULT_PORT;
 
 #ifdef _WIN32
-    if (!g_winsock_ready) {
+    if (!winsock_initialized_) {
         WSADATA wsa_data;
         if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
             return false;
         }
-        g_winsock_ready = true;
+        winsock_initialized_ = true;
     }
 #endif
 
@@ -191,6 +191,12 @@ void TelemetryInterface::close_unity_socket()
         unity_socket_ = TELEMETRY_SOCKET_INVALID;
     }
 #endif
+#ifdef _WIN32
+    if (winsock_initialized_) {
+        WSACleanup();
+        winsock_initialized_ = false;
+    }
+#endif
     unity_ready_ = false;
     unity_dest_len_ = 0U;
 }
@@ -219,6 +225,8 @@ bool TelemetryInterface::initialize(const TelemetryConfig &config)
             fclose(logger_file_);
             logger_file_ = NULL;
         }
+        /* Equilibra WSAStartup aunque falle socket()/inet_pton antes de un shutdown() posterior. */
+        close_unity_socket();
         return false;
     }
 

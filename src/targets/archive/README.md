@@ -1,7 +1,7 @@
 # ARCHIVED — Pico 2 W / Comarruga target
 
 **Status:** abandoned as the **active DUT** (2026-08-01).  
-**Active hardware path:** Adafruit Feather RP2040 Adalogger + BNO055 + GPS (Ultimate FeatherWing / PA1010D) — see [`../TARGET_RP2040_ADALOGGER_PORT.md`](../TARGET_RP2040_ADALOGGER_PORT.md) and [`../KIT_BOM_ADALOGGER_BNO055_PA1010D.md`](../KIT_BOM_ADALOGGER_BNO055_PA1010D.md).
+**Active hardware path:** Adafruit Feather RP2040 Adalogger + BNO055 + GPS (Ultimate FeatherWing / PA1010D) — see [`docs/TARGET_RP2040_ADALOGGER_PORT.md`](../../../docs/TARGET_RP2040_ADALOGGER_PORT.md) and [`docs/KIT_BOM_ADALOGGER_BNO055_PA1010D.md`](../../../docs/KIT_BOM_ADALOGGER_BNO055_PA1010D.md). Stub: [`../rp2040_adalogger/`](../rp2040_adalogger/).
 
 ## Why not deleted
 
@@ -19,4 +19,4 @@ This tree is the best **reference implementation** (safe_log, UART rings, health
 cmake -S src/targets/archive/pico2_hardware -B build_pico2 -G Ninja
 ```
 
-Lab notes moved to [`../archive_comarruga_lab_hardware.md`](../archive_comarruga_lab_hardware.md).
+Lab notes moved to [`docs/archive_comarruga_lab_hardware.md`](../../../docs/archive_comarruga_lab_hardware.md).

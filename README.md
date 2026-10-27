@@ -27,7 +27,7 @@
 |--------|-----------------|
 | **Proven (repo / host)** | Zero-heap `src/core/` ESKF · PC Sim + Replay · Catch2/RapidCheck + CI audits · NHC experiment summaries in git · EKF v2 A/B on **SensorLogger mobile** traces · GAP-3 videos |
 | **Reproducible, not shipped as artefacts** | Monte Carlo `TUNNEL_STRESS` runner (`tools/benchmarks/run_monte_carlo.py`) — regenerate locally; bulk CSVs under `docs/monte_carlo/` are **gitignored** / may be absent in a fresh clone |
-| **Planned DUT** | **Adafruit Feather RP2040 Adalogger** + BNO055 AMG + Adafruit GPS · BSP `src/targets/rp2040_adalogger/` **not scaffolded yet** ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · powered Allan / field outage / PPK2 **pending** |
+| **Planned DUT** | **Adafruit Feather RP2040 Adalogger** + BNO055 AMG + Adafruit GPS · target scaffold documented at `src/targets/rp2040_adalogger/`; BSP implementation remains pending ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · powered Allan / field outage / PPK2 **pending** |
 | **Archived (not active Evidence)** | Pico 2 W Comarruga tree → `src/targets/archive/pico2_hardware/` — **do not** read as “Pico validated” |
 
 **Maturity:** method/lab strong; **hardware Evidence not closed**. Snapshot: [`docs/STATUS_ASSESSMENT.md`](docs/STATUS_ASSESSMENT.md).
@@ -651,7 +651,7 @@ NaviCore-3D/
 â”‚   â””â”€â”€ targets/
 â”‚       â”œâ”€â”€ generic_pc/            # Sim, VehicleDemo, Replay, benchmarks
 â”‚       â””â”€â”€ archive/pico2_hardware/ # ARCHIVED Comarruga Pico 2 W (reference only)
-â”‚       â””â”€â”€ rp2040_adalogger/      # PLANNED active DUT (dir not in tree yet - see port doc)
+â”‚       â””â”€â”€ rp2040_adalogger/      # PLANNED active DUT (scaffold docs; BSP pending)
 â”œâ”€â”€ data/
 â”‚   â””â”€â”€ real_run/                  # CSVs Android Sensor Logger (~332 s)
 â”œâ”€â”€ calibration/
@@ -690,7 +690,7 @@ NaviCore-3D/
 | `src/scenarios/` | Escenarios cuantitativos (`tunnel_stress`, `slalom_scenario`) |
 | `src/targets/generic_pc/` | Host: sim, replay, UDP telemetry, adaptive NHC controller |
 | `src/targets/archive/pico2_hardware/` | **Archived** Comarruga Pico 2 W BSP (reference for Adalogger port) |
-| `src/targets/rp2040_adalogger/` | **Planned** active DUT (directory not scaffolded yet) â€” see port doc |
+| `src/targets/rp2040_adalogger/` | **Planned** active DUT (scaffold documented; BSP implementation pending) â€” see port doc |
 | `tests/unit/` | Catch2 + RapidCheck formal units/properties |
 | `data/real_run/` | Phone SensorLogger logs â€” **local only** (not in git; see `data/real_run/README.md`) |
 | `docs/benchmarks/` | Evidence packs: keep `*.md` / `*.json` / `*.png` in git; **bulk CSV is gitignored** (regenerable locally â€” see `.gitignore`) |
@@ -1051,10 +1051,10 @@ python tools/benchmarks/run_monte_carlo.py --runs 100
 
 ## Python tooling
 
-There is no `requirements.txt` yet; install the documented minimum:
+Install the documented minimum for host replay, audits, and visualizers from `requirements.txt`:
 
 ```powershell
-pip install numpy matplotlib pandas
+pip install -r requirements.txt
 ```
 
 | Script | Role |

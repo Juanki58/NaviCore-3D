@@ -89,7 +89,7 @@ static inline uint8_t diagnostic_filter_quality_from_float(float estimate_qualit
 
 static inline bool diagnostic_requires_safe_stop(const SystemHealthMonitor *monitor)
 {
-    if (monitor == NULL) {
+    if (monitor == nullptr) {
         return true;
     }
 

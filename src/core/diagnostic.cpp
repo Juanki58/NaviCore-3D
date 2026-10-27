@@ -51,7 +51,7 @@ void diagnostic_update(
     uint8_t filter_quality,
     uint8_t bsp_bus_status)
 {
-    if (monitor == NULL) {
+    if (monitor == nullptr) {
         return;
     }
 

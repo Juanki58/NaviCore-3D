@@ -214,9 +214,7 @@ set(NAVICORE_FUZZ_SOURCES
     ${NAVICORE_CORE_DIR}/vector3d.cpp
 )
 if(NAVICORE_BUILD_FUZZERS)
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("-fsanitize=fuzzer" NAVICORE_HAS_LIBFUZZER)
-    if(NAVICORE_HAS_LIBFUZZER)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(navicore_sensor_wire_fuzz ${NAVICORE_FUZZ_SOURCES})
         target_include_directories(navicore_sensor_wire_fuzz PRIVATE
             ${NAVICORE_CORE_DIR}
@@ -225,6 +223,10 @@ if(NAVICORE_BUILD_FUZZERS)
             -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer -g)
         target_link_options(navicore_sensor_wire_fuzz PRIVATE
             -fsanitize=fuzzer,address,undefined)
+    else()
+        message(STATUS
+            "navicore_sensor_wire_fuzz requires Clang/libFuzzer; "
+            "building navicore_sensor_wire_fuzz_standalone only")
     endif()
 
     # AFL / corpus smoke: same harness with a file/stdin main (no libFuzzer runtime)

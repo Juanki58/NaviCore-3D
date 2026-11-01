@@ -99,7 +99,7 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 
 - [x] PC ve el Adalogger por USB-C — **COM3** + disco **CIRCUITPY** (CircuitPython **10.3.1**, Feather RP2040 Adalogger)
 - [x] NMEA por UART stack (`busio.UART(board.TX, board.RX, 9600)`) — visto `$GNGGA` / `$GPGSA` en Mu REPL  
-- [ ] Fix GPS con antena al cielo (campos lat/lon aún vacíos en interior — esperado)
+- [x] Fix GPS con antena (u.FL→SMA→antena imán) — `$GNGGA` con lat/lon tras cielo/ventana  
 - [x] BNO055 responde I2C — `i2c.scan()` → **`0x28`** (STEMMA/JST-SH Adalogger↔BNO055)  
 - [x] Chip ID registro `0x00` → **`0xa0`** (BNO055)  
 - [x] Modo **AMG** (`OPR_MODE=0x07`) + lectura accel cruda reg `0x08` (6 bytes no nulos en REPL)  
@@ -107,7 +107,7 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 
 **Pass:** sensores vivos. **Fail:** no pases a outage largo.
 
-**Nota banked (2026-11-01):** humo CircuitPython OK — REPL, GPS NMEA indoor, BNO055 `0x28` / `0xa0` / AMG accel bytes. Siguiente: antena a cielo para fix; microSD.
+**Nota banked (2026-11-01):** Nivel 0 humo **PASS** en CircuitPython — REPL, GPS NMEA+fix, BNO055 `0x28`/`0xa0`/AMG. Siguiente: microSD; luego port `rp2040_adalogger` / PPK2.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 

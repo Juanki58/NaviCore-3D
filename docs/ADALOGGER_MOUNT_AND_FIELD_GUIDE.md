@@ -97,12 +97,15 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 
 ### Nivel 0 — Humo (día llegada, sin NaviCore FW)
 
-- [ ] PC ve el Adalogger por USB-C  
-- [ ] NMEA / fix GPS con antena al cielo (sketch Adafruit Ultimate GPS)  
+- [x] PC ve el Adalogger por USB-C — **COM3** + disco **CIRCUITPY** (CircuitPython **10.3.1**, Feather RP2040 Adalogger)
+- [x] NMEA por UART stack (`busio.UART(board.TX, board.RX, 9600)`) — visto `$GNGGA` / `$GPGSA` en Mu REPL  
+- [ ] Fix GPS con antena al cielo (campos lat/lon aún vacíos en interior — esperado)
 - [ ] BNO055 responde I2C; forzar/leer **AMG** (accel+gyro raw)  
 - [ ] (Mañana) Escribe 1 archivo en microSD  
 
 **Pass:** sensores vivos. **Fail:** no pases a outage largo.
+
+**Nota banked (2026-11-01):** humo CircuitPython OK — REPL `print("hola")`, GPS Wing emite NMEA sin fix indoor. Siguiente: I2C BNO055, luego antena a cielo para fix.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 

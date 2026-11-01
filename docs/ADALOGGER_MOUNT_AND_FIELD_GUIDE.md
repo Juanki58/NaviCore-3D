@@ -103,11 +103,11 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 - [x] BNO055 responde I2C — `i2c.scan()` → **`0x28`** (STEMMA/JST-SH Adalogger↔BNO055)  
 - [x] Chip ID registro `0x00` → **`0xa0`** (BNO055)  
 - [x] Modo **AMG** (`OPR_MODE=0x07`) + lectura accel cruda reg `0x08` (6 bytes no nulos en REPL)  
-- [ ] (Mañana) Escribe 1 archivo en microSD  
+- [ ] Escribe 1 archivo en microSD — **bloqueado hoy:** USB LUN `G:` = SD en **solo lectura**; tarjeta **exFAT ~64 GB** (CP/`sdcardio` quiere **FAT32**); `SD_CS está siendo utilizado` en REPL porque el USB ya tiene la SD; carpeta flash `CIRCUITPY/sd/placeholder.txt` no es la tarjeta  
 
-**Pass:** sensores vivos. **Fail:** no pases a outage largo.
+**Pass:** sensores vivos (GPS+IMU). **Fail:** no pases a outage largo.
 
-**Nota banked (2026-11-01):** Nivel 0 humo **PASS** en CircuitPython — REPL, GPS NMEA+fix, BNO055 `0x28`/`0xa0`/AMG. Siguiente: microSD; luego port `rp2040_adalogger` / PPK2.
+**Nota banked (2026-11-01):** Nivel 0 humo **PASS** GPS+IMU en CircuitPython. SD: reformatear **FAT32** (lector USB recomendado) y reintentar escritura; luego port `rp2040_adalogger` / PPK2.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 

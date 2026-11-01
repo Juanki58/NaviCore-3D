@@ -102,12 +102,12 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 - [ ] Fix GPS con antena al cielo (campos lat/lon aún vacíos en interior — esperado)
 - [x] BNO055 responde I2C — `i2c.scan()` → **`0x28`** (STEMMA/JST-SH Adalogger↔BNO055)  
 - [x] Chip ID registro `0x00` → **`0xa0`** (BNO055)  
-- [ ] Forzar/leer **AMG** (accel+gyro raw) vía librería / registros  
+- [x] Modo **AMG** (`OPR_MODE=0x07`) + lectura accel cruda reg `0x08` (6 bytes no nulos en REPL)  
 - [ ] (Mañana) Escribe 1 archivo en microSD  
 
 **Pass:** sensores vivos. **Fail:** no pases a outage largo.
 
-**Nota banked (2026-11-01):** humo CircuitPython OK — REPL, GPS NMEA indoor, BNO055 `0x28` + chip id `0xa0`. Siguiente: lectura AMG; antena a cielo para fix.
+**Nota banked (2026-11-01):** humo CircuitPython OK — REPL, GPS NMEA indoor, BNO055 `0x28` / `0xa0` / AMG accel bytes. Siguiente: antena a cielo para fix; microSD.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 

@@ -103,11 +103,11 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 - [x] BNO055 responde I2C — `i2c.scan()` → **`0x28`** (STEMMA/JST-SH Adalogger↔BNO055)  
 - [x] Chip ID registro `0x00` → **`0xa0`** (BNO055)  
 - [x] Modo **AMG** (`OPR_MODE=0x07`) + lectura accel cruda reg `0x08` (6 bytes no nulos en REPL)  
-- [ ] Escribe 1 archivo en microSD — **bloqueado hoy:** USB LUN `G:` = SD en **solo lectura**; tarjeta **exFAT ~64 GB** (CP/`sdcardio` quiere **FAT32**); `SD_CS está siendo utilizado` en REPL porque el USB ya tiene la SD; carpeta flash `CIRCUITPY/sd/placeholder.txt` no es la tarjeta  
+- [ ] Escribe 1 archivo en microSD — pendiente **FAT32** (sigue viéndose **exFAT** en `G:`); USB LUN SD es **RO** en el PC (normal). En `CIRCUITPY/settings.toml` ya: `CIRCUITPY_SDCARD_USB = false` para liberar `SD_CS`. SPI SD = `busio.SPI(board.SD_CLK, board.SD_MOSI, board.SD_MISO)` (no `board.SPI()`).  
 
 **Pass:** sensores vivos (GPS+IMU). **Fail:** no pases a outage largo.
 
-**Nota banked (2026-11-01):** Nivel 0 humo **PASS** GPS+IMU en CircuitPython. SD: reformatear **FAT32** (lector USB recomendado) y reintentar escritura; luego port `rp2040_adalogger` / PPK2.
+**Nota banked (2026-11-01 / reintento 2026-11-22):** Nivel 0 GPS+IMU OK. SD: formatear **FAT32** (en lector USB; Windows en ≥32 GB suele forzar exFAT) → RESET → montar con SPI SD_* → escribir `/sdcard/navi_test.txt`.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 

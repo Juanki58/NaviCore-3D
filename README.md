@@ -27,7 +27,7 @@
 |--------|-----------------|
 | **Proven (repo / host)** | Zero-heap `src/core/` ESKF · PC Sim + Replay · Catch2/RapidCheck + CI audits · NHC experiment summaries in git · EKF v2 A/B on **SensorLogger mobile** traces · GAP-3 videos |
 | **Reproducible, not shipped as artefacts** | Monte Carlo `TUNNEL_STRESS` runner (`tools/benchmarks/run_monte_carlo.py`) — regenerate locally; bulk CSVs under `docs/monte_carlo/` are **gitignored** / may be absent in a fresh clone |
-| **Planned DUT** | **Adafruit Feather RP2040 Adalogger** + BNO055 AMG + Adafruit GPS · target scaffold documented at `src/targets/rp2040_adalogger/`; BSP implementation remains pending ([port plan](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · powered Allan / field outage / PPK2 **pending** |
+| **Planned DUT** | **Adafruit Feather RP2040 Adalogger** + BNO055 AMG + Adafruit GPS · **Nivel 0 desk smoke PASS** (CP REPL, NMEA+fix, BNO055 `0x28`/AMG, SD FAT32) · Nivel 1 deny log: [`tools/circuitpython_adalogger/gps_deny_log/`](tools/circuitpython_adalogger/gps_deny_log/) · BSP `rp2040_adalogger` still pending ([port](docs/TARGET_RP2040_ADALOGGER_PORT.md)) · Allan / outage Evidence / PPK2 **pending** |
 | **Archived (not active Evidence)** | Pico 2 W Comarruga tree → `src/targets/archive/pico2_hardware/` — **do not** read as “Pico validated” |
 
 **Maturity:** method/lab strong; **hardware Evidence not closed**. Snapshot: [`docs/STATUS_ASSESSMENT.md`](docs/STATUS_ASSESSMENT.md).

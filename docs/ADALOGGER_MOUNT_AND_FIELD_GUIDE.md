@@ -111,10 +111,12 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 
-- [ ] 5 min cielo abierto, log NMEA o CSV tiempo + lat/lon + fix  
-- [ ] 30–120 s antena en caja foil / parking → fix perdido  
-- [ ] Reacquire al salir  
-- [ ] Tabla simple: `t_s, fix_ok, sats`  
+Script: [`tools/circuitpython_adalogger/gps_deny_log/`](../tools/circuitpython_adalogger/gps_deny_log/) → `code.py` en CIRCUITPY → CSV `/sd/gps_deny_log.csv`.
+
+- [ ] 5 min cielo abierto, log CSV `t_s,fix_ok,sats,lat_deg,lon_deg,qual`  
+- [ ] 30–120 s antena tapada / foil → `fix_ok=0`  
+- [ ] Reacquire al destapar  
+- [ ] Tabla simple en notas (tramo cielo / tapado / reopen)  
 
 **Pass:** sabéis denegar/reacquire GNSS en hardware real. Útil aunque el ESKF aún no corra en MCU.
 

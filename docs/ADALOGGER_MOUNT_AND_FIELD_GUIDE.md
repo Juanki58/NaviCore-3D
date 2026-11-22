@@ -118,8 +118,9 @@ Script: [`tools/circuitpython_adalogger/gps_deny_log/`](../tools/circuitpython_a
 - [ ] Reacquire al destapar  
 - [ ] Tabla simple en notas (tramo cielo / tapado / reopen)  
 
-**Run 1 (2026-11-22):** `data/adalogger_desk/gps_deny_log_run1_nofix.csv` — ~54 s, **todo `fix_ok=0`**.  
-**Run 2:** `data/adalogger_desk/gps_deny_log_run2_fix_no_deny.csv` — fix OK (`41.19N, 1.52E`, 6 sats) pero **sin tramo `fix_ok=0`** (logger reutilizaba último GGA; corregido: GGA fresco ≤2 s). Repetir tapado fuerte (foil / interior) ≥60 s.
+**Run 1 (2026-11-22):** `gps_deny_log_run1_nofix.csv` — todo `fix_ok=0`.  
+**Run 2:** `gps_deny_log_run2_fix_no_deny.csv` — fix OK (`41.19N, 1.52E`, 6 sats); sin deny (bug stale-GGA, ya corregido).  
+**Diag 90 s:** `gga_diag.txt` — UART OK (**60× `$GNGGA`**), **`fix_gga=0`** (qual=0, sin lat/lon): antena/cielo insuficiente en esa pasada, no fallo del logger. Deny/reacquire pendiente con cielo abierto real.
 
 **Pass:** sabéis denegar/reacquire GNSS en hardware real. Útil aunque el ESKF aún no corra en MCU.
 

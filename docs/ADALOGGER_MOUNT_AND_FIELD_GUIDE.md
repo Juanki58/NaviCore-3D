@@ -118,6 +118,8 @@ Script: [`tools/circuitpython_adalogger/gps_deny_log/`](../tools/circuitpython_a
 - [ ] Reacquire al destapar  
 - [ ] Tabla simple en notas (tramo cielo / tapado / reopen)  
 
+**Run 1 (2026-11-22):** `data/adalogger_desk/gps_deny_log_run1_nofix.csv` — ~54 s, **todo `fix_ok=0`** (sin lat/lon). Seriado mostró filas, pero sin enganche GNSS; repetir con antena a cielo hasta ver `,1,` en Seriado **antes** de tapar.
+
 **Pass:** sabéis denegar/reacquire GNSS en hardware real. Útil aunque el ESKF aún no corra en MCU.
 
 ### Nivel 2 — PPK2

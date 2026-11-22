@@ -103,11 +103,11 @@ Con humo Adafruit + PPK2 + outages logueados ya sacáis valor. La Evidence “co
 - [x] BNO055 responde I2C — `i2c.scan()` → **`0x28`** (STEMMA/JST-SH Adalogger↔BNO055)  
 - [x] Chip ID registro `0x00` → **`0xa0`** (BNO055)  
 - [x] Modo **AMG** (`OPR_MODE=0x07`) + lectura accel cruda reg `0x08` (6 bytes no nulos en REPL)  
-- [ ] Escribe 1 archivo en microSD — pendiente **FAT32** (sigue viéndose **exFAT** en `G:`); USB LUN SD es **RO** en el PC (normal). En `CIRCUITPY/settings.toml` ya: `CIRCUITPY_SDCARD_USB = false` para liberar `SD_CS`. SPI SD = `busio.SPI(board.SD_CLK, board.SD_MOSI, board.SD_MISO)` (no `board.SPI()`).  
+- [x] Escribe 1 archivo en microSD — **FAT32** label `NAVSD` en `G:`; host write `navi_test.txt` OK tras `storage.remount("/sd", readonly=True)`; `code.py` intenta `/sd/navi_cp.txt` desde CP  
 
-**Pass:** sensores vivos (GPS+IMU). **Fail:** no pases a outage largo.
+**Pass:** sensores vivos (GPS+IMU+SD). **Fail:** no pases a outage largo.
 
-**Nota banked (2026-11-01 / reintento 2026-11-22):** Nivel 0 GPS+IMU OK. SD: formatear **FAT32** (en lector USB; Windows en ≥32 GB suele forzar exFAT) → RESET → montar con SPI SD_* → escribir `/sdcard/navi_test.txt`.
+**Nota banked (2026-11-22):** SD formateada FAT32 desde PC (volumen >32 GB: aviso compat Windows, OK). Flujo: remount host-RW → `format /FS:FAT32` → escribir. SPI manual solo si `CIRCUITPY_SDCARD_USB=false`.
 
 ### Nivel 1 — Campo “antena / denegación” (aún sin ESKF NaviCore)
 
